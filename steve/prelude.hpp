@@ -1,0 +1,139 @@
+// Copyright (c) 2015 Flowgrammable.org
+// All rights reserved
+
+#ifndef STEVE_PRELUDE_HPP
+#define STEVE_PRELUDE_HPP
+
+// This module provides declarations used in ever module
+// in the implementation. It should be the first include
+// in each header file.
+
+// Strings
+#include "lingo/string.hpp"
+
+// Arbitrary precision integers.
+#include "lingo/integer.hpp"
+
+// Runtime checks and diagnostics.
+#include "lingo/error.hpp"
+
+// AST concepts and operations.
+#include "lingo/node.hpp"
+
+// Memory facilities.
+#include "lingo/memory.hpp"
+
+// Pretty printing.
+#include "lingo/print.hpp"
+
+// Compiler debugging.
+#include "lingo/debug.hpp"
+
+// Support sequences of terms.
+#include <vector>
+
+
+namespace steve
+{
+
+// Lingo imports
+using namespace lingo;
+
+// Overloaded functions
+using lingo::is;
+using lingo::as;
+using lingo::cast;
+using lingo::print;
+using lingo::debug;
+using lingo::mark;
+
+
+// Steve terms
+struct Type;
+struct Void_type;
+struct Boolean_type;
+struct Integer_type;
+struct Function_type;
+struct Array_type;
+struct Tuple_type;
+struct Record_type;
+struct Enum_type;
+struct Variant_type;
+struct Match_type;
+struct If_type;
+struct Seq_type;
+struct Buffer_type;
+struct Until_type;
+struct Table_type;
+struct Entry_type;
+
+struct Prop;
+
+struct Expr;
+struct Id_expr;
+struct Value_expr;
+struct Unary_expr;
+struct Binary_expr;
+struct Call_expr;
+struct Tuple_expr;
+struct Index_expr;
+struct Member_expr;
+struct Convert_expr;
+struct Lengthof_expr;
+struct Offsetof_expr;
+
+struct Decl;
+struct Variable_decl;
+struct Constant_decl;
+struct Function_decl;
+struct Parameter_decl;
+struct Record_decl;
+struct Member_decl;
+struct Enum_decl;
+struct Variant_decl;
+struct Decode_decl;
+struct Table_decl;
+struct Flow_decl;
+
+struct Stmt;
+struct Empty_stmt;
+struct Expr_stmt;
+struct Decl_stmt;
+struct Block_stmt;
+struct Return_stmt;
+struct Match_stmt;
+struct Match_case_stmt;
+struct Instr_stmt;
+struct Action_stmt;
+
+struct Value;
+
+struct Match_term;
+
+// A sequence of types.
+using Type_seq = std::vector<Type const*>;
+
+
+// A sequence of expressions.
+using Expr_seq = std::vector<Expr const*>;
+
+
+// A sequence of declarations.
+using Decl_seq = std::vector<Decl const*>;
+
+
+// A list of statements.
+using Stmt_seq = std::vector<Stmt const*>;
+
+
+} // namespace steve
+
+
+// Include core printing.
+#include "steve/print.hpp"
+
+// Include core debugging.
+#include "steve/debug.hpp"
+
+#endif
+
