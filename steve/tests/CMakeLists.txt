@@ -21,8 +21,9 @@ add_test_driver(test-lookup     lookup.cpp)
 
 add_test_driver(test-ofp        ofp.cpp)
 add_test_driver(test-decode     decode.cpp)
-
 add_test_driver(test-length     length.cpp)
+
+add_test_driver(test-lex        lex.cpp)
 
 # Actual unit tests.
 

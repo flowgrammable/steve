@@ -10,6 +10,7 @@
 #include "steve/builder.hpp"
 #include "steve/lookup.hpp"
 #include "steve/evaluate.hpp"
+#include "steve/compiler.hpp"
 
 // Yikes!
 using namespace steve;

@@ -20,7 +20,10 @@ add_library(steve STATIC
   print.cpp
   debug.cpp
   net.cpp
-  length.cpp)
+  length.cpp
+  token.cpp
+  lexer.cpp
+  compiler.cpp)
 
 
 add_subdirectory(tests)
