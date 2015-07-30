@@ -15,8 +15,12 @@ add_library(steve STATIC
   relation.cpp
   convert.cpp
   lookup.cpp
+  overload.cpp
   evaluate.cpp
   print.cpp
   debug.cpp
   net.cpp
   length.cpp)
+
+
+add_subdirectory(tests)

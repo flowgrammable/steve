@@ -16,6 +16,7 @@ add_test_driver(test-convert    convert.cpp)
 add_test_driver(test-common     common.cpp)
 add_test_driver(test-expr       expr.cpp)
 add_test_driver(test-call       call.cpp)
+add_test_driver(test-overload   overload.cpp)
 
 add_test_driver(test-ofp        ofp.cpp)
 add_test_driver(test-decode     decode.cpp)
