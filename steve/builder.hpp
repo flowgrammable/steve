@@ -300,14 +300,14 @@ make_parm(char const* n, Type const* t)
 
 
 inline Parameter_decl*
-bool_parm(char const* n)
+make_bool_parm(char const* n)
 {
   return make_parm(n, get_bool_type());
 }
 
 
 inline Parameter_decl*
-int_parm(char const* n)
+make_int_parm(char const* n)
 {
   return make_parm(n, get_int_type());
 }
