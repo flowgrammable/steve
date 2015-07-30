@@ -34,8 +34,8 @@ enum Expr_kind
   index_expr,    // member access: e.n (n is a number)
   member_expr,   // member access: e.m (m is a member id)
   convert_expr,  // An implict conversion
-  lengthof_expr, // lengthof e
-  offsetof_expr, // offsetof e
+  lengthof_expr, // lengthof(e)
+  offsetof_expr, // offsetof(e, f)
   action_expr,   // one of the open flow actions
 };
 
@@ -271,25 +271,24 @@ struct Lengthof_expr : Expr, Expr_impl<convert_expr>
 // Offsetof expression. Represents the offset from a base
 // pointer in an expression of type T. For example:
 //
-//    offsetof R.m
+//    offsetof(e, m)
 //
-// Returns the offset of m in R. This is computed statically.
-//
-// TODO: Should we support dynamic computation? Given that
-// we have a lengthof operator, we could always generate an
-// expression that computes the value.
+// Returns the offset of the member `m` in `e`. Note that
+// `e` must have the type of the declaration context of `m`.
 //
 // TODO: This expression wouldn't actually stay in a lowered
 // representation of a program. 
 struct Offsetof_expr : Expr, Expr_impl<convert_expr>
 {
-  Offsetof_expr(Location loc, Type const* t, Expr const* e)
-    : Expr(node_kind, loc, t), first(e)
+  Offsetof_expr(Location loc, Type const* t, Expr const* e, Decl const* m)
+    : Expr(node_kind, loc, t), first(e), second(m)
   { }
 
-  Expr const* arg() const  { return first; }
+  Expr const* object() const  { return first; }
+  Decl const* member() const  { return second; }
 
   Expr const* first;
+  Decl const* second;
 };
 
 
@@ -378,7 +377,7 @@ Index_expr*    make_index_expr(Location, Member_expr const*);
 Member_expr*   make_member_expr(Location, Expr const*, Expr const*);
 Convert_expr*  make_convert_expr(Location, Type const*, Conversion_kind, Expr const*);
 Expr*          make_lengthof_expr(Location, Expr const*);
-Expr*          make_offsetof_expr(Location, Expr const*);
+Expr*          make_offsetof_expr(Location, Expr const*, Decl const*);
 
 
 // Returns the boolean literal `true`.
@@ -673,9 +672,9 @@ make_lengthof_expr(Expr const* e)
 
 
 inline Expr*
-make_offsetof_expr(Expr const* e)
+make_offsetof_expr(Expr const* e, Decl const* m)
 {
-  return make_offsetof_expr(Location::none, e);
+  return make_offsetof_expr(Location::none, e, m);
 }
 
 

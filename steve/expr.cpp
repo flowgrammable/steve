@@ -341,10 +341,13 @@ make_lengthof_expr(Location loc, Expr const* e)
 
 
 // Make an offset-of expression.
+//
+// TODO: Actually typecheck the epxression. `e` must have
+// the same type as the record in which `m` is declared.
 Expr*
-make_offsetof_expr(Location loc, Expr const* e)
+make_offsetof_expr(Location loc, Expr const* e, Decl const* m)
 {
-  return gc().make<Offsetof_expr>(loc, get_uint_type(), e);
+  return gc().make<Offsetof_expr>(loc, get_uint_type(), e, m);
 }
 
 

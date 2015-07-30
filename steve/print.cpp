@@ -491,7 +491,12 @@ void
 print(Printer& p, Offsetof_expr const* e)
 {
   print(p, "offsetof");
-  print_paren_enclosed(p, e->arg());
+  print(p, '(');
+  print(p, e->object());
+  print(p, ", ");
+  // FIXME: We should be printing the qualified name.
+  print(p, e->member()->name());
+  print(p, ')');
 }
 
 
