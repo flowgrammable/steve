@@ -53,6 +53,8 @@ struct Type;
 struct Void_type;
 struct Boolean_type;
 struct Integer_type;
+struct Constant_type;
+struct Reference_type;
 struct Function_type;
 struct Array_type;
 struct Tuple_type;

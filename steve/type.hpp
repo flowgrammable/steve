@@ -22,23 +22,25 @@ namespace steve
 // Different kinds of types in the core language.
 enum Type_kind
 {
-  kind_type,     // type of types
-  void_type,     // void type
-  boolean_type,  // boolean type
-  integer_type,  // integer type
-  function_type, // function types: (T1, ... ,Tn) -> T
-  array_type,    // array types: T[N]
-  tuple_type,    // tuple types: {T1, ..., Tn}
-  record_type,   // record types: record <name> { ... }
-  variant_type,  // variant types: variant <name> { ... }
-  enum_type,     // enum types: enum <name> [(base)] { ... }
-  match_type,    // match types: match(e) { ... }
-  if_type,       // if types: if(e) T
-  seq_type,      // sequence types: seq T (e)
-  buffer_type,   // buffer types: buf T (e)
-  until_type,    // sequence until types: until(pred) T
-  table_type,    // table types: table <ofptable_name>[(header fields)]
-  flow_type,     // flow type: flow <ofptable_name> [conds] { instr }
+  kind_type,      // type of types
+  void_type,      // void type
+  boolean_type,   // boolean type
+  integer_type,   // integer type
+  constant_type,  // constant oject types: const T
+  reference_type, // reference types: ref T
+  function_type,  // function types: (T1, ... ,Tn) -> T
+  array_type,     // array types: T[N]
+  tuple_type,     // tuple types: {T1, ..., Tn}
+  record_type,    // record types: record <name> { ... }
+  variant_type,   // variant types: variant <name> { ... }
+  enum_type,      // enum types: enum <name> [(base)] { ... }
+  match_type,     // match types: match(e) { ... }
+  if_type,        // if types: if(e) T
+  seq_type,       // sequence types: seq T (e)
+  buffer_type,    // buffer types: buf T (e)
+  until_type,     // sequence until types: until(pred) T
+  table_type,     // table types: table <ofptable_name>[(header fields)]
+  flow_type,      // flow type: flow <ofptable_name> [conds] { instr }
 };
 
 
@@ -146,6 +148,55 @@ struct Integer_type : Type, Type_impl<integer_type>
   int           first;
   Integer_sign  second;
   Integer_order third;
+};
+
+
+// The type of a constant object. For example:
+//
+//    var v : const int = 0;
+//
+// The object `v` cannot be modified. Note that the type
+// argument of `const` must be an object type.
+//
+// TODO: Actually support these types. The primary reason
+// for adding constant types is to support reference binding
+// for constants. For example:
+//
+//    def f1(x : ref int) { ... }
+//    def f2(x : ref const int) { ... }
+//
+//    f1(0); // error: cannot form a refernce to 0
+//    f2(0); // OK: potentially synthesize an object
+struct Constant_type : Type, Type_impl<constant_type>
+{
+  Constant_type(Type const* t)
+    : Type(node_kind), first(t)
+  { }
+
+  Type const* type() const { return first; }
+
+  Type const* first;
+};
+
+
+// The type of a reference to an object. This type does
+// not define a distinct value; the value is that of the
+// object referred to. For example:
+//
+//    var v : int = 0;
+//    var r : ref int = v; // r is an alias for v
+//
+// Reference types may be represented as pointers, or in
+// many cases, they can be erased.
+struct Reference_type : Type, Type_impl<reference_type>
+{
+  Reference_type(Type const* t)
+    : Type(node_kind), first(t)
+  { }
+
+  Type const* type() const { return first; }
+
+  Type const* first;
 };
 
 
@@ -318,7 +369,7 @@ struct Buffer_type : Type, Type_impl<buffer_type>
   { }
   
   Type const* type() const { return first; }
-  Expr const* size() const { return second; }
+  Expr const* length() const { return second; }
 
   Type const* first;
   Expr const* second;
@@ -357,6 +408,7 @@ struct Flow_type : User_defined_type<flow_type, Flow_decl>
 
 // -------------------------------------------------------------------------- //
 //                             Concepts and dispatch
+//
 
 
 // True when T is models the Expression concept. 
@@ -420,7 +472,8 @@ is_object_type()
 {
   return is_scalar_type<T>()
       || is_aggregate_type<T>()
-      || is_user_defined_type<T>();
+      || is_user_defined_type<T>()
+      || T::node_kind == constant_type;
 }
 
 
@@ -454,6 +507,8 @@ apply(T const* t, F fn)
     case void_type: return fn(cast<Void_type>(t));
     case boolean_type: return fn(cast<Boolean_type>(t));
     case integer_type: return fn(cast<Integer_type>(t));
+    case constant_type: return fn(cast<Constant_type>(t));
+    case reference_type: return fn(cast<Reference_type>(t));
     case function_type: return fn(cast<Function_type>(t));
     case array_type: return fn(cast<Array_type>(t));
     case tuple_type: return fn(cast<Tuple_type>(t));
@@ -576,41 +631,38 @@ is_object_type(Type const* t)
 // -------------------------------------------------------------------------- //
 //                               Type accessors
 
-Kind_type const*     get_kind_type();
-Void_type const*     get_void_type();
-Boolean_type const*  get_boolean_type();
-Boolean_type const*  get_bool_type();
-Integer_type const*  get_integer_type(int, Integer_sign, Integer_order);
-
-// Basic integer types
-Integer_type const*  get_short_type();
-Integer_type const*  get_int_type();
-Integer_type const*  get_long_type();
-Integer_type const*  get_ushort_type();
-Integer_type const*  get_uint_type();
-Integer_type const*  get_ulong_type();
-
-// Precise integer types
-Integer_type const*  get_int_type(int p);
-Integer_type const*  get_uint_type(int p);
-Integer_type const*  get_msbf_type(int p);
-Integer_type const*  get_umsbf_type(int p);
-Integer_type const*  get_lsbf_type(int p);
-Integer_type const*  get_ulsbf_type(int p);
-
-Function_type const* get_function_type(Type_seq const&, Type const*);
-Array_type const*    get_array_type(Type const*, Integer const&);
-Array_type const*    get_array_type(Type const*, Expr const*);
-Tuple_type const*    get_tuple_type(Type_seq const&);
-Tuple_type const*    get_tuple_type(Record_type const*);
-Record_type const*   get_record_type(Decl const*);
-Variant_type const*  get_variant_type(Decl const*);
-Enum_type const*     get_enum_type(Decl const*);
-Match_type const*    get_match_type(Expr const*, Match_seq const&);
-Match_term const*    make_match_term(Expr const*, Type const*);
-Seq_type const*      get_seq_type(Type const*, Expr const*);
-Buffer_type const*   get_buffer_type(Type const*, Expr const*);
-Until_type const*    get_until_type(Expr const*, Type const*);
+Kind_type const*      get_kind_type();
+Void_type const*      get_void_type();
+Boolean_type const*   get_boolean_type();
+Boolean_type const*   get_bool_type();
+Integer_type const*   get_integer_type(int, Integer_sign, Integer_order);
+Integer_type const*   get_short_type();
+Integer_type const*   get_int_type();
+Integer_type const*   get_long_type();
+Integer_type const*   get_ushort_type();
+Integer_type const*   get_uint_type();
+Integer_type const*   get_ulong_type();
+Integer_type const*   get_int_type(int p);
+Integer_type const*   get_uint_type(int p);
+Integer_type const*   get_msbf_type(int p);
+Integer_type const*   get_umsbf_type(int p);
+Integer_type const*   get_lsbf_type(int p);
+Integer_type const*   get_ulsbf_type(int p);
+Constant_type const*  get_constant_type(Type const*);
+Reference_type const* get_reference_type(Type const*);
+Function_type const*  get_function_type(Type_seq const&, Type const*);
+Array_type const*     get_array_type(Type const*, Integer const&);
+Array_type const*     get_array_type(Type const*, Expr const*);
+Tuple_type const*     get_tuple_type(Type_seq const&);
+Tuple_type const*     get_tuple_type(Record_type const*);
+Record_type const*    get_record_type(Decl const*);
+Variant_type const*   get_variant_type(Decl const*);
+Enum_type const*      get_enum_type(Decl const*);
+Match_type const*     get_match_type(Expr const*, Match_seq const&);
+Match_term const*     make_match_term(Expr const*, Type const*);
+Seq_type const*       get_seq_type(Type const*, Expr const*);
+Buffer_type const*    get_buffer_type(Type const*, Expr const*);
+Until_type const*     get_until_type(Expr const*, Type const*);
 
 
 // -------------------------------------------------------------------------- //

@@ -20,6 +20,24 @@ namespace
 bool has_constant_length(Type const* t);
 
 
+// A constant type has constant length iff its qualified type
+// has constant length.
+inline bool
+has_constant_length(Constant_type const* t)
+{
+  return has_constant_length(t->type());
+}
+
+
+// A reference type has constant length iff its qualified type
+// has constant length.
+inline bool
+has_constant_length(Reference_type const* t)
+{
+  return has_constant_length(t->type());
+}
+
+
 // An array type has constant length iff its element type has
 // constant length.
 inline bool
@@ -170,6 +188,20 @@ precision(Integer_type const* t)
 }
 
 
+inline int
+precision(Constant_type const* t)
+{
+  return precision(t->type());
+}
+
+
+inline int
+precision(Reference_type const* t)
+{
+  return precision(t->type());
+}
+
+
 // The bit precision of an array is the product of
 // its element type's bit precision and its extent.
 inline int
@@ -257,6 +289,9 @@ precision(Type const* t)
 // Returns an expression that computes the byte length
 // of an object.
 
+Expr const* length(Type const*);
+
+
 // The length of the bolean type is 1.
 Expr const*
 length(Boolean_type const* t)
@@ -281,6 +316,18 @@ length(Integer_type const* t)
   double w = 8;
   double b = std::ceil(p / w);
   return make_int(b);
+}
+
+
+// The length of a constant type is that of its qualififed type.
+//
+// FIXME: Should we even be defining this? We probably want
+// to adjust the object type of an operand so that we only
+// ask for a value type.
+Expr const*
+length(Constant_type const* t)
+{
+  return length(t->type());
 }
 
 
@@ -378,6 +425,7 @@ length(Match_type const* t)
 }
 
 
+// FIXME: What is this???
 Expr const*
 length(If_type const* t)
 {
@@ -385,6 +433,7 @@ length(If_type const* t)
 }
 
 
+// FIXME: Sum over the length of values in a sequence.
 Expr const*
 length(Seq_type const* t)
 {
@@ -392,10 +441,11 @@ length(Seq_type const* t)
 }
 
 
+// The length of a buffer type is its runtime length.
 Expr const*
 length(Buffer_type const* t)
 {
-  return zero();
+  return t->length();
 }
 
 

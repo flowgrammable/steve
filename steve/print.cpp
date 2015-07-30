@@ -216,6 +216,22 @@ print(Printer& p, Integer_type const* t)
 
 
 void
+print(Printer& p, Constant_type const* t)
+{
+  print(p, "const ");
+  print(p, t->type());
+}
+
+
+void
+print(Printer& p, Reference_type const* t)
+{
+  print(p, "ref ");
+  print(p, t->type());
+}
+
+
+void
 print(Printer& p, Function_type const* t)
 {
   print(p, '(');
@@ -338,7 +354,7 @@ print(Printer& p, Buffer_type const* t)
   print_space(p);
   print(p, t->type());
   print(p, '(');
-  print(p, t->size());
+  print(p, t->length());
   print(p, ')');
 }
 

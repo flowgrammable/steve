@@ -24,6 +24,8 @@ get_type_name(Type_kind k)
     case void_type: return "void_type";
     case boolean_type: return "boolean_type";
     case integer_type: return "integer_type";
+    case constant_type: return "constant_type";
+    case reference_type: return "reference_type";
     case function_type: return "function_type";
     case array_type: return "array_type";
     case tuple_type: return "tuple_type";
@@ -64,6 +66,8 @@ Void_type void_;
 Boolean_type bool_;
 
 Unique_factory<Integer_type, Type_less> int_;
+Unique_factory<Constant_type, Type_less> constant_;
+Unique_factory<Reference_type, Type_less> reference_;
 Unique_factory<Function_type, Type_less> function_;
 Unique_factory<Array_type, Type_less> array_;
 Unique_factory<Tuple_type, Type_less> tuple_;
@@ -105,6 +109,38 @@ Integer_type const*
 get_integer_type(int p, Integer_sign s, Integer_order o)
 {
   return int_.make(p, s, o);
+}
+
+
+Constant_type const*
+get_constant_type(Type const* t)
+{
+  if (!is_object_type(t)) {
+    error("'{}' is not an object type");
+    return nullptr;
+  }
+
+  // const const T == const T
+  if (Constant_type const* t1 = as<Constant_type>(t))
+    return t1;
+
+  return constant_.make(t);
+}
+
+
+Reference_type const*
+get_reference_type(Type const* t)
+{
+  if (!is_object_type(t)) {
+    error("cannot form a reference to '{}'");
+    return nullptr;
+  }
+
+  // ref ref T == ref T
+  if (Reference_type const* t1 = as<Reference_type>(t))
+    return t1;
+  
+  return reference_.make(t);
 }
 
 

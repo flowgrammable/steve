@@ -159,6 +159,12 @@ less(Type const* a, Type const* b)
     case integer_type:
       return less(cast<Integer_type>(a), cast<Integer_type>(b));
     
+    case constant_type:
+      return less(cast<Constant_type>(a), cast<Constant_type>(b));
+
+    case reference_type:
+      return less(cast<Reference_type>(a), cast<Reference_type>(b));
+
     case function_type: 
       return less(cast<Function_type>(a), cast<Function_type>(b));
 

@@ -23,6 +23,8 @@ void print(Printer&, Type const*);
 void print(Printer&, Void_type const*);
 void print(Printer&, Boolean_type const*);
 void print(Printer&, Integer_type const*);
+void print(Printer&, Constant_type const*);
+void print(Printer&, Reference_type const*);
 void print(Printer&, Function_type const*);
 void print(Printer&, Array_type const*);
 void print(Printer&, Tuple_type const*);
