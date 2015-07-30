@@ -22,7 +22,7 @@ make_const(char const* n, Type const* t, Expr const* e)
 void 
 test1()
 {
-  Scope_guard g(global_scope);
+  Scope scope(global_scope);
 
   Type const* t = get_int_type();
   Decl_seq es {

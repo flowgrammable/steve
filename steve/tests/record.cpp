@@ -20,7 +20,7 @@ make_record()
 void 
 test1()
 {
-  Scope_guard g(global_scope);
+  Scope scope(global_scope);
 
   Decl_seq mem {
     make_bool_member("m1"),
@@ -65,7 +65,7 @@ test2()
 void
 test3()
 {
-  Frame_guard g;
+  Frame frame;
 
   Record_decl* r = make_record();  // record { m1 : bool; m2 : int }
   Decl const* m0 = r->members()[0];  

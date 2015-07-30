@@ -31,51 +31,54 @@ struct Scope;
 //
 // - block -- any declarations within a block statement have
 //   block scope. Parameters of a function definition are
-//   declared in a block scope encloses its body.
+//   declared in a block scope that encloses its body.
 //
 // - record -- and declarations within the body of a record
 //   declaration have declaration scope.
+//
+// - enum -- names declared within the body of an enum declaration.
 enum Scope_kind
 {
   global_scope,
-  block_scope,
+  local_scope,
   record_scope,
+  enum_scope,
 };
 
 
 // A scope is a sequence of declartions that are visible
 // within the same region of source (starting from their
 // respective declarations).
+//
+// Note that constructing a scope object places it on the
+// scope stack.
 struct Scope : std::vector<String const*>
 {
-  struct Entry;
+  struct Binding;
 
-  Scope(Scope_kind k)
-    : kind_(k)
-  { }
-
+  Scope(Scope_kind k);
   ~Scope();
 
   Scope_kind kind() const  { return kind_; }
   
   void bind(String const*, Decl const*);
   
-  Entry*       entry(String const*) const;
+  Binding*     entry(String const*) const;
   Decl const*  lookup(String const*) const;
 
   Scope_kind kind_;
 };
 
 
-// A scope entry stores information information associated
-// with an identifier. This includes the bound declration,
-// it's declarative scope, and a reference to the previous
-// bound entry for the identifier.
-struct Scope::Entry
+// A name binding stores information information associated
+// with an identifier. In particular, a name is always bound 
+// to a type, and may be bound to a constant value (constants,
+// and enumerators).
+struct Scope::Binding
 {
-  Decl const* decl;  // the declarations
-  Scope*      scope; // the declartive scope
-  Entry*      prev;  // the previous scope entry
+  Decl const* decl;  // The bound declaration
+  Scope*      scope; // Scope in which the declaration's name is visible
+  Binding*    prev;  // The previous binding
 };
 
 
@@ -83,8 +86,6 @@ struct Scope::Entry
 //                            Scope management
 
 Scope& current_scope();
-Scope& enter_scope(Scope_kind);
-void   leave_scope();
 
 
 // ---------------------------------------------------------------------------//
@@ -96,26 +97,6 @@ bool declare(Decl const*);
 Decl const* lookup(String const*);
 Decl const* lookup(String const&);
 Decl const* lookup(char const*);
-
-
-// -------------------------------------------------------------------------- //
-//                              Tools
-
-// The scope guard class pushes a new scope upon
-// creation and pops that scope upon destruction.
-struct Scope_guard
-{
-  Scope_guard(Scope_kind k)
-    : scope(enter_scope(k))
-  { }
-
-  ~Scope_guard()
-  {
-    leave_scope();
-  }
-
-  Scope& scope;
-};
 
 
 } // namespace steve

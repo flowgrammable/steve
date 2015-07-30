@@ -47,7 +47,7 @@ test_2()
 void
 test_3()
 {
-  Frame_guard g;
+  Frame frame;
 
   Expr const* e1 = make_tuple_expr({truth(), make_int(20), falsity()});
   Expr const* i0 = make_index_expr(e1, zero());

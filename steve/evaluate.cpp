@@ -32,10 +32,10 @@ struct Store : std::unordered_map<Decl const*, Value>
 
 
 // The call tack is a stack of frames. 
-struct Stack : std::forward_list<Frame>
+struct Stack : std::forward_list<Frame*>
 {
-  Frame&       top()       { return front(); }
-  Frame const& top() const { return front(); }
+  Frame&       top()       { return *front(); }
+  Frame const& top() const { return *front(); }
 };
 
 
@@ -65,6 +65,11 @@ Stack stack_;
 } // namespace
 
 
+Frame::Frame()
+{
+  stack_.push_front(this);
+}
+
 
 // When a stack frame is destroyed, remove all of its 
 // bindings.
@@ -72,6 +77,7 @@ Frame::~Frame()
 {
   for (Decl const* d : *this)
     data_.pop(d);
+  stack_.pop_front();
 }
 
 
@@ -97,26 +103,10 @@ Frame::entry(Decl const* d) const
 
 // Returns the current stack frame.
 Frame&
-current_frame()
+active_frame()
 {
   lingo_assert(!stack_.empty());
   return stack_.top();
-}
-
-
-// Push a new frame onto the call stack.
-void
-activate_frame()
-{
-  stack_.push_front(Frame());
-}
-
-
-// Pop the current frame off the call stack.
-void
-deactivate_frame()
-{
-  stack_.pop_front();
 }
 
 
@@ -125,15 +115,15 @@ deactivate_frame()
 void
 store(Decl const* d, Value const& v)
 {
-  current_frame().bind(d, v);
+  active_frame().bind(d, v);
 }
 
 
 // Returns the stored value in the current frame.
 Value const&
-access(Decl const* d)
+load(Decl const* d)
 {
-  return current_frame().entry(d);
+  return active_frame().entry(d);
 }
 
 
@@ -428,7 +418,7 @@ evaluate(Expr const* e)
 inline Value
 evaluate(Id_expr const* e)
 {
-  return access(e->decl());
+  return load(e->decl());
 }
 
 

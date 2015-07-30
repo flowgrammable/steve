@@ -22,31 +22,31 @@ namespace
 
 // The (name) environment provides a global mapping of 
 // names to declarations.
-struct Environment : std::unordered_map<String const*, Scope::Entry*>
+struct Environment : std::unordered_map<String const*, Scope::Binding*>
 {
   void push(String const*, Scope*, Decl const*);
   void pop(String const*);
 
-  Scope::Entry* entry(String const*);
+  Scope::Binding* entry(String const*);
 };
 
 
 // The scope stack is a stack of scopes.
-struct Stack : std::forward_list<Scope>
+struct Stack : std::forward_list<Scope*>
 {
-  Scope&       top()       { return front(); }
-  Scope const& top() const { return front(); }
+  Scope&       top()       { return *front(); }
+  Scope const& top() const { return *front(); }
 };
 
 
-// The global naming environment and scope stack.
+// The global binding environment and scope stack.
 Environment env_;
 Stack       stack_;
 
 
 // Returns the entry for the name `n`. If `n` has no current
 // entry, returns nullptr.
-Scope::Entry*
+Scope::Binding*
 Environment::entry(String const* n)
 {
   auto iter = find(n);
@@ -63,7 +63,7 @@ Environment::entry(String const* n)
 inline bool
 is_name_in_scope(String const* n, Scope* s)
 {
-  if (Scope::Entry* e = env_.entry(n))
+  if (Scope::Binding* e = env_.entry(n))
     return e->scope == s;
   else
     return true;
@@ -83,7 +83,7 @@ Environment::push(String const* n, Scope* s, Decl const* d)
 {
   lingo_alert(is_name_in_scope(n, s), "'{}' already declared", d->name());
   auto ins = insert({n, nullptr});
-  ins.first->second = new Scope::Entry{d, s, ins.first->second};
+  ins.first->second = new Scope::Binding{d, s, ins.first->second};
 }
 
 
@@ -93,7 +93,7 @@ void
 Environment::pop(String const* n)
 {
   auto iter = find(n);
-  Scope::Entry* e = iter->second;
+  Scope::Binding* e = iter->second;
   if (e->prev)
     iter->second = e->prev;
   else
@@ -105,11 +105,21 @@ Environment::pop(String const* n)
 } // namespace
 
 
-// Pop all scope bindings whenever a scope is exited.
+// When constucting a scope, place it on the scope stack.
+Scope::Scope(Scope_kind k)
+  : kind_(k)
+{
+  stack_.push_front(this);
+}
+
+
+// Pop all scope bindings and leave the scope whenever
+// a scope is destroyed.
 Scope::~Scope()
 {
   for (String const* s : *this)
     env_.pop(s);
+  stack_.pop_front();
 }
 
 
@@ -118,16 +128,16 @@ void
 Scope::bind(String const* n, Decl const* d)
 {
   env_.push(n, this, d);
-  emplace_back(n);
+  push_back(n);
 }
 
 
 // Returns the innermost declaration bound to `s` or 
 // nullptr if no such declaration exists.
-Scope::Entry*
+Scope::Binding*
 Scope::entry(String const* s) const
 {
-  if (Scope::Entry* b = env_.entry(s))
+  if (Scope::Binding* b = env_.entry(s))
     return b;
   else
     return nullptr;
@@ -139,7 +149,7 @@ Scope::entry(String const* s) const
 Decl const*
 Scope::lookup(String const* s) const
 {
-  if (Scope::Entry* b = env_.entry(s))
+  if (Scope::Binding* b = env_.entry(s))
     return b->decl;
   else
     return nullptr;
@@ -157,23 +167,6 @@ current_scope()
 }
 
 
-// Enter a new scope of the given kind.
-Scope&
-enter_scope(Scope_kind k)
-{
-  stack_.emplace_front(k);
-  return current_scope();
-}
-
-
-// Lave the current scope.
-void
-leave_scope()
-{
-  stack_.pop_front();
-}
-
-
 // -------------------------------------------------------------------------- //
 //                             Declarations
 
@@ -187,7 +180,7 @@ bool
 check_redeclaration(String const* n, Decl const* decl)
 {
   Scope* s = &current_scope();
-  Scope::Entry* e = env_.entry(n);
+  Scope::Binding* e = env_.entry(n);
 
   if (e && e->scope == s) {
     Decl const* prev = e->decl;

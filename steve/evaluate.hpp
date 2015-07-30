@@ -22,6 +22,7 @@ struct Stmt;
 // active during the evaluation of a function.
 struct Frame : std::vector<Decl const*>
 {
+  Frame();
   ~Frame();
 
   void         bind(Decl const*, Value const&);
@@ -30,12 +31,10 @@ struct Frame : std::vector<Decl const*>
 
 
 // ---------------------------------------------------------------------------//
-//                            Stack management
+//                            Call stack management
 
 // Frame management.
-Frame& current_frame();
-void activate_frame();
-void deactivate_frame();
+Frame& active_frame();
 
 
 // -------------------------------------------------------------------------- //
@@ -70,27 +69,7 @@ Expr const* reduce(Expr const*);
 //                            Dynamic bindings
 
 void         store(Decl const*, Integer const&);
-Value const& access(Decl const*);
-
-
-// ---------------------------------------------------------------------------//
-//                                Tools
-
-// The frame guard establishes a new stack frame at
-// the point of construction. The frame is popped when
-// it goes out of scope.
-struct Frame_guard
-{
-  Frame_guard()
-  {
-    activate_frame();
-  }
-
-  ~Frame_guard()
-  {
-    deactivate_frame();
-  }
-};
+Value const& laod(Decl const*);
 
 
 } // namespace steve

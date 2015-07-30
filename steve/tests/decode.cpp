@@ -124,7 +124,7 @@ make_decode_decl3()
 void
 test_1()
 {
-  Scope_guard g(global_scope);
+  Scope scope(global_scope);
 
   Decl* d1 = make_decode_decl1();
 
