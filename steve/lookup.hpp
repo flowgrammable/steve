@@ -9,6 +9,7 @@
 // for the purpose of future extensibility.
 
 #include "steve/prelude.hpp"
+#include "steve/overload.hpp"
 
 #include "lingo/symbol.hpp"
 
@@ -61,24 +62,62 @@ struct Scope : std::vector<String const*>
 
   Scope_kind kind() const  { return kind_; }
   
-  void bind(String const*, Decl const*);
-  
-  Binding*     entry(String const*) const;
-  Decl const*  lookup(String const*) const;
+  Overload const* bind(String const*, Decl const*);
+  Overload const* lookup(String const*) const;
+
+  // Should be private?
+  Binding* binding(String const*) const;
 
   Scope_kind kind_;
 };
 
 
 // A name binding stores information information associated
-// with an identifier. In particular, a name is always bound 
-// to a type, and may be bound to a constant value (constants,
-// and enumerators).
+// with an identifier. Note that, inside a single scope, a
+// name may be bound to multiple declarations, represented
+// by an overload set. Each declaration associates a type,
+// and other information with the value.
 struct Scope::Binding
 {
-  Decl const* decl;  // The bound declaration
-  Scope*      scope; // Scope in which the declaration's name is visible
-  Binding*    prev;  // The previous binding
+  Overload* ovl;   // A set of declraratoins for the name
+  Scope*    scope; // Scope in which the declaration's name is visible
+  Binding*  prev;  // The previous binding
+};
+
+
+// Represents the global scope.
+struct Global_scope : Scope
+{
+  Global_scope()
+    : Scope(global_scope)
+  { }
+};
+
+
+// Represents a local scope.
+struct Local_scope : Scope
+{
+  Local_scope()
+    : Scope(local_scope)
+  { }
+};
+
+
+// Represents the scope of a record declration.
+struct Record_scope : Scope
+{
+  Record_scope()
+    : Scope(record_scope)
+  { }
+};
+
+
+// Represents the scope of an enumeration declaration.
+struct Enum_scope : Scope
+{
+  Enum_scope()
+    : Scope(enum_scope)
+  { }
 };
 
 
@@ -91,12 +130,20 @@ Scope& current_scope();
 // ---------------------------------------------------------------------------//
 //                            Lexical bindings
 
-bool declare(String const*, Decl const*);
-bool declare(Decl const*);
+Overload const* declare(String const*, Decl const*);
+Overload const* declare(Decl const*);
 
-Decl const* lookup(String const*);
-Decl const* lookup(String const&);
-Decl const* lookup(char const*);
+Overload const* lookup(String const*);
+Overload const* lookup(char const*);
+
+
+// ---------------------------------------------------------------------------//
+//                            Printing
+
+void print(Printer& p, Scope const*);
+
+void print_name_bindings();
+void print_name_bindings(Printer& p);
 
 
 } // namespace steve

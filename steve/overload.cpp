@@ -123,6 +123,7 @@ overload_declaration(Overload* ovl, Decl const* decl)
 void 
 print(Printer& p, Overload const* ovl)
 {
+  print("=== overload set for {} ===", ovl->name());
   for (Decl const* d : *ovl) {
     print(p, d);
     print(p, '\n');
@@ -130,6 +131,7 @@ print(Printer& p, Overload const* ovl)
 }
 
 
+// FIXME: Make this an sexpr.
 void 
 debug(Printer& p, Overload const* ovl)
 {

@@ -24,10 +24,10 @@ namespace
 // names to declarations.
 struct Environment : std::unordered_map<String const*, Scope::Binding*>
 {
-  void push(String const*, Scope*, Decl const*);
-  void pop(String const*);
+  Overload* push(String const*, Scope*, Decl const*);
+  void      pop(String const*);
 
-  Scope::Binding* entry(String const*);
+  Scope::Binding* binding(String const*);
 };
 
 
@@ -44,46 +44,21 @@ Environment env_;
 Stack       stack_;
 
 
-// Returns the entry for the name `n`. If `n` has no current
-// entry, returns nullptr.
-Scope::Binding*
-Environment::entry(String const* n)
-{
-  auto iter = find(n);
-  if (iter != end())
-    return iter->second;
-  else
-    return nullptr;
-}
-
-
-// Returns true if a new entry for `n` would hide a binding
-// in the current scope. This is the case when the the
-// scope of the current entry for `n` is the same as `s`.
-inline bool
-is_name_in_scope(String const* n, Scope* s)
-{
-  if (Scope::Binding* e = env_.entry(n))
-    return e->scope == s;
-  else
-    return true;
-}
-
-
-// Push a new name binding into the context. The new declaration
-// `d` shall not replace a previous declaration in the same scope.
-// This requirement must be ensured by the caller.
-//
-// TODO: Relaxing this requirement allows for overloading. 
-// Specifically, multiple declarations in the same scope could
-// be added to an overload set (requiring a change to the
-// binding class).
-void
+// Push a new name binding into the context. This creates
+// a new overload set for the binding.
+Overload*
 Environment::push(String const* n, Scope* s, Decl const* d)
 {
-  lingo_alert(is_name_in_scope(n, s), "'{}' already declared", d->name());
   auto ins = insert({n, nullptr});
-  ins.first->second = new Scope::Binding{d, s, ins.first->second};
+  Scope::Binding*& b = ins.first->second;
+
+  // Ensure that we haven't created a new overload set for the 
+  // same scope.
+  lingo_assert(!ins.second ? b->scope != s : true);
+
+  // Chain the new binding to the previous and update.
+  b = new Scope::Binding{new Overload{d}, s, b};
+  return b->ovl;
 }
 
 
@@ -102,10 +77,23 @@ Environment::pop(String const* n)
 }
 
 
+// Returns the binding for the name `n`. If `n` has no current
+// binding, returns nullptr.
+Scope::Binding*
+Environment::binding(String const* n)
+{
+  auto iter = find(n);
+  if (iter != end())
+    return iter->second;
+  else
+    return nullptr;
+}
+
+
 } // namespace
 
 
-// When constucting a scope, place it on the scope stack.
+// When constructing a scope, place it on the scope stack.
 Scope::Scope(Scope_kind k)
   : kind_(k)
 {
@@ -124,21 +112,21 @@ Scope::~Scope()
 
 
 // Push a new, innermost binding for the given name.
-void
+Overload const*
 Scope::bind(String const* n, Decl const* d)
 {
-  env_.push(n, this, d);
   push_back(n);
+  return env_.push(n, this, d);
 }
 
 
 // Returns the innermost declaration bound to `s` or 
 // nullptr if no such declaration exists.
-Scope::Binding*
-Scope::entry(String const* s) const
+Overload const*
+Scope::lookup(String const* s) const
 {
-  if (Scope::Binding* b = env_.entry(s))
-    return b;
+  if (Scope::Binding* b = env_.binding(s))
+    return b->ovl;
   else
     return nullptr;
 }
@@ -146,11 +134,11 @@ Scope::entry(String const* s) const
 
 // Returns the innermost declaration bound to `s` or 
 // nullptr if no such declaration exists.
-Decl const*
-Scope::lookup(String const* s) const
+Scope::Binding*
+Scope::binding(String const* s) const
 {
-  if (Scope::Binding* b = env_.entry(s))
-    return b->decl;
+  if (Scope::Binding* b = env_.binding(s))
+    return b;
   else
     return nullptr;
 }
@@ -170,49 +158,39 @@ current_scope()
 // -------------------------------------------------------------------------- //
 //                             Declarations
 
-namespace
-{
-
-// Returns true if `n` does not hide an existing declaration
-// in the same scope. Otherwise, emits a diagnostic and returns
-// false.
-bool
-check_redeclaration(String const* n, Decl const* decl)
-{
-  Scope* s = &current_scope();
-  Scope::Binding* e = env_.entry(n);
-
-  if (e && e->scope == s) {
-    Decl const* prev = e->decl;
-    error(decl->location(), "'{}' is already declared", n);
-    note(prev->location(), "previous declaration is '{}'", prev);
-    return false;
-  }
-  return true;
-}
-
-} // namespace
-
 
 // Create a name binding for the declaration.
+//
+// If we've already found a declaration in this scope,
+// then try to overload it.
 //
 // Note that `str` must be a unique object in the system. This
 // can be guaranteed by getting the string as an identifier from
 // the symbol table.
-bool
-declare(String const* s, Decl const* d)
+Overload const*
+declare(String const* n, Decl const* d)
 {
-  if (check_redeclaration(s, d)) {
-    current_scope().bind(s, d);
-    return true;
+  Scope* s = &current_scope();
+  
+  // If we already have a binding in this scope, then
+  // try to overload the given declaration. Note that
+  // this will emit diagnostics on failure.
+  Scope::Binding* b = env_.binding(n);
+  if (b && b->scope == s) {
+    if (overload_declaration(b->ovl, d))
+      return b->ovl;
+    else
+      return nullptr;
   }
-  return false;
+  
+  // Otherwise, create a new binding.
+  return s->bind(n, d);
 }
 
 
 // Declare the variable with the given name into
 // the current scope.
-bool 
+Overload const*
 declare(Decl const* d)
 {
   return declare(d->name(), d);
@@ -225,7 +203,7 @@ declare(Decl const* d)
 
 // Returns the declaration bound `name` or nullptr if
 // no such declaration exists.
-Decl const*
+Overload const*
 lookup(String const* name)
 {
   return current_scope().lookup(name);
@@ -234,10 +212,45 @@ lookup(String const* name)
 
 // Returns the declaration bound to the given name, or nullptr
 // if no such declaration exists.
-Decl const*
+Overload const*
 lookup(char const* name)
 {
   return lookup(get_string(name));
+}
+
+
+// -------------------------------------------------------------------------- //
+//                       Printing and debugging
+
+
+// Print all of the declarations whose visibility does not
+// exceed `s`.
+void
+print(Printer& p, Scope const* s)
+{
+  for (String const* n : *s) {
+    Scope::Binding const* b = env_.binding(n);
+    print(p, b->ovl);
+  }
+}
+
+
+void
+print_name_bindings()
+{
+  Printer p(default_print_stream());
+  print_name_bindings(p);
+}
+
+
+// Print all of the declarations visible from `s`.
+void
+print_name_bindings(Printer& p)
+{
+  for (auto const& x : env_) {
+    Scope::Binding const* b = x.second;
+    print(p, b->ovl);
+  }
 }
 
 
