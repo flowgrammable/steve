@@ -16,6 +16,7 @@ get_expr_name(Expr_kind k)
 {
   switch (k) {
     case id_expr: return "id_expr";
+    case lookup_expr: return "lookup_expr";
     case value_expr: return "value_expr";
     case unary_expr: return "unary_expr";
     case binary_expr: return "binary_expr";
@@ -46,8 +47,31 @@ Id_expr::name() const
 }
 
 
+// FIXME: What is the type of an overload set. For now, its
+// set to the void type. 
+Lookup_expr::Lookup_expr(Location loc, String const* s)
+  : Expr(node_kind, loc, get_void_type()), first(s)
+{ }
+
+
 // -------------------------------------------------------------------------- //
 //                            Expression builders
+
+
+// Return a declration expression.
+Id_expr*
+make_id_expr(Location loc, Decl const* d)
+{
+  return new Id_expr(loc, d);
+}
+
+
+// Returns a new unresolved lookup expression.
+Lookup_expr*
+make_lookup_expr(Location loc, String const* s)
+{
+  return new Lookup_expr(loc, s);
+}
 
 
 // Create boolean expression with value `b`.
@@ -75,14 +99,6 @@ Value_expr*
 make_value_expr(Location loc, Type const* t, Value const& n)
 {
   return gc().make<Value_expr>(loc, t, n);
-}
-
-
-// Return a declration expression.
-Id_expr*
-make_id_expr(Location loc, Decl const* d)
-{
-  return gc().make<Id_expr>(loc, d);
 }
 
 
@@ -270,7 +286,7 @@ make_call_expr(Location loc, Expr const* f, Expr_seq const& args)
 Tuple_expr*
 make_tuple_expr(Location loc, Expr_seq const& es)
 {
-  if (Maybe<Type> t = type_tuple_expr(es))
+  if (Required<Type> t = type_tuple_expr(es))
     return gc().make<Tuple_expr>(loc, *t, es);
   else
     return make_error_node<Tuple_expr>();
@@ -280,13 +296,13 @@ make_tuple_expr(Location loc, Expr_seq const& es)
 // Make a member expression.
 //
 // TODO: We could actually reduce 'n' to remove redundant
-// compile-time processing. Maybe do this in a FE optimization
+// compile-time processing. Required do this in a FE optimization
 // pass since nested indexes can be folded to a single offset
 // expression (which we don't have yet).
 Index_expr*
 make_index_expr(Location loc, Expr const* e, Expr const* n)
 {
-  if (Maybe<Type> t = type_index_expr(e, n))
+  if (Required<Type> t = type_index_expr(e, n))
     return gc().make<Index_expr>(loc, *t, e, n);
   else
     return make_error_node<Index_expr>();
@@ -315,7 +331,7 @@ make_index_expr(Location loc, Member_expr const* e)
 Member_expr*
 make_member_expr(Location loc, Expr const* e, Expr const* n)
 {
-  if (Maybe<Type> t = type_member_expr(e, n))
+  if (Required<Type> t = type_member_expr(e, n))
     return gc().make<Member_expr>(loc, *t, e, n);
   else
     return make_error_node<Member_expr>();
@@ -389,6 +405,7 @@ has_enum_type(Expr const* e)
 // -------------------------------------------------------------------------- //
 //                               Garbage collection
 
+// FIXME: Make all of this go away...
 void
 mark(Expr const* e)
 {
@@ -406,6 +423,7 @@ mark(Expr const* e)
     case lengthof_expr: return mark(cast<Convert_expr>(e));
     case offsetof_expr: return mark(cast<Convert_expr>(e));
     case action_expr: return mark(cast<Action_expr>(e));
+    default: return;
   }
   lingo_unreachable("unevaluated node '{}'", e->node_name());
 }

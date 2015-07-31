@@ -631,6 +631,14 @@ is_object_type(Type const* t)
 // -------------------------------------------------------------------------- //
 //                               Type accessors
 
+// Returns a type that denotes an error.
+inline Type const* 
+get_error_type()
+{
+  return make_error_node<Type>();
+}
+
+
 Kind_type const*      get_kind_type();
 Void_type const*      get_void_type();
 Boolean_type const*   get_boolean_type();
@@ -658,6 +666,7 @@ Tuple_type const*     get_tuple_type(Record_type const*);
 Record_type const*    get_record_type(Decl const*);
 Variant_type const*   get_variant_type(Decl const*);
 Enum_type const*      get_enum_type(Decl const*);
+Type const*           get_user_defined_type(Decl const*);
 Match_type const*     get_match_type(Expr const*, Match_seq const&);
 Match_term const*     make_match_term(Expr const*, Type const*);
 Seq_type const*       get_seq_type(Type const*, Expr const*);

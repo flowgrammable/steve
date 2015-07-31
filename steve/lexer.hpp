@@ -4,6 +4,9 @@
 #ifndef STEVE_LEXER_HPP
 #define STEVE_LEXER_HPP
 
+// The lexer module defines the lexical analysis phase of
+// the steve compiler.
+
 #include "steve/prelude.hpp"
 #include "steve/token.hpp"
 
@@ -13,11 +16,10 @@
 namespace steve
 {
 
-// The Lexer is a function that maps a character stream into
-// tokens. Each call to an object of this type returns the
-// next token in the stream in the underlying character stream.
+// The Lexer class defines the actions taken whenever
+// a sequence of characters as a particular kind of token.
 //
-// Each successive token is cached by the lexer.
+// TODO: Implement lexing for precise integer types.
 struct Lexer
 {
   using argument_type = char;
@@ -38,8 +40,6 @@ struct Lexer
   Token on_expected(char const*);
   Token on_expected(Location, char const*);
   Token on_expected(Location, char const*, Token const&);
-
-  Token_list tokens;
 };
 
 

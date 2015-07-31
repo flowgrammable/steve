@@ -38,19 +38,19 @@ test_1()
 
 
   Overload ovl {f1};
-  overload_declaration(&ovl, f2);
+  overload_decl(&ovl, f2);
   print(&ovl);
   lingo_assert(ovl.size() == 2);
 
-  bool b1 = overload_declaration(&ovl, f2); // error: redefinition of f2
+  bool b1 = overload_decl(&ovl, f2); // error: redefinition of f2
   lingo_assert(!b1);
   lingo_assert(ovl.size() == 2);
   
-  bool b2 = overload_declaration(&ovl, f3); // error: vary in return type
+  bool b2 = overload_decl(&ovl, f3); // error: vary in return type
   lingo_assert(!b2);
   lingo_assert(ovl.size() == 2);
 
-  bool b3 = overload_declaration(&ovl, v); // error: different kind
+  bool b3 = overload_decl(&ovl, v); // error: different kind
   lingo_assert(!b3);
   lingo_assert(ovl.size() == 2);
 }

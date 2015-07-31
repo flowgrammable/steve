@@ -39,6 +39,7 @@ void print(Printer&, Until_type const*);
 
 void print(Printer&, Expr const*);
 void print(Printer&, Id_expr const*);
+void print(Printer&, Lookup_expr const*);
 void print(Printer&, Value_expr const*);
 void print(Printer&, Unary_expr const*);
 void print(Printer&, Binary_expr const*);

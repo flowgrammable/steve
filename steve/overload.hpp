@@ -30,7 +30,7 @@ struct Overload : std::vector<Decl const*>
 // -------------------------------------------------------------------------- //
 //                               Declarations
 
-bool overload_declaration(Overload*, Decl const*);
+bool overload_decl(Overload*, Decl const*);
 
 
 void print(Printer&, Overload const*);

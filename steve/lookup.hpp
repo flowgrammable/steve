@@ -136,6 +136,8 @@ Overload const* declare(Decl const*);
 Overload const* lookup(String const*);
 Overload const* lookup(char const*);
 
+Decl const* lookup_decl(String const*);
+
 
 // ---------------------------------------------------------------------------//
 //                            Printing

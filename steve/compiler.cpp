@@ -3,6 +3,7 @@
 
 #include "steve/compiler.hpp"
 #include "steve/token.hpp"
+#include "steve/parser.hpp"
 
 
 namespace steve
@@ -11,6 +12,7 @@ namespace steve
 Compiler::Compiler()
 {
   init_tokens();
+  init_grammar();
 }
 
 Compiler::~Compiler()

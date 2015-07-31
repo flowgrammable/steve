@@ -117,7 +117,7 @@ get_constant_type(Type const* t)
 {
   if (!is_object_type(t)) {
     error("'{}' is not an object type");
-    return nullptr;
+    return make_error_node<Constant_type>();
   }
 
   // const const T == const T
@@ -133,7 +133,7 @@ get_reference_type(Type const* t)
 {
   if (!is_object_type(t)) {
     error("cannot form a reference to '{}'");
-    return nullptr;
+    return make_error_node<Reference_type>();
   }
 
   // ref ref T == ref T
@@ -215,6 +215,26 @@ Enum_type const*
 get_enum_type(Decl const* d)
 {
   return enum_.make(d);
+}
+
+
+// Get a user-defined type for the given declaration. If `d` does
+// not name a type, emit an error and return nullptr.
+Type const*
+get_user_defined_type(Decl const* d)
+{
+  switch (d->kind()) {
+    case record_decl:
+      return get_record_type(cast<Record_decl>(d));
+    case variant_decl:
+      return get_variant_type(cast<Variant_decl>(d));
+    case enum_decl:
+      return get_enum_type(cast<Enum_decl>(d));
+    default:
+      error("'{}' does not name a type", d);
+      break;
+  }
+  return get_error_type();
 }
 
 

@@ -227,6 +227,9 @@ less(Expr const* a, Expr const* b)
       // be helpful in determining when they are less. Note
       // that different contexts may need different answers.
       return less(cast<Id_expr>(a), cast<Id_expr>(b));
+
+    case lookup_expr: 
+      return less(cast<Lookup_expr>(a), cast<Lookup_expr>(b));
     
     case unary_expr: 
       return less(cast<Unary_expr>(a), cast<Unary_expr>(b));

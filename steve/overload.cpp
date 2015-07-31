@@ -105,7 +105,7 @@ can_overload(Decl const* d1, Decl const* d2)
 // `decl` can be overloaded the declaration is added to `ovl`,
 // otherwise no action is takne.
 bool
-overload_declaration(Overload* ovl, Decl const* decl)
+overload_decl(Overload* ovl, Decl const* decl)
 {
   // Check that ovl will be a distinct overload.
   for (Decl const* d : *ovl) {

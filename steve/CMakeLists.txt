@@ -23,6 +23,7 @@ add_library(steve STATIC
   length.cpp
   token.cpp
   lexer.cpp
+  parser.cpp
   compiler.cpp)
 
 

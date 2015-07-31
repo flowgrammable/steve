@@ -177,7 +177,7 @@ declare(String const* n, Decl const* d)
   // this will emit diagnostics on failure.
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
-    if (overload_declaration(b->ovl, d))
+    if (overload_decl(b->ovl, d))
       return b->ovl;
     else
       return nullptr;
@@ -204,18 +204,35 @@ declare(Decl const* d)
 // Returns the declaration bound `name` or nullptr if
 // no such declaration exists.
 Overload const*
-lookup(String const* name)
+lookup(String const* n)
 {
-  return current_scope().lookup(name);
+  return current_scope().lookup(n);
 }
 
 
 // Returns the declaration bound to the given name, or nullptr
 // if no such declaration exists.
 Overload const*
-lookup(char const* name)
+lookup(char const* n)
 {
-  return lookup(get_string(name));
+  return lookup(get_string(n));
+}
+
+
+// Looks up the single declaration corresponding to the given
+// name. If there are multiple declarations associated with
+// the name, emit a diagnostic and return nullptr.
+Decl const*
+lookup_decl(String const* n)
+{
+  if (Overload const* ovl = lookup(n)) {
+    if (ovl->is_singleton())
+      return ovl->front();
+
+    // FIXME: Write out declarations.
+    error("resolution of '{}' is ambiguous", n);
+  }
+  return nullptr;
 }
 
 

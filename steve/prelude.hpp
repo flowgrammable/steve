@@ -73,6 +73,7 @@ struct Prop;
 
 struct Expr;
 struct Id_expr;
+struct Lookup_expr;
 struct Value_expr;
 struct Unary_expr;
 struct Binary_expr;
@@ -113,19 +114,19 @@ struct Value;
 struct Match_term;
 
 // A sequence of types.
-using Type_seq = std::vector<Type const*>;
+using Type_seq = Sequence<Type>;
 
 
 // A sequence of expressions.
-using Expr_seq = std::vector<Expr const*>;
+using Expr_seq = Sequence<Expr>;
 
 
 // A sequence of declarations.
-using Decl_seq = std::vector<Decl const*>;
+using Decl_seq = Sequence<Decl>;
 
 
 // A list of statements.
-using Stmt_seq = std::vector<Stmt const*>;
+using Stmt_seq = Sequence<Stmt>;
 
 
 } // namespace steve

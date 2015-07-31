@@ -88,6 +88,7 @@ precedence(Expr const* e)
   lingo_assert(is_valid_node(e));
   switch (e->kind()) {
     case id_expr:
+    case lookup_expr:
     case value_expr:
     case tuple_expr:
       // Literals, names, tuples are primary expressions.
@@ -380,6 +381,13 @@ print(Printer& p, Expr const* e)
 
 void
 print(Printer& p, Id_expr const* e)
+{
+  print(p, e->name());
+}
+
+
+void
+print(Printer& p, Lookup_expr const* e)
 {
   print(p, e->name());
 }

@@ -12,6 +12,8 @@ get_token_name(Token_kind k)
   switch (k) {
     case alias_kw: return "alias_kw";
     case bool_kw: return "bool_kw";
+    case buffer_kw: return "buffer_kw";
+    case const_kw: return "const_kw";
     case do_kw: return "do_kw";
     case decode_kw: return "decode_kw";
     case def_kw: return "def_kw";
@@ -19,22 +21,27 @@ get_token_name(Token_kind k)
     case else_kw: return "else_kw";
     case enum_kw: return "enum_kw";
     case extract_kw: return "extract_kw";
+    case for_kw: return "for_kw";
     case if_kw: return "if_kw";
     case int_kw: return "int_kw";
     case import_kw: return "import_kw";
     case long_kw: return "long_kw";
     case match_kw: return "match_kw";
+    case ref_kw: return "ref_kw";
     case record_kw: return "record_kw";
     case requires_kw: return "requires_kw";
+    case seq_kw: return "seq_kw";
     case short_kw: return "short_kw";
     case table_kw: return "table_kw";
     case uint_kw: return "uint_kw";
     case ulong_kw: return "ulong_kw";
+    case until_kw: return "until_kw";
     case ushort_kw: return "ushort_kw";
     case using_kw: return "using_kw";
     case var_kw: return "var_kw";
     case variant_kw: return "variant_kw";
     case void_kw: return "void_kw";
+    case while_kw: return "while_kw";
 
     case intn_tok: return "intn_tok";
     case uintn_tok: return "uintn_tok";
@@ -53,6 +60,8 @@ get_token_spelling(Token_kind k)
   switch (k) {
     case alias_kw: return "alias";
     case bool_kw: return "bool";
+    case buffer_kw: return "buffer";
+    case const_kw: return "const";
     case do_kw: return "do";
     case decode_kw: return "decode";
     case def_kw: return "def";
@@ -65,17 +74,21 @@ get_token_spelling(Token_kind k)
     case import_kw: return "import";
     case long_kw: return "long";
     case match_kw: return "match";
+    case ref_kw: return "ref";
     case record_kw: return "record";
     case requires_kw: return "requires";
+    case seq_kw: return "seq";
     case short_kw: return "short";
     case table_kw: return "table";
     case uint_kw: return "uint";
     case ulong_kw: return "ulong";
+    case until_kw: return "until";
     case ushort_kw: return "ushort";
     case using_kw: return "using";
     case var_kw: return "var";
     case variant_kw: return "variant";
     case void_kw: return "void";
+    case while_kw: return "while";
     default: break;
   }
   lingo_unreachable("unhandled token kind ({})", (int)k);

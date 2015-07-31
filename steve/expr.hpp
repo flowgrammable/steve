@@ -11,6 +11,7 @@
 #include "steve/value.hpp"
 #include "steve/op.hpp"
 #include "steve/convert.hpp"
+#include "steve/overload.hpp"
 
 #include "lingo/integer.hpp"
 #include "lingo/node.hpp"
@@ -25,7 +26,8 @@ namespace steve
 // Different kinds of expressions in the core language.
 enum Expr_kind
 {
-  id_expr,       // references to declarations
+  id_expr,       // reference to a declaration
+  lookup_expr,   // reference to an unresolved lookup
   value_expr,    // A literal or computed constant expression
   unary_expr,    // unary operations: op e
   binary_expr,   // binary operations: e1 op e2
@@ -71,6 +73,9 @@ struct Expr
   Location    location() const  { return loc_; }
   Type const* type() const      { return type_; }
 
+  static Expr const* empty() { return nullptr; }
+  static Expr const* error() { return make_error_node<Expr>(); }
+
   Expr_kind   kind_;
   Location    loc_;
   Type const* type_;
@@ -87,6 +92,23 @@ struct Id_expr : Expr, Expr_impl<id_expr>
   Decl const*   decl() const { return decl_; }
 
   Decl const* decl_;
+};
+
+
+// A lookup expr is an unresolved lookup. These are 
+// during translation to indicate the presence of an 
+// name that that does not refer to a single declaration.
+// A name may refer to mulitple declarations, or it
+// may refer to no declarations (but found via ADL).
+//
+// TODO: What is the type of a lookup expr.
+struct Lookup_expr : Expr, Expr_impl<lookup_expr>
+{
+  Lookup_expr(Location, String const*);
+
+  String const* name() const { return first; }
+
+  String const* first;
 };
 
 
@@ -187,6 +209,8 @@ struct Tuple_expr : Expr, Expr_impl<tuple_expr>
 //
 // Here, `e` must have either record or tuple type with
 // at least one member.
+//
+// TODO: Must e2 be constant?
 struct Index_expr : Expr, Expr_impl<index_expr>
 {
   Index_expr(Location loc, Type const* t, Expr const* e, Expr const* n)
@@ -207,9 +231,10 @@ struct Index_expr : Expr, Expr_impl<index_expr>
 //    (r1.m1).m2 // record member access
 //    (t1.1).2   // tuple member access
 //
-// We represent a member access expression as a pair of subexpressions:
-// one that computes the object being accessed (possibly another
-// member expression) and an id expression
+// We represent a member access expression as a pair of 
+// subexpressions: one that computes the object being 
+// accessed (possibly another member expression) and an 
+// id expression.
 struct Member_expr : Expr, Expr_impl<member_expr>
 {
   Member_expr(Location loc, Type const* t, Expr const* e, Expr const* s)
@@ -341,6 +366,7 @@ apply(T const* e, F fn)
   lingo_assert(is_valid_node(e));
   switch (e->kind()) {
     case id_expr: return fn(cast<Id_expr>(e));
+    case lookup_expr: return fn(cast<Lookup_expr>(e));
     case value_expr: return fn(cast<Value_expr>(e));
     case unary_expr: return fn(cast<Unary_expr>(e));
     case binary_expr: return fn(cast<Binary_expr>(e));
@@ -364,10 +390,20 @@ apply(T const* e, F fn)
 // To the greatest extent possible, these functions attempt to 
 // resolve the type of the expression from those arguments.
 
+
+// Returns a node that can be used to indicate errors in
+// expressions.
+inline Expr const* 
+get_error_expr()
+{
+  return make_error_node<Expr>();
+}
+
+Id_expr*       make_id_expr(Location, Decl const*);
+Lookup_expr*   make_lookup_expr(Location, String const*);
 Value_expr*    make_bool_expr(Location, bool);
 Value_expr*    make_int_expr(Location, Integer const&);
 Value_expr*    make_value_expr(Location, Type const*, Value const&);
-Id_expr*       make_id_expr(Location, Decl const*);
 Unary_expr*    make_unary_expr(Location, Unary_op, Expr const*);
 Binary_expr*   make_binary_expr(Location, Binary_op, Expr const*, Expr const*);
 Call_expr*     make_call_expr(Location, Expr const*, Expr_seq const&);
