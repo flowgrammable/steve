@@ -35,6 +35,10 @@ enum Conversion_kind
 struct Converted_args : Expr_seq
 {
   using Expr_seq::Expr_seq;
+
+  // Contextually convert to `true` when this is empty or
+  // has no null elements.
+  explicit operator bool() const { return empty() || front() != nullptr; }
 };
 
 

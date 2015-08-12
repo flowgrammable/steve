@@ -114,19 +114,19 @@ struct Value;
 struct Match_term;
 
 // A sequence of types.
-using Type_seq = Sequence<Type>;
+using Type_seq = std::vector<Type const*>;
 
 
 // A sequence of expressions.
-using Expr_seq = Sequence<Expr>;
+using Expr_seq = std::vector<Expr const*>;
 
 
 // A sequence of declarations.
-using Decl_seq = Sequence<Decl>;
+using Decl_seq = std::vector<Decl const*>;
 
 
 // A list of statements.
-using Stmt_seq = Sequence<Stmt>;
+using Stmt_seq = std::vector<Stmt const*>;
 
 
 } // namespace steve

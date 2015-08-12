@@ -11,8 +11,13 @@
 #include "steve/token.hpp"
 #include "steve/type.hpp"
 
+#include "lingo/parsing.hpp"
+
 namespace steve
 {
+
+// A sequence of function arguments.
+using Arg_seq = Sequence_term<Expr>;
 
 
 // The parser is responsible for constructing syntax nodes
@@ -37,7 +42,7 @@ struct Parser
   Expr const* on_boolean_expr(Token const*);
   Expr const* on_integer_expr(Token const*);
   Expr const* on_tuple_expr(Token const*, Expr_seq const&);
-  Expr const* on_call_expr(Token const*, Expr const*, Expr_seq const&);
+  Expr const* on_call_expr(Token const*, Expr const*, Arg_seq const*);
   Expr const* on_member_expr(Token const*, Expr const*, Expr const*);
   Expr const* on_unary_expr(Token const*, Expr const*);
   
