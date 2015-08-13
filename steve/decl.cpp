@@ -247,7 +247,7 @@ make_extracts_decl(Location loc, Expr const* e)
 {
   lingo_assert(is<Field_expr>(e));
   Field_expr const* f = as<Field_expr>(e);
-  return gc().make<Extracts_decl>(loc, resolve_field_name(f), e->type(), e);
+  return gc().make<Extracts_decl>(loc, f->name(), e->type(), e);
 }
 
 
@@ -260,7 +260,7 @@ make_rebind_decl(Location loc, Expr const* e1, Expr const* e2)
 
   Field_expr const* f = as<Field_expr>(e2);
 
-  return gc().make<Rebind_decl>(loc, resolve_field_name(f), e1->type(), e1, e2);
+  return gc().make<Rebind_decl>(loc, f->name(), e1->type(), e1, e2);
 }
 
 
