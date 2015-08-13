@@ -61,7 +61,6 @@ struct Scope : std::vector<String const*>
   ~Scope();
 
   Scope_kind kind() const  { return kind_; }
-  
   Overload const* bind(String const*, Decl const*);
   Overload const* lookup(String const*) const;
 

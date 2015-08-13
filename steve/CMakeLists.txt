@@ -21,6 +21,8 @@ add_library(steve STATIC
   debug.cpp
   net.cpp
   length.cpp
+  builtin.cpp
+  lower.cpp
   token.cpp
   lexer.cpp
   parser.cpp

@@ -5,8 +5,6 @@
 #include "steve/builder.hpp"
 #include "steve/lookup.hpp"
 
-#include "lingo/parsing.hpp"
-
 namespace steve
 {
 
@@ -194,8 +192,10 @@ parse_tuple_expr(Parser& p, Token_stream& ts)
 Expr const*
 parse_nested_expr(Parser& p, Token_stream& ts)
 {
-  Parse_fn parse = parse_expr;
-  return parse_paren_enclosed(p, ts, parse);
+  Parse_fn parse = parse_expr; // Select an overload.
+  if (Required<Enclosed_term<Expr>> e = parse_paren_enclosed(p, ts, parse))
+    return e->term();
+  return make_error_node<Expr>();
 }
 
 
@@ -257,10 +257,10 @@ parse_argument(Parser& p, Token_stream& ts)
 // Parse an argument list.
 //
 //    function-argument-list ::= list(function-argument)
-inline Expr_seq
+inline Arg_seq const*
 parse_argument_list(Parser& p, Token_stream& ts)
 {
-  return parse_list(p, ts, parse_argument);
+  return parse_list(p, ts, comma_tok, parse_argument);
 }
 
 
@@ -273,9 +273,11 @@ parse_argument_list(Parser& p, Token_stream& ts)
 Expr const*
 parse_call_expr(Parser& p, Token_stream& ts, Expr const* expr) 
 {
+  using Arg_list = Enclosed_term<Arg_seq>;
+
   Token const* tok = ts.begin(); 
-  if (Optional<Expr_seq> args = parse_paren_enclosed(p, ts, parse_argument_list))
-    return p.on_call_expr(tok, expr, *args);
+  if (Required<Arg_list> args = parse_paren_enclosed(p, ts, parse_argument_list))
+    return p.on_call_expr(tok, expr, args->term());
   else
     return get_error_expr();
 }
@@ -362,14 +364,14 @@ parse_unary_op(Parser& p, Token_stream& ts)
 inline Expr const*
 parse_unary_expr(Parser& p, Token_stream& ts)
 {
-  Token const* tok = ts.begin();
-  if (Required<Expr> e = parse_prefix_term(p, ts, parse_unary_op, parse_postfix_expr))
-    return p.on_unary_expr(tok, *e);
-  else {
-    // FIXME: This isn't right. If e is an error, then
-    // return that error.
-    return nullptr;
-  }
+  auto op = parse_unary_op;
+  auto sub = parse_postfix_expr;
+  auto act = [&](Token const* tok, Expr const* e)
+  {
+    return p.on_unary_expr(tok, e);
+  };
+
+  return parse_prefix_term(p, ts, op, sub, act);
 }
 
 
@@ -475,11 +477,11 @@ Parser::on_tuple_expr(Token const* tok, Expr_seq const& elems)
 
 
 Expr const*
-Parser::on_call_expr(Token const* tok, Expr const* fn, Expr_seq const& args)
+Parser::on_call_expr(Token const* tok, Expr const* fn, Arg_seq const* args)
 {
   // FIXME: If fn is a lookup-expr, then we need to perform
   // overload resolution.
-  return make_call_expr(tok->location(), fn, args);
+  return make_call_expr(tok->location(), fn, *args);
 }
 
 

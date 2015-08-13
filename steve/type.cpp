@@ -39,6 +39,7 @@ get_type_name(Type_kind k)
     case until_type: return "until_type";
     case table_type: return "table_type";
     case flow_type: return "flow_type";
+    case context_type: return "context_type";
   }
   lingo_unreachable("unhandled type kind ({})", (int)k);
 }
@@ -74,11 +75,14 @@ Unique_factory<Tuple_type, Type_less> tuple_;
 Unique_factory<Record_type, Type_less> record_;
 Unique_factory<Variant_type, Type_less> variant_;
 Unique_factory<Enum_type, Type_less> enum_;
-Unique_factory<Match_type, Type_less> mactch_;
+Unique_factory<Match_type, Type_less> match_;
+Unique_factory<Table_type, Type_less> table_;
+Unique_factory<Flow_type, Type_less> flow_;
 Unique_factory<If_type, Type_less> if_;
 Unique_factory<Seq_type, Type_less> seq_;
 Unique_factory<Buffer_type, Type_less> buffer_;
 Unique_factory<Until_type, Type_less> until_;
+Unique_factory<Context_type, Type_less> context_;
 
 
 } // namespace
@@ -230,6 +234,10 @@ get_user_defined_type(Decl const* d)
       return get_variant_type(cast<Variant_decl>(d));
     case enum_decl:
       return get_enum_type(cast<Enum_decl>(d));
+    case table_decl:
+      return get_table_type(cast<Table_decl>(d));
+    case flow_decl:
+      return get_flow_type(cast<Flow_decl>(d));
     default:
       error("'{}' does not name a type", d);
       break;
@@ -250,6 +258,20 @@ Match_type const*
 get_match_type(Expr const* e, Match_seq const& m)
 {
   return new Match_type(e, m);
+}
+
+
+Table_type const*
+get_table_type(Decl const* d)
+{
+  return table_.make(d);
+}
+
+
+Flow_type const*
+get_flow_type(Decl const* d)
+{
+  return flow_.make(d);
 }
 
 
@@ -278,6 +300,33 @@ Until_type const*
 get_until_type(Expr const* e, Type const* t)
 {
   return new Until_type(e, t);
+}
+
+
+// FIXME: incomplete implementation
+// figure out the rest of the steve context type which can be translated to C
+Context_type const*
+get_context_type(Integer const& mtu, Integer const& max_meta)
+{
+  // Int type buffers?
+  // FIXME: figure out how we even write to these in steve syntax
+  Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(mtu));
+  Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(max_meta));
+
+  Member_decl const* packet = make_member_decl(get_identifier("packet"), pkt_buf);
+  Member_decl const* metadata = make_member_decl(get_identifier("metadata"), meta_buf);
+
+  return context_.make(packet, metadata);
+}
+
+
+// Fixed size on both
+// FIXME: This probably shouldn't be the case
+// Need to figure out the exact access patterns for a context type
+Context_type const*
+get_context_type()
+{
+  return get_context_type(Integer(1500), Integer(2000));
 }
 
 
@@ -403,6 +452,46 @@ type_member_expr(Expr const* e, Expr const* s)
   return mem->type();
 }
 
+
+Type const*
+type_field_expr(Expr const* r, Expr const* f)
+{
+  // 'r' is either a record identifier
+  // or it is an expression that has record type
+  Decl const* rd; 
+  
+  if (is<Id_expr>(r)) {
+    rd = cast<Id_expr>(r)->decl();
+  }
+  else if(Record_type const* rt = as<Record_type>(r->type())) {
+    rd = rt->decl();
+  }
+  else {
+    error(r->location(), "invalid term '{}' is not a record identifier nor record type", r);
+    return nullptr;
+  }
+
+  // This must be a record decl
+  lingo_assert(is<Record_decl>(rd));
+  Record_decl const* rec = cast<Record_decl>(rd);
+
+  if (!is<Id_expr>(f)) {
+    error(f->location(), "invalid member selector '{}'", f);
+    return nullptr;
+  }
+  
+  Decl const* mem = cast<Id_expr>(f)->decl();
+  
+  // The declaration had better be a member. Otherwise the program
+  // is internally inconsistent: lookup of a member name returned a
+  // non-member.
+  lingo_assert(is<Member_decl>(mem));
+  lingo_assert(has_member(rec, cast<Member_decl>(mem)));
+
+  return mem->type();
+}
+
+
 // -------------------------------------------------------------------------- //
 //                      Statement Checking 
 
@@ -431,18 +520,12 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
   Type const* t = e->type();
   bool ok = true;
 
-  std::set<Stmt const*, Case_less> cases(sq.begin(), sq.end());
+  std::set<Stmt const*, Case_less> cases;
 
-  // TODO: Report each duplicate entry. This can be done by
-  // inserting each element in turn.
-  if (sq.size() > cases.size())
-    error(Location::none, "duplicate match cases found");
-
-  // Check that the type of each case label has the type
-  // of the condition.
   for (Stmt const* s : sq) {
     lingo_assert(is<Case_stmt>(s));
     Case_stmt const* c = cast<Case_stmt>(s);
+
     Expr const* lab = c->label();
     if (lab->type() != t) {
       error(Location::none, "'{}' (of type '{}') does not have the "
@@ -450,10 +533,53 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
                             lab, lab->type(), e, t);
       ok = false;
     }
+
+    auto ret = cases.insert(c);
+    if (ret.second == false) {
+      error(Location::none, "Duplicate test condition found in case '{}'.", c);
+      ok = false;
+    }
   }
 
   return ok;
 }
+
+
+bool
+check_do_decode_stmt(Expr const* e)
+{
+  lingo_assert(is<Id_expr>(e));
+
+  // If the id decl does not point to
+  // a decoder decl, than there is something wrong
+  Decl const* d = as<Id_expr>(e)->decl();
+
+  if(!is<Decode_decl>(d)) {
+    error(e->location(), "'{}' does not refer to a decode decl.", d);
+    return false;
+  }
+
+  return true;
+}
+
+
+bool
+check_do_table_stmt(Expr const* e)
+{
+  lingo_assert(is<Id_expr>(e));
+
+  // If the id decl does not point to
+  // a decoder decl, than there is something wrong
+  Decl const* d = as<Id_expr>(e)->decl();
+
+  if(!is<Table_decl>(d)) {
+    error(e->location(), "'{}' does not refer to a table decl.", d);
+    return false;
+  }
+
+  return true;
+}
+
 
 // -------------------------------------------------------------------------- //
 //                            Declaration checking
@@ -640,7 +766,6 @@ check_return_type(Stmt const* s, Type const* t)
     case empty_stmt:
     case expr_stmt:
     case decl_stmt:
-    case do_stmt:
     case instruct_stmt:
       // These do not indicate return types.
       return nullptr;
@@ -672,6 +797,22 @@ check_function_decl(Type const* t, Stmt const* s)
     error(Location::none, "no return statement in non-void function");
     return false;
   }
+
+  return true;
+}
+
+
+// Check each stmt made in the decode decl
+// Perform local checks. Other checks related
+// to prior stages in the the pipeline
+// must be made later once all decoders are registered
+bool
+check_decode_decl(Type const* t, Stmt const* s)
+{
+  // FIXME: Check all statements within the decoder, not
+  // just a match statement.
+
+  lingo_assert(is<Block_stmt>(s));
 
   return true;
 }

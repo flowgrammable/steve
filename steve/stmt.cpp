@@ -99,7 +99,6 @@ mark(Stmt const* s)
   case block_stmt: return mark(cast<Block_stmt>(s));
   case match_stmt: return mark(cast<Match_stmt>(s));
   case case_stmt: return mark(cast<Case_stmt>(s));
-  case do_stmt: return mark(cast<Do_stmt>(s));
   case instruct_stmt: return mark(cast<Instruct_stmt>(s));
   default:
     lingo_unreachable("unevaluated node '{}'", s->node_name());

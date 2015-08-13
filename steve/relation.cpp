@@ -156,6 +156,10 @@ less(Type const* a, Type const* b)
       // Ground types are equivalent.
       return false;
 
+    // FIXME: there should only ever be one context type
+    case context_type:
+      return less(cast<Context_type>(a), cast<Context_type>(b));
+
     case integer_type:
       return less(cast<Integer_type>(a), cast<Integer_type>(b));
     
@@ -203,6 +207,7 @@ less(Type const* a, Type const* b)
 
     case flow_type:
       return less_udt(cast<Flow_type>(a), cast<Flow_type>(b));
+
   }  
   lingo_unreachable("unhandled type '{}'", a->node_name());
 }
@@ -249,6 +254,9 @@ less(Expr const* a, Expr const* b)
     case member_expr:
       return less(cast<Member_expr>(a), cast<Member_expr>(b));
 
+    case field_expr:
+      return less(cast<Field_expr>(a), cast<Field_expr>(b));
+
     case convert_expr:
       return less(cast<Convert_expr>(a), cast<Convert_expr>(b));
 
@@ -258,8 +266,12 @@ less(Expr const* a, Expr const* b)
     case offsetof_expr:
       return less(cast<Offsetof_expr>(a), cast<Offsetof_expr>(b));
 
-    case action_expr:
-      return less(cast<Action_expr>(a), cast<Action_expr>(b));
+    case headerof_expr:
+      return less(cast<Headerof_expr>(a), cast<Headerof_expr>(b));
+
+    // FIXME: This isnt really correct
+    case do_expr:
+      return true;
   }
 
   lingo_unreachable("unhandled expression '{}'", a->node_name());

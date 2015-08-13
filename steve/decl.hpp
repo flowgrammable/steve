@@ -33,6 +33,8 @@ enum Decl_kind
   decode_decl,    // decode declarations
   table_decl,     // table declaration
   flow_decl,      // flow declaration
+  extracts_decl,  // extracts decl
+  rebind_decl,    // extracts <field> as <field>
 };
 
 
@@ -211,20 +213,19 @@ struct Enum_decl : Decl, Decl_impl<enum_decl>
 // A decode declaration  is defined for a type and gives 
 // conditions  to determine the next decoder in line.
 //
-// FIXME: What is the length? It seems unnecessary.
+// Stmt* s is a block stmt containing all stmt inside a decoder
+// Type* h is the header type 
 struct Decode_decl : Decl, Decl_impl<decode_decl>
 {
-  Decode_decl(Location loc, String const* n, Type const* t, Stmt const* m, Type const* h, Expr const* l)
-    : Decl(node_kind, loc, n, t), first(h), second(m), third(l)
+  Decode_decl(Location loc, String const* n, Type const* t, Stmt const* s, Type const* h)
+    : Decl(node_kind, loc, n, t), first(h), second(s)
   { }
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
-  Expr  const* length() const { return third; }
 
   Type const* first;
   Stmt const* second;
-  Expr const* third;
 };
 
 
@@ -235,18 +236,24 @@ struct Table_decl : Decl, Decl_impl<table_decl>
     : Decl(node_kind, loc, n, t), first(num), second(conds)
   { }
 
+  Table_decl(Location loc, String const* n, Type const* t, int num, Expr_seq const& conds, Decl_seq const& init)
+    : Decl(node_kind, loc, n, t), first(num), second(conds), third(init)
+  { }
+
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
+  Decl_seq const& body() const { return third; }
 
   int      first;
-  Expr_seq second;
+  Expr_seq const second;
+  Decl_seq const third;
 };
 
 
 // An entry within a flow table.
 struct Flow_decl : Decl, Decl_impl<flow_decl> 
 {
-  Flow_decl(Location loc, String const* n, Type const* t, Value const& prio, Expr_seq const& conds, Stmt const* i)
+  Flow_decl(Location loc, String const* n, Type const* t, Expr_seq const& conds, Value const& prio, Stmt const* i)
     : Decl(node_kind, loc, n, t), first(prio), second(conds), third(i)
   { }
   
@@ -255,10 +262,35 @@ struct Flow_decl : Decl, Decl_impl<flow_decl>
   Stmt const*     instructions() const { return third; }
 
   Value first;
-  Expr_seq second;
+  Expr_seq const second;
   Stmt const* third;
 };
 
+
+struct Extracts_decl : Decl, Decl_impl<extracts_decl>
+{
+  Extracts_decl(Location loc, String const* n, Type const* t, Expr const* e)
+    : Decl(node_kind, loc, n, t), first(e)
+  { }
+
+  Expr const* field() const { return first; }
+
+  Expr const* first;
+};
+
+
+struct Rebind_decl : Decl, Decl_impl<extracts_decl>
+{
+  Rebind_decl(Location loc, String const* n, Type const* t, Expr const* e1, Expr const* e2)
+    : Decl(node_kind, loc, n, t), first(e1), second(e2)
+  { }
+
+  Expr const* field1() const { return first; }
+  Expr const* field2() const { return second; }
+
+  Expr const* first;
+  Expr const* second;
+};
 
 
 // -------------------------------------------------------------------------- //
@@ -295,6 +327,8 @@ apply(T const* d, F fn)
     case decode_decl: return fn(cast<Decode_decl>(d));
     case table_decl: return fn(cast<Table_decl>(d));
     case flow_decl: return fn(cast<Flow_decl>(d));
+    case extracts_decl: return fn(cast<Extracts_decl>(d));
+    case rebind_decl: return fn(cast<Rebind_decl>(d));
   }
   lingo_unreachable("unhandled declaration '{}'", d->node_name());
 }
@@ -344,8 +378,12 @@ Record_decl*    make_record_decl(Location, String const*, Decl_seq const&);
 Variant_decl*   make_variant_decl(Location, String const*, Type_seq const&);
 Enum_decl*      make_enum_decl(Location, String const*, Type const*, Decl_seq const&);
 Constant_decl*  make_enumerator_decl(Location, String const*, Type const*, Expr const*, Decl const*);
-Decode_decl*    make_decode_decl(Location, String const*, Stmt const*, Type const*, Expr const*);
+Decode_decl*    make_decode_decl(Location, String const*, Type const*, Stmt const*);
 Enum_decl*      make_enumeration_decl(Location, String const*, Type const*, Decl_seq const&);
+Table_decl*     make_table_decl(Location, String const*, Expr_seq const&, Decl_seq const&);
+Flow_decl*      make_flow_decl(Location, Expr_seq const&, Value const, Stmt const*);
+Extracts_decl*  make_extracts_decl(Location, Expr const*);
+Rebind_decl*    make_rebind_decl(Location, Expr const*, Expr const*);
 
 
 // Make a new variable declaration. The type of the expression shall
@@ -415,9 +453,37 @@ make_variant_decl(String const* n, Type_seq const& t)
 
 // Make a decoder declaration.
 inline Decode_decl*
-make_decode_decl(String const* n, Type const* t, Stmt const* m, Expr const* d)
+make_decode_decl(String const* n, Type const* t, Stmt const* s)
 {
-  return make_decode_decl(Location::none, n, m, t, d);
+  return make_decode_decl(Location::none, n, t, s);
+}
+
+
+inline Table_decl*
+make_table_decl(String const* n, Expr_seq const& e, Decl_seq const& d)
+{
+  return make_table_decl(Location::none, n, e, d);  
+}
+
+
+inline Flow_decl*
+make_flow_decl(Expr_seq const& e, Value const v, Stmt const* s)
+{
+  return make_flow_decl(Location::none, e, v, s);
+}
+
+
+inline Extracts_decl*
+make_extracts_decl(Expr const* e)
+{
+  return make_extracts_decl(Location::none, e);
+}
+
+
+inline Rebind_decl*
+make_rebind_decl(Expr const* e1, Expr const* e2)
+{
+  return make_rebind_decl(Location::none, e1, e1);
 }
 
 

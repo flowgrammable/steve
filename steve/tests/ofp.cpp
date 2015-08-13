@@ -1,15 +1,9 @@
 #include "utility.hpp"
+#include "steve/lower.hpp"
+#include "steve/net.hpp"
+#include "steve/builtin.cpp"
 
 #include <iostream>
-
-// TODO: Implement this
-// Not sure what this should be yet
-// Should it be an expression or just a function?
-Expr*
-make_length_fn()
-{
-  return one();
-}
 
 
 Record_decl*
@@ -18,10 +12,24 @@ make_eth_header()
   Decl_seq mem {
     make_int_member("src"),
     make_int_member("dest"),
-    make_int_member("type")
+    make_int_member("type"),
   };
 
   return make_record("eth", mem);
+}
+
+// For testing nested field exprs
+Record_decl*
+make_ipv4_nested_header()
+{
+  Decl_seq mem {
+    make_int_member("src"),
+    make_int_member("dest"),
+    make_int_member("protocol"),
+    make_record_member("e", make_eth_header())
+  };
+
+  return make_record("ipv4", mem);
 }
 
 
@@ -31,7 +39,7 @@ make_ipv4_header()
   Decl_seq mem {
     make_int_member("src"),
     make_int_member("dest"),
-    make_int_member("protocol")
+    make_int_member("protocol"),
   };
 
   return make_record("ipv4", mem);
@@ -44,7 +52,7 @@ make_ipv6_header()
   Decl_seq mem {
     make_int_member("src"),
     make_int_member("dest"),
-    make_int_member("protocol")
+    make_int_member("protocol"),
   };
 
   return make_record("ipv6", mem);
@@ -90,6 +98,7 @@ make_match_cases()
 }
 
 
+
 Stmt*
 make_match_stmt(Record_decl const* rd, Decl const* var, int index)
 {
@@ -100,6 +109,13 @@ make_match_stmt(Record_decl const* rd, Decl const* var, int index)
   Expr* dec = make_member_expr(id(var), id(mx));
 
   return make_match(dec, cases);
+}
+
+
+Stmt*
+make_do(Do_kind k, Decode_decl const* d)
+{
+  return make_expr_stmt(make_do_expr(k, id(d)));
 }
 
 
@@ -119,38 +135,87 @@ test1()
   print("{}", tcp);
   print("{}", udp);
 
-  // construct variables internal to the decoder
-  Expr* init = make_tuple_expr({make_int(0), make_int(0), make_int(0)});
-  Decl* eth_v = make_var("internal", get_record_type(eth), init);
-  Decl* ipv4_v = make_var("internal", get_record_type(ipv4), init);
-  Decl* ipv6_v = make_var("internal", get_record_type(ipv6), init);
-  Decl* tcp_v = make_var("internal", get_record_type(tcp), init);
-  Decl* udp_v = make_var("internal", get_record_type(udp), init);
+  // make some field expressions
+  Expr* eth_src = make_field_expr(id(eth), id(eth->members()[0]));
+  Expr* eth_dst = make_field_expr(id(eth), id(eth->members()[1]));
+  Expr* eth_type = make_field_expr(id(eth), id(eth->members()[2]));
 
-  // make the match conditions
-  Stmt* eth_m = make_match_stmt(eth, eth_v, 2);
-  Stmt* ipv4_m = make_match_stmt(ipv4, ipv4_v, 2);
-  Stmt* ipv6_m = make_match_stmt(ipv6, ipv6_v, 2);
-  Stmt* tcp_m = make_match_stmt(tcp, tcp_v, 2);
-  Stmt* udp_m = make_match_stmt(udp, udp_v, 2);
+  Expr* ipv4_src = make_field_expr(id(ipv4), id(ipv4->members()[0]));
+  Expr* ipv4_dst = make_field_expr(id(ipv4), id(ipv4->members()[1]));
+  Expr* ipv4_proto = make_field_expr(id(ipv4), id(ipv4->members()[2]));
+
+  Expr* ipv6_src = make_field_expr(id(ipv6), id(ipv6->members()[0]));
+  Expr* ipv6_dst = make_field_expr(id(ipv6), id(ipv6->members()[1]));
+  Expr* ipv6_proto = make_field_expr(id(ipv6), id(ipv6->members()[2]));
+
+  Expr* tcp_src = make_field_expr(id(tcp), id(tcp->members()[0]));
+  Expr* tcp_dst = make_field_expr(id(tcp), id(tcp->members()[1]));
+  Expr* tcp_port = make_field_expr(id(tcp), id(tcp->members()[2]));
+
+  Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
+  Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
+  Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
 
   // make the decoders
-  Expr* len = make_length_fn();
-  Decl* eth_d = make_decode("eth_d", get_record_type(eth), eth_m, len);
-  Decl* ipv4_d = make_decode("ipv4_d", get_record_type(ipv4), ipv4_m, len);
-  Decl* ipv6_d = make_decode("ipv6_d", get_record_type(ipv6), ipv6_m, len);
-  Decl* tcp_d = make_decode("tcp_d", get_record_type(tcp), tcp_m, len);
-  Decl* udp_d = make_decode("udp_d", get_record_type(udp), udp_m, len);
+  Decode_decl* eth_d;
+  Decode_decl* ipv4_d;
 
-  print(eth_d);
+  Stmt_seq ipv4_d_body {
+    make_decl_stmt(make_extracts_decl(ipv4_src)),
+    make_decl_stmt(make_extracts_decl(ipv4_dst)),
+    make_decl_stmt(make_extracts_decl(ipv4_proto)),
+    make_match_stmt(ipv4_proto, 
+      Stmt_seq {
+        make_case(zero(), empty()),
+        make_case(one(), empty()),
+      }
+    )
+  };
+
+
+  ipv4_d = as<Decode_decl>(make_decode("ipv4_d", get_record_type(ipv4), make_block_stmt(ipv4_d_body)));
   print(ipv4_d);
-  print(ipv6_d);
-  print(tcp_d);
-  print(udp_d);
 
-  // register the decoders so we can construct a parse graph
-  // we need a parse graph in order to determine if ofptable
-  // match fields can be validly declared together
+
+  Stmt_seq eth_d_body {
+    make_decl_stmt(make_extracts_decl(eth_src)),
+    make_decl_stmt(make_extracts_decl(eth_dst)),
+    make_decl_stmt(make_extracts_decl(eth_type)),
+    make_match_stmt(eth_type, 
+      Stmt_seq {
+        make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
+        make_case(one(), make_do(Do_kind::decode, ipv4_d)),
+      }
+    )
+  };
+
+  // make the decoders
+  eth_d = as<Decode_decl>(make_decode("eth_d", get_record_type(eth), make_block_stmt(eth_d_body)));
+  print(eth_d);
+
+
+  // register stages
+  register_stage(eth_d);
+  register_stage(ipv4_d);
+
+  check_pipeline();
+
+  Stmt_seq stmts;
+  for (auto s : lower(make_decl_stmt(eth_d), stmts)) {
+    print(s);
+  }
+}
+
+
+void
+test2()
+{
+  Record_decl const* ipv4 = make_ipv4_nested_header();
+  Expr* nested = make_field_expr(id(ipv4), id(ipv4->members()[3]));
+  Record_decl const* nested_rec = cast<Record_decl>(cast<Record_type>(cast<Member_decl>(ipv4->members()[3])->type())->decl());
+  Expr* test = make_field_expr(nested, id(nested_rec->members()[1]));
+
+  print(resolve_field_name(as<Field_expr>(test)));
 }
 
 

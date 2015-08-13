@@ -228,7 +228,7 @@ precision(Tuple_type const* t)
 inline int
 precision(Record_type const* t)
 {
-  int n;
+  int n = 0;
   for (Decl const* d : t->decl()->members())
     n += precision(d->type());
   return n;

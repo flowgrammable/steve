@@ -380,12 +380,17 @@ make_match(Expr const* e, Stmt_seq const& s)
 
 
 inline Decl*
-make_decode(char const* n, Type const* t, Stmt const* s, Expr const* l)
+make_decode(char const* n, Type const* t, Stmt const* s)
 {
-  return make_decode_decl(get_identifier(n), t, s, l);
+  return make_decode_decl(get_identifier(n), t, s);
 }
 
 
+inline Member_decl*
+make_record_member(char const* n, Record_decl* d)
+{
+  return make_member(n, get_record_type(d));
+}
 
 
 } // namespace
