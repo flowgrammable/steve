@@ -204,6 +204,11 @@ test1()
   for (auto s : lower(make_decl_stmt(eth_d), stmts)) {
     print(s);
   }
+
+  stmts.clear();
+  for (auto s : lower(make_decl_stmt(ipv4_d), stmts)) {
+    print(s);
+  }
 }
 
 

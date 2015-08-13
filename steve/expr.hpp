@@ -28,6 +28,8 @@ enum Expr_kind
 {
   id_expr,       // reference to a declaration
   lookup_expr,   // reference to an unresolved lookup
+  default_expr,  // The "default" expression
+  init_expr,     // A variable initializer
   value_expr,    // A literal or computed constant expression
   unary_expr,    // unary operations: op e
   binary_expr,   // binary operations: e1 op e2
@@ -128,6 +130,51 @@ struct Value_expr : Expr, Expr_impl<value_expr>
 
   Value first;
 };
+
+
+// The default expression is a placeholder for an expression
+// to be determined by the rules of the language. This can
+// appear in a number of different contexts: a default initialized
+// variable, the "otherwise" case for match statement, etc.
+//
+// The type of a default expression is determined from the context
+// in which it appears.
+struct Default_expr : Expr, Expr_impl<default_expr>
+{
+  Default_expr(Location loc, Type const* t)
+    : Expr(node_kind, loc, t)
+  { }
+};
+
+
+// The kind of initialization.
+//
+// TODO: Support aggregate initialization.
+enum Init_kind
+{
+  default_init, // Invokes a default constructor
+  direct_init,  // Copies or converts a value
+};
+
+
+// An initializer expression tracks information related to
+// the initializaiton of an object. 
+//
+// When this is a default initializer, the expression
+// must be a default expression.
+struct Init_expr : Expr, Expr_impl<init_expr>
+{
+  Init_expr(Init_kind k, Expr const* e)
+    : Expr(node_kind, e->location(), e->type()), init_(k), first(e)
+  { }
+
+  Init_kind   init() const { return init_; }
+  Expr const* expr() const { return first; }
+
+  Init_kind   init_;
+  Expr const* first;
+};
+
 
 
 // A unary expression applies an operator to a single argument.
@@ -414,6 +461,8 @@ apply(T const* e, F fn)
   switch (e->kind()) {
     case id_expr: return fn(cast<Id_expr>(e));
     case lookup_expr: return fn(cast<Lookup_expr>(e));
+    case default_expr: return fn(cast<Default_expr>(e));
+    case init_expr: return fn(cast<Init_expr>(e));
     case value_expr: return fn(cast<Value_expr>(e));
     case unary_expr: return fn(cast<Unary_expr>(e));
     case binary_expr: return fn(cast<Binary_expr>(e));
@@ -449,6 +498,8 @@ get_error_expr()
 
 Id_expr*       make_id_expr(Location, Decl const*);
 Lookup_expr*   make_lookup_expr(Location, String const*);
+Default_expr*  make_default_expr(Location, Type const*);
+Init_expr*     make_init_expr(Init_kind, Expr const*);
 Value_expr*    make_bool_expr(Location, bool);
 Value_expr*    make_int_expr(Location, Integer const&);
 Value_expr*    make_value_expr(Location, Type const*, Value const&);
@@ -465,6 +516,14 @@ Expr*          make_lengthof_expr(Location, Expr const*);
 Expr*          make_offsetof_expr(Location, Expr const*, Decl const*);
 Expr*          make_headerof_expr(Location, Decl const*);
 Do_expr*       make_do_expr(Location, Do_kind, Expr const*);
+
+
+// Returns a new default expression.
+inline Default_expr*
+make_default_expr(Type const* t)
+{
+  return make_default_expr(Location::none, t);
+}
 
 
 // Returns the boolean literal `true`.

@@ -26,6 +26,10 @@ add_library(steve STATIC
   token.cpp
   lexer.cpp
   parser.cpp
+  parse-type.cpp
+  parse-expr.cpp
+  parse-decl.cpp
+  parse-stmt.cpp
   compiler.cpp)
 
 

@@ -89,6 +89,7 @@ precedence(Expr const* e)
   switch (e->kind()) {
     case id_expr:
     case lookup_expr:
+    case default_expr:
     case value_expr:
     case tuple_expr:
       // Literals, names, tuples are primary expressions.
@@ -106,6 +107,7 @@ precedence(Expr const* e)
     case index_expr:
     case member_expr:
     case field_expr:
+    case init_expr:
     case convert_expr:
       // Call, index, and member expressions are postfix expression.
       // We include conversions here also.

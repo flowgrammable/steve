@@ -17,6 +17,8 @@ get_expr_name(Expr_kind k)
   switch (k) {
     case id_expr: return "id_expr";
     case lookup_expr: return "lookup_expr";
+    case default_expr: return "default_expr";
+    case init_expr: return "init_expr";
     case value_expr: return "value_expr";
     case unary_expr: return "unary_expr";
     case binary_expr: return "binary_expr";
@@ -76,7 +78,23 @@ make_lookup_expr(Location loc, String const* s)
 }
 
 
-// Create boolean expression with value `b`.
+// Returns a new default expression.
+Default_expr*
+make_default_expr(Location loc, Type const* t)
+{
+  return new Default_expr(loc, t);
+}
+
+
+// Returns a new initialization expression.
+Init_expr*
+make_init_expr(Init_kind k, Expr const* e)
+{
+  return new Init_expr(k, e);
+}
+
+
+// Create a baoolean expression with value `b`.
 Value_expr*
 make_bool_expr(Location loc, bool b)
 {
