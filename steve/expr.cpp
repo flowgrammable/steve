@@ -421,11 +421,12 @@ resolve_field_name(Field_expr const* e)
 {
   if (is<Id_expr>(e->record())) {
 
-    String* name = new String(*(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name()));
-    return name;
+    String name = String(*(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name()));
+    return get_identifier(name);
   }
   else if (is<Field_expr>(e->record())) {
-    return new String(*resolve_field_name(as<Field_expr>(e->record())) + '.' + *(as<Id_expr>(e->field())->name()));
+    String name = String(*resolve_field_name(as<Field_expr>(e->record())) + '.' + *(as<Id_expr>(e->field())->name()));
+    return get_identifier(name);
   }
   else
     error(e->location(), "'{}' is not a valid field.", e);

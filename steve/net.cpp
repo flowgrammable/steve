@@ -3,14 +3,19 @@
 namespace steve 
 {
 
-namespace 
+Extracted*
+Pipeline_environment::lookup(String const* n)
 {
+  auto iter = find(n);
+  if (iter != end())
+    return iter->second;
+  else
+    return nullptr;
+}
 
 Context_scope cxt_scope;
 Context_environment cxt_env;
 Pipeline pipeline(cxt_scope, cxt_env);
-
-} // namespace
 
 void
 print(Stage* s)
@@ -142,7 +147,7 @@ decode_requirements(Decode_decl const* d, Expr_seq& req)
 void 
 register_extract(Extracts_decl const* d)
 {
-  pipeline.env().fields().push(d->name(), d);
+  pipeline.env().fields().push(as<Field_expr>(d->field())->name(), d);
 }
 
 
@@ -368,6 +373,32 @@ check_pipeline()
 
   print_header_env();
   print_field_env();
+}
+
+
+Value
+lookup_field(String const* n)
+{
+  auto search = pipeline.env().fields().lookup(n);
+
+  if (search) {
+    return Value(search->count);
+  }
+  else
+    return Value(-1);
+}
+
+
+Value
+lookup_header(String const* n)
+{
+  auto search = pipeline.env().headers().lookup(n);
+
+  if (search) {
+    return Value(search->count);
+  }
+  else
+    return Value(-1);
 }
 
 

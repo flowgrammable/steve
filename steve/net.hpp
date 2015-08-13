@@ -8,20 +8,7 @@
 #include "steve/stmt.hpp"
 #include "steve/relation.hpp"
 
-namespace std 
-{
-
-template <> 
-struct hash<steve::Record_decl*>
-{
-  size_t operator()(steve::Record_decl const* d) const
-  {
-    return hash<string>()(*(d->name()));
-  }
-};
-
-} // namespace std
-
+#include "lingo/symbol.hpp"
 
 // This module is used to connect the decode decls
 // togethers. This allows us to formt he graph to
@@ -54,6 +41,8 @@ struct Pipeline_environment : std::unordered_map<String const*, Extracted*>
 {
   void       push(String const*, Decl const*);
   Extracted* pop(String const*);
+
+  Extracted* lookup(String const*);
 };
 
 
@@ -131,6 +120,9 @@ struct Pipeline : std::vector<Stage*>
 void register_stage(Decode_decl const*);
 void register_stage(Table_decl const*);
 bool check_pipeline();
+
+Value lookup_field(String const* n);
+Value lookup_header(String const* n);
 
 } // namespace steve
 

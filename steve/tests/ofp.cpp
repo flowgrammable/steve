@@ -198,8 +198,6 @@ test1()
   register_stage(eth_d);
   register_stage(ipv4_d);
 
-  check_pipeline();
-
   Stmt_seq stmts;
   for (auto s : lower(make_decl_stmt(eth_d), stmts)) {
     print(s);
