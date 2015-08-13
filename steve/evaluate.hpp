@@ -61,7 +61,6 @@ void evaluate(Block_stmt const*);
 
 Value evaluate_integer_constant(Expr const* e);
 
-
 Expr const* reduce(Expr const*);
 
 
@@ -69,7 +68,7 @@ Expr const* reduce(Expr const*);
 //                            Dynamic bindings
 
 void         store(Decl const*, Integer const&);
-Value const& laod(Decl const*);
+Value const& load(Decl const*);
 
 
 } // namespace steve

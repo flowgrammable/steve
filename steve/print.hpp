@@ -32,10 +32,13 @@ void print(Printer&, Record_type const*);
 void print(Printer&, Variant_type const*);
 void print(Printer&, Enum_type const*);
 void print(Printer&, Match_type const*);
+void print(Printer&, Table_type const*);
+void print(Printer&, Flow_type const*);
 void print(Printer&, If_type const*);
 void print(Printer&, Seq_type const*);
 void print(Printer&, Buffer_type const*);
 void print(Printer&, Until_type const*);
+void print(Printer&, Context_type const*);
 
 void print(Printer&, Expr const*);
 void print(Printer&, Id_expr const*);
@@ -47,8 +50,11 @@ void print(Printer&, Call_expr const*);
 void print(Printer&, Tuple_expr const*);
 void print(Printer&, Index_expr const*);
 void print(Printer&, Member_expr const*);
+void print(Printer&, Field_expr const*);
 void print(Printer&, Convert_expr const*);
 void print(Printer&, Lengthof_expr const*);
+void print(Printer&, Offsetof_expr const*);
+void print(Printer&, Do_expr const*);
 
 void print(Printer&, Decl const*);
 void print(Printer&, Variable_decl const*);
@@ -60,7 +66,8 @@ void print(Printer&, Record_decl const*);
 void print(Printer&, Variant_decl const*);
 void print(Printer&, Enum_decl const*);
 void print(Printer&, Decode_decl const*);
-void print(Printer&, Enum_decl const*);
+void print(Printer&, Table_decl const*);
+void print(Printer&, Flow_decl const*);
 
 void print(Printer&, Stmt const*);
 void print(Printer&, Empty_stmt const*);
@@ -68,8 +75,10 @@ void print(Printer&, Expr_stmt const*);
 void print(Printer&, Decl_stmt const*);
 void print(Printer&, Block_stmt const*);
 void print(Printer&, Return_stmt const*);
-void print(Printer&, Match_case_stmt const*);
+
+void print(Printer&, Case_stmt const*);
 void print(Printer&, Match_stmt const*);
+void print(Printer&, Extracts_decl const*);
 
 void print(Printer&, Match_term const*);
 

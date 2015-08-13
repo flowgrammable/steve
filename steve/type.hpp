@@ -41,6 +41,7 @@ enum Type_kind
   until_type,     // sequence until types: until(pred) T
   table_type,     // table types: table <ofptable_name>[(header fields)]
   flow_type,      // flow type: flow <ofptable_name> [conds] { instr }
+  context_type,   // internal context type
 };
 
 
@@ -235,7 +236,6 @@ struct Array_type : Type, Type_impl<array_type>
 };
 
 
-
 // A tuple type is a sequence of types. The values of
 // tuple typ are a cross product of the componenet types.
 //
@@ -391,7 +391,6 @@ struct Until_type : Type, Type_impl<until_type>
 };
 
 
-
 // Table types.
 struct Table_type : User_defined_type<table_type, Table_decl>
 {
@@ -403,6 +402,25 @@ struct Table_type : User_defined_type<table_type, Table_decl>
 struct Flow_type : User_defined_type<flow_type, Flow_decl>
 {
   using User_defined_type<flow_type, Flow_decl>::User_defined_type;
+};
+
+
+// Context type
+// TODO: implement the rest of this
+// A context should have
+// - a packet member of buffer type which is the raw packet
+// - a metadata member of buffer type which contains written metadata
+struct Context_type : Type, Type_impl<context_type>
+{
+  Context_type(Member_decl const* pkt, Member_decl const* meta)
+    : Type(node_kind), packet_(pkt), metadata_(meta)
+  { }
+
+  Member_decl const* packet_buffer() const { return packet_; }
+  Member_decl const* metadata_buffer() const { return metadata_; }
+
+  Member_decl const* packet_;
+  Member_decl const* metadata_;
 };
 
 
@@ -459,7 +477,8 @@ is_user_defined_type()
 {
   return T::node_kind == record_type
       || T::node_kind == variant_type
-      || T::node_kind == enum_type;
+      || T::node_kind == enum_type
+      || T::node_kind == context_type;
 }
 
 
@@ -522,6 +541,7 @@ apply(T const* t, F fn)
     case until_type: return fn(cast<Until_type>(t));
     case table_type: return fn(cast<Table_type>(t));
     case flow_type: return fn(cast<Flow_type>(t));
+    case context_type: return fn(cast<Context_type>(t));
   }
   lingo_unreachable();
 }
@@ -565,7 +585,8 @@ is_aggregate_type(Type const* t)
       || is<Tuple_type>(t)
       || is<Match_type>(t)
       || is<Record_type>(t)
-      || is<Variant_type>(t);
+      || is<Variant_type>(t)
+      || is<Context_type>(t);
 }
 
 
@@ -631,6 +652,7 @@ is_object_type(Type const* t)
 // -------------------------------------------------------------------------- //
 //                               Type accessors
 
+
 // Returns a type that denotes an error.
 inline Type const* 
 get_error_type()
@@ -644,18 +666,24 @@ Void_type const*      get_void_type();
 Boolean_type const*   get_boolean_type();
 Boolean_type const*   get_bool_type();
 Integer_type const*   get_integer_type(int, Integer_sign, Integer_order);
+
+// Basic integer types
 Integer_type const*   get_short_type();
 Integer_type const*   get_int_type();
 Integer_type const*   get_long_type();
 Integer_type const*   get_ushort_type();
 Integer_type const*   get_uint_type();
 Integer_type const*   get_ulong_type();
+
+
+// Precise integer types
 Integer_type const*   get_int_type(int p);
 Integer_type const*   get_uint_type(int p);
 Integer_type const*   get_msbf_type(int p);
 Integer_type const*   get_umsbf_type(int p);
 Integer_type const*   get_lsbf_type(int p);
 Integer_type const*   get_ulsbf_type(int p);
+
 Constant_type const*  get_constant_type(Type const*);
 Reference_type const* get_reference_type(Type const*);
 Function_type const*  get_function_type(Type_seq const&, Type const*);
@@ -666,12 +694,16 @@ Tuple_type const*     get_tuple_type(Record_type const*);
 Record_type const*    get_record_type(Decl const*);
 Variant_type const*   get_variant_type(Decl const*);
 Enum_type const*      get_enum_type(Decl const*);
+Match_type const*     get_match_type(Expr const*, Match_seq const&);
+Table_type const*     get_table_type(Decl const*);
+Flow_type const*      get_flow_type(Decl const*);
 Type const*           get_user_defined_type(Decl const*);
 Match_type const*     get_match_type(Expr const*, Match_seq const&);
 Match_term const*     make_match_term(Expr const*, Type const*);
 Seq_type const*       get_seq_type(Type const*, Expr const*);
 Buffer_type const*    get_buffer_type(Type const*, Expr const*);
 Until_type const*     get_until_type(Expr const*, Type const*);
+Context_type const*   get_context_type();
 
 
 // -------------------------------------------------------------------------- //
@@ -681,11 +713,15 @@ Type const* type_call_expr(Expr const*, Expr_seq const&);
 Type const* type_tuple_expr(Expr_seq const&);
 Type const* type_index_expr(Expr const*, Expr const*);
 Type const* type_member_expr(Expr const*, Expr const*);
+Type const* type_field_expr(Expr const*, Expr const*);
 
 bool check_initializer(Type const*, Expr const*);
 bool check_function_decl(Type const*, Stmt const*);
+bool check_decode_decl(Type const*, Stmt const*);
 
-bool check_match_stmt(Expr const* e, Stmt_seq const& s);
+bool check_match_stmt(Expr const*, Stmt_seq const&);
+bool check_do_decode_stmt(Expr const*);
+bool check_do_table_stmt(Expr const*);
 
 
 } // namespace steve

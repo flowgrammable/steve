@@ -16,6 +16,19 @@
 namespace steve
 {
 
+namespace
+{
+
+// Keep track of all table and flow declarations made in the program
+// and assign them numbers in the order with which they are declared
+//
+// Table count is necessary to contrain gotos
+// Flow count is used to assign internal names to otherwise nameless flows
+static int table_cnt = 0;
+static int flow_cnt = 0;
+
+} // namespace
+
 // Returns a textual representation of the node's name.
 char const*
 get_decl_name(Decl_kind k)
@@ -31,7 +44,9 @@ get_decl_name(Decl_kind k)
     case enum_decl: return "enum_decl";
     case decode_decl: return "decode_decl";
     case table_decl: return "table_decl";
-    case flow_decl: return "ofpentry_decl";
+    case flow_decl: return "flow_decl";
+    case extracts_decl: return "extracts_decl";
+    case rebind_decl: return "rebind_decl";
   }
   lingo_unreachable("unhandled node kind ({})", (int)k);
 }
@@ -195,42 +210,57 @@ make_variant_decl(Location loc, String const* n, Type_seq const& t)
 }
 
 
-
-// Check the decode declaration confirm that the match 
-// decision member is a member of the decoded type.
-//
-// Confirm each stmt in the match stmt has the same
-// key type as the decision member.
-//
-// Confirm that the type of the length expression is an int.
-//
-// TODO: Move this into a different module.
-static bool
-check_decode_decl(Type const* t, Stmt const* s, Expr const* e)
+// Make a decode declaration
+Decode_decl*
+make_decode_decl(Location loc, String const* n, Type const* h, Stmt const* s)
 {
-  // FIXME: Check all statements within the decoder, not
-  // just a match statement.
+  // Defer any checks until pipeline checking stage
+  return gc().make<Decode_decl>(loc, n, get_void_type(), s, h);
+}
 
-  // if (Match_stmt const* ms = as<Match_stmt>(s)) {
-  //   if (as<Record_type>(t))
-  //     if (check_match_stmt(ms->decision(), ms->branches())) {
-  //       return true;
-  //     }
-  // }
+// Make a table declaration.
+// Defer any type/consistency checking of the table until it has been
+// registered into the pipeline.
+Table_decl*
+make_table_decl(Location loc, String const* n, Expr_seq const& e, Decl_seq const& d)
+{
+  table_cnt++;
 
-  return true;
+  return gc().make<Table_decl>(loc, n, get_kind_type(), table_cnt, e, d);
 }
 
 
-// make a decode declaration
-Decode_decl*
-make_decode_decl(Location loc, String const* n, Stmt const* m, Type const* h, Expr const* l)
+// Make a flow decl
+Flow_decl*
+make_flow_decl(Location loc, Expr_seq const& e, Value const v, Stmt const* s)
 {
-  if (!check_decode_decl(h, m, l)) {
-    return nullptr;
-  }
+  flow_cnt++;
 
-  return gc().make<Decode_decl>(loc, n, get_kind_type(), m, h, l);
+  String* n = new String("flow" + flow_cnt);
+
+  return gc().make<Flow_decl>(loc, n, get_kind_type(), e, v, s);
+}
+
+
+Extracts_decl*
+make_extracts_decl(Location loc, Expr const* e)
+{
+  lingo_assert(is<Field_expr>(e));
+  Field_expr const* f = as<Field_expr>(e);
+  return gc().make<Extracts_decl>(loc, f->name(), e->type(), e);
+}
+
+
+Rebind_decl*
+make_rebind_decl(Location loc, Expr const* e1, Expr const* e2)
+{
+  lingo_assert(is<Field_expr>(e1));
+  lingo_assert(is<Field_expr>(e2));
+  lingo_assert(e1->type() == e2->type());
+
+  Field_expr const* f = as<Field_expr>(e2);
+
+  return gc().make<Rebind_decl>(loc, f->name(), e1->type(), e1, e2);
 }
 
 
@@ -253,6 +283,8 @@ mark(Decl const* d)
     case decode_decl: return mark(cast<Decode_decl>(d));
     case table_decl: return mark(cast<Table_decl>(d));
     case flow_decl: return mark(cast<Flow_decl>(d));
+    case extracts_decl: return mark(cast<Extracts_decl>(d));
+    case rebind_decl: return mark(cast<Rebind_decl>(d));
   }
   lingo_unreachable("unevaluated node '{}'", d->node_name());
 }

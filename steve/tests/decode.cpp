@@ -14,16 +14,6 @@ make_record()
 }
 
 
-// TODO: Implement this
-// Not sure what this should be yet
-// Should it be an expression or just a function?
-Expr*
-make_length_fn()
-{
-  return one();
-}
-
-
 Stmt_seq
 make_match_cases()
 {
@@ -81,9 +71,7 @@ make_decode_decl1()
   Stmt* match = make_match_stmt1(rd, one());
   Stmt* body = block({match});
 
-  Expr* len = make_length_fn();
-
-  Decl* decoder = make_decode("d1", record, body, len);
+  Decl* decoder = make_decode("d1", record, body);
 
   return decoder;
 }
@@ -95,10 +83,9 @@ make_decode_decl2()
   Decl* header = make_record();
   Stmt* match = make_match_stmt2();
 
-  Expr* len = make_length_fn();
   Type const* t = get_record_type(header);
 
-  Decl* decoder = make_decode("d2", t, match, len);
+  Decl* decoder = make_decode("d2", t, match);
 
   return decoder;
 }
@@ -113,9 +100,7 @@ make_decode_decl3()
 
   Stmt* match = make_match_stmt3(rd, one());
 
-  Expr* len = make_length_fn();
-
-  Decl* decoder = make_decode("d1", record, match, len);
+  Decl* decoder = make_decode("d1", record, match);
 
   return decoder;
 }
