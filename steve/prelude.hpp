@@ -50,6 +50,7 @@ using lingo::mark;
 
 // Steve terms
 struct Type;
+struct Default_type;
 struct Void_type;
 struct Boolean_type;
 struct Integer_type;
@@ -74,6 +75,8 @@ struct Prop;
 struct Expr;
 struct Id_expr;
 struct Lookup_expr;
+struct Default_expr;
+struct Init_expr;
 struct Value_expr;
 struct Unary_expr;
 struct Binary_expr;

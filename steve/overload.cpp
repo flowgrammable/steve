@@ -71,7 +71,7 @@ can_overload_functions(Function_decl const* f1, Function_decl const* f2)
 //
 //    - Only functions can be overloaded.
 //
-// Note that d2 is the previous declaration.
+// Note that d2 is the new declaration.
 bool
 can_overload(Decl const* d1, Decl const* d2)
 {
@@ -79,9 +79,9 @@ can_overload(Decl const* d1, Decl const* d2)
   //
   // TOOD: Allow forward declarations. This is only a redefinition
   // if there is no previous definition.
-  if (d1->type() == d2->type()) {
-    error(d1->location(), "redefinition of '{}'", d1->name());
-    note(d2->location(), "    previous definition here");
+  if (d2->type() == d2->type()) {
+    error(d2->location(), "redefinition of '{}'", d2->name());
+    note(d1->location(), "    previous definition here");
     // FIXME: Show the previous definition.
     return false;
   }
@@ -95,6 +95,7 @@ can_overload(Decl const* d1, Decl const* d2)
   Function_decl const* f2 = cast<Function_decl>(d2);
   return can_overload_functions(f1, f2);
 }
+
 
 } // namespace
 

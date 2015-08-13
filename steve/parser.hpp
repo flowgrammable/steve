@@ -45,19 +45,35 @@ struct Parser
   Expr const* on_call_expr(Token const*, Expr const*, Arg_seq const*);
   Expr const* on_member_expr(Token const*, Expr const*, Expr const*);
   Expr const* on_unary_expr(Token const*, Expr const*);
-  
-  void* on_error();
-  void* on_expected(char const*);
-  void* on_expected(Location, char const*);
-  void* on_expected(Location, char const*, Token const&);
+  Expr const* on_binary_expr(Token const*, Expr const*, Expr const*);
+
+  Expr const* on_default_init(Token const*);
+  Expr const* on_direct_init(Token const*, Expr const*);
+
+  Decl const* on_variable_decl(Token const*, Token const*, Type const*, Expr const*);
+
+  Stmt const* on_declaration_stmt(Decl const*);
 };
+
+
+// The type of a parse function. Use to disambiguate
+// overloads in certain cases.
+using Parse_fn = Expr const* (*)(Parser&, Token_stream&);
 
 
 // Top-level parser entry points
 Type const* parse_type(Token_stream&);
+Type const* parse_type(Parser&, Token_stream&);
+
 Expr const* parse_expr(Token_stream&);
-Decl const* parse_decl(Token_stream&);
+Expr const* parse_expr(Parser&, Token_stream&);
+
 Stmt const* parse_stmt(Token_stream&);
+Stmt const* parse_stmt(Parser&, Token_stream&);
+
+Decl const* parse_decl(Token_stream&);
+Decl const* parse_decl(Parser&, Token_stream&);
+
 Stmt_seq    parse_file(Token_stream&);
 
 

@@ -230,6 +230,12 @@ less(Expr const* a, Expr const* b)
 
     case lookup_expr: 
       return less(cast<Lookup_expr>(a), cast<Lookup_expr>(b));
+
+    case default_expr: 
+      return false;
+
+    case init_expr: 
+      return less(cast<Init_expr>(a), cast<Init_expr>(b));
     
     case unary_expr: 
       return less(cast<Unary_expr>(a), cast<Unary_expr>(b));

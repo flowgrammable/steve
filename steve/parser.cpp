@@ -8,380 +8,34 @@
 namespace steve
 {
 
-namespace
-{
-
-// Indicates the presence of an error. Note that when an error
-// occurs, a diagnostic has been emitted (unless suppressed)
-// for the corresponding error.
-//
-// A parse function that returns a nullptr has simply failed
-// to match a term. That may or may not indicate an error.
-//
-void* error_ = make_error_node<void>();
-
-
-} // namespace
-
-
-// The type of a parse function. Use to disambiguate
-// overloads in certain cases.
-using Parse_fn = Expr const* (*)(Parser&, Token_stream&);
-
 
 // -------------------------------------------------------------------------- //
-//                                Type parsers
-
-Type const* parse_type(Parser&, Token_stream&);
+//                              File parser
 
 
-// Parse a constant type.
-//
-//    constant-type ::= 'const' type
-Type const*
-parse_constant_type(Parser& p, Token_stream& ts)
+Stmt_seq
+parse_file(Parser& p, Token_stream& ts)
 {
-  Token const* tok = require_token(ts, const_kw);
-  if (Required<Type> t = parse_type(p, ts))
-    return p.on_constant_type(tok, *t);
-  else
-    return *t;
-}
-
-
-// Parse a reference type.
-//
-//    reference-type ::= 'ref' type
-Type const*
-parse_reference_type(Parser& p, Token_stream& ts)
-{
-  Token const* tok = require_token(ts, ref_kw);
-  if (Required<Type> t = parse_type(p, ts))
-    return p.on_reference_type(tok, *t);
-  else
-    return *t;
-}
-
-
-Type const*
-parse_if_type(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-Type const*
-parse_match_type(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-Type const*
-parse_seq_type(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-Type const*
-parse_buffer_type(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-Type const*
-parse_until_type(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-
-// Parse a type.
-//
-//    type ::= 'void' 
-//           | 'bool' 
-//           | integer-type 
-//           | constant-type
-//           | reference-type
-//           | ...
-//           | id-type
-//
-// TODO: Add a parser for function and tuple types.
-Type const*
-parse_type(Parser& p, Token_stream& ts)
-{
-  switch (next_token_kind(ts)) {
-    case void_kw:
-      return p.on_void_type(get_token(ts));
-    case bool_kw:
-      return p.on_boolean_type(get_token(ts));
-    case short_kw:
-      return p.on_integer_type(get_token(ts), 16, signed_int, native_order);
-    case ushort_kw:
-      return p.on_integer_type(get_token(ts), 16, unsigned_int, native_order);
-    case int_kw:
-      return p.on_integer_type(get_token(ts), 32, signed_int, native_order);
-    case uint_kw:
-      return p.on_integer_type(get_token(ts), 32, unsigned_int, native_order);
-    case long_kw:
-      return p.on_integer_type(get_token(ts), 64, signed_int, native_order);
-    case ulong_kw:
-      return p.on_integer_type(get_token(ts), 64, unsigned_int, native_order);
-    case const_kw:
-      return parse_constant_type(p, ts);
-    case ref_kw:
-      return parse_reference_type(p, ts);
-    case if_kw:
-      return parse_if_type(p, ts);
-    case match_kw:
-      return parse_match_type(p, ts);
-    case seq_kw:
-      return parse_seq_type(p, ts);
-    case buffer_kw:
-      return parse_buffer_type(p, ts);
-    case until_kw:
-      return parse_until_type(p, ts);
-    case identifier_tok:
-      return p.on_id_type(get_token(ts));
-    default:
-      break;
+  Stmt_seq stmts;
+  while (!ts.eof()) {
+    if (Required<Stmt> s = parse_stmt(p, ts))
+      stmts.push_back(*s);
   }
-  
-  // FIXME: Improve diagnostics?
-  error(ts.location(), "invalid type");
-  return get_error_type();
+  return stmts;
 }
+
+
+Stmt_seq
+parse_file(Token_stream& ts)
+{
+  Parser p;
+  return parse_file(p, ts);
+}
+
 
 
 // -------------------------------------------------------------------------- //
-//                            Expression parsers
-//
-// There are a number of different expression parsers.
-
-
-Expr const* parse_primary_expr(Parser&, Token_stream&);
-Expr const* parse_postfix_expr(Parser&, Token_stream&);
-Expr const* parse_prefix_expr(Parser&, Token_stream&);
-Expr const* parse_binary_expr(Parser&, Token_stream&);
-Expr const* parse_expr(Parser&, Token_stream&);
-
-
-// -------------------------------------------------------------------------- //
-//                            Primary expressions
-
-// Parse a tuple expression.
-//
-//    nested-expression ::= '{' argument-list '}'
-//
-// TODO: There is an ambiguity with expression statements whose
-// expression is a tuple and a block statement. Choose the block
-// statement.
-Expr const*
-parse_tuple_expr(Parser& p, Token_stream& ts)
-{
-  lingo_unreachable("not implemented");
-}
-
-
-// Parse a nested sub-expression.
-//
-//    nested-expression ::= '(' expression ')'
-Expr const*
-parse_nested_expr(Parser& p, Token_stream& ts)
-{
-  Parse_fn parse = parse_expr; // Select an overload.
-  if (Required<Enclosed_term<Expr>> e = parse_paren_enclosed(p, ts, parse))
-    return e->term();
-  return make_error_node<Expr>();
-}
-
-
-// Parse a primary expression.
-//
-//    primary-expression ::= literal 
-//                         | id-expression 
-//                         | tuple-expression
-//                         | nested-expression
-//
-//    literal ::= boolean-literal | integer-literal
-Expr const*
-parse_primary_expr(Parser& p, Token_stream& ts)
-{
-  switch (next_token_kind(ts)) {
-    case boolean_tok:
-      return p.on_boolean_expr(get_token(ts));
-    
-    case binary_integer_tok:
-    case octal_integer_tok:
-    case decimal_integer_tok: 
-    case hexadecimal_integer_tok:
-      return p.on_integer_expr(get_token(ts));
-    
-    case identifier_tok:
-      return p.on_id_expr(get_token(ts));
-    
-    case lparen_tok:
-      return parse_nested_expr(p, ts);
-
-    case lbrace_tok:
-      return parse_tuple_expr(p, ts);
-    
-    default:
-      break;
-  }
-  error(ts.location(), "invalid primary-expression");
-  return get_error_expr();
-}
-
-
-// -------------------------------------------------------------------------- //
-//                            Postfix expressions
-
-
-// Parse a function argument.
-//
-//    function-argument ::= expression
-//
-// This is a placeholder that would allow us to accept
-// non-expression arguments in the future.
-inline Expr const*
-parse_argument(Parser& p, Token_stream& ts)
-{
-  return parse_expr(p, ts);
-}
-
-
-// Parse an argument list.
-//
-//    function-argument-list ::= list(function-argument)
-inline Arg_seq const*
-parse_argument_list(Parser& p, Token_stream& ts)
-{
-  return parse_list(p, ts, comma_tok, parse_argument);
-}
-
-
-// Parse a call expression.
-//
-//    call-expression ::= postfix-expression '(' argument-list ')'
-//
-// TODO: This is copying the argument vector. We should be
-// moving it.
-Expr const*
-parse_call_expr(Parser& p, Token_stream& ts, Expr const* expr) 
-{
-  using Arg_list = Enclosed_term<Arg_seq>;
-
-  Token const* tok = ts.begin(); 
-  if (Required<Arg_list> args = parse_paren_enclosed(p, ts, parse_argument_list))
-    return p.on_call_expr(tok, expr, args->term());
-  else
-    return get_error_expr();
-}
-
-
-// Parse a dot expression.
-//
-//    dot-expression ::= postfix-expression '.' postfix-expression
-Expr const*
-parse_member_expr(Parser& p, Token_stream& ts, Expr const* e1) 
-{
-  Token const* tok = require_token(ts, dot_tok);
-  if (Required<Expr> e2 = parse_primary_expr(p, ts))
-    return p.on_member_expr(tok, e1, *e2);
-  else
-    return *e2;
-}
-
-
-// Parse a postfix expression. This is the entry point to all
-// binary or n-ary expressions parsed at this precedence.
-//
-//    postfix-expression ::= call-expression
-//                         | member-expression
-//                         | primary-expression
-//
-// TODO: Add subscript expressions. Other stuff?
-Expr const*
-parse_postfix_expr(Parser& p, Token_stream& ts) {
-  if (Expr const* e1 = parse_primary_expr(p, ts)) {
-    while (e1) {
-      Expr const* e2;
-      switch (next_token_kind(ts)) {
-      case lparen_tok: 
-        e2 = parse_call_expr(p, ts, e1);
-        break;
-
-      case dot_tok:
-        e2 = parse_member_expr(p, ts, e1);
-        break;
-
-      default:
-        e2 = nullptr;
-        break;
-      }
-
-      if (not e2)
-        break;
-
-      e1 = e2;
-    }
-    return e1;
-  }
-  return {};
-}
-
-
-// -------------------------------------------------------------------------- //
-//                           Prefix expressions
-
-// Parse a prefix operator.
-//
-//    prefix-operator ::= '+' | '-' | '!'
-Token const*
-parse_unary_op(Parser& p, Token_stream& ts)
-{
-  switch (next_token_kind(ts)) {
-  case plus_tok:
-  case minus_tok:
-  case bang_tok:
-  case tilde_tok:
-    return get_token(ts);
-
-  default:
-    return nullptr;
-  }
-}
-
-
-// Parse a unary expression.
-//
-//    unary-expression ::= postfix-expression
-//                       | unary-operator unary-expression
-inline Expr const*
-parse_unary_expr(Parser& p, Token_stream& ts)
-{
-  auto op = parse_unary_op;
-  auto sub = parse_postfix_expr;
-  auto act = [&](Token const* tok, Expr const* e)
-  {
-    return p.on_unary_expr(tok, e);
-  };
-
-  return parse_prefix_term(p, ts, op, sub, act);
-}
-
-
-Expr const*
-parse_expr(Parser& p, Token_stream& ts)
-{
-  return parse_postfix_expr(p, ts);
-}
-
-
+//                              Name semantics
 
 String const* 
 Parser::on_name(Token const* tok)
@@ -517,42 +171,123 @@ Parser::on_unary_expr(Token const* tok, Expr const* e)
 }
 
 
-// -------------------------------------------------------------------------- //
-//                              Error handling
-
-
-void*
-Parser::on_expected(char const* what)
+// FIXME: Implement me.
+Expr const*
+Parser::on_binary_expr(Token const* tok, Expr const* e1, Expr const* e2)
 {
-  error("expected '{}'", what);
-  return make_error_node<void>();
+  Location loc = tok->location();
+  switch (tok->kind()) {
+  case plus_tok: 
+    return make_binary_expr(loc, num_add_op, e1, e2);
+  case minus_tok: 
+    return make_binary_expr(loc, num_sub_op, e1, e2);
+  case star_tok: 
+    return make_binary_expr(loc, num_mul_op, e1, e2);
+  case slash_tok: 
+    return make_binary_expr(loc, num_div_op, e1, e2);
+  case percent_tok: 
+    return make_binary_expr(loc, num_mod_op, e1, e2);
+  case eq_eq_tok: 
+    return make_binary_expr(loc, rel_eq_op, e1, e2);
+  case bang_eq_tok: 
+    return make_binary_expr(loc, rel_ne_op, e1, e2);
+  case lt_tok: 
+    return make_binary_expr(loc, rel_lt_op, e1, e2);
+  case gt_tok: 
+    return make_binary_expr(loc, rel_gt_op, e1, e2);
+  case lt_eq_tok: 
+    return make_binary_expr(loc, rel_le_op, e1, e2);
+  case gt_eq_tok: 
+    return make_binary_expr(loc, rel_ge_op, e1, e2);
+  case amp_tok: 
+    return make_binary_expr(loc, bit_and_op, e1, e2);
+  case caret_tok: 
+    return make_binary_expr(loc, bit_xor_op, e1, e2);
+  case bar_tok: 
+    return make_binary_expr(loc, bit_or_op, e1, e2);
+  case lt_lt_tok: 
+    return make_binary_expr(loc, bit_lsh_op, e1, e2);
+  case gt_gt_tok: 
+    return make_binary_expr(loc, bit_rsh_op, e1, e2);
+  case amp_amp_tok: 
+    return make_binary_expr(loc, log_and_op, e1, e2);
+  case bar_bar_tok: 
+    return make_binary_expr(loc, log_or_op, e1, e2);
+  default:
+    break;
+  }
+  lingo_unreachable();
 }
 
 
-void*
-Parser::on_expected(Location loc, char const* what)
+// Returns a new default initilizer. Note that the type
+// of the initialized expression is  null. We need to adjust
+// type to match the variable before creating it.
+//
+// The token is the ';'.
+//
+// TODO: This is almost like type deduction in reverse.
+Expr const*
+Parser::on_default_init(Token const* tok)
 {
-  error(loc, "expected '{}'", what);
-  return make_error_node<void>();
+  Expr const* expr = make_default_expr(tok->location(), nullptr);
+  return make_init_expr(default_init, expr);
 }
 
 
-void*
-Parser::on_expected(Location loc, char const* what, Token const& tok)
+// Returns a new direct initializer.
+//
+// The token is the '=' token. This is currently
+// unused.
+//
+// TODO: If `e` is "default", then this should return a
+// value initializer (performs zero initialization).
+Expr const*
+Parser::on_direct_init(Token const*, Expr const* e)
 {
-  error(loc, "expected '{}' but got '{}'", what, tok.token_spelling());
-  return make_error_node<void>();
+  return make_init_expr(direct_init, e);
 }
 
 
-void*
-Parser::on_error()
+// Returns a new variable declaration. Note that the expression
+// must be an initializer.
+Decl const*
+Parser::on_variable_decl(Token const* d, Token const* n, Type const* t, Expr const* e)
 {
-  return make_error_node<void>();
+  lingo_assert(is<Init_expr>(e));
+
+  // If this is a default initializer, make its type match that
+  // of the declaration.
+  //
+  // TODO: Make this part of conversion?
+  Init_expr const* init = cast<Init_expr>(e);
+  if (init->init() == default_init) {
+    lingo_assert(is<Default_expr>(init->expr()));
+    Default_expr const* expr = cast<Default_expr>(init->expr());
+
+    // Adjust the types.
+    const_cast<Init_expr*>(init)->type_ = t;
+    const_cast<Default_expr*>(expr)->type_ = t;
+  }
+
+
+  Decl const* var = make_variable_decl(d->location(), n->str(), t, e);
+  declare(var);
+  return var;
+}
+
+
+// Create a new declaration statement.
+Stmt const*
+Parser::on_declaration_stmt(Decl const* d)
+{
+  return make_decl_stmt(d);
 }
 
 
 // Install the grammar rule/name associations.
+//
+// TODO: Actually add grammar names.
 void
 init_grammar()
 {
