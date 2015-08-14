@@ -75,8 +75,7 @@ struct Expr
   Location    location() const  { return loc_; }
   Type const* type() const      { return type_; }
 
-  static Expr const* empty() { return nullptr; }
-  static Expr const* error() { return make_error_node<Expr>(); }
+  void set_type(Type const* t) { type_ = t; }
 
   Expr_kind   kind_;
   Location    loc_;
@@ -149,7 +148,7 @@ struct Default_expr : Expr, Expr_impl<default_expr>
 // TODO: Support aggregate initialization.
 enum Init_kind
 {
-  default_init, // Invokes a default constructor
+  default_init, // Performs default initialization
   direct_init,  // Copies or converts a value
 };
 
@@ -157,16 +156,29 @@ enum Init_kind
 // An initializer expression tracks information related to
 // the initializaiton of an object. 
 //
-// When this is a default initializer, the expression
-// must be a default expression.
+// When this is a default initializer, the expression must
+// be nullptr.
+//
+// TODO: Formalize semantics around initialization. We probably
+// need separate notions of initialization, just like C++ has.
+// Maybe there's a more uniform treatment, but I'm not quite
+// sure.
 struct Init_expr : Expr, Expr_impl<init_expr>
 {
+  // Construct a default or zero initializer.
+  Init_expr(Location loc, Init_kind k)
+    : Expr(node_kind, loc, nullptr), init_(k), first(nullptr)
+  { }
+
+  // Construct a direct.
   Init_expr(Init_kind k, Expr const* e)
     : Expr(node_kind, e->location(), e->type()), init_(k), first(e)
   { }
 
   Init_kind   init() const { return init_; }
   Expr const* expr() const { return first; }
+  
+  void set_expr(Expr const* e) { first = e; }
 
   Init_kind   init_;
   Expr const* first;
@@ -451,6 +463,7 @@ get_error_expr()
 Id_expr*       make_id_expr(Location, Decl const*);
 Lookup_expr*   make_lookup_expr(Location, String const*);
 Default_expr*  make_default_expr(Location, Type const*);
+Init_expr*     make_init_expr(Location, Init_kind);
 Init_expr*     make_init_expr(Init_kind, Expr const*);
 Value_expr*    make_bool_expr(Location, bool);
 Value_expr*    make_int_expr(Location, Integer const&);

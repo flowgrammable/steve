@@ -20,6 +20,8 @@ parse_file(Parser& p, Token_stream& ts)
   while (!ts.eof()) {
     if (Required<Stmt> s = parse_stmt(p, ts))
       stmts.push_back(*s);
+    else
+      break;
   }
   return stmts;
 }
@@ -230,8 +232,7 @@ Parser::on_binary_expr(Token const* tok, Expr const* e1, Expr const* e2)
 Expr const*
 Parser::on_default_init(Token const* tok)
 {
-  Expr const* expr = make_default_expr(tok->location(), nullptr);
-  return make_init_expr(default_init, expr);
+  return make_init_expr(tok->location(), default_init);
 }
 
 
@@ -249,31 +250,76 @@ Parser::on_direct_init(Token const*, Expr const* e)
 }
 
 
-// Returns a new variable declaration. Note that the expression
-// must be an initializer.
+// Declares a variable having the given name and type.
 Decl const*
-Parser::on_variable_decl(Token const* d, Token const* n, Type const* t, Expr const* e)
+Parser::on_variable_decl(Token const* d, Token const* n, Type const* t)
 {
-  lingo_assert(is<Init_expr>(e));
-
-  // If this is a default initializer, make its type match that
-  // of the declaration.
-  //
-  // TODO: Make this part of conversion?
-  Init_expr const* init = cast<Init_expr>(e);
-  if (init->init() == default_init) {
-    lingo_assert(is<Default_expr>(init->expr()));
-    Default_expr const* expr = cast<Default_expr>(init->expr());
-
-    // Adjust the types.
-    const_cast<Init_expr*>(init)->type_ = t;
-    const_cast<Default_expr*>(expr)->type_ = t;
-  }
-
-
-  Decl const* var = make_variable_decl(d->location(), n->str(), t, e);
+  Decl const* var = make_variable_decl(d->location(), n->str(), t);
   declare(var);
   return var;
+}
+
+
+// Update a variable declaration wiht its initializer.
+//
+// TODO: Support type deduction for variables.
+Decl const*
+Parser::on_variable_init(Decl const* d, Expr const* e)
+{
+  Variable_decl const* var = cast<Variable_decl>(d);
+  Init_expr const* init = cast<Init_expr>(e);
+
+  // For direct initialization, convert the initializer
+  // to the type of the variable. Adjust the initializer
+  // as needed.
+  if (init->init() == direct_init) {
+    Expr const* c = convert(init->expr(), var->type());
+    if (!c)
+      return nullptr;
+    modify(init)->set_expr(c);
+  }
+  modify(init)->set_type(var->type());
+
+  // Update the variable.
+  modify(var)->set_init(init);
+  return var;
+}
+
+
+// Declares a variable having the given name and type.
+Decl const*
+Parser::on_function_decl(Token const* d, Token const* n, Decl_seq const& p, Type const* t)
+{
+  Decl const* fn = make_function_decl(d->location(), n->str(), p, t);
+  declare(fn);
+  return fn;
+}
+
+
+// Update a function declaration with its body.
+//
+// TODO: Support return type deduction.
+Decl const*
+Parser::on_function_def(Decl const* d, Stmt const* s)
+{
+  Function_decl const* fn = cast<Function_decl>(d);
+
+  // Check that the function's body has an appropriate
+  // return type.
+  if (!check_function_decl(fn->ret_type(), s))
+    return nullptr;
+
+  // Update the function body.
+  modify(fn)->set_body(s);
+  return fn;
+}
+
+
+// Create but do not declare parameter declaration.
+Decl const*
+Parser::on_parameter_decl(Token const* n, Type const* t)
+{
+  return make_parameter_decl(n->location(), n->str(), t);
 }
 
 
@@ -282,6 +328,14 @@ Stmt const*
 Parser::on_declaration_stmt(Decl const* d)
 {
   return make_decl_stmt(d);
+}
+
+
+// Create a new return statement.
+Stmt const*
+Parser::on_return_stmt(Expr const* e)
+{
+  return make_return_stmt(e);
 }
 
 

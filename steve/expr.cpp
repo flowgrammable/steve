@@ -92,6 +92,13 @@ make_init_expr(Init_kind k, Expr const* e)
 }
 
 
+Init_expr*
+make_init_expr(Location loc, Init_kind k)
+{
+  return new Init_expr(loc, k);
+}
+
+
 // Create a baoolean expression with value `b`.
 Value_expr*
 make_bool_expr(Location loc, bool b)

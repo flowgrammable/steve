@@ -89,6 +89,18 @@ get_identifier(String const& str)
 }
 
 
+// Partially construct a variable. The declaration must be
+// adjusted later to set the initializer.
+//
+// This allows a variable to be declared prior to analyzing
+// the initializer.
+Variable_decl* 
+make_variable_decl(Location loc, String const* n, Type const* t)
+{
+  return gc().make<Variable_decl>(loc, n, t, nullptr);
+}
+
+
 // Make a new variable declaration. The type of the initializer shall
 // be convertible to the type of the declaration.
 Variable_decl* 
@@ -124,6 +136,16 @@ get_parameter_types(Decl_seq const& p)
     t.push_back(d->type());
   }
   return t;
+}
+
+
+// Partially construct a new function. Note that the function 
+// must be adjusted later to set the definition.
+Function_decl* 
+make_function_decl(Location loc, String const* n, Decl_seq const& p, Type const* r)
+{
+  Type const* t = get_function_type(get_parameter_types(p), r);
+  return gc().make<Function_decl>(loc, n, t, p, nullptr);
 }
 
 

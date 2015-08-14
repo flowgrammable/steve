@@ -43,6 +43,7 @@ using namespace lingo;
 using lingo::is;
 using lingo::as;
 using lingo::cast;
+using lingo::modify;
 using lingo::print;
 using lingo::debug;
 using lingo::mark;
