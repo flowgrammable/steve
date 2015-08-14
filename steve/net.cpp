@@ -13,10 +13,6 @@ Pipeline_environment::lookup(String const* n)
     return nullptr;
 }
 
-Context_scope cxt_scope;
-Context_environment cxt_env;
-Pipeline pipeline(cxt_scope, cxt_env);
-
 void
 print(Stage* s)
 {
@@ -38,6 +34,10 @@ print(Extracted* e) {
 
 namespace
 {
+
+Context_scope cxt_scope;
+Context_environment cxt_env;
+Pipeline pipeline(cxt_scope, cxt_env);
 
 void
 print_header_env()
