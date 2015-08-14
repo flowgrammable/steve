@@ -37,14 +37,17 @@ enum Expr_kind
   tuple_expr,    // tuples: {e1, e2, ..., en}
   index_expr,    // member access: e.n (n is a number)
   member_expr,   // member access: e.m (m is a member id)
+  field_expr,    // ref to field in a record: r.f (r is a record, f is a field name)
   convert_expr,  // An implict conversion
-  lengthof_expr, // lengthof(e)
-  offsetof_expr, // offsetof(e, f)
-  action_expr,   // one of the open flow actions
+  lengthof_expr, // lengthof e
+  offsetof_expr, // offsetof e
+  headerof_expr, // headerof d
+  do_expr,       // do <decode/table> id
 };
 
 
 char const* get_expr_name(Expr_kind);
+String const* resolve_field_name(Field_expr const*);
 
 
 // Adapt the generic node-kinding template to this node type.
@@ -310,6 +313,35 @@ struct Member_expr : Expr, Expr_impl<member_expr>
 };
 
 
+// A field expression refers to the name of a field
+// found within a record type.
+//
+// r.f        // member f in record r 
+// (r.f1).f2  // r.f1 must resolve into a record then we look for f2
+//
+// This is similar to a member expression
+// Except we refer to the type instead of an object of that type.
+// This resolves to a record member
+//
+// TODO: 'record' only has to resolve into a record
+// it could be another field expr which resolves into a record
+struct Field_expr : Expr, Expr_impl<field_expr>
+{
+  Field_expr(Location loc, Type const* t, Expr const* r, Expr const* f)
+    : Expr(node_kind, loc, t), first(r), second(f)
+  {
+    lingo_assert(lingo::is<Id_expr>(f));
+  }
+
+  Expr const* record() const { return first; }
+  Id_expr const* field() const { return cast<Id_expr>(second); }
+  String const* name() const { return resolve_field_name(this); }
+
+  Expr const* first;
+  Expr const* second;
+};
+
+
 // An implicit conversion expression conerts a value in a source 
 // type to a value in a target type. Conversions are not represented
 // directly in the source language.
@@ -340,7 +372,7 @@ struct Convert_expr : Expr, Expr_impl<convert_expr>
 // by inlining into a single expression. It would be useful
 // in a template, where we neeed to preserve non-resolvable
 // expressions, but not in non-dependent contexts.
-struct Lengthof_expr : Expr, Expr_impl<convert_expr>
+struct Lengthof_expr : Expr, Expr_impl<lengthof_expr>
 {
   Lengthof_expr(Location loc, Type const* t, Expr const* e)
     : Expr(node_kind, loc, t), first(e)
@@ -348,6 +380,46 @@ struct Lengthof_expr : Expr, Expr_impl<convert_expr>
 
   Expr const* arg() const  { return first; }
 
+  Expr const* first;
+};
+
+
+// A headerof expression evaluates and returns the type
+// being decoded by a decoder
+// 
+// decode d1(eth);
+//  headerof d1 -> eth
+struct Headerof_expr : Expr, Expr_impl<headerof_expr>
+{
+  Headerof_expr(Location loc, Type const* t, Decl const* d)
+    : Expr(node_kind, loc, t), first(d)
+  { }
+
+  Decl const* decoder() const { return first; }
+
+  Decl const* first;
+};
+
+
+enum Do_kind {
+  decode,
+  table,
+};
+
+
+// A do statement used to chain decoders and tables together
+// Either a decode or a table
+// Takes an id expr to the respective decl
+struct Do_expr : Expr, Expr_impl<do_expr>
+{
+  Do_expr(Location loc, Type const* t, Do_kind d, Expr const* e)
+    : Expr(node_kind, loc, t), do_(d), first(e)
+  { }
+
+  Do_kind     do_what()     const { return do_; }
+  Expr const* target()      const { return first; }
+
+  Do_kind do_;
   Expr const* first;
 };
 
@@ -362,7 +434,7 @@ struct Lengthof_expr : Expr, Expr_impl<convert_expr>
 //
 // TODO: This expression wouldn't actually stay in a lowered
 // representation of a program. 
-struct Offsetof_expr : Expr, Expr_impl<convert_expr>
+struct Offsetof_expr : Expr, Expr_impl<offsetof_expr>
 {
   Offsetof_expr(Location loc, Type const* t, Expr const* e, Decl const* m)
     : Expr(node_kind, loc, t), first(e), second(m)
@@ -373,31 +445,6 @@ struct Offsetof_expr : Expr, Expr_impl<convert_expr>
 
   Expr const* first;
   Decl const* second;
-};
-
-
-enum Action_kind {
-  output,
-  set_queue,
-  drop,
-  group,
-  push_tag,
-  pop_tag,
-  set_field
-};
-
-
-struct Action_expr : Expr, Expr_impl<action_expr> 
-{
-  Action_expr(Location loc, Type const* t, Action_kind k, Expr_seq const& args)
-    : Expr(node_kind, loc, t), action_(k), first(args)
-  { }
-
-  Expr_seq const& args() const { return first; }
-  Action_kind action_kind() const { return action_; }
-
-  Action_kind action_;
-  Expr_seq const first;
 };
 
 
@@ -435,10 +482,12 @@ apply(T const* e, F fn)
     case tuple_expr: return fn(cast<Tuple_expr>(e));
     case index_expr: return fn(cast<Index_expr>(e));
     case member_expr: return fn(cast<Member_expr>(e));
+    case field_expr: return fn(cast<Field_expr>(e));
     case convert_expr: return fn(cast<Convert_expr>(e));
     case lengthof_expr: return fn(cast<Lengthof_expr>(e));
     case offsetof_expr: return fn(cast<Offsetof_expr>(e));
-    case action_expr:  return fn(cast<Action_expr>(e));
+    case headerof_expr: return fn(cast<Headerof_expr>(e));
+    case do_expr: return fn(cast<Do_expr>(e));
   }
   lingo_unreachable("unhandled expression '{}'", e->node_name());
 }
@@ -450,7 +499,6 @@ apply(T const* e, F fn)
 // These functions create new expressions from their arguments. 
 // To the greatest extent possible, these functions attempt to 
 // resolve the type of the expression from those arguments.
-
 
 // Returns a node that can be used to indicate errors in
 // expressions.
@@ -475,9 +523,12 @@ Tuple_expr*    make_tuple_expr(Location, Expr_seq const&);
 Index_expr*    make_index_expr(Location, Expr const*, Expr const*);
 Index_expr*    make_index_expr(Location, Member_expr const*);
 Member_expr*   make_member_expr(Location, Expr const*, Expr const*);
+Field_expr*    make_field_expr(Location, Expr const*, Expr const*);
 Convert_expr*  make_convert_expr(Location, Type const*, Conversion_kind, Expr const*);
 Expr*          make_lengthof_expr(Location, Expr const*);
 Expr*          make_offsetof_expr(Location, Expr const*, Decl const*);
+Expr*          make_headerof_expr(Location, Decl const*);
+Do_expr*       make_do_expr(Location, Do_kind, Expr const*);
 
 
 // Returns a new default expression.
@@ -765,6 +816,13 @@ make_member_expr(Expr const* e, Expr const* s)
 }
 
 
+inline Field_expr*
+make_field_expr(Expr const* r, Expr const* f)
+{
+  return make_field_expr(Location::none, r, f);
+}
+
+
 inline Convert_expr*
 make_convert_expr(Type const* t, Conversion_kind k, Expr const* e)
 {
@@ -776,6 +834,20 @@ inline Expr*
 make_lengthof_expr(Expr const* e)
 {
   return make_lengthof_expr(Location::none, e);
+}
+
+
+inline Expr*
+make_headerof_expr(Decl const* d)
+{
+  return make_headerof_expr(Location::none, d);
+}
+
+
+inline Do_expr*
+make_do_expr(Do_kind k, Expr const* e)
+{
+  return make_do_expr(Location::none, k, e);
 }
 
 

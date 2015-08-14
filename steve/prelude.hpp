@@ -64,12 +64,14 @@ struct Record_type;
 struct Enum_type;
 struct Variant_type;
 struct Match_type;
+struct Decode_type;
 struct If_type;
 struct Seq_type;
 struct Buffer_type;
 struct Until_type;
 struct Table_type;
-struct Entry_type;
+struct Flow_type;
+struct Context_type;
 
 struct Prop;
 
@@ -86,6 +88,10 @@ struct Tuple_expr;
 struct Index_expr;
 struct Member_expr;
 struct Convert_expr;
+struct Field_expr;
+struct Lengthof_expr;
+struct Offsetof_expr;
+struct Do_expr;
 struct Lengthof_expr;
 struct Offsetof_expr;
 
@@ -101,6 +107,7 @@ struct Variant_decl;
 struct Decode_decl;
 struct Table_decl;
 struct Flow_decl;
+struct Extracts_decl;
 
 struct Stmt;
 struct Empty_stmt;
@@ -109,13 +116,15 @@ struct Decl_stmt;
 struct Block_stmt;
 struct Return_stmt;
 struct Match_stmt;
-struct Match_case_stmt;
+struct Case_stmt;
 struct Instr_stmt;
-struct Action_stmt;
 
 struct Value;
 
 struct Match_term;
+
+struct Pipeline;
+struct Stage;
 
 // A sequence of types.
 using Type_seq = std::vector<Type const*>;

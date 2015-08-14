@@ -26,10 +26,12 @@ get_expr_name(Expr_kind k)
     case tuple_expr: return "tuple_expr";
     case index_expr: return "index_expr";
     case member_expr: return "member_expr";
+    case field_expr: return "field_expr";
     case convert_expr: return "convert_expr";
     case lengthof_expr: return "lengthof_expr";
     case offsetof_expr: return "offsetof_expr";
-    case action_expr: return "action_expr";
+    case headerof_expr: return "headerof_expr";
+    case do_expr: return "do_expr";
   }
   lingo_unreachable("unhandled node kind ({})", (int)k);
 }
@@ -363,6 +365,17 @@ make_member_expr(Location loc, Expr const* e, Expr const* n)
 }
 
 
+// Make a field expr
+Field_expr*
+make_field_expr(Location loc, Expr const* r, Expr const* f)
+{
+  if(Required<Type> t = type_field_expr(r, f))
+    return gc().make<Field_expr>(loc, *t, r, f);
+  else
+    return make_error_node<Field_expr>();
+}
+
+
 // Make a conversion expression.
 //
 // This function must only ever be called from convert().
@@ -381,7 +394,54 @@ make_lengthof_expr(Location loc, Expr const* e)
 }
 
 
-// Make an offset-of expression.
+// Make a header of expr
+Expr*
+make_headerof_expr(Location loc, Decl const* d)
+{
+  lingo_assert(is<Decode_decl>(d));
+  return gc().make<Headerof_expr>(loc, get_kind_type(), d);
+}
+
+
+Do_expr*
+make_do_expr(Location loc, Do_kind k, Expr const* e)
+{
+  switch(k) {
+    case decode:
+      if(!check_do_decode_stmt(e))
+        return nullptr;
+      break;
+    case table:
+      if(!check_do_table_stmt(e))
+        return nullptr;
+      break;
+  }
+
+  return gc().make<Do_expr>(loc, get_void_type(), k, e);
+}
+
+
+// -------------------------------------------------------------------------- //
+//              Resolving field expr names
+String const*
+resolve_field_name(Field_expr const* e)
+{
+  if (is<Id_expr>(e->record())) {
+
+    String name = String(*(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name()));
+    return get_identifier(name);
+  }
+  else if (is<Field_expr>(e->record())) {
+    String name = String(*resolve_field_name(as<Field_expr>(e->record())) + '.' + *(as<Id_expr>(e->field())->name()));
+    return get_identifier(name);
+  }
+  else
+    error(e->location(), "'{}' is not a valid field.", e);
+
+  return nullptr;
+}
+
+
 //
 // TODO: Actually typecheck the epxression. `e` must have
 // the same type as the record in which `m` is declared.
@@ -430,6 +490,7 @@ has_enum_type(Expr const* e)
 // -------------------------------------------------------------------------- //
 //                               Garbage collection
 
+
 // FIXME: Make all of this go away...
 void
 mark(Expr const* e)
@@ -444,10 +505,12 @@ mark(Expr const* e)
     case tuple_expr: return mark(cast<Tuple_expr>(e));
     case index_expr: return mark(cast<Index_expr>(e));
     case member_expr: return mark(cast<Member_expr>(e));
+    case field_expr: return mark(cast<Field_expr>(e));
     case convert_expr: return mark(cast<Convert_expr>(e));
     case lengthof_expr: return mark(cast<Convert_expr>(e));
     case offsetof_expr: return mark(cast<Convert_expr>(e));
-    case action_expr: return mark(cast<Action_expr>(e));
+    case headerof_expr: return mark(cast<Headerof_expr>(e));
+    case do_expr: return mark(cast<Do_expr>(e));
     default: return;
   }
   lingo_unreachable("unevaluated node '{}'", e->node_name());

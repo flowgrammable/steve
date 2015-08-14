@@ -95,19 +95,18 @@ precedence(Expr const* e)
       // Literals, names, tuples are primary expressions.
       return 0;
 
-    case action_expr:
-      // FIXME: This should go away.
-      return 0;
-
     case unary_expr:
     case lengthof_expr:
     case offsetof_expr:
+    case headerof_expr:
+    case do_expr:
       // All unary expressions (thusfar) are prefix expressions.
       return 1;
 
     case call_expr:
     case index_expr:
     case member_expr:
+    case field_expr:
     case init_expr:
     case convert_expr:
       // Call, index, and member expressions are postfix expression.
@@ -289,6 +288,20 @@ print(Printer& p, Enum_type const* t)
 
 
 void
+print(Printer& p, Table_type const* t)
+{
+  print(p, t->decl()->name());
+}
+
+
+void
+print(Printer& p, Flow_type const* t)
+{
+  print(p, t->decl()->name());
+}
+
+
+void
 print(Printer& p, Match_term const* t)
 {
   print(p, t->cond());
@@ -371,6 +384,13 @@ print(Printer& p, Until_type const* t)
   print(p, ')');
   print_space(p);
   print(p, t->type());
+}
+
+
+void
+print(Printer& p, Context_type const* t)
+{
+  print(p, "Cxt");
 }
 
 
@@ -493,6 +513,15 @@ print(Printer& p, Member_expr const* e)
   print_subexpr(p, e, e->object());
   print(p, '.');
   print_subexpr(p, e, e->selector());
+}
+
+
+void
+print(Printer& p, Field_expr const* e)
+{
+  print(p, e->record());
+  print(p, '.');
+  print(p, e->field());
 }
 
 
@@ -679,8 +708,50 @@ print(Printer& p, Decode_decl const* d)
 {
   print(p, "decode ");
   print(p, d->name());
+  print(p, "(");
+  print(p, d->header());
+  print(p, ")");
   print_space(p);
   print(p, d->body());
+}
+
+
+void
+print_table_conditions(Printer& p, Table_decl const* d)
+{
+  print(p, "[");
+  print_nested(p, d->conditions());
+  print(p, "]");
+}
+
+
+void
+print_table_initializer(Printer& p, Table_decl const* d)
+{
+  print(p, "{");
+  print_nested(p, d->body());
+  print(p, "}");
+}
+
+
+void
+print(Printer& p, Table_decl const* d)
+{
+  print(p, "table ");
+  print(p, d->name());
+  print_table_conditions(p, d);
+  print_table_initializer(p, d);
+}
+
+
+void
+print(Printer& p, Flow_decl const* d)
+{
+  print(p, d->priority());
+  print(p, ". {");
+  print_nested(p, d->conditions());
+  print(p, "} -> ");
+  print(p, d->instructions());
 }
 
 
@@ -761,15 +832,42 @@ print(Printer &p, Case_stmt const* s)
 }
 
 
-// TODO: Factor into header and body.
+void
+print_match_body(Printer& p, Match_stmt const* s)
+{
+  print(p, "{");
+  print_nested(p, s->cases());
+  print(p, "}");
+}
+
+
 void
 print(Printer& p, Match_stmt const* s)
 {
   print(p, "match (");
   print(p, s->cond());
-  print(p, ") {");
-  print_nested(p, s->cases());
-  print(p, "}");
+  print(p, ")");
+  print_match_body(p, s);
+}
+
+
+void
+print(Printer& p, Do_expr const* s)
+{
+  print(p, "do ");
+  switch(s->do_what()) {
+  case decode: print(p, "decode "); break;
+  case table: print(p, "table "); break;
+  }
+  print(p, s->target());
+}
+
+
+void
+print(Printer& p, Extracts_decl const* s)
+{
+  print(p, "extracts ");
+  print(p, s->field());
 }
 
 } // namespace steve

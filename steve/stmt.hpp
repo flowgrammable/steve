@@ -29,7 +29,6 @@ enum Stmt_kind
   return_stmt,    // return e;
   match_stmt,     // match { }
   case_stmt,      // <const_value> : stmt_seq;
-  do_stmt,        // do <decode/table> <decode_name/table_name>
   instruct_stmt,  // one of the 6 open flow instructions
 };
 
@@ -182,31 +181,6 @@ struct Match_stmt : Stmt, Stmt_impl<match_stmt>
 };
 
 
-enum Do_kind {
-  decode,
-  table,
-};
-
-
-// A do statement used to chain decoders and tables together
-// Either a decode or a table
-// Takes an id expr to the respective decl
-struct Do_stmt : Stmt, Stmt_impl<do_stmt>
-{
-  Do_stmt(Location loc, Do_kind d, Expr const* e)
-    : Stmt(node_kind), loc_(loc), do_what(d), first(e)
-  { }
-
-  Location    location() const { return loc_; }
-  Do_kind what() const { return do_what; }
-  Expr const* ref() { return first; }
-
-  Location loc_;
-  Do_kind do_what;
-  Expr const* first;
-};
-
-
 enum Instruct_kind
 {
   meter_ins,
@@ -262,8 +236,7 @@ apply(T const* s, F fn)
   case block_stmt: return fn(cast<Block_stmt>(s));
   case return_stmt: return fn(cast<Return_stmt>(s));
   case match_stmt: return fn(cast<Match_stmt>(s));
-  case case_stmt:       return fn(cast<Case_stmt>(s));
-  case do_stmt: return fn(cast<Do_stmt>(s));
+  case case_stmt: return fn(cast<Case_stmt>(s));
   case instruct_stmt: return fn(cast<Instruct_stmt>(s));
   }
   lingo_unreachable("unhandled statement '{}'", s->node_name());
