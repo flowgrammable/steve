@@ -146,17 +146,17 @@ test1()
   Expr* ipv4_dst = make_field_expr(id(ipv4), id(ipv4->members()[1]));
   Expr* ipv4_proto = make_field_expr(id(ipv4), id(ipv4->members()[2]));
 
-  Expr* ipv6_src = make_field_expr(id(ipv6), id(ipv6->members()[0]));
-  Expr* ipv6_dst = make_field_expr(id(ipv6), id(ipv6->members()[1]));
-  Expr* ipv6_proto = make_field_expr(id(ipv6), id(ipv6->members()[2]));
+  // Expr* ipv6_src = make_field_expr(id(ipv6), id(ipv6->members()[0]));
+  // Expr* ipv6_dst = make_field_expr(id(ipv6), id(ipv6->members()[1]));
+  // Expr* ipv6_proto = make_field_expr(id(ipv6), id(ipv6->members()[2]));
 
-  Expr* tcp_src = make_field_expr(id(tcp), id(tcp->members()[0]));
-  Expr* tcp_dst = make_field_expr(id(tcp), id(tcp->members()[1]));
-  Expr* tcp_port = make_field_expr(id(tcp), id(tcp->members()[2]));
+  // Expr* tcp_src = make_field_expr(id(tcp), id(tcp->members()[0]));
+  // Expr* tcp_dst = make_field_expr(id(tcp), id(tcp->members()[1]));
+  // Expr* tcp_port = make_field_expr(id(tcp), id(tcp->members()[2]));
 
-  Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
-  Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
-  Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
+  // Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
+  // Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
+  // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
 
   // make the decoders
   Decode_decl* eth_d;
