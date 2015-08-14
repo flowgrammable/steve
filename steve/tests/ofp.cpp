@@ -122,6 +122,8 @@ make_do(Do_kind k, Decode_decl const* d)
 void
 test1()
 {
+  init_builtins();
+
   // make the headers
   Record_decl* eth = make_eth_header();
   Record_decl* ipv4 = make_ipv4_header();
