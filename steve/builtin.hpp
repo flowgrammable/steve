@@ -14,12 +14,12 @@ String const __bind_header  = "__bind_header";
 String const __bind_offset  = "__bind_offset";
 String const __advance      = "__advance";
 String const __get_context  = "__get_context";
-String const __context_type = "Context";
+String const __context_type = "context";
 
 std::unordered_map<String, Function_decl const*> builtin_functions();
 
-Function_decl const* lookup_function(String const);
-Type const* lookup_type(String const);
+Function_decl const* builtin_function(String const);
+Record_type const* builtin_type(String const);
 
 } // namespace steve
 

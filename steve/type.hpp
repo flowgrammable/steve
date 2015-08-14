@@ -703,7 +703,7 @@ Match_term const*     make_match_term(Expr const*, Type const*);
 Seq_type const*       get_seq_type(Type const*, Expr const*);
 Buffer_type const*    get_buffer_type(Type const*, Expr const*);
 Until_type const*     get_until_type(Expr const*, Type const*);
-Context_type const*   get_context_type();
+Record_type const*    get_context_type();
 
 
 // -------------------------------------------------------------------------- //

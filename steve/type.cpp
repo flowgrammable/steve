@@ -8,6 +8,7 @@
 #include "steve/relation.hpp"
 #include "steve/convert.hpp"
 #include "steve/evaluate.hpp"
+#include "steve/builtin.hpp"
 
 #include "lingo/memory.hpp"
 
@@ -303,30 +304,13 @@ get_until_type(Expr const* e, Type const* t)
 }
 
 
-// FIXME: incomplete implementation
-// figure out the rest of the steve context type which can be translated to C
-Context_type const*
-get_context_type(Integer const& mtu, Integer const& max_meta)
-{
-  // Int type buffers?
-  // FIXME: figure out how we even write to these in steve syntax
-  Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(mtu));
-  Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(max_meta));
-
-  Member_decl const* packet = make_member_decl(get_identifier("packet"), pkt_buf);
-  Member_decl const* metadata = make_member_decl(get_identifier("metadata"), meta_buf);
-
-  return context_.make(packet, metadata);
-}
-
-
 // Fixed size on both
 // FIXME: This probably shouldn't be the case
 // Need to figure out the exact access patterns for a context type
-Context_type const*
+Record_type const*
 get_context_type()
 {
-  return get_context_type(Integer(1500), Integer(2000));
+  return builtin_type(__context_type);
 }
 
 

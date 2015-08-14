@@ -88,10 +88,23 @@ get_context()
 // Represent the context type as
 // record Context { } for the sake of
 // easy member access
-Type*
+Record_type const*
 context()
 {
+  String const* n = get_identifier(__context_type);
 
+  // FIXME: should we be using buffer types here?
+  Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+  Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+
+  Decl_seq mem {
+    make_member_decl(get_identifier("packet"), pkt_buf),
+    make_member_decl(get_identifier("metadata"), meta_buf)
+  };
+
+  Record_decl const* r = make_record_decl(n, mem); 
+
+  return get_record_type(r);
 }
 
 
@@ -100,7 +113,7 @@ std::unordered_map<std::string, Function_decl const*> builtin_functions_;
 
 
 // Builtin record types
-std::unordered_map<std::string, Type const*> builtin_types_;
+std::unordered_map<std::string, Record_type const*> builtin_types_;
 
 } // namespace
 
@@ -108,23 +121,25 @@ std::unordered_map<std::string, Type const*> builtin_types_;
 void 
 init_builtins()
 {
+  std::unordered_map<std::string, Record_type const*> 
+  builtin_types
+  {
+    {__context_type, context()},
+  };
+
+  builtin_types_ = builtin_types;
+
   std::unordered_map<std::string, Function_decl const*> 
   builtin_func
   {
     {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
     {__advance, advance()},
-    {__get_context, get_context()}
-  };
-
-  std::unordered_map<std::string, Type const*> 
-  builtin_types
-  {
-    {__context_type, context()},
+    // {__get_context, get_context()}
   };
 
   builtin_functions_ = builtin_func;
-  builtin_types_ = builtin_types;
+
 }
 
 
@@ -136,7 +151,7 @@ builtin_functions()
 
 
 Function_decl const*
-lookup_function(String const n)
+builtin_function(String const n)
 {
   auto search = builtin_functions_.find(n);
   if (search != builtin_functions_.end())
@@ -144,6 +159,21 @@ lookup_function(String const n)
   else
     return nullptr;
 }
+
+
+Record_type const*
+builtin_type(String const n)
+{
+  auto search = builtin_types_.find(n);
+  if (search != builtin_types_.end()) {
+    return search->second;
+  }
+  else {
+    print("FAIL");
+    return nullptr;
+  }
+}
+
 
 } // namespace steve
 

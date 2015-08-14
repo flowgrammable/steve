@@ -33,7 +33,7 @@ make_empty_block()
 void
 lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
 {
-  auto advance = lookup_function(__advance);
+  auto advance = builtin_function(__advance);
 
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
@@ -112,7 +112,7 @@ void
 lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
-  Function_decl const* bind_header = lookup_function(__bind_header);
+  Function_decl const* bind_header = builtin_function(__bind_header);
 
   Local_scope local;
 
@@ -165,7 +165,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 void
 lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
 {
-  if (auto bind_offset = lookup_function(__bind_offset)) {
+  if (auto bind_offset = builtin_function(__bind_offset)) {
     if (Overload const* oh = lookup(get_identifier(_header_))) {
       lingo_assert(oh->is_singleton());
       lingo_assert(is<Field_expr>(d->field()));
