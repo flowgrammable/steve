@@ -89,7 +89,7 @@ get_context()
 // record Context { } for the sake of
 // easy member access
 Type*
-context_type()
+context()
 {
 
 }
@@ -120,7 +120,7 @@ init_builtins()
   std::unordered_map<std::string, Type const*> 
   builtin_types
   {
-    {__context_type, context_type()},
+    {__context_type, context()},
   };
 
   builtin_functions_ = builtin_func;
