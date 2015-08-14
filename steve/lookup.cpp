@@ -197,6 +197,18 @@ declare(Decl const* d)
 }
 
 
+// Register bindings for a sequence of declarations.
+// Returns true if all declarations were successful.
+bool
+declare(Decl_seq const& ds)
+{
+  for (Decl const* d : ds)
+    if (!declare(d))
+      return false;
+  return true;
+}
+
+
 // -------------------------------------------------------------------------- //
 //                             Name lookup
 

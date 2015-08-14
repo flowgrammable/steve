@@ -5,6 +5,8 @@
 #include "steve/builder.hpp"
 #include "steve/lookup.hpp"
 
+#include <iostream>
+
 namespace steve
 {
 
@@ -44,7 +46,6 @@ parse_declaration_stmt(Parser& p, Token_stream& ts)
 Stmt const*
 parse_stmt(Parser& p, Token_stream& ts)
 {
-  Token const& tok = ts.peek();
   switch (next_token_kind(ts)) {
     case var_kw:
     case def_kw:
@@ -53,7 +54,7 @@ parse_stmt(Parser& p, Token_stream& ts)
     default:
       break;
   }
-  error(tok.location(), "expected statement but got '{}'", tok);
+  error(ts.location(), "expected statement but got '{}'", ts.peek());
   return make_error_node<Stmt>();
 }
 

@@ -50,9 +50,15 @@ struct Parser
   Expr const* on_default_init(Token const*);
   Expr const* on_direct_init(Token const*, Expr const*);
 
-  Decl const* on_variable_decl(Token const*, Token const*, Type const*, Expr const*);
+  Decl const* on_variable_decl(Token const*, Token const*, Type const*);
+  Decl const* on_variable_init(Decl const*, Expr const*);
+  
+  Decl const* on_parameter_decl(Token const*, Type const*);
+  Decl const* on_function_decl(Token const*, Token const*, Decl_seq const&, Type const*);
+  Decl const* on_function_def(Decl const*, Stmt const*);
 
   Stmt const* on_declaration_stmt(Decl const*);
+  Stmt const* on_return_stmt(Expr const*);
 };
 
 

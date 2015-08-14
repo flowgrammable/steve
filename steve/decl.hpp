@@ -87,8 +87,7 @@ struct Decl
 };
 
 
-// A variable declration introduces a named binding for a
-// value. Once bound, the name cannot be rebound.
+// A variable declares a name to be an object.
 struct Variable_decl : Decl, Decl_impl<variable_decl>
 {
   Variable_decl(Location loc, String const* n, Type const* t, Expr const* e)
@@ -97,12 +96,13 @@ struct Variable_decl : Decl, Decl_impl<variable_decl>
 
   Expr const* init() const { return first; }
 
+  void set_init(Expr const* e) { first = e; }
+
   Expr const* first;
 };
 
 
-// A compile-time constant declaration. Note that enumeration
-// constants are constant declarations.
+// A constant declares a name to be a compile-time value.
 //
 // Unlike variables, constants are not stored in objects, and
 // their address cannot be taken. They represent compile-time
@@ -131,6 +131,8 @@ struct Function_decl : Decl, Decl_impl<function_decl>
   Stmt const*          body() const  { return second; }
   Function_type const* type() const;
   Type const*          ret_type() const;
+
+  void set_body(Stmt const* s) { second = s; }
 
   Decl_seq    first;
   Stmt const* second;
@@ -369,9 +371,13 @@ member_index(Record_decl const* r, Member_decl const* m)
 
 String const* get_identifier(String const&);
 
+Variable_decl*  make_variable_decl(Location, String const*, Type const*);
 Variable_decl*  make_variable_decl(Location, String const*, Type const*, Expr const*);
 Constant_decl*  make_constant_decl(Location, String const*, Type const*, Expr const*);
+
+Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*);
 Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*, Stmt const*);
+
 Parameter_decl* make_parameter_decl(Location, String const*, Type const*);
 Member_decl*    make_member_decl(Location, String const*, Type const*);
 Record_decl*    make_record_decl(Location, String const*, Decl_seq const&);
