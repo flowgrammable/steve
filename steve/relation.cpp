@@ -156,10 +156,6 @@ less(Type const* a, Type const* b)
       // Ground types are equivalent.
       return false;
 
-    // FIXME: there should only ever be one context type
-    case context_type:
-      return less(cast<Context_type>(a), cast<Context_type>(b));
-
     case integer_type:
       return less(cast<Integer_type>(a), cast<Integer_type>(b));
     

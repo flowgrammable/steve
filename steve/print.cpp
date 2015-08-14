@@ -388,13 +388,6 @@ print(Printer& p, Until_type const* t)
 
 
 void
-print(Printer& p, Context_type const* t)
-{
-  print(p, "Cxt");
-}
-
-
-void
 print(Printer& p, Expr const* e)
 {
   print_term(p, e);

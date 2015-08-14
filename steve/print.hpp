@@ -38,7 +38,6 @@ void print(Printer&, If_type const*);
 void print(Printer&, Seq_type const*);
 void print(Printer&, Buffer_type const*);
 void print(Printer&, Until_type const*);
-void print(Printer&, Context_type const*);
 
 void print(Printer&, Expr const*);
 void print(Printer&, Id_expr const*);

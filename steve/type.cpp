@@ -40,7 +40,6 @@ get_type_name(Type_kind k)
     case until_type: return "until_type";
     case table_type: return "table_type";
     case flow_type: return "flow_type";
-    case context_type: return "context_type";
   }
   lingo_unreachable("unhandled type kind ({})", (int)k);
 }
@@ -83,7 +82,6 @@ Unique_factory<If_type, Type_less> if_;
 Unique_factory<Seq_type, Type_less> seq_;
 Unique_factory<Buffer_type, Type_less> buffer_;
 Unique_factory<Until_type, Type_less> until_;
-Unique_factory<Context_type, Type_less> context_;
 
 
 } // namespace
@@ -304,9 +302,6 @@ get_until_type(Expr const* e, Type const* t)
 }
 
 
-// Fixed size on both
-// FIXME: This probably shouldn't be the case
-// Need to figure out the exact access patterns for a context type
 Record_type const*
 get_context_type()
 {

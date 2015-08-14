@@ -41,7 +41,6 @@ enum Type_kind
   until_type,     // sequence until types: until(pred) T
   table_type,     // table types: table <ofptable_name>[(header fields)]
   flow_type,      // flow type: flow <ofptable_name> [conds] { instr }
-  context_type,   // internal context type
 };
 
 
@@ -405,25 +404,6 @@ struct Flow_type : User_defined_type<flow_type, Flow_decl>
 };
 
 
-// Context type
-// TODO: implement the rest of this
-// A context should have
-// - a packet member of buffer type which is the raw packet
-// - a metadata member of buffer type which contains written metadata
-struct Context_type : Type, Type_impl<context_type>
-{
-  Context_type(Member_decl const* pkt, Member_decl const* meta)
-    : Type(node_kind), packet_(pkt), metadata_(meta)
-  { }
-
-  Member_decl const* packet_buffer() const { return packet_; }
-  Member_decl const* metadata_buffer() const { return metadata_; }
-
-  Member_decl const* packet_;
-  Member_decl const* metadata_;
-};
-
-
 // -------------------------------------------------------------------------- //
 //                             Concepts and dispatch
 //
@@ -477,8 +457,7 @@ is_user_defined_type()
 {
   return T::node_kind == record_type
       || T::node_kind == variant_type
-      || T::node_kind == enum_type
-      || T::node_kind == context_type;
+      || T::node_kind == enum_type;
 }
 
 
@@ -541,7 +520,6 @@ apply(T const* t, F fn)
     case until_type: return fn(cast<Until_type>(t));
     case table_type: return fn(cast<Table_type>(t));
     case flow_type: return fn(cast<Flow_type>(t));
-    case context_type: return fn(cast<Context_type>(t));
   }
   lingo_unreachable();
 }
@@ -585,8 +563,7 @@ is_aggregate_type(Type const* t)
       || is<Tuple_type>(t)
       || is<Match_type>(t)
       || is<Record_type>(t)
-      || is<Variant_type>(t)
-      || is<Context_type>(t);
+      || is<Variant_type>(t);
 }
 
 
