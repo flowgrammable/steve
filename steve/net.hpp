@@ -82,15 +82,17 @@ struct Context_environment
 
 struct Stage
 {
-  Stage(Decl const*, Decl_set const&);
+  Stage(Decl const*, Decl_set const&, Expr_seq const&);
 
   Decl const* decl() const { return first; }
   Expr_seq const& requirements() const { return second; }
   Decl_set const& branches() const { return third; }
+  Expr_seq const& productions() const { return fourth; }
 
   Decl const* first;
   Expr_seq second;
   Decl_set const third;
+  Expr_seq fourth;
 
   // for dfs
   bool visited;
@@ -108,7 +110,7 @@ struct Stage
 // added to the tables.
 struct Pipeline : std::vector<Stage*>
 {
-  Pipeline(Context_scope c, Context_environment e)
+  Pipeline(Context_scope& c, Context_environment& e)
     : scope_(c), env_(e)
   { }
 

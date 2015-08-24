@@ -126,8 +126,13 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   String const* n = d->name();
 
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
+  // going to declare a variable named header for the explicit and only purpose
+  // of determining what type the immediate decode handles
+  // it is no longer being used as a parameter for the decode function
+  Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), d->header());
 
   declare(cxt->name(), cxt);
+  declare(header->name(), header);
 
   Decl_seq parms =
   {
@@ -141,7 +146,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   };
   new_stmts.push_back(make_expr_stmt(make_call_expr(id(bind_header), args)));
 
-  // for each stmt, attempt to lower it
+  // for each stmt, attempt to lower it and at it to the new body
   for(Stmt const* s : *body)
   {
     lower(s, new_stmts);

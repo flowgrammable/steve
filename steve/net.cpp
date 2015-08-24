@@ -21,9 +21,11 @@ Pipeline::find(Decl const* d) const
     if (s->decl() == d)
       return s;
   }
+  return nullptr;
 }
 
 
+// TODO: delete me when done testing
 void
 print(Stage* s)
 {
@@ -37,6 +39,8 @@ print(Stage* s)
   print("\n\n");
 }
 
+
+// TODO: delete me when done testing
 void
 print(Extracted* e) {
   print("Extracted: {}. {} size: {} \n", e->count, e->name(), e->size());
@@ -156,48 +160,53 @@ decode_requirements(Decode_decl const* d, Expr_seq& req)
 
 // handle extract decls
 void 
-register_extract(Extracts_decl const* d)
+register_extract(Extracts_decl const* d, Expr_seq& product)
 {
+  // push the value onto the productions of the stage
+  product.push_back(d->field());
+
   pipeline.env().fields().push(as<Field_expr>(d->field())->name(), d);
 }
 
 
 // A rebind declaration registers the extracted field 
-// into the header environment using the aliased name
+// into the header environment using the aliased name and the original
 // i.e. extract vlan.type as eth.type
-// creates an entry with the name eth.type
+// creates an entry with the name eth.type and
+// creates an entry with the name vlan.type
 void
-register_rebind(Rebind_decl const* d)
+register_rebind(Rebind_decl const* d, Expr_seq& product)
 {
+  // push the value onto the productions of the stage
+  // push both onto the possible products because it may
+  // be refered to as either later
+  product.push_back(d->field1());
+  product.push_back(d->field2());
+
   pipeline.env().fields().push(as<Field_expr>(d->field1())->name(), d);
   pipeline.env().fields().push(as<Field_expr>(d->field2())->name(), d);
 }
 
 
-// handle decls made inside decode decl
+// Only decode decls will have products
+// the only decls that produce are extracts and rebind decls
 void
-process_decl_stmt(Decl_stmt const* s)
+find_productions(Stmt const* s, Expr_seq& product)
 {
-  switch (s->decl()->kind()) {
-    case extracts_decl: 
-      register_extract(as<Extracts_decl>(s->decl()));
-      break;
-    case rebind_decl:
-      register_rebind(as<Rebind_decl>(s->decl()));
-      break;
-    default:
-      break;
+  if (is<Decl_stmt>(s)) {
+    Decl_stmt const* ds = as<Decl_stmt>(s);
+    switch (ds->decl()->kind()) {
+      case extracts_decl:
+        register_extract(as<Extracts_decl>(ds->decl()), product);
+        break;
+      case rebind_decl:
+        register_rebind(as<Rebind_decl>(ds->decl()), product);
+        break;
+      default:
+        break;
+    }
   }
 }
-
-
-// expr stmts
-void
-process_expr_stmt(Expr_stmt const* s, Expr_seq& branches)
-{
-
-}
-
 
 
 // ------------------------------------------------------------- //
@@ -308,10 +317,13 @@ find_branch(Stmt const* s, Decl_set& branches)
 }
 
 
+// -------------------------------------------------------- //
+//      Depth-first search checks on each stage
+
+
 void
 check_stage(Decode_decl const* d)
 {
-
 }
 
 
@@ -327,6 +339,8 @@ void
 dfs(Stage* s)
 {
   s->visited = true;
+  // push all of its productions onto scope
+  
 
   // check this stage
   switch(s->decl()->kind()) {
@@ -348,14 +362,15 @@ dfs(Stage* s)
   }
 }
 
+
 } // namespace
 
 
 // When registering a stage
 // We construct the stage by determining all
 // requirements needed before moving into that stage
-Stage::Stage(Decl const* d, Decl_set const& b)
-  : first(d), third(b), visited(false)
+Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
+  : first(d), third(b), fourth(p), visited(false)
 {
   this->second = Expr_seq();
 
@@ -381,6 +396,9 @@ register_stage(Decode_decl const* d)
   // A branch happens anytime we encounter a do expression
   Decl_set branches;
 
+  // Keep track of what fields each stage produces
+  Expr_seq product;
+
   // bind the header type into header environment
   lingo_assert(is<Record_type>(d->header()));
   Record_type const* htype = cast<Record_type>(d->header()); 
@@ -388,19 +406,13 @@ register_stage(Decode_decl const* d)
 
   // scan through the decode decl body
   //    extract decls will add fields to the context
-  //    header type will be added to the context and recorded
+  //    header type will be added to the context
   for (auto stmt : *as<Block_stmt>(d->body())) {
-    switch (stmt->kind()) {
-      case decl_stmt:
-        process_decl_stmt(as<Decl_stmt>(stmt));
-        break;
-      default:
-        break;
-    }
+    find_productions(stmt, product);
     find_branch(stmt, branches);
   }
 
-  Stage* stage = stages_.make(d, branches);
+  Stage* stage = stages_.make(d, branches, product);
   pipeline.push_back(stage);
 }
 
@@ -408,7 +420,12 @@ register_stage(Decode_decl const* d)
 void 
 register_stage(Table_decl const* d)
 {
+  // Keep track of the possible branches in a decoder
+  // A branch happens anytime we encounter a do expression
   Decl_set branches;
+
+  // Keep track of what fields each stage produces
+  Expr_seq product;
 
   // check that the table had a default initialization
   if (d->body().size() > 0) {
@@ -420,7 +437,7 @@ register_stage(Table_decl const* d)
     }
   }
 
-  Stage* stage = stages_.make(d, branches);
+  Stage* stage = stages_.make(d, branches, product);
   pipeline.push_back(stage);
 }
 
