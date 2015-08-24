@@ -109,6 +109,8 @@ precedence(Expr const* e)
     case field_expr:
     case init_expr:
     case convert_expr:
+    case fld_idx_expr:
+    case hdr_idx_expr:
       // Call, index, and member expressions are postfix expression.
       // We include conversions here also.
       return 2;
@@ -549,6 +551,36 @@ print(Printer& p, Offsetof_expr const* e)
 
 
 void
+print(Printer& p, Do_expr const* e)
+{
+  print(p, "do ");
+  switch(e->do_what()) {
+  case decode: print(p, "decode "); break;
+  case table: print(p, "table "); break;
+  }
+  print(p, e->target());
+}
+
+
+void
+print(Printer& p, Field_idx_expr const* e)
+{
+  print(p, "_fields_[");
+  print(p, e->field());
+  print("]");
+}
+
+
+void
+print(Printer& p, Header_idx_expr const* e)
+{
+  print(p, "_header_[");
+  print(p, e->header());
+  print(p, "]");
+}
+
+
+void
 print(Printer& p, Decl const* d)
 {
   print_term(p, d);
@@ -841,18 +873,6 @@ print(Printer& p, Match_stmt const* s)
   print(p, s->cond());
   print(p, ")");
   print_match_body(p, s);
-}
-
-
-void
-print(Printer& p, Do_expr const* s)
-{
-  print(p, "do ");
-  switch(s->do_what()) {
-  case decode: print(p, "decode "); break;
-  case table: print(p, "table "); break;
-  }
-  print(p, s->target());
 }
 
 

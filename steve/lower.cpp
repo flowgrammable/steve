@@ -37,11 +37,15 @@ lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
 
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
+      // makes the call expr to __advance
       Expr_seq args {
         id(c->front()),
         make_lengthof_expr(id(h->front()))
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
+
+      // makes the call expr to __decode
+      // auto decode = make_decode_fn();
     }
   }
 }
@@ -122,21 +126,18 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   String const* n = d->name();
 
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
-  Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), get_reference_type(d->header()));
 
   declare(cxt->name(), cxt);
-  declare(header->name(), header);
 
   Decl_seq parms =
   {
     cxt,
-    header
   };
 
   Stmt_seq new_stmts;
   Expr_seq args {
     id(cxt), 
-    make_value_expr(get_int_type(), lookup_header(as<Record_type>(d->header())->decl()->name()))
+    make_value_expr(get_int_type(), lookup_header_binding(as<Record_type>(d->header())->decl()->name()))
   };
   new_stmts.push_back(make_expr_stmt(make_call_expr(id(bind_header), args)));
 
@@ -157,6 +158,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   declare(n, fn);
 }
 
+
 // We convert an extracts decl into implicit function
 // calls to __bind_offset(cxt, n, offsetof(field))
 // where n is a unique number refering to the order
@@ -166,22 +168,19 @@ void
 lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
 {
   if (auto bind_offset = builtin_function(__bind_offset)) {
-    if (Overload const* oh = lookup(get_identifier(_header_))) {
-      lingo_assert(oh->is_singleton());
-      lingo_assert(is<Field_expr>(d->field()));
-      Field_expr const* f = as<Field_expr>(d->field());
+    lingo_assert(is<Field_expr>(d->field()));
+    Field_expr const* f = as<Field_expr>(d->field());
 
-      if (Overload const* oc = lookup(get_identifier(_cxt_))) {
-        Expr_seq args {
-          id(oc->front()),
-          make_value_expr(get_int_type(), lookup_field(f->name())),
-          make_offsetof_expr(id(oh->front()), f->field()->decl())
-        };
+    if (Overload const* oc = lookup(get_identifier(_cxt_))) {
+      Expr_seq args {
+        id(oc->front()),
+        make_value_expr(get_int_type(), lookup_field_binding(f->name())),
+        make_offsetof_expr(f->record(), f->field()->decl())
+      };
 
-        // make call
-        Call_expr* call = make_call_expr(id(bind_offset), args);
-        stmts.push_back(make_expr_stmt(call));
-      }
+      // make call
+      Call_expr* call = make_call_expr(id(bind_offset), args);
+      stmts.push_back(make_expr_stmt(call));
     }
   }
 }

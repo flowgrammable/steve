@@ -432,6 +432,10 @@ type_member_expr(Expr const* e, Expr const* s)
 }
 
 
+// Used to provide a type for the member that
+// the field expr refers to
+// Field exprs themselves have type int and are used
+// as indices for hdr/fld idx exprs
 Type const*
 type_field_expr(Expr const* r, Expr const* f)
 {

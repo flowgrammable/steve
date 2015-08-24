@@ -129,6 +129,16 @@ less(Id_expr const* a, Id_expr const* b)
   return less(a->decl(), b->decl());
 }
 
+inline bool
+less(Do_expr const* a, Do_expr const* b)
+{
+  if (a->do_what() < b->do_what())
+    return true;
+  else if (b->do_what() < a->do_what())
+    return false;
+
+  return less(a->target(), b->target());
+}
 
 template<typename T>
 bool 
@@ -136,6 +146,8 @@ Term_less<T>::operator()(T const* a, T const* b) const
 {
   return less(a, b);
 }
+
+
 
 
 } // namespace
@@ -271,9 +283,14 @@ less(Expr const* a, Expr const* b)
     case headerof_expr:
       return less(cast<Headerof_expr>(a), cast<Headerof_expr>(b));
 
-    // FIXME: This isnt really correct
     case do_expr:
-      return true;
+      return less(cast<Do_expr>(a), cast<Do_expr>(b));
+
+    case fld_idx_expr:
+      return less(cast<Field_idx_expr>(a), cast<Field_idx_expr>(b));
+
+    case hdr_idx_expr:
+      return less(cast<Header_idx_expr>(a), cast<Header_idx_expr>(b));
   }
 
   lingo_unreachable("unhandled expression '{}'", a->node_name());

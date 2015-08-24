@@ -93,6 +93,8 @@ struct Offsetof_expr;
 struct Do_expr;
 struct Lengthof_expr;
 struct Offsetof_expr;
+struct Field_idx_expr;
+struct Header_idx_expr;
 
 struct Decl;
 struct Variable_decl;

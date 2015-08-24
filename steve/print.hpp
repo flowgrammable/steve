@@ -54,6 +54,8 @@ void print(Printer&, Convert_expr const*);
 void print(Printer&, Lengthof_expr const*);
 void print(Printer&, Offsetof_expr const*);
 void print(Printer&, Do_expr const*);
+void print(Printer&, Field_idx_expr const*);
+void print(Printer&, Header_idx_expr const*);
 
 void print(Printer&, Decl const*);
 void print(Printer&, Variable_decl const*);

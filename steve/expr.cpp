@@ -32,6 +32,8 @@ get_expr_name(Expr_kind k)
     case offsetof_expr: return "offsetof_expr";
     case headerof_expr: return "headerof_expr";
     case do_expr: return "do_expr";
+    case fld_idx_expr: return "fld_idx_expr";
+    case hdr_idx_expr: return "hdr_idx_expr";
   }
   lingo_unreachable("unhandled node kind ({})", (int)k);
 }
@@ -370,7 +372,9 @@ Field_expr*
 make_field_expr(Location loc, Expr const* r, Expr const* f)
 {
   if(Required<Type> t = type_field_expr(r, f))
-    return gc().make<Field_expr>(loc, *t, r, f);
+    // Field_expr serve as indices. The type check is used later
+    // to qualify the type of the fld idx expr
+    return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
   else
     return make_error_node<Field_expr>();
 }
@@ -449,6 +453,30 @@ Expr*
 make_offsetof_expr(Location loc, Expr const* e, Decl const* m)
 {
   return gc().make<Offsetof_expr>(loc, get_uint_type(), e, m);
+}
+
+
+Field_idx_expr*
+make_fld_idx_expr(Location loc, Expr const* e)
+{
+  lingo_assert(is<Field_expr>(e));
+
+  Field_expr const* f = cast<Field_expr>(e);
+
+  return gc().make<Field_idx_expr>(loc, f->field_type(), f);
+}
+
+
+Header_idx_expr*
+make_hdr_idx_expr(Location loc, Expr const* e)
+{
+  lingo_assert(is<Id_expr>(e));
+
+  Id_expr const* id = cast<Id_expr>(e);
+
+  lingo_assert(is<Record_decl>(id->decl()));
+
+  return gc().make<Header_idx_expr>(loc, id->type(), id);
 }
 
 

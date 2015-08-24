@@ -13,14 +13,25 @@ Pipeline_environment::lookup(String const* n)
     return nullptr;
 }
 
+
+Stage*
+Pipeline::find(Decl const* d) const
+{
+  for (Stage* s : *this) {
+    if (s->decl() == d)
+      return s;
+  }
+}
+
+
 void
 print(Stage* s)
 {
-  print("============STAGE=============");
-  print(s->decl());
-  print("===Branches===");
+  print("Stage: ");
+  print(s->decl()->name());
+  print("Branches: ");
   for (auto b : s->branches()) {
-    print(b);
+    print(b->name());
   }
 
   print("\n\n");
@@ -175,7 +186,7 @@ process_decl_stmt(Decl_stmt const* s)
       register_rebind(as<Rebind_decl>(s->decl()));
       break;
     default:
-      lingo_unreachable("unhandled decl '{}' found in decode decl", s);
+      break;
   }
 }
 
@@ -192,35 +203,45 @@ process_expr_stmt(Expr_stmt const* s, Expr_seq& branches)
 // ------------------------------------------------------------- //
 //          Check branches within a decoder
 
-void find_branch(Block_stmt const*, Expr_seq&);
-void find_branch(Expr_stmt const*, Expr_seq&);
-void find_branch(Match_stmt const*, Expr_seq&);
-void find_branch(Case_stmt const*, Expr_seq&);
-void find_branch(Stmt const*, Expr_seq&);
+void find_branch(Block_stmt const*, Decl_set&);
+void find_branch(Expr_stmt const*, Decl_set&);
+void find_branch(Match_stmt const*, Decl_set&);
+void find_branch(Case_stmt const*, Decl_set&);
+void find_branch(Stmt const*, Decl_set&);
 
-void find_branch(Flow_decl const*, Expr_seq&);
+void find_branch(Flow_decl const*, Decl_set&);
 
 
 void
-find_branch(Block_stmt const* s, Expr_seq& branches)
+find_branch(Block_stmt const* s, Decl_set& branches)
 {
   for (auto stmt : *s) {
-    find_branch(s, branches);
+    find_branch(stmt, branches);
   }
 }
 
 
+// This is the only real time that branches happen
+// the only things that cause branches are
+// 1. do expr
+// 2. flows goto
 void
-find_branch(Expr_stmt const* s, Expr_seq& branches)
+find_branch(Expr_stmt const* s, Decl_set& branches)
 {
   if (is<Do_expr>(s->expr())) {
-    branches.push_back(s->expr());
+    // look at the expression and extract the appropriate stage
+    Do_expr const* do_expr = cast<Do_expr>(s->expr());
+    // sanity check
+    lingo_assert(is<Id_expr>(do_expr->target()));
+    Decl const* target = as<Id_expr>(do_expr->target())->decl();
+    
+    branches.insert(target);
   }
 }
 
 
 void 
-find_branch(Match_stmt const* s, Expr_seq& branches)
+find_branch(Match_stmt const* s, Decl_set& branches)
 {
   for (Stmt const* c : s->cases()) {
     find_branch(as<Case_stmt>(c), branches);
@@ -229,21 +250,21 @@ find_branch(Match_stmt const* s, Expr_seq& branches)
 
 
 void
-find_branch(Case_stmt const* s, Expr_seq& branches)
+find_branch(Case_stmt const* s, Decl_set& branches)
 {
   find_branch(s->stmt(), branches);
 }
 
 
 void
-find_branch(Flow_decl const* d, Expr_seq& branches)
+find_branch(Flow_decl const* d, Decl_set& branches)
 {
   find_branch(d->instructions(), branches);
 }
 
 
 void
-find_branch(Decl_stmt const* s, Expr_seq& branches)
+find_branch(Decl_stmt const* s, Decl_set& branches)
 {
   // for now we will only handle flow declarations
   // used in constant initialization of flow tables
@@ -262,7 +283,7 @@ find_branch(Decl_stmt const* s, Expr_seq& branches)
 // Support for tables to come
 // Finding branches in tables is iffy
 void
-find_branch(Stmt const* s, Expr_seq& branches)
+find_branch(Stmt const* s, Decl_set& branches)
 {
   switch (s->kind()) {
     case block_stmt: 
@@ -286,14 +307,55 @@ find_branch(Stmt const* s, Expr_seq& branches)
   }
 }
 
+
+void
+check_stage(Decode_decl const* d)
+{
+
+}
+
+
+void
+check_stage(Table_decl const* d)
+{
+
+}
+
+
+// depth first search
+void
+dfs(Stage* s)
+{
+  s->visited = true;
+
+  // check this stage
+  switch(s->decl()->kind()) {
+    case table_decl: 
+      check_stage(cast<Table_decl>(s->decl()));
+      break;
+    case decode_decl: 
+      check_stage(cast<Decode_decl>(s->decl()));
+      break;
+    default:
+      lingo_unreachable("Unsupported decl kind {}", s->decl());
+  }
+
+  for (auto decl : s->branches()) {
+    Stage* stage = pipeline.find(decl);
+    if(stage)
+      if(stage->visited == false)
+        dfs(stage);
+  }
+}
+
 } // namespace
 
 
 // When registering a stage
 // We construct the stage by determining all
 // requirements needed before moving into that stage
-Stage::Stage(Decl const* d, Expr_seq const& b)
-  : first(d), third(b)
+Stage::Stage(Decl const* d, Decl_set const& b)
+  : first(d), third(b), visited(false)
 {
   this->second = Expr_seq();
 
@@ -317,7 +379,7 @@ register_stage(Decode_decl const* d)
 
   // Keep track of the possible branches in a decoder
   // A branch happens anytime we encounter a do expression
-  Expr_seq branches;
+  Decl_set branches;
 
   // bind the header type into header environment
   lingo_assert(is<Record_type>(d->header()));
@@ -346,7 +408,7 @@ register_stage(Decode_decl const* d)
 void 
 register_stage(Table_decl const* d)
 {
-  Expr_seq branches;
+  Decl_set branches;
 
   // check that the table had a default initialization
   if (d->body().size() > 0) {
@@ -363,21 +425,40 @@ register_stage(Table_decl const* d)
 }
 
 
+// Checks the pipeline to confirm that it is well-formed
+// Note that many additional checks are made during
+// the lowering process. This check confirms the following:
+// 1. That all paths into tables from decoders are guaranteed
+//    to have extracted all fields required by the table at least once
+// 2. Tables do not form loops with goto statements
+// 3. Decoders never go back to a table that's been visited prior
 bool 
 check_pipeline()
 {
-  print("============Pipeline===========\n");
-  for (auto s : pipeline) {
-    print(s);
-  }
+  // make sure there are actually
+  // components in the pipeline
+  if (!pipeline.size() > 0) 
+    return false;
 
-  print_header_env();
-  print_field_env();
+  // we assume that the first declaration registered
+  // is the start of the pipeline
+  //
+  // this should be a decoder, though be a table
+  Stage* start = pipeline.front();
+
+  dfs(start);
+
+  // we're going to do a depth first traversal
+  // until we hit a stage with no branches
+  // then we'll unwind and repeat until all branches
+  // have been visited
+
+  return true;
 }
 
 
 Value
-lookup_field(String const* n)
+lookup_field_binding(String const* n)
 {
   auto search = pipeline.env().fields().lookup(n);
 
@@ -390,7 +471,7 @@ lookup_field(String const* n)
 
 
 Value
-lookup_header(String const* n)
+lookup_header_binding(String const* n)
 {
   auto search = pipeline.env().headers().lookup(n);
 

@@ -209,6 +209,8 @@ test1()
   for (auto s : lower(make_decl_stmt(ipv4_d), stmts)) {
     print(s);
   }
+
+  check_pipeline();
 }
 
 

@@ -16,7 +16,7 @@
 namespace steve 
 {
 
-using Stage_seq = std::vector<Stage*>;
+using Decl_set = std::set<Decl const*>;
 
 
 struct Extracted : std::vector<Decl const*> 
@@ -82,15 +82,18 @@ struct Context_environment
 
 struct Stage
 {
-  Stage(Decl const*, Expr_seq const&);
+  Stage(Decl const*, Decl_set const&);
 
   Decl const* decl() const { return first; }
   Expr_seq const& requirements() const { return second; }
-  Expr_seq const& branches() const { return third; }
+  Decl_set const& branches() const { return third; }
 
   Decl const* first;
   Expr_seq second;
-  Expr_seq const third;
+  Decl_set const third;
+
+  // for dfs
+  bool visited;
 };
 
 
@@ -114,6 +117,8 @@ struct Pipeline : std::vector<Stage*>
 
   Context_scope scope_;
   Context_environment env_;
+
+  Stage* find(Decl const*) const;
 };
 
 
@@ -121,8 +126,8 @@ void register_stage(Decode_decl const*);
 void register_stage(Table_decl const*);
 bool check_pipeline();
 
-Value lookup_field(String const* n);
-Value lookup_header(String const* n);
+Value lookup_field_binding(String const* n);
+Value lookup_header_binding(String const* n);
 
 } // namespace steve
 
