@@ -50,9 +50,9 @@ print(Extracted* e) {
 namespace
 {
 
-Context_scope cxt_scope;
+Context_bindings cxt_bindings;
 Context_environment cxt_env;
-Pipeline pipeline(cxt_scope, cxt_env);
+Pipeline pipeline(cxt_bindings, cxt_env);
 
 void
 print_header_env()
@@ -321,16 +321,16 @@ find_branch(Stmt const* s, Decl_set& branches)
 //      Depth-first search checks on each stage
 
 
+// FIXME: Figure out of decode declarations care about anything
+// prior. It doesn't seem to be the case now, but it may become an issue
 void
-check_stage(Decode_decl const* d)
+check_stage(Decl const* d, Expr_seq const& requirements)
 {
-}
-
-
-void
-check_stage(Table_decl const* d)
-{
-
+  for (auto e : requirements) {
+    auto search = cxt_bindings.find(as<Field_expr>(e)->name());
+    if (search == cxt_bindings.end())
+      error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
+  }
 }
 
 
@@ -339,20 +339,15 @@ void
 dfs(Stage* s)
 {
   s->visited = true;
-  // push all of its productions onto scope
-  
+
+  // push all of its productions onto the bindings stack
+  for (auto p : s->productions())
+    cxt_bindings.insert(as<Field_expr>(p)->name());
+  // push the header name onto the bindings stack
+  cxt_bindings.insert(s->decl()->name());
 
   // check this stage
-  switch(s->decl()->kind()) {
-    case table_decl: 
-      check_stage(cast<Table_decl>(s->decl()));
-      break;
-    case decode_decl: 
-      check_stage(cast<Decode_decl>(s->decl()));
-      break;
-    default:
-      lingo_unreachable("Unsupported decl kind {}", s->decl());
-  }
+  check_stage(s->decl(), s->requirements());
 
   for (auto decl : s->branches()) {
     Stage* stage = pipeline.find(decl);
@@ -360,6 +355,12 @@ dfs(Stage* s)
       if(stage->visited == false)
         dfs(stage);
   }
+
+  // pop all of the bindings off
+  for (auto p : s->productions())
+    cxt_bindings.erase(as<Field_expr>(p)->name());
+  // pop the header name off bindings stack
+  cxt_bindings.erase(s->decl()->name());
 }
 
 

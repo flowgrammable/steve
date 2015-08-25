@@ -44,8 +44,12 @@ lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
 
-      // makes the call expr to __decode
-      // auto decode = make_decode_fn();
+      // make call to next decoder
+      Expr_seq cargs {
+        id(c->front()),
+      };
+      Decl const* target = lookup_decl(as<Id_expr>(e->target())->name());
+      stmts.push_back(make_expr_stmt(make_call_expr(id(target), cargs)));
     }
   }
 }
@@ -123,11 +127,11 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   lingo_assert(is<Block_stmt>(d->body()));
   Block_stmt const* body = as<Block_stmt>(d->body());
 
-  String const* n = d->name();
-
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
+  // FIXME: a bit of a hack but it works
   // going to declare a variable named header for the explicit and only purpose
-  // of determining what type the immediate decode handles
+  // of determining what type the immediate decode handles. This lets me carry the type
+  // across lower() calls using scoping.
   // it is no longer being used as a parameter for the decode function
   Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), d->header());
 
@@ -156,11 +160,9 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   // construct a new function declaration
   // FIXME: replace the body
-  Function_decl const* fn = make_function_decl(n, parms, get_void_type(), new_body);
+  Function_decl const* fn = make_function_decl(d->name(), parms, get_void_type(), new_body);
 
   stmts.push_back(make_decl_stmt(fn));
-
-  declare(n, fn);
 }
 
 
@@ -267,6 +269,13 @@ lower(Stmt const* s, Stmt_seq& stmts)
     default:
       stmts.push_back(s);
       break;
+  }
+
+  // scan the stmts and push any declarations onto scope
+  for (auto s : stmts) {
+    if (Decl_stmt const* d = as<Decl_stmt>(s)) {
+      declare(d->decl()->name(), d->decl());
+    }
   }
 
   return stmts;
