@@ -189,13 +189,13 @@ declare_forward(Decl const* d)
   Scope::Binding* b = env_.binding(d->name());
   // if we have a previous declaration of this name
   // then it should produce an error.
-  if (b) {
+  if (b && b->scope == s) {
     error(d->location(), "'{}' is a forward declaration which redeclares an existing declaration.", d);
     return nullptr;  
   }
 
   // bind the name
-  s->bind(d->name(), d);
+  return s->bind(d->name(), d);
 }
 
 
@@ -205,8 +205,6 @@ declare_forward(Decl const* d)
 Overload const*
 redeclare(String const* n, Decl const* d)
 {
-  Scope* s = &current_scope();
-
   // can't replace a forward decl with another one
   if (is<Forward_decl>(d)) {
     error(d->location(), "Duplicate forward declaration '{}'", d);
@@ -216,13 +214,11 @@ redeclare(String const* n, Decl const* d)
   // pop the current declaration off the environment
   env_.pop(n);
 
-  // declare the new declaration
-  declare(n, d);
-
   // remove it from forward decls that havent been defined
   fwd_.pop(n);
 
-  return nullptr;
+  // declare the new declaration
+  return declare(n, d);
 }
 
 
@@ -249,6 +245,7 @@ declare(String const* n, Decl const* d)
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
     // check if the first declaration is a forward decl
+    // if it is, then redeclare it with the full declaration
     if (is<Forward_decl>(b->ovl->front()))
       return redeclare(n, d);
     if (overload_decl(b->ovl, d))
