@@ -203,7 +203,7 @@ declare_forward(Decl const* d)
 // Find the binding within the current scope
 // Remove it and replace it with a new binding
 Overload const*
-redeclare(String const* n, Decl const* d)
+define(String const* n, Decl const* d)
 {
   // can't replace a forward decl with another one
   if (is<Forward_decl>(d)) {
@@ -245,9 +245,9 @@ declare(String const* n, Decl const* d)
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
     // check if the first declaration is a forward decl
-    // if it is, then redeclare it with the full declaration
+    // if it is, then add a definition
     if (is<Forward_decl>(b->ovl->front()))
-      return redeclare(n, d);
+      return define(n, d);
     if (overload_decl(b->ovl, d))
       return b->ovl;
     else

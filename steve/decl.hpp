@@ -120,16 +120,6 @@ struct Constant_decl : Decl, Decl_impl<constant_decl>
 };
 
 
-// Forward declarations declare a name and a type
-// but is replaced by the correct declaration and definition later
-struct Forward_decl : Decl, Decl_impl<forward_decl>
-{
-  Forward_decl(Location loc, String const* n, Type const* t)
-    : Decl(node_kind, loc, n, t)
-  { }
-};
-
-
 // A function declaration defines a mapping from a sequence
 // of inputs to an output. The parameters of a function
 // determine the types of inputs. The body of a function is
