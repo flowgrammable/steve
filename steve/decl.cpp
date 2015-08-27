@@ -36,7 +36,6 @@ get_decl_name(Decl_kind k)
   switch (k) {
     case variable_decl: return "variable_decl";
     case constant_decl: return "constant_decl";
-    case forward_decl: return "forward_decl";
     case function_decl: return "function_decl";
     case parameter_decl: return "parameter_decl";
     case record_decl: return "record_decl";
@@ -139,15 +138,6 @@ make_constant_decl(Location loc, String const* n, Type const* t, Expr const* e)
   if (!c)
     return nullptr;
   return gc().make<Constant_decl>(loc, n, t, c);
-}
-
-
-// Make a forward decl
-// FIXME: check if definition already given here or during scope binding?
-Forward_decl*
-make_forward_decl(Location loc, String const* n, Type const* t)
-{
-  return gc().make<Forward_decl>(loc, n, t);
 }
 
 
@@ -306,7 +296,6 @@ mark(Decl const* d)
   switch (d->kind()) {
     case variable_decl: return mark(cast<Variable_decl>(d));
     case constant_decl: return mark(cast<Constant_decl>(d));
-    case forward_decl: return mark(cast<Forward_decl>(d));
     case function_decl: return mark(cast<Function_decl>(d));
     case parameter_decl: return mark(cast<Parameter_decl>(d));
     case member_decl: return mark(cast<Member_decl>(d));

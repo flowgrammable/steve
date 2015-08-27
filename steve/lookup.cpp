@@ -39,22 +39,9 @@ struct Stack : std::forward_list<Scope*>
 };
 
 
-// A mapping of forward declarations used but never defined
-// if this isn't empty by the time compilation is finished
-// then there is an error.
-struct Active_forwards : std::unordered_map<String const*, Forward_decl const*>
-{
-  using std::unordered_map<String const*, Forward_decl const*>::unordered_map;
-
-  void push(String const* n, Forward_decl const* d) { insert({n, d}); }
-  void pop(String const* n) { erase(n); }
-};
-
-
 // The global binding environment and scope stack.
 Environment env_;
 Stack       stack_;
-Active_forwards fwd_;
 
 
 // Push a new name binding into the context. This creates
@@ -138,13 +125,8 @@ Scope::bind(String const* n, Decl const* d)
 Overload const*
 Scope::lookup(String const* s) const
 {
-  if (Scope::Binding* b = env_.binding(s)) {
-    // check if its a forward declaration
-    if (Forward_decl const* f = as<Forward_decl>(b->ovl->front()))
-      fwd_.push(f->name(), f);
-
+  if (Scope::Binding* b = env_.binding(s))
     return b->ovl;
-  }
   else
     return nullptr;
 }
@@ -177,6 +159,7 @@ current_scope()
 //                             Declarations
 
 
+<<<<<<< HEAD
 // Create a forward declaration with a name binding
 // This binding should be overwritten later.
 // However, we only care if the name is used, otherwise
@@ -222,6 +205,8 @@ define(String const* n, Decl const* d)
 }
 
 
+=======
+>>>>>>> parent of 1f9b057... towards foward declarations.
 // Create a name binding for the declaration.
 //
 // If we've already found a declaration in this scope,
@@ -234,20 +219,19 @@ Overload const*
 declare(String const* n, Decl const* d)
 {
   Scope* s = &current_scope();
-
-  // check whether not it is a forward declaration
-  if (is<Forward_decl>(d))
-    return declare_forward(d);
   
   // If we already have a binding in this scope, then
   // try to overload the given declaration. Note that
   // this will emit diagnostics on failure.
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
+<<<<<<< HEAD
     // check if the first declaration is a forward decl
     // if it is, then add a definition
     if (is<Forward_decl>(b->ovl->front()))
       return define(n, d);
+=======
+>>>>>>> parent of 1f9b057... towards foward declarations.
     if (overload_decl(b->ovl, d))
       return b->ovl;
     else
