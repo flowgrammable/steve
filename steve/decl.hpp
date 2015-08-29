@@ -24,7 +24,6 @@ enum Decl_kind
 {
   variable_decl,  // variable declarations
   constant_decl,  // constant declarations
-  forward_decl,   // pending declarations
   function_decl,  // function declarations
   parameter_decl, // parameter declarations
   record_decl,    // record declarations
@@ -79,7 +78,6 @@ struct Decl
   String const* name() const      { return name_; }
   Type const*   type() const      { return type_; }
   Prop const*   prop() const      { return prop_; }
-  virtual bool  has_impl() const  { return true; }
 
   Decl_kind     kind_;
   Location      loc_;
@@ -97,7 +95,6 @@ struct Variable_decl : Decl, Decl_impl<variable_decl>
   { }
 
   Expr const* init() const { return first; }
-  bool has_impl() const { if(first) return true; else return false; }
 
   void set_init(Expr const* e) { first = e; }
 
@@ -117,7 +114,6 @@ struct Constant_decl : Decl, Decl_impl<constant_decl>
   { }
 
   Expr const* init() const { return first; }
-  bool has_impl() const { if(init()) return true; else return false; }
 
   Expr const* first;
 };
@@ -135,7 +131,6 @@ struct Function_decl : Decl, Decl_impl<function_decl>
   Stmt const*          body() const  { return second; }
   Function_type const* type() const;
   Type const*          ret_type() const;
-  bool has_impl() const { if(body()) return true; else return false; }
 
   void set_body(Stmt const* s) { second = s; }
 
@@ -163,7 +158,6 @@ struct Record_decl : Decl, Decl_impl<record_decl>
   { }
 
   Decl_seq const& members() const { return first; }
-  bool has_impl() const { if(members().size() > 0) return true; else return false; }
 
   Decl_seq first;
 };
@@ -231,7 +225,6 @@ struct Decode_decl : Decl, Decl_impl<decode_decl>
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
-  bool has_impl() const { if(body()) return true; else return false; }
 
   Type const* first;
   Stmt const* second;
@@ -327,7 +320,6 @@ apply(T const* d, F fn)
   switch (d->kind()) {
     case variable_decl: return fn(cast<Variable_decl>(d));
     case constant_decl: return fn(cast<Constant_decl>(d));
-    case forward_decl: return fn(cast<Forward_decl>(d));
     case function_decl: return fn(cast<Function_decl>(d));
     case parameter_decl: return fn(cast<Parameter_decl>(d));
     case record_decl: return fn(cast<Record_decl>(d));
@@ -383,8 +375,6 @@ Variable_decl*  make_variable_decl(Location, String const*, Type const*);
 Variable_decl*  make_variable_decl(Location, String const*, Type const*, Expr const*);
 Constant_decl*  make_constant_decl(Location, String const*, Type const*, Expr const*);
 
-Forward_decl*   make_forward_decl(Location, String const*, Type const*);
-
 Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*);
 Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*, Stmt const*);
 
@@ -416,13 +406,6 @@ inline Constant_decl*
 make_constant_decl(String const* n, Type const* t, Expr const* e)
 {
   return make_constant_decl(Location::none, n, t, e);
-}
-
-
-inline Forward_decl*
-make_forward_decl(String const* n, Type const* t)
-{
-  return make_forward_decl(Location::none, n, t);
 }
 
 

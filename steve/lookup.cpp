@@ -24,7 +24,7 @@ namespace
 // names to declarations.
 struct Environment : std::unordered_map<String const*, Scope::Binding*>
 {
-  Overload* push(String const*, Scope*, Decl*);
+  Overload* push(String const*, Scope*, Decl const*);
   void      pop(String const*);
 
   Scope::Binding* binding(String const*);
@@ -39,28 +39,15 @@ struct Stack : std::forward_list<Scope*>
 };
 
 
-// A mapping of forward declarations used but never defined
-// if this isn't empty by the time compilation is finished
-// then there is an error.
-struct Active_forwards : std::unordered_map<String const*, Forward_decl const*>
-{
-  using std::unordered_map<String const*, Forward_decl const*>::unordered_map;
-
-  void push(String const* n, Forward_decl const* d) { insert({n, d}); }
-  void pop(String const* n) { erase(n); }
-};
-
-
 // The global binding environment and scope stack.
 Environment env_;
 Stack       stack_;
-Active_forwards fwd_;
 
 
 // Push a new name binding into the context. This creates
 // a new overload set for the binding.
 Overload*
-Environment::push(String const* n, Scope* s, Decl* d)
+Environment::push(String const* n, Scope* s, Decl const* d)
 {
   auto ins = insert({n, nullptr});
   Scope::Binding*& b = ins.first->second;
@@ -126,7 +113,7 @@ Scope::~Scope()
 
 // Push a new, innermost binding for the given name.
 Overload const*
-Scope::bind(String const* n, Decl* d)
+Scope::bind(String const* n, Decl const* d)
 {
   push_back(n);
   return env_.push(n, this, d);
@@ -138,13 +125,8 @@ Scope::bind(String const* n, Decl* d)
 Overload const*
 Scope::lookup(String const* s) const
 {
-  if (Scope::Binding* b = env_.binding(s)) {
-    // check if its a forward declaration
-    if (Forward_decl const* f = as<Forward_decl>(b->ovl->front()))
-      fwd_.push(f->name(), f);
-
+  if (Scope::Binding* b = env_.binding(s))
     return b->ovl;
-  }
   else
     return nullptr;
 }
@@ -177,54 +159,6 @@ current_scope()
 //                             Declarations
 
 
-<<<<<<< HEAD
-=======
-// Create a forward declaration with a name binding
-// This binding should be overwritten later.
-// However, we only care if the name is used, otherwise
-// a hanging forward declaration makes no difference.
-Overload const*
-declare_forward(Decl const* d)
-{
-  Scope* s = &current_scope();
-
-  Scope::Binding* b = env_.binding(d->name());
-  // if we have a previous declaration of this name
-  // then it should produce an error.
-  if (b && b->scope == s) {
-    error(d->location(), "'{}' is a forward declaration which redeclares an existing declaration.", d);
-    return nullptr;  
-  }
-
-  // bind the name
-  return s->bind(d->name(), d);
-}
-
-
-// Allows redeclaration of a binding for a forward declaration
-// Find the binding within the current scope
-// Remove it and replace it with a new binding
-Overload const*
-define(String const* n, Decl const* d)
-{
-  // can't replace a forward decl with another one
-  if (is<Forward_decl>(d)) {
-    error(d->location(), "Duplicate forward declaration '{}'", d);
-    return nullptr;
-  }
-
-  // pop the current declaration off the environment
-  env_.pop(n);
-
-  // remove it from forward decls that havent been defined
-  fwd_.pop(n);
-
-  // declare the new declaration
-  return declare(n, d);
-}
-
-
->>>>>>> parent of 5ccbcb5... Revert "towards foward declarations."
 // Create a name binding for the declaration.
 //
 // If we've already found a declaration in this scope,
@@ -234,26 +168,15 @@ define(String const* n, Decl const* d)
 // can be guaranteed by getting the string as an identifier from
 // the symbol table.
 Overload const*
-declare(String const* n, Decl* d)
+declare(String const* n, Decl const* d)
 {
   Scope* s = &current_scope();
 
-  // check whether not it is a forward declaration
-  if (is<Forward_decl>(d))
-    return declare_forward(d);
-  
   // If we already have a binding in this scope, then
   // try to overload the given declaration. Note that
   // this will emit diagnostics on failure.
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
-<<<<<<< HEAD
-=======
-    // check if the first declaration is a forward decl
-    // if it is, then add a definition
-    if (is<Forward_decl>(b->ovl->front()))
-      return define(n, d);
->>>>>>> parent of 5ccbcb5... Revert "towards foward declarations."
     if (overload_decl(b->ovl, d))
       return b->ovl;
     else
@@ -268,7 +191,7 @@ declare(String const* n, Decl* d)
 // Declare the variable with the given name into
 // the current scope.
 Overload const*
-declare(Decl* d)
+declare(Decl const* d)
 {
   return declare(d->name(), d);
 }
@@ -276,14 +199,14 @@ declare(Decl* d)
 
 // Register bindings for a sequence of declarations.
 // Returns true if all declarations were successful.
-// bool
-// declare(Decl_seq const& ds)
-// {
-//   for (Decl const* d : ds)
-//     if (!declare(d))
-//       return false;
-//   return true;
-// }
+bool
+declare(Decl_seq const& ds)
+{
+  for (Decl const* d : ds)
+    if (!declare(d))
+      return false;
+  return true;
+}
 
 
 // -------------------------------------------------------------------------- //

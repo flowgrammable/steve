@@ -73,7 +73,7 @@ can_overload_functions(Function_decl const* f1, Function_decl const* f2)
 //
 // Note that d2 is the new declaration.
 bool
-can_overload(Decl* d1, Decl const* d2)
+can_overload(Decl const* d1, Decl const* d2)
 {
   // If the types are the same, these declare the same function.
   //
@@ -106,7 +106,7 @@ can_overload(Decl* d1, Decl const* d2)
 // `decl` can be overloaded the declaration is added to `ovl`,
 // otherwise no action is takne.
 bool
-overload_decl(Overload* ovl, Decl* decl)
+overload_decl(Overload* ovl, Decl const* decl)
 {
   // Check that ovl will be a distinct overload.
   for (Decl const* d : *ovl) {
