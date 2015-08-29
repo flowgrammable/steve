@@ -78,6 +78,7 @@ struct Decl
   String const* name() const      { return name_; }
   Type const*   type() const      { return type_; }
   Prop const*   prop() const      { return prop_; }
+  virtual bool  has_impl() const  { return true; }
 
   Decl_kind     kind_;
   Location      loc_;
@@ -95,6 +96,7 @@ struct Variable_decl : Decl, Decl_impl<variable_decl>
   { }
 
   Expr const* init() const { return first; }
+  bool has_impl() const { if(first) return true; else return false; }
 
   void set_init(Expr const* e) { first = e; }
 
@@ -114,6 +116,7 @@ struct Constant_decl : Decl, Decl_impl<constant_decl>
   { }
 
   Expr const* init() const { return first; }
+  bool has_impl() const { if(init()) return true; else return false; }
 
   Expr const* first;
 };
@@ -131,6 +134,7 @@ struct Function_decl : Decl, Decl_impl<function_decl>
   Stmt const*          body() const  { return second; }
   Function_type const* type() const;
   Type const*          ret_type() const;
+  bool has_impl() const { if(body()) return true; else return false; }
 
   void set_body(Stmt const* s) { second = s; }
 
@@ -158,6 +162,7 @@ struct Record_decl : Decl, Decl_impl<record_decl>
   { }
 
   Decl_seq const& members() const { return first; }
+  bool has_impl() const { if(members().size() > 0) return true; else return false; }
 
   Decl_seq first;
 };
@@ -225,6 +230,7 @@ struct Decode_decl : Decl, Decl_impl<decode_decl>
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
+  bool has_impl() const { if(body()) return true; else return false; }
 
   Type const* first;
   Stmt const* second;

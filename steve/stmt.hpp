@@ -97,13 +97,13 @@ struct Expr_stmt : Stmt, Stmt_impl<expr_stmt>
 // A declaration statement contains a delaration.
 struct Decl_stmt : Stmt, Stmt_impl<decl_stmt>
 {
-  Decl_stmt(Decl const* d)
+  Decl_stmt(Decl* d)
     : Stmt(node_kind), first(d)
   { }
 
-  Decl const* decl() const { return first; }
+  Decl* decl() const { return first; }
 
-  Decl const* first;
+  Decl* first;
 };
 
 
@@ -248,7 +248,7 @@ apply(T const* s, F fn)
 
 Empty_stmt*  make_empty_stmt(Location);
 Expr_stmt*   make_expr_stmt(Expr const*);
-Decl_stmt*   make_decl_stmt(Decl const*);
+Decl_stmt*   make_decl_stmt(Decl*);
 Block_stmt*  make_block_stmt(Location, Location, Stmt_seq const&);
 Return_stmt* make_return_stmt(Location, Expr const*);
 Match_stmt*  make_match_stmt(Location, Expr const*, Stmt_seq const&);

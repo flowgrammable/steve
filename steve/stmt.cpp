@@ -48,7 +48,7 @@ make_expr_stmt(Expr const* e)
 
 
 Decl_stmt* 
-make_decl_stmt(Decl const* d)
+make_decl_stmt(Decl* d)
 {
   return gc().make<Decl_stmt>(d);
 }

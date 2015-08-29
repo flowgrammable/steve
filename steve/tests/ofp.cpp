@@ -130,6 +130,13 @@ lower_decodes(Decode_decl const* d)
 
 
 void
+make_table()
+{
+
+}
+
+
+void
 test1()
 {
   Global_scope global;

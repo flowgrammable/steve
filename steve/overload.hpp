@@ -17,9 +17,9 @@ namespace steve
 // same name and scope, but different types or constraints.
 //
 // An overload set always has at least one member.
-struct Overload : std::vector<Decl const*> 
+struct Overload : std::vector<Decl*> 
 {
-  using std::vector<Decl const*>::vector;
+  using std::vector<Decl*>::vector;
 
   bool is_singleton() const { return size() == 1; }
   
@@ -30,7 +30,7 @@ struct Overload : std::vector<Decl const*>
 // -------------------------------------------------------------------------- //
 //                               Declarations
 
-bool overload_decl(Overload*, Decl const*);
+bool overload_decl(Overload*, Decl*);
 
 
 void print(Printer&, Overload const*);

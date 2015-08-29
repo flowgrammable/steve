@@ -61,7 +61,7 @@ struct Scope : std::vector<String const*>
   ~Scope();
 
   Scope_kind kind() const  { return kind_; }
-  Overload const* bind(String const*, Decl const*);
+  Overload const* bind(String const*, Decl*);
   Overload const* lookup(String const*) const;
 
   // Should be private?
@@ -129,8 +129,8 @@ Scope& current_scope();
 // ---------------------------------------------------------------------------//
 //                            Lexical bindings
 
-Overload const* declare(String const*, Decl const*);
-Overload const* declare(Decl const*);
+Overload const* declare(String const*, Decl*);
+Overload const* declare(Decl*);
 bool            declare(Decl_seq const&);
 
 Overload const* lookup(String const*);

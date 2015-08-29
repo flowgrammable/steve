@@ -24,7 +24,7 @@ namespace
 // names to declarations.
 struct Environment : std::unordered_map<String const*, Scope::Binding*>
 {
-  Overload* push(String const*, Scope*, Decl const*);
+  Overload* push(String const*, Scope*, Decl*);
   void      pop(String const*);
 
   Scope::Binding* binding(String const*);
@@ -47,7 +47,7 @@ Stack       stack_;
 // Push a new name binding into the context. This creates
 // a new overload set for the binding.
 Overload*
-Environment::push(String const* n, Scope* s, Decl const* d)
+Environment::push(String const* n, Scope* s, Decl* d)
 {
   auto ins = insert({n, nullptr});
   Scope::Binding*& b = ins.first->second;
@@ -113,7 +113,7 @@ Scope::~Scope()
 
 // Push a new, innermost binding for the given name.
 Overload const*
-Scope::bind(String const* n, Decl const* d)
+Scope::bind(String const* n, Decl* d)
 {
   push_back(n);
   return env_.push(n, this, d);
@@ -159,54 +159,6 @@ current_scope()
 //                             Declarations
 
 
-<<<<<<< HEAD
-// Create a forward declaration with a name binding
-// This binding should be overwritten later.
-// However, we only care if the name is used, otherwise
-// a hanging forward declaration makes no difference.
-Overload const*
-declare_forward(Decl const* d)
-{
-  Scope* s = &current_scope();
-
-  Scope::Binding* b = env_.binding(d->name());
-  // if we have a previous declaration of this name
-  // then it should produce an error.
-  if (b && b->scope == s) {
-    error(d->location(), "'{}' is a forward declaration which redeclares an existing declaration.", d);
-    return nullptr;  
-  }
-
-  // bind the name
-  return s->bind(d->name(), d);
-}
-
-
-// Allows redeclaration of a binding for a forward declaration
-// Find the binding within the current scope
-// Remove it and replace it with a new binding
-Overload const*
-define(String const* n, Decl const* d)
-{
-  // can't replace a forward decl with another one
-  if (is<Forward_decl>(d)) {
-    error(d->location(), "Duplicate forward declaration '{}'", d);
-    return nullptr;
-  }
-
-  // pop the current declaration off the environment
-  env_.pop(n);
-
-  // remove it from forward decls that havent been defined
-  fwd_.pop(n);
-
-  // declare the new declaration
-  return declare(n, d);
-}
-
-
-=======
->>>>>>> parent of 1f9b057... towards foward declarations.
 // Create a name binding for the declaration.
 //
 // If we've already found a declaration in this scope,
@@ -216,7 +168,7 @@ define(String const* n, Decl const* d)
 // can be guaranteed by getting the string as an identifier from
 // the symbol table.
 Overload const*
-declare(String const* n, Decl const* d)
+declare(String const* n, Decl* d)
 {
   Scope* s = &current_scope();
   
@@ -225,13 +177,6 @@ declare(String const* n, Decl const* d)
   // this will emit diagnostics on failure.
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
-<<<<<<< HEAD
-    // check if the first declaration is a forward decl
-    // if it is, then add a definition
-    if (is<Forward_decl>(b->ovl->front()))
-      return define(n, d);
-=======
->>>>>>> parent of 1f9b057... towards foward declarations.
     if (overload_decl(b->ovl, d))
       return b->ovl;
     else
@@ -246,7 +191,7 @@ declare(String const* n, Decl const* d)
 // Declare the variable with the given name into
 // the current scope.
 Overload const*
-declare(Decl const* d)
+declare(Decl* d)
 {
   return declare(d->name(), d);
 }
@@ -254,14 +199,14 @@ declare(Decl const* d)
 
 // Register bindings for a sequence of declarations.
 // Returns true if all declarations were successful.
-bool
-declare(Decl_seq const& ds)
-{
-  for (Decl const* d : ds)
-    if (!declare(d))
-      return false;
-  return true;
-}
+// bool
+// declare(Decl_seq const& ds)
+// {
+//   for (Decl const* d : ds)
+//     if (!declare(d))
+//       return false;
+//   return true;
+// }
 
 
 // -------------------------------------------------------------------------- //
