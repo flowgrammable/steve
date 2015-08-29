@@ -24,6 +24,7 @@ enum Decl_kind
 {
   variable_decl,  // variable declarations
   constant_decl,  // constant declarations
+  forward_decl,   // pending declarations
   function_decl,  // function declarations
   parameter_decl, // parameter declarations
   record_decl,    // record declarations
@@ -326,6 +327,7 @@ apply(T const* d, F fn)
   switch (d->kind()) {
     case variable_decl: return fn(cast<Variable_decl>(d));
     case constant_decl: return fn(cast<Constant_decl>(d));
+    case forward_decl: return fn(cast<Forward_decl>(d));
     case function_decl: return fn(cast<Function_decl>(d));
     case parameter_decl: return fn(cast<Parameter_decl>(d));
     case record_decl: return fn(cast<Record_decl>(d));
@@ -381,6 +383,8 @@ Variable_decl*  make_variable_decl(Location, String const*, Type const*);
 Variable_decl*  make_variable_decl(Location, String const*, Type const*, Expr const*);
 Constant_decl*  make_constant_decl(Location, String const*, Type const*, Expr const*);
 
+Forward_decl*   make_forward_decl(Location, String const*, Type const*);
+
 Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*);
 Function_decl*  make_function_decl(Location, String const*, Decl_seq const&, Type const*, Stmt const*);
 
@@ -412,6 +416,13 @@ inline Constant_decl*
 make_constant_decl(String const* n, Type const* t, Expr const* e)
 {
   return make_constant_decl(Location::none, n, t, e);
+}
+
+
+inline Forward_decl*
+make_forward_decl(String const* n, Type const* t)
+{
+  return make_forward_decl(Location::none, n, t);
 }
 
 
