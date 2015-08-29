@@ -249,6 +249,57 @@ lookup_decl(String const* n)
 
 
 // -------------------------------------------------------------------------- //
+//                             Defining
+
+Decl const*
+define_variable(String const* n, Expr const* e)
+{
+  Decl* d = const_cast<Decl*>(lookup_decl(n));
+  // this has to be a variable decl otherwise the program is inconsistent
+  lingo_assert(is<Variable_decl>(d));
+
+  // strip the const
+  // this should be safe since the initial declaration was non-const
+  Variable_decl* var = cast<Variable_decl>(d);
+  var->set_init(e);
+
+  return var;
+}
+
+
+Decl const*
+define_function(String const* n, Stmt const* s)
+{
+  Decl* d = const_cast<Decl*>(lookup_decl(n));
+  // this has to be a variable decl otherwise the program is inconsistent
+  lingo_assert(is<Function_decl>(d));
+
+  // strip the const
+  // this should be safe since the initial declaration was non-const
+  Function_decl* fn = cast<Function_decl>(d);
+  fn->set_body(s);
+
+  return fn;
+}
+
+
+Decl const*
+define_decode(String const* n, Stmt const* s)
+{
+  Decl* d = const_cast<Decl*>(lookup_decl(n));
+  // this has to be a variable decl otherwise the program is inconsistent
+  lingo_assert(is<Decode_decl>(d));
+
+  // strip the const
+  // this should be safe since the initial declaration was non-const
+  Decode_decl* dec = cast<Decode_decl>(d);
+  dec->set_body(s);
+
+  return dec;
+}
+
+
+// -------------------------------------------------------------------------- //
 //                       Printing and debugging
 
 

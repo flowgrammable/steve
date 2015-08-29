@@ -603,8 +603,10 @@ template<typename T>
 static void
 print_initializer_clause(Printer& p, T const* d)
 {
-  print(p, " = ");
-  print(p, d->init());
+  if (d->has_impl()) {
+    print(p, " = ");
+    print(p, d->init());
+  }
 }
 
 
@@ -668,7 +670,8 @@ print(Printer& p, Function_decl const* d)
   print_parameter_list(p, d);
   print_return_clause(p, d);
   print_space(p);
-  print(p, d->body());
+  if (d->has_impl())
+    print(p, d->body());
 }
 
 
@@ -737,7 +740,8 @@ print(Printer& p, Decode_decl const* d)
   print(p, d->header());
   print(p, ")");
   print_space(p);
-  print(p, d->body());
+  if (d->has_impl())
+    print(p, d->body());
 }
 
 

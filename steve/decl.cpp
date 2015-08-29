@@ -287,6 +287,30 @@ make_rebind_decl(Location loc, Expr const* e1, Expr const* e2)
 
 
 // -------------------------------------------------------------------------- //
+//                             Define
+
+void
+define(Variable_decl* d, Expr const* e)
+{
+  d->set_init(e);
+}
+
+
+void
+define(Function_decl* d, Stmt const* s)
+{
+  d->set_body(s);
+}
+
+
+void
+define(Decode_decl* d, Stmt const* s)
+{
+  d->set_body(s);
+}
+
+
+// -------------------------------------------------------------------------- //
 //                             Garbage collection
 
 void
