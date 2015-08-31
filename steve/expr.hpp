@@ -43,6 +43,8 @@ enum Expr_kind
   offsetof_expr, // offsetof e
   headerof_expr, // headerof d
   do_expr,       // do <decode/table> id
+  fld_idx_expr,  // _fields_[field_expr]
+  hdr_idx_expr,  // _header_[id header]
 };
 
 
@@ -325,20 +327,27 @@ struct Member_expr : Expr, Expr_impl<member_expr>
 //
 // TODO: 'record' only has to resolve into a record
 // it could be another field expr which resolves into a record
+//
+// FIXME: Field exprs should resolve into integers which indicate
+// which field they refer to in the context environment. These values
+// are determined by walking the program an assigning a value to each
+// field found in an extracts decl
 struct Field_expr : Expr, Expr_impl<field_expr>
 {
-  Field_expr(Location loc, Type const* t, Expr const* r, Expr const* f)
-    : Expr(node_kind, loc, t), first(r), second(f)
+  Field_expr(Location loc, Type const* t, Type const* ft, Expr const* r, Expr const* f)
+    : Expr(node_kind, loc, t), first(r), second(f), third(ft)
   {
     lingo_assert(lingo::is<Id_expr>(f));
   }
 
   Expr const* record() const { return first; }
   Id_expr const* field() const { return cast<Id_expr>(second); }
+  Type const* field_type() const { return third; }
   String const* name() const { return resolve_field_name(this); }
 
   Expr const* first;
   Expr const* second;
+  Type const* third;
 };
 
 
@@ -413,14 +422,14 @@ enum Do_kind {
 struct Do_expr : Expr, Expr_impl<do_expr>
 {
   Do_expr(Location loc, Type const* t, Do_kind d, Expr const* e)
-    : Expr(node_kind, loc, t), do_(d), first(e)
+    : Expr(node_kind, loc, t), first(d), second(e)
   { }
 
-  Do_kind     do_what()     const { return do_; }
-  Expr const* target()      const { return first; }
+  Do_kind     do_what()     const { return first; }
+  Expr const* target()      const { return second; }
 
-  Do_kind do_;
-  Expr const* first;
+  Do_kind first;
+  Expr const* second;
 };
 
 
@@ -446,6 +455,34 @@ struct Offsetof_expr : Expr, Expr_impl<offsetof_expr>
   Expr const* first;
   Decl const* second;
 };
+
+
+// Used to access the field within a context
+struct Field_idx_expr : Expr, Expr_impl<fld_idx_expr>
+{
+  Field_idx_expr(Location loc, Type const* t, Expr const* f)
+    : Expr(node_kind, loc, t), first(f)
+  { }
+
+  Expr const* field() const { return first; }
+
+  Expr const* first;
+};
+
+
+// Used to access a header within a context
+struct Header_idx_expr : Expr, Expr_impl<hdr_idx_expr>
+{
+  Header_idx_expr(Location loc, Type const* t, Expr const* h)
+    : Expr(node_kind, loc, t), first(h)
+  { }
+
+  Expr const* header() const { return first; }
+
+  Expr const* first;
+};
+
+
 
 
 // -------------------------------------------------------------------------- //
@@ -488,6 +525,8 @@ apply(T const* e, F fn)
     case offsetof_expr: return fn(cast<Offsetof_expr>(e));
     case headerof_expr: return fn(cast<Headerof_expr>(e));
     case do_expr: return fn(cast<Do_expr>(e));
+    case fld_idx_expr: return fn(cast<Field_idx_expr>(e));
+    case hdr_idx_expr: return fn(cast<Header_idx_expr>(e));
   }
   lingo_unreachable("unhandled expression '{}'", e->node_name());
 }
@@ -508,27 +547,29 @@ get_error_expr()
   return make_error_node<Expr>();
 }
 
-Id_expr*       make_id_expr(Location, Decl const*);
-Lookup_expr*   make_lookup_expr(Location, String const*);
-Default_expr*  make_default_expr(Location, Type const*);
-Init_expr*     make_init_expr(Location, Init_kind);
-Init_expr*     make_init_expr(Init_kind, Expr const*);
-Value_expr*    make_bool_expr(Location, bool);
-Value_expr*    make_int_expr(Location, Integer const&);
-Value_expr*    make_value_expr(Location, Type const*, Value const&);
-Unary_expr*    make_unary_expr(Location, Unary_op, Expr const*);
-Binary_expr*   make_binary_expr(Location, Binary_op, Expr const*, Expr const*);
-Call_expr*     make_call_expr(Location, Expr const*, Expr_seq const&);
-Tuple_expr*    make_tuple_expr(Location, Expr_seq const&);
-Index_expr*    make_index_expr(Location, Expr const*, Expr const*);
-Index_expr*    make_index_expr(Location, Member_expr const*);
-Member_expr*   make_member_expr(Location, Expr const*, Expr const*);
-Field_expr*    make_field_expr(Location, Expr const*, Expr const*);
-Convert_expr*  make_convert_expr(Location, Type const*, Conversion_kind, Expr const*);
-Expr*          make_lengthof_expr(Location, Expr const*);
-Expr*          make_offsetof_expr(Location, Expr const*, Decl const*);
-Expr*          make_headerof_expr(Location, Decl const*);
-Do_expr*       make_do_expr(Location, Do_kind, Expr const*);
+Id_expr*         make_id_expr(Location, Decl const*);
+Lookup_expr*     make_lookup_expr(Location, String const*);
+Default_expr*    make_default_expr(Location, Type const*);
+Init_expr*       make_init_expr(Location, Init_kind);
+Init_expr*       make_init_expr(Init_kind, Expr const*);
+Value_expr*      make_bool_expr(Location, bool);
+Value_expr*      make_int_expr(Location, Integer const&);
+Value_expr*      make_value_expr(Location, Type const*, Value const&);
+Unary_expr*      make_unary_expr(Location, Unary_op, Expr const*);
+Binary_expr*     make_binary_expr(Location, Binary_op, Expr const*, Expr const*);
+Call_expr*       make_call_expr(Location, Expr const*, Expr_seq const&);
+Tuple_expr*      make_tuple_expr(Location, Expr_seq const&);
+Index_expr*      make_index_expr(Location, Expr const*, Expr const*);
+Index_expr*      make_index_expr(Location, Member_expr const*);
+Member_expr*     make_member_expr(Location, Expr const*, Expr const*);
+Field_expr*      make_field_expr(Location, Expr const*, Expr const*);
+Convert_expr*    make_convert_expr(Location, Type const*, Conversion_kind, Expr const*);
+Expr*            make_lengthof_expr(Location, Expr const*);
+Expr*            make_offsetof_expr(Location, Expr const*, Decl const*);
+Expr*            make_headerof_expr(Location, Decl const*);
+Do_expr*         make_do_expr(Location, Do_kind, Expr const*);
+Field_idx_expr*  make_fld_idx_expr(Location, Expr const*);
+Header_idx_expr* make_hdr_idx_expr(Location, Expr const*);
 
 
 // Returns a new default expression.
@@ -855,6 +896,20 @@ inline Expr*
 make_offsetof_expr(Expr const* e, Decl const* m)
 {
   return make_offsetof_expr(Location::none, e, m);
+}
+
+
+inline Expr*
+make_fld_idx_expr(Expr const* e)
+{
+  return make_fld_idx_expr(Location::none, e);
+}
+
+
+inline Expr*
+make_hdr_idx_expr(Expr const* e)
+{
+  return make_hdr_idx_expr(Location::none, e);
 }
 
 

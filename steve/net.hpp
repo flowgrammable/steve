@@ -10,13 +10,15 @@
 
 #include "lingo/symbol.hpp"
 
+#include <unordered_set>
+
 // This module is used to connect the decode decls
 // togethers. This allows us to formt he graph to
 // type check the flow tables
 namespace steve 
 {
 
-using Stage_seq = std::vector<Stage*>;
+using Decl_set = std::set<Decl const*>;
 
 
 struct Extracted : std::vector<Decl const*> 
@@ -54,21 +56,17 @@ namespace steve
 {
 
 // Used to keep track of valid field/header identifiers
-// which are used in the program
-struct Context_scope
+// when checking the pipeline. We don't really care about
+// which declaration they refer to, only that the identifier is
+// a valid name
+struct Context_bindings : std::unordered_set<String const*>
 {
-  Pipeline_environment& headers() { return first; }
-  Pipeline_environment& fields() { return second; }
-
-  // header environment
-  Pipeline_environment first;
-  Pipeline_environment second;
+  using std::unordered_set<String const*>::unordered_set;
 };
 
 
-// Keeps track of all fields extracted
+// Keeps track of all possible fields extracted
 // and all headers extracted in the program
-// FIXME: this probably shouldn't be here
 struct Context_environment
 {
   Pipeline_environment& headers() { return first; }
@@ -82,15 +80,20 @@ struct Context_environment
 
 struct Stage
 {
-  Stage(Decl const*, Expr_seq const&);
+  Stage(Decl const*, Decl_set const&, Expr_seq const&);
 
   Decl const* decl() const { return first; }
   Expr_seq const& requirements() const { return second; }
-  Expr_seq const& branches() const { return third; }
+  Decl_set const& branches() const { return third; }
+  Expr_seq const& productions() const { return fourth; }
 
   Decl const* first;
   Expr_seq second;
-  Expr_seq const third;
+  Decl_set const third;
+  Expr_seq fourth;
+
+  // for dfs
+  bool visited;
 };
 
 
@@ -105,15 +108,17 @@ struct Stage
 // added to the tables.
 struct Pipeline : std::vector<Stage*>
 {
-  Pipeline(Context_scope c, Context_environment e)
-    : scope_(c), env_(e)
+  Pipeline(Context_bindings& c, Context_environment& e)
+    : bindings_(c), env_(e)
   { }
 
-  Context_scope& scope() { return scope_; }
+  Context_bindings& bindings() { return bindings_; }
   Context_environment& env() { return env_; }
 
-  Context_scope scope_;
+  Context_bindings bindings_;
   Context_environment env_;
+
+  Stage* find(Decl const*) const;
 };
 
 
@@ -121,8 +126,8 @@ void register_stage(Decode_decl const*);
 void register_stage(Table_decl const*);
 bool check_pipeline();
 
-Value lookup_field(String const* n);
-Value lookup_header(String const* n);
+Value lookup_field_binding(String const* n);
+Value lookup_header_binding(String const* n);
 
 } // namespace steve
 

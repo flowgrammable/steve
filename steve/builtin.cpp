@@ -1,13 +1,12 @@
 #include "builtin.hpp"
 
-#include <unordered_map>
-
 
 namespace steve
 {
 
 namespace
 {
+
 
 // empty block
 Stmt*
@@ -16,6 +15,38 @@ make_empty_block()
   Stmt_seq s;
   return make_block_stmt(s);
 }
+
+
+// Used to construct __decode(cxt, decode_func : T)
+// Needed since each decode dispatch has a different type
+// Using this function instead of casting because dealing with
+// casting in codegen seems easier than in steve
+struct Decode_dispatch_fn
+{
+  template<typename T>
+  Decl const* operator()(T const* t) const { return dispatch(t); }
+
+  // Fail on non-object types.
+  template<typename T>
+    static typename std::enable_if<!is_object_type<T>(), Decl const*>::type
+  dispatch(T const* t)
+  {
+    lingo_unreachable();
+  }
+
+  template<typename T>
+    static typename std::enable_if<is_object_type<T>(), Decl const*>::type
+  dispatch(T const* t)
+  {
+    Decl_seq parms =
+    {
+      make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+      make_parameter_decl(get_identifier("header"), get_reference_type(t))
+    };
+    
+    return make_function_decl(get_identifier(__decode), parms, get_void_type(), make_empty_block());
+  }
+};
 
 
 // __bind_offset(cxt : ref CXT, env_offset : int, offsetof : int)
@@ -85,22 +116,47 @@ get_context()
 }
 
 
+// __decode(ref context, id decoder)
+// Takes a reference to a context and an identifier which points
+// to the next decoder to be called.
+// This function will handle the reinterpretation of packet data
+// into the _header_ object with correct type
+Function_decl const*
+decode()
+{
+  return nullptr;
+}
+
+
 // Represent the context type as
 // record Context { } for the sake of
 // easy member access
-Type*
+Record_type const*
 context()
 {
+  String const* n = get_identifier(__context_type);
 
+  // FIXME: should we be using buffer types here?
+  Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+  Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+
+  Decl_seq mem {
+    make_member_decl(get_identifier("packet"), pkt_buf),
+    make_member_decl(get_identifier("metadata"), meta_buf)
+  };
+
+  Record_decl const* r = make_record_decl(n, mem); 
+
+  return get_record_type(r);
 }
 
 
 // Builtin functions
-std::unordered_map<std::string, Function_decl const*> builtin_functions_;
+std::unordered_multimap<std::string, Function_decl const*> builtin_functions_;
 
 
 // Builtin record types
-std::unordered_map<std::string, Type const*> builtin_types_;
+std::unordered_multimap<std::string, Record_type const*> builtin_types_;
 
 } // namespace
 
@@ -108,27 +164,28 @@ std::unordered_map<std::string, Type const*> builtin_types_;
 void 
 init_builtins()
 {
-  std::unordered_map<std::string, Function_decl const*> 
-  builtin_func
-  {
-    {__bind_offset, bind_offset()},
-    {__bind_header, bind_header()},
-    {__advance, advance()},
-    {__get_context, get_context()}
-  };
-
-  std::unordered_map<std::string, Type const*> 
+  std::unordered_multimap<std::string, Record_type const*> 
   builtin_types
   {
     {__context_type, context()},
   };
 
-  builtin_functions_ = builtin_func;
   builtin_types_ = builtin_types;
+
+  std::unordered_multimap<std::string, Function_decl const*> 
+  builtin_func
+  {
+    {__bind_offset, bind_offset()},
+    {__bind_header, bind_header()},
+    {__advance, advance()},
+    // {__get_context, get_context()}
+  };
+
+  builtin_functions_ = builtin_func;
 }
 
 
-std::unordered_map<String, Function_decl const*>
+std::unordered_multimap<String, Function_decl const*>
 builtin_functions()
 {
   return builtin_functions_;
@@ -136,14 +193,46 @@ builtin_functions()
 
 
 Function_decl const*
-lookup_function(String const n)
+builtin_function(String const n)
 {
   auto search = builtin_functions_.find(n);
   if (search != builtin_functions_.end())
     return search->second;
-  else
-    return nullptr;
+
+  return nullptr;
 }
+
+
+Record_type const*
+builtin_type(String const n)
+{
+  auto search = builtin_types_.find(n);
+  if (search != builtin_types_.end())
+    return search->second;
+  
+  return nullptr;
+}
+
+
+// This function has to be called AFTER the builtins are
+// initialized
+// Type 't' should be a function type
+// __decode(cxt, decoder_id)
+Function_decl const*
+make_decode_fn(Type const* t)
+{
+  lingo_assert(builtin_functions_.size() > 0);
+
+  Decode_dispatch_fn dis;
+  Decl const* d = apply(t, dis);
+
+  lingo_assert(is<Function_decl>(d));
+
+  Function_decl const* fn = cast<Function_decl>(d);
+  builtin_functions_.insert(std::make_pair(__decode, fn));
+  return fn;
+}
+
 
 } // namespace steve
 

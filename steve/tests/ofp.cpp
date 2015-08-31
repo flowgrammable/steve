@@ -120,8 +120,20 @@ make_do(Do_kind k, Decode_decl const* d)
 
 
 void
+lower_decodes(Decode_decl const* d)
+{
+  Stmt_seq stmts;
+  for (auto s : lower(make_decl_stmt(d), stmts)) {
+    print(s);
+  }
+}
+
+
+void
 test1()
 {
+  Global_scope global;
+
   init_builtins();
 
   // make the headers
@@ -200,15 +212,11 @@ test1()
   register_stage(eth_d);
   register_stage(ipv4_d);
 
-  Stmt_seq stmts;
-  for (auto s : lower(make_decl_stmt(eth_d), stmts)) {
-    print(s);
-  }
+  // lowering has to happen in reverse as well
+  lower_decodes(ipv4_d);
+  lower_decodes(eth_d);
 
-  stmts.clear();
-  for (auto s : lower(make_decl_stmt(ipv4_d), stmts)) {
-    print(s);
-  }
+  check_pipeline();
 }
 
 

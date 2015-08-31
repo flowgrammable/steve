@@ -38,7 +38,6 @@ void print(Printer&, If_type const*);
 void print(Printer&, Seq_type const*);
 void print(Printer&, Buffer_type const*);
 void print(Printer&, Until_type const*);
-void print(Printer&, Context_type const*);
 
 void print(Printer&, Expr const*);
 void print(Printer&, Id_expr const*);
@@ -55,6 +54,8 @@ void print(Printer&, Convert_expr const*);
 void print(Printer&, Lengthof_expr const*);
 void print(Printer&, Offsetof_expr const*);
 void print(Printer&, Do_expr const*);
+void print(Printer&, Field_idx_expr const*);
+void print(Printer&, Header_idx_expr const*);
 
 void print(Printer&, Decl const*);
 void print(Printer&, Variable_decl const*);

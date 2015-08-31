@@ -109,6 +109,8 @@ precedence(Expr const* e)
     case field_expr:
     case init_expr:
     case convert_expr:
+    case fld_idx_expr:
+    case hdr_idx_expr:
       // Call, index, and member expressions are postfix expression.
       // We include conversions here also.
       return 2;
@@ -388,13 +390,6 @@ print(Printer& p, Until_type const* t)
 
 
 void
-print(Printer& p, Context_type const* t)
-{
-  print(p, "Cxt");
-}
-
-
-void
 print(Printer& p, Expr const* e)
 {
   print_term(p, e);
@@ -556,6 +551,36 @@ print(Printer& p, Offsetof_expr const* e)
 
 
 void
+print(Printer& p, Do_expr const* e)
+{
+  print(p, "do ");
+  switch(e->do_what()) {
+  case decode: print(p, "decode "); break;
+  case table: print(p, "table "); break;
+  }
+  print(p, e->target());
+}
+
+
+void
+print(Printer& p, Field_idx_expr const* e)
+{
+  print(p, "_fields_[");
+  print(p, e->field());
+  print("]");
+}
+
+
+void
+print(Printer& p, Header_idx_expr const* e)
+{
+  print(p, "_header_[");
+  print(p, e->header());
+  print(p, "]");
+}
+
+
+void
 print(Printer& p, Decl const* d)
 {
   print_term(p, d);
@@ -578,8 +603,10 @@ template<typename T>
 static void
 print_initializer_clause(Printer& p, T const* d)
 {
-  print(p, " = ");
-  print(p, d->init());
+  if (d->has_impl()) {
+    print(p, " = ");
+    print(p, d->init());
+  }
 }
 
 
@@ -643,7 +670,8 @@ print(Printer& p, Function_decl const* d)
   print_parameter_list(p, d);
   print_return_clause(p, d);
   print_space(p);
-  print(p, d->body());
+  if (d->has_impl())
+    print(p, d->body());
 }
 
 
@@ -712,7 +740,8 @@ print(Printer& p, Decode_decl const* d)
   print(p, d->header());
   print(p, ")");
   print_space(p);
-  print(p, d->body());
+  if (d->has_impl())
+    print(p, d->body());
 }
 
 
@@ -848,18 +877,6 @@ print(Printer& p, Match_stmt const* s)
   print(p, s->cond());
   print(p, ")");
   print_match_body(p, s);
-}
-
-
-void
-print(Printer& p, Do_expr const* s)
-{
-  print(p, "do ");
-  switch(s->do_what()) {
-  case decode: print(p, "decode "); break;
-  case table: print(p, "table "); break;
-  }
-  print(p, s->target());
 }
 
 

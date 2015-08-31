@@ -78,6 +78,7 @@ struct Decl
   String const* name() const      { return name_; }
   Type const*   type() const      { return type_; }
   Prop const*   prop() const      { return prop_; }
+  virtual bool  has_impl() const  { return true; }
 
   Decl_kind     kind_;
   Location      loc_;
@@ -95,6 +96,7 @@ struct Variable_decl : Decl, Decl_impl<variable_decl>
   { }
 
   Expr const* init() const { return first; }
+  bool        has_impl() const { if (init()) return true; else return false;}
 
   void set_init(Expr const* e) { first = e; }
 
@@ -131,6 +133,7 @@ struct Function_decl : Decl, Decl_impl<function_decl>
   Stmt const*          body() const  { return second; }
   Function_type const* type() const;
   Type const*          ret_type() const;
+  bool                 has_impl() const { if (body()) return true; else return false; }
 
   void set_body(Stmt const* s) { second = s; }
 
@@ -225,6 +228,9 @@ struct Decode_decl : Decl, Decl_impl<decode_decl>
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
+  bool         has_impl() const { if (body()) return true; else return false; }
+
+  void set_body(Stmt const* s) { second = s; }
 
   Type const* first;
   Stmt const* second;
@@ -245,10 +251,13 @@ struct Table_decl : Decl, Decl_impl<table_decl>
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
   Decl_seq const& body() const { return third; }
+  bool has_impl() const { if(body().size() > 0) return true; else return false; }
+
+  void set_body(Decl_seq const& d) { third = d; }
 
   int      first;
-  Expr_seq const second;
-  Decl_seq const third;
+  Expr_seq second;
+  Decl_seq third;
 };
 
 
@@ -392,12 +401,25 @@ Extracts_decl*  make_extracts_decl(Location, Expr const*);
 Rebind_decl*    make_rebind_decl(Location, Expr const*, Expr const*);
 
 
+// Add definitions to declarations that don't have them
+void define(Decode_decl*, Stmt const*);
+void define(Variable_decl*, Expr const*);
+void define(Function_decl*, Stmt const*);
+
+
 // Make a new variable declaration. The type of the expression shall
 // match the declared type of the variable.
 inline Variable_decl*
 make_variable_decl(String const* n, Type const* t, Expr const* e)
 {
   return make_variable_decl(Location::none, n, t, e);
+}
+
+
+inline Variable_decl*
+make_variable_decl(String const* n, Type const* t)
+{
+  return make_variable_decl(Location::none, n, t);
 }
 
 
@@ -414,6 +436,13 @@ inline Function_decl*
 make_function_decl(String const* n, Decl_seq const& p, Type const* r, Stmt const* b)
 {
   return make_function_decl(Location::none, n, p, r, b);
+}
+
+
+inline Function_decl*
+make_function_decl(String const* n, Decl_seq const& p, Type const* r)
+{
+  return make_function_decl(Location::none, n, p, r);
 }
 
 
@@ -462,6 +491,13 @@ inline Decode_decl*
 make_decode_decl(String const* n, Type const* t, Stmt const* s)
 {
   return make_decode_decl(Location::none, n, t, s);
+}
+
+
+inline Decode_decl*
+make_decode_decl(String const* n, Type const* t)
+{
+  return make_decode_decl(Location::none, n, t, nullptr);
 }
 
 

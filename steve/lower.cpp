@@ -33,15 +33,23 @@ make_empty_block()
 void
 lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
 {
-  auto advance = lookup_function(__advance);
+  auto advance = builtin_function(__advance);
 
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
+      // makes the call expr to __advance
       Expr_seq args {
         id(c->front()),
         make_lengthof_expr(id(h->front()))
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
+
+      // make call to next decoder
+      Expr_seq cargs {
+        id(c->front()),
+      };
+      Decl const* target = lookup_decl(as<Id_expr>(e->target())->name());
+      stmts.push_back(make_expr_stmt(make_call_expr(id(target), cargs)));
     }
   }
 }
@@ -112,17 +120,20 @@ void
 lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
-  Function_decl const* bind_header = lookup_function(__bind_header);
+  Function_decl const* bind_header = builtin_function(__bind_header);
 
   Local_scope local;
 
   lingo_assert(is<Block_stmt>(d->body()));
   Block_stmt const* body = as<Block_stmt>(d->body());
 
-  String const* n = d->name();
-
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
-  Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), get_reference_type(d->header()));
+  // FIXME: a bit of a hack but it works
+  // going to declare a variable named header for the explicit and only purpose
+  // of determining what type the immediate decode handles. This lets me carry the type
+  // across lower() calls using scoping.
+  // it is no longer being used as a parameter for the decode function
+  Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), d->header());
 
   declare(cxt->name(), cxt);
   declare(header->name(), header);
@@ -130,17 +141,16 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   Decl_seq parms =
   {
     cxt,
-    header
   };
 
   Stmt_seq new_stmts;
   Expr_seq args {
     id(cxt), 
-    make_value_expr(get_int_type(), lookup_header(as<Record_type>(d->header())->decl()->name()))
+    make_value_expr(get_int_type(), lookup_header_binding(as<Record_type>(d->header())->decl()->name()))
   };
   new_stmts.push_back(make_expr_stmt(make_call_expr(id(bind_header), args)));
 
-  // for each stmt, attempt to lower it
+  // for each stmt, attempt to lower it and at it to the new body
   for(Stmt const* s : *body)
   {
     lower(s, new_stmts);
@@ -150,12 +160,11 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   // construct a new function declaration
   // FIXME: replace the body
-  Function_decl const* fn = make_function_decl(n, parms, get_void_type(), new_body);
+  Function_decl const* fn = make_function_decl(d->name(), parms, get_void_type(), new_body);
 
   stmts.push_back(make_decl_stmt(fn));
-
-  declare(n, fn);
 }
+
 
 // We convert an extracts decl into implicit function
 // calls to __bind_offset(cxt, n, offsetof(field))
@@ -165,23 +174,20 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 void
 lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
 {
-  if (auto bind_offset = lookup_function(__bind_offset)) {
-    if (Overload const* oh = lookup(get_identifier(_header_))) {
-      lingo_assert(oh->is_singleton());
-      lingo_assert(is<Field_expr>(d->field()));
-      Field_expr const* f = as<Field_expr>(d->field());
+  if (auto bind_offset = builtin_function(__bind_offset)) {
+    lingo_assert(is<Field_expr>(d->field()));
+    Field_expr const* f = as<Field_expr>(d->field());
 
-      if (Overload const* oc = lookup(get_identifier(_cxt_))) {
-        Expr_seq args {
-          id(oc->front()),
-          make_value_expr(get_int_type(), lookup_field(f->name())),
-          make_offsetof_expr(id(oh->front()), f->field()->decl())
-        };
+    if (Overload const* oc = lookup(get_identifier(_cxt_))) {
+      Expr_seq args {
+        id(oc->front()),
+        make_value_expr(get_int_type(), lookup_field_binding(f->name())),
+        make_offsetof_expr(f->record(), f->field()->decl())
+      };
 
-        // make call
-        Call_expr* call = make_call_expr(id(bind_offset), args);
-        stmts.push_back(make_expr_stmt(call));
-      }
+      // make call
+      Call_expr* call = make_call_expr(id(bind_offset), args);
+      stmts.push_back(make_expr_stmt(call));
     }
   }
 }
@@ -263,6 +269,13 @@ lower(Stmt const* s, Stmt_seq& stmts)
     default:
       stmts.push_back(s);
       break;
+  }
+
+  // scan the stmts and push any declarations onto scope
+  for (auto s : stmts) {
+    if (Decl_stmt const* d = as<Decl_stmt>(s)) {
+      declare(d->decl()->name(), d->decl());
+    }
   }
 
   return stmts;

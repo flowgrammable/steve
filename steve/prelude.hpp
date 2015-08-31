@@ -71,7 +71,6 @@ struct Buffer_type;
 struct Until_type;
 struct Table_type;
 struct Flow_type;
-struct Context_type;
 
 struct Prop;
 
@@ -94,6 +93,8 @@ struct Offsetof_expr;
 struct Do_expr;
 struct Lengthof_expr;
 struct Offsetof_expr;
+struct Field_idx_expr;
+struct Header_idx_expr;
 
 struct Decl;
 struct Variable_decl;
