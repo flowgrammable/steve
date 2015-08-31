@@ -139,9 +139,10 @@ Overload const* lookup(char const*);
 
 Decl const* lookup_decl(String const*);
 
-Decl const* define_variable(String const*, Expr const*);
-Decl const* define_function(String const*, Stmt const*);
-Decl const* define_decode(String const*, Stmt const*);
+Decl const* define_variable(Variable_decl const*, Variable_decl const*);
+Decl const* define_function(Function_decl const*, Function_decl const*);
+Decl const* define_decode(Decode_decl const*, Decode_decl const*);
+Decl const* define_table(Table_decl const*, Table_decl const*);
 
 
 // ---------------------------------------------------------------------------//

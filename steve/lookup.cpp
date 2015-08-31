@@ -159,6 +159,60 @@ current_scope()
 //                             Declarations
 
 
+Decl const*
+define(Decl const* d1, Decl const* d2)
+{
+  switch (d1->kind()) {
+    case variable_decl: return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
+    case function_decl: return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
+    case decode_decl:   return define_decode(cast<Decode_decl>(d1), cast<Decode_decl>(d2));
+    case table_decl:    return define_table(cast<Table_decl>(d1), cast<Table_decl>(d2));
+    default: 
+      return nullptr;
+  }
+}
+
+
+// A declaration can be defined if it has no implementation
+// and has the same type as the new declaration
+// note: d2 is the new decl
+bool
+can_define(Decl const* d1, Decl const* d2)
+{
+  if (d1->type() == d2->type()) {
+    if (!d1->has_impl()) {
+      define(d1, d2);
+      return true;
+    }
+    else {
+      error(d2->location(), "redefinition of non-forward declaration '{}'", d2->name());
+      note(d1->location(), "    previous definition here");
+      return false;
+    }
+  }
+
+  return false;
+}
+
+
+// Handling for forward declarations
+//
+// If we already have a declaration in this scope
+// and that declaration cannot be overloaded
+// check whether or not that declaration is a forward declaration and then
+// proceed to define it
+bool
+forward_decl(Overload* ovl, Decl const* decl)
+{
+  for (Decl const* d : *ovl) {
+    if (can_define(d, decl))
+      return true;
+  }
+
+  return false;
+}
+
+
 // Create a name binding for the declaration.
 //
 // If we've already found a declaration in this scope,
@@ -178,6 +232,8 @@ declare(String const* n, Decl const* d)
   Scope::Binding* b = env_.binding(n);
   if (b && b->scope == s) {
     if (overload_decl(b->ovl, d))
+      return b->ovl;
+    if (forward_decl(b->ovl, d))
       return b->ovl;
     else
       return nullptr;
@@ -251,51 +307,52 @@ lookup_decl(String const* n)
 // -------------------------------------------------------------------------- //
 //                             Defining
 
+// the 2nd param is always the defining declaration
 Decl const*
-define_variable(String const* n, Expr const* e)
+define_variable(Variable_decl const* v1, Variable_decl const* v2)
 {
-  Decl* d = const_cast<Decl*>(lookup_decl(n));
-  // this has to be a variable decl otherwise the program is inconsistent
-  lingo_assert(is<Variable_decl>(d));
-
   // strip the const
   // this should be safe since the initial declaration was non-const
-  Variable_decl* var = cast<Variable_decl>(d);
-  var->set_init(e);
+  Variable_decl* var = const_cast<Variable_decl*>(v1);
+  var->set_init(v2->init());
 
   return var;
 }
 
 
 Decl const*
-define_function(String const* n, Stmt const* s)
+define_function(Function_decl const* f1, Function_decl const* f2)
 {
-  Decl* d = const_cast<Decl*>(lookup_decl(n));
-  // this has to be a variable decl otherwise the program is inconsistent
-  lingo_assert(is<Function_decl>(d));
-
   // strip the const
   // this should be safe since the initial declaration was non-const
-  Function_decl* fn = cast<Function_decl>(d);
-  fn->set_body(s);
+  Function_decl* fn = const_cast<Function_decl*>(f1);
+  fn->set_body(f2->body());
 
   return fn;
 }
 
 
 Decl const*
-define_decode(String const* n, Stmt const* s)
+define_decode(Decode_decl const* d1, Decode_decl const* d2)
 {
-  Decl* d = const_cast<Decl*>(lookup_decl(n));
-  // this has to be a variable decl otherwise the program is inconsistent
-  lingo_assert(is<Decode_decl>(d));
-
   // strip the const
   // this should be safe since the initial declaration was non-const
-  Decode_decl* dec = cast<Decode_decl>(d);
-  dec->set_body(s);
+  Decode_decl* dec = const_cast<Decode_decl*>(d1);
+  dec->set_body(d2->body());
 
   return dec;
+}
+
+
+Decl const*
+define_table(Table_decl const* t1, Table_decl const* t2)
+{
+  // strip the const
+  // this should be safe since the initial declaration was non-const
+  Table_decl* t = const_cast<Table_decl*>(t1);
+  t->set_body(t2->body());
+
+  return t;
 }
 
 

@@ -80,11 +80,19 @@ can_overload(Decl const* d1, Decl const* d2)
   // TOOD: Allow forward declarations. This is only a redefinition
   // if there is no previous definition.
   if (d2->type() == d2->type()) {
-    error(d2->location(), "redefinition of '{}'", d2->name());
-    note(d1->location(), "    previous definition here");
-    // FIXME: Show the previous definition.
+    // if d1 has an implementation then it is a redefinition
+    if (d1->has_impl()) {
+      error(d2->location(), "redefinition of '{}'", d2->name());
+      note(d1->location(), "    previous definition here");
+      error(d1->location(), "'{}'", d1);
+    }
+    // otherwise we want to treat d1 as a forward declaration
+    // and define it using d2
+    // we're still going to return false because they are not to 
+    // be overloaded, just defined
     return false;
   }
+
 
   if (!is<Function_decl>(d1))
     return diagnose_error(d1, d2, "declaration of a different kind");

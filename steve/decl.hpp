@@ -78,7 +78,7 @@ struct Decl
   String const* name() const      { return name_; }
   Type const*   type() const      { return type_; }
   Prop const*   prop() const      { return prop_; }
-  bool          has_impl() const  { return true; }
+  virtual bool  has_impl() const  { return true; }
 
   Decl_kind     kind_;
   Location      loc_;
@@ -251,10 +251,13 @@ struct Table_decl : Decl, Decl_impl<table_decl>
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
   Decl_seq const& body() const { return third; }
+  bool has_impl() const { if(body().size() > 0) return true; else return false; }
+
+  void set_body(Decl_seq const& d) { third = d; }
 
   int      first;
-  Expr_seq const second;
-  Decl_seq const third;
+  Expr_seq second;
+  Decl_seq third;
 };
 
 
