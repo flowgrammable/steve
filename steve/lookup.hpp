@@ -144,6 +144,8 @@ Decl const* define_function(Function_decl const*, Function_decl const*);
 Decl const* define_decode(Decode_decl const*, Decode_decl const*);
 Decl const* define_table(Table_decl const*, Table_decl const*);
 
+void check_forward();
+
 
 // ---------------------------------------------------------------------------//
 //                            Printing

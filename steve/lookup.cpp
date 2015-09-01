@@ -39,9 +39,35 @@ struct Stack : std::forward_list<Scope*>
 };
 
 
+// List of known forward declarations
+// if this isn't empty by the end of the scope 
+// then you have an undefined declaration
+struct Forward_decls : std::unordered_map<String const*, Decl const*>
+{
+  void push(String const*, Decl const*);
+  void pop(String const*);
+  bool is_empty() { return (size() > 0) ? false : true; }
+};
+
+
+void
+Forward_decls::push(String const* s, Decl const* d)
+{
+  this->insert({s, d});
+}
+
+
+void
+Forward_decls::pop(String const* s)
+{
+  this->erase(s);
+}
+
+
 // The global binding environment and scope stack.
 Environment env_;
 Stack       stack_;
+Forward_decls fwd_;
 
 
 // Push a new name binding into the context. This creates
@@ -90,7 +116,32 @@ Environment::binding(String const* n)
 }
 
 
+void
+track_forward(Overload* ovl)
+{
+  for (Decl const* d: *ovl)
+  {
+    if (!d->has_impl())
+      fwd_.push(d->name(), d);
+  }
+}
+
+
 } // namespace
+
+
+// Used to check if any used forward declarations
+// are referenced but not defined by the end of the
+// program
+void
+check_forward()
+{
+  if (!fwd_.is_empty()) {
+    for (auto pair : fwd_) {
+      error(pair.second->location(), "{} used but not defined.", pair.second);
+    }
+  }
+}
 
 
 // When constructing a scope, place it on the scope stack.
@@ -125,8 +176,14 @@ Scope::bind(String const* n, Decl const* d)
 Overload const*
 Scope::lookup(String const* s) const
 {
-  if (Scope::Binding* b = env_.binding(s))
+  if (Scope::Binding* b = env_.binding(s)) {
+    // everytime a lookup is done
+    // we need to check if that decl has a definition
+    // if its a forward decl
+    // we need to keep track of all forward decls that are used (i.e. looked up)
+    track_forward(b->ovl);
     return b->ovl;
+  }
   else
     return nullptr;
 }
@@ -162,6 +219,8 @@ current_scope()
 Decl const*
 define(Decl const* d1, Decl const* d2)
 {
+  fwd_.pop(d1->name());
+
   switch (d1->kind()) {
     case variable_decl: return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
     case function_decl: return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
