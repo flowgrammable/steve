@@ -92,6 +92,8 @@ precedence(Expr const* e)
     case default_expr:
     case value_expr:
     case tuple_expr:
+    case insert_expr:
+    case delete_expr:
       // Literals, names, tuples are primary expressions.
       return 0;
 
@@ -547,6 +549,26 @@ print(Printer& p, Offsetof_expr const* e)
   // FIXME: We should be printing the qualified name.
   print(p, e->member()->name());
   print(p, ')');
+}
+
+
+void
+print(Printer& p, Insert_expr const* e)
+{
+  print(p, "insert ");
+  print(p, e->flow()->name());
+  print(p, " into ");
+  print(p, e->table());
+}
+
+
+void
+print(Printer& p, Delete_expr const* e)
+{
+  print(p, "delete ");
+  print(p, e->flow()->name());
+  print(p, " from ");
+  print(p, e->table());
 }
 
 

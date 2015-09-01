@@ -43,6 +43,8 @@ enum Expr_kind
   offsetof_expr, // offsetof e
   headerof_expr, // headerof d
   do_expr,       // do <decode/table> id
+  insert_expr,   // insert <flow> into <table>
+  delete_expr,   // remove <flow> from <table>
   fld_idx_expr,  // _fields_[field_expr]
   hdr_idx_expr,  // _header_[id header]
 };
@@ -457,7 +459,40 @@ struct Offsetof_expr : Expr, Expr_impl<offsetof_expr>
 };
 
 
+// Insert expressions are used to insert flows into tables
+struct Insert_expr : Expr, Expr_impl<insert_expr>
+{
+  Insert_expr(Location loc, Type const* t, Decl const* flw, Expr const* tbl)
+    : Expr(node_kind, loc, t), first(flw), second(tbl)
+  { }
+
+  Decl const* flow()  const { return first; }
+  Expr const* table() const { return second; }
+
+  Decl const* first;
+  Expr const* second;
+};
+
+
+struct Delete_expr : Expr, Expr_impl<delete_expr>
+{
+  Delete_expr(Location loc, Type const* t, Decl const* flw, Expr const* tbl)
+    : Expr(node_kind, loc, t), first(flw), second(tbl)
+  { }
+
+  Decl const* flow()  const { return first; }
+  Expr const* table() const { return second; }
+
+  Decl const* first;
+  Expr const* second;
+};
+
+
 // Used to access the field within a context
+// We translate to this syntax from the surface syntax
+// i.e. _header_.ethertype => _header_[#]
+// All field_expr resolve into integer representations
+// so field access becomes a trivial array lookup
 struct Field_idx_expr : Expr, Expr_impl<fld_idx_expr>
 {
   Field_idx_expr(Location loc, Type const* t, Expr const* f)
@@ -525,6 +560,8 @@ apply(T const* e, F fn)
     case offsetof_expr: return fn(cast<Offsetof_expr>(e));
     case headerof_expr: return fn(cast<Headerof_expr>(e));
     case do_expr: return fn(cast<Do_expr>(e));
+    case insert_expr: return fn(cast<Insert_expr>(e));
+    case delete_expr: return fn(cast<Delete_expr>(e));
     case fld_idx_expr: return fn(cast<Field_idx_expr>(e));
     case hdr_idx_expr: return fn(cast<Header_idx_expr>(e));
   }
@@ -567,6 +604,8 @@ Convert_expr*    make_convert_expr(Location, Type const*, Conversion_kind, Expr 
 Expr*            make_lengthof_expr(Location, Expr const*);
 Expr*            make_offsetof_expr(Location, Expr const*, Decl const*);
 Expr*            make_headerof_expr(Location, Decl const*);
+Insert_expr*     make_insert_expr(Location, Decl const*, Expr const*);
+Delete_expr*     make_delete_expr(Location, Decl const*, Expr const*);
 Do_expr*         make_do_expr(Location, Do_kind, Expr const*);
 Field_idx_expr*  make_fld_idx_expr(Location, Expr const*);
 Header_idx_expr* make_hdr_idx_expr(Location, Expr const*);
@@ -882,6 +921,20 @@ inline Expr*
 make_headerof_expr(Decl const* d)
 {
   return make_headerof_expr(Location::none, d);
+}
+
+
+inline Insert_expr*
+make_insert_expr(Decl const* flw, Expr const* tbl)
+{
+  return make_insert_expr(Location::none, flw, tbl);
+}
+
+
+inline Delete_expr*
+make_delete_expr(Decl const* flw, Expr const* tbl)
+{
+  return make_delete_expr(Location::none, flw, tbl);
 }
 
 

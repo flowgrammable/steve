@@ -129,6 +129,7 @@ less(Id_expr const* a, Id_expr const* b)
   return less(a->decl(), b->decl());
 }
 
+
 inline bool
 less(Do_expr const* a, Do_expr const* b)
 {
@@ -140,14 +141,13 @@ less(Do_expr const* a, Do_expr const* b)
   return less(a->target(), b->target());
 }
 
+
 template<typename T>
 bool 
 Term_less<T>::operator()(T const* a, T const* b) const
 {
   return less(a, b);
 }
-
-
 
 
 } // namespace
@@ -282,6 +282,12 @@ less(Expr const* a, Expr const* b)
 
     case headerof_expr:
       return less(cast<Headerof_expr>(a), cast<Headerof_expr>(b));
+
+    case insert_expr:
+      return less(cast<Insert_expr>(a), cast<Insert_expr>(b));
+
+    case delete_expr:
+      return less(cast<Delete_expr>(a), cast<Delete_expr>(b));
 
     case do_expr:
       return less(cast<Do_expr>(a), cast<Do_expr>(b));

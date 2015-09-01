@@ -31,6 +31,8 @@ get_expr_name(Expr_kind k)
     case lengthof_expr: return "lengthof_expr";
     case offsetof_expr: return "offsetof_expr";
     case headerof_expr: return "headerof_expr";
+    case insert_expr: return "insert_expr";
+    case delete_expr: return "delete_expr";
     case do_expr: return "do_expr";
     case fld_idx_expr: return "fld_idx_expr";
     case hdr_idx_expr: return "hdr_idx_expr";
@@ -351,7 +353,6 @@ make_index_expr(Location loc, Member_expr const* e)
 }
 
 
-
 // Make a member expression.
 //
 // TODO: We could actually reduce this to an index expression
@@ -404,6 +405,26 @@ make_headerof_expr(Location loc, Decl const* d)
 {
   lingo_assert(is<Decode_decl>(d));
   return gc().make<Headerof_expr>(loc, get_kind_type(), d);
+}
+
+
+Insert_expr*
+make_insert_expr(Location loc, Decl const* flw, Expr const* tbl)
+{
+  lingo_assert(is<Table_type>(tbl->type()));
+  lingo_assert(is<Flow_decl>(flw));
+
+  return gc().make<Insert_expr>(loc, get_void_type(), flw, tbl);
+}
+
+
+Delete_expr*
+make_delete_expr(Location loc, Decl const* flw, Expr const* tbl)
+{
+  lingo_assert(is<Table_type>(tbl->type()));
+  lingo_assert(is<Flow_decl>(flw));
+
+  return gc().make<Delete_expr>(loc, get_void_type(), flw, tbl);
 }
 
 
@@ -538,6 +559,8 @@ mark(Expr const* e)
     case lengthof_expr: return mark(cast<Convert_expr>(e));
     case offsetof_expr: return mark(cast<Convert_expr>(e));
     case headerof_expr: return mark(cast<Headerof_expr>(e));
+    case insert_expr: return mark(cast<Insert_expr>(e));
+    case delete_expr: return mark(cast<Delete_expr>(e));
     case do_expr: return mark(cast<Do_expr>(e));
     default: return;
   }
