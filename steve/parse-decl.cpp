@@ -286,6 +286,16 @@ parse_decode_decl(Parser& p, Token_stream& ts)
 }
 
 
+// Parse flow declaration
+//    flow-declaration ::=
+//        <dot-expr, ....> => block-stmt
+Decl const*
+parse_flow_decl(Parser& p, Token_stream& ts)
+{
+  return nullptr;
+}
+
+
 // Parse table-initializer
 //    table-initializer ::=
 //        '{' flow-decl, ... '}'
