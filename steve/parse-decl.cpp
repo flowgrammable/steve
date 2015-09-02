@@ -266,6 +266,20 @@ parse_function_decl(Parser& p, Token_stream& ts)
 }
 
 
+Decl const*
+parse_decode_decl(Parser& p, Token_stream& ts)
+{
+  return nullptr;
+}
+
+
+Decl const*
+parse_table_decl(Parser& p, Token_stream& ts)
+{
+  return nullptr;
+}
+
+
 } // namespace
 
 
@@ -285,6 +299,10 @@ parse_decl(Parser& p, Token_stream& ts)
       return parse_variable_decl(p, ts);
     case def_kw:
       return parse_function_decl(p, ts);
+    case decode_kw:
+      return parse_decode_decl(p, ts);
+    case table_kw:
+      return parse_table_decl(p, ts);
 
     default:
       break;

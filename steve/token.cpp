@@ -42,6 +42,11 @@ get_token_name(Token_kind k)
     case variant_kw: return "variant_kw";
     case void_kw: return "void_kw";
     case while_kw: return "while_kw";
+    case insert_kw: return "insert_kw";
+    case into_kw: return "into_kw";
+    case delete_kw: return "delete_kw";
+    case from_kw: return "from_kw";
+    case as_kw: return "as_kw";
 
     case intn_tok: return "intn_tok";
     case uintn_tok: return "uintn_tok";
@@ -89,6 +94,11 @@ get_token_spelling(Token_kind k)
     case variant_kw: return "variant";
     case void_kw: return "void";
     case while_kw: return "while";
+    case insert_kw: return "insert";
+    case into_kw: return "into_kw";
+    case delete_kw: return "delete";
+    case from_kw: return "from";
+    case as_kw: return "as";
     default: break;
   }
   lingo_unreachable("unhandled token kind ({})", (int)k);
@@ -171,6 +181,11 @@ Token_entry token_list_[] {
   {"var", var_kw},
   {"variant", variant_kw},
   {"void", void_kw},
+  {"insert", insert_kw},
+  {"into", into_kw},
+  {"delete", delete_kw},
+  {"from", from_kw},
+  {"as", as_kw},
   
   // Named values
   {"true", boolean_tok},

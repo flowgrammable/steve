@@ -23,6 +23,8 @@ Function_decl const* builtin_function(String const);
 Record_type const* builtin_type(String const);
 Function_decl const* make_decode_fn(Type const*);
 
+void init_builtins();
+
 } // namespace steve
 
 

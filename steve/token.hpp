@@ -58,6 +58,11 @@ constexpr Token_kind var_kw      = 124; // var
 constexpr Token_kind variant_kw  = 125; // variant
 constexpr Token_kind void_kw     = 126; // void
 constexpr Token_kind while_kw    = 303; // while
+constexpr Token_kind insert_kw   = 127; // insert
+constexpr Token_kind into_kw     = 128; // into
+constexpr Token_kind delete_kw   = 129; // delete
+constexpr Token_kind from_kw     = 130; // from
+constexpr Token_kind as_kw       = 131; // as
 
 // Integer specification.
 constexpr Token_kind intn_tok    = 200; // intN
