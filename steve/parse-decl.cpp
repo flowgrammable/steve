@@ -266,6 +266,19 @@ parse_function_decl(Parser& p, Token_stream& ts)
 }
 
 
+// Parse decode body
+//    decode-body ::-
+//      block-stmt
+Stmt const*
+parse_decode_body(Parser& p, Token_stream& ts)
+{
+
+}
+
+
+// Parse decode-decl
+//    decode-decl ::=
+//        'decode' identifier '('type-id')' [(optional) requires-clause] decode-body
 Decl const*
 parse_decode_decl(Parser& p, Token_stream& ts)
 {
@@ -273,6 +286,29 @@ parse_decode_decl(Parser& p, Token_stream& ts)
 }
 
 
+// Parse table-initializer
+//    table-initializer ::=
+//        '{' flow-decl, ... '}'
+Decl_seq const&
+parse_table_initializer(Parser& p, Token_stream& ts)
+{
+
+}
+
+
+// Parse table-key-fields
+//    table-key-fields ::=
+//        '<' dot-expr, dot-expr,... '>'
+Expr_seq const&
+parse_key_field(Parser& p, Token_stream& ts)
+{
+
+}
+
+
+// Parse table declarations
+//    table-declaration ::=
+//        'table' identifier table-key-fields table-initializer
 Decl const*
 parse_table_decl(Parser& p, Token_stream& ts)
 {
@@ -288,6 +324,8 @@ parse_table_decl(Parser& p, Token_stream& ts)
 //    declaration ::=
 //        variable-decl
 //        function-decl
+//        decode-decl
+//        table-decl
 //
 // Note that this is only called from the statement parser.
 // We are guaranteed to match a top-level declaration here.
