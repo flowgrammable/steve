@@ -179,7 +179,6 @@ test1()
   // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
 
   // make a table
-  Table_decl
 
   // make the decoders
   Decode_decl* eth_d;
