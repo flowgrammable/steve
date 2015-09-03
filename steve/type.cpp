@@ -16,32 +16,12 @@
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_type_name(Type_kind k)
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Type::node_name() const
 {
-  switch (k) {
-    case kind_type: return "kind_type";
-    case void_type: return "void_type";
-    case boolean_type: return "boolean_type";
-    case integer_type: return "integer_type";
-    case constant_type: return "constant_type";
-    case reference_type: return "reference_type";
-    case function_type: return "function_type";
-    case array_type: return "array_type";
-    case tuple_type: return "tuple_type";
-    case record_type: return "record_type";
-    case variant_type: return "variant_type";
-    case enum_type: return "enum_type";
-    case match_type: return "match_type";
-    case if_type: return "if_type";
-    case seq_type: return "seq_type";
-    case buffer_type: return "buffer_type";
-    case until_type: return "until_type";
-    case table_type: return "table_type";
-    case flow_type: return "flow_type";
-  }
-  lingo_unreachable("unhandled type kind ({})", (int)k);
+  return type_str(*this);
 }
 
 

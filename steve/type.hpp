@@ -398,6 +398,18 @@ struct Flow_type : User_defined_type<Flow_decl>
 // TODO: Unify these definitions with the concept definitions
 // above. Not quite sure if there's an elegant way of doing this.
 
+// True when T is models the Type concept. 
+//
+// Note that we assume that a Type is already known 
+// to be Node, so we skip the explicit check.
+template<typename T>
+constexpr bool
+is_type()
+{
+  return std::is_base_of<Type, T>::value;
+}
+
+
 // Returns ture if `t` is the boolean type.
 inline bool
 is_boolean_type(Type const* t)
