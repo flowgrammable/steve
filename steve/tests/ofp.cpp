@@ -18,6 +18,7 @@ make_eth_header()
   return make_record("eth", mem);
 }
 
+
 // For testing nested field exprs
 Record_decl*
 make_ipv4_nested_header()
@@ -130,6 +131,13 @@ lower_decodes(Decode_decl const* d)
 
 
 void
+make_eth_table()
+{
+  
+}
+
+
+void
 test1()
 {
   Global_scope global;
@@ -169,6 +177,9 @@ test1()
   // Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
   // Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
   // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
+
+  // make a table
+  Table_decl
 
   // make the decoders
   Decode_decl* eth_d;

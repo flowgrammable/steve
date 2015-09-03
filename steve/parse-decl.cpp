@@ -286,9 +286,19 @@ parse_decode_decl(Parser& p, Token_stream& ts)
 }
 
 
+// Parse flow instruction block
+//    instr-block-stmt ::=
+//        '{' instruction-stmt;+ '}'
+Stmt const*
+parse_flow_instructions(Parser& p, Token_stream& ts)
+{
+
+}
+
+
 // Parse flow declaration
 //    flow-declaration ::=
-//        <dot-expr, ....> => block-stmt
+//        <dot-expr,+> => instr-block-stmt
 Decl const*
 parse_flow_decl(Parser& p, Token_stream& ts)
 {
@@ -298,7 +308,7 @@ parse_flow_decl(Parser& p, Token_stream& ts)
 
 // Parse table-initializer
 //    table-initializer ::=
-//        '{' flow-decl, ... '}'
+//        '{' flow-decl,+ '}'
 Decl_seq const&
 parse_table_initializer(Parser& p, Token_stream& ts)
 {
@@ -308,7 +318,7 @@ parse_table_initializer(Parser& p, Token_stream& ts)
 
 // Parse table-key-fields
 //    table-key-fields ::=
-//        '<' dot-expr, dot-expr,... '>'
+//        '<' dot-expr,+ '>'
 Expr_seq const&
 parse_key_field(Parser& p, Token_stream& ts)
 {
@@ -318,7 +328,8 @@ parse_key_field(Parser& p, Token_stream& ts)
 
 // Parse table declarations
 //    table-declaration ::=
-//        'table' identifier table-key-fields table-initializer
+//        'table' identifier table-key-fields [(optional) requires-clause]
+//          table-initializer
 Decl const*
 parse_table_decl(Parser& p, Token_stream& ts)
 {
