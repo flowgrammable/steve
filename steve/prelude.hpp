@@ -52,6 +52,7 @@ using lingo::mark;
 // Steve terms
 struct Type;
 struct Default_type;
+struct Kind_type;
 struct Void_type;
 struct Boolean_type;
 struct Integer_type;

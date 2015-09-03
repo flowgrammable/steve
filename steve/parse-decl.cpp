@@ -312,7 +312,7 @@ parse_flow_decl(Parser& p, Token_stream& ts)
 Decl_seq const&
 parse_table_initializer(Parser& p, Token_stream& ts)
 {
-
+  
 }
 
 
