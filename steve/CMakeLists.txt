@@ -7,7 +7,8 @@ add_library(steve STATIC
   op.cpp
   value.cpp
   type.cpp
-  prop.cpp
+  # removing prop temporarily
+  # prop.cpp
   expr.cpp
   stmt.cpp
   decl.cpp

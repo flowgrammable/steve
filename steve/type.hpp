@@ -31,6 +31,8 @@ struct Type
   virtual ~Type()
   { }
 
+  String node_name() const;
+
   virtual void accept(Type_visitor&) const = 0;
 };
 
@@ -121,6 +123,8 @@ struct Integer_type : Type
   bool          is_native_order() const { return third == native_order; }
   bool          is_msbf_order() const   { return third == msbf_order; }
   bool          is_lsbf_order() const   { return third == lsbf_order; }
+
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   int           first;
   Integer_sign  second;
@@ -237,7 +241,7 @@ struct Tuple_type : Type
 // A helper class for defining user-defined types. A user-defined
 // type refers to a declaration.
 template<typename T>
-struct User_defined_type : Type
+struct User_defined_type
 {
   User_defined_type(Decl const* d)
     : first(d)
@@ -255,23 +259,27 @@ struct User_defined_type : Type
 // A record type is defined by its declaration.
 //
 // TODO: Support inheritance.
-struct Record_type : User_defined_type<Record_decl>
+struct Record_type : Type, User_defined_type<Record_decl>
 {
   using User_defined_type<Record_decl>::User_defined_type;
+
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // A variant type...
-struct Variant_type : User_defined_type<Variant_decl>
+struct Variant_type : Type, User_defined_type<Variant_decl>
 {
   using User_defined_type<Variant_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // An enum type...
-struct Enum_type : User_defined_type<Enum_decl>
+struct Enum_type : Type, User_defined_type<Enum_decl>
 {
   using User_defined_type<Enum_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
@@ -379,16 +387,18 @@ struct Until_type : Type
 
 
 // Table types.
-struct Table_type : User_defined_type<Table_decl>
+struct Table_type : Type, User_defined_type<Table_decl>
 {
   using User_defined_type<Table_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // open flow table entry
-struct Flow_type : User_defined_type<Flow_decl>
+struct Flow_type : Type, User_defined_type<Flow_decl>
 {
   using User_defined_type<Flow_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 

@@ -112,6 +112,7 @@ struct Decode_decl;
 struct Table_decl;
 struct Flow_decl;
 struct Extracts_decl;
+struct Rebind_decl;
 
 struct Stmt;
 struct Empty_stmt;
@@ -121,7 +122,7 @@ struct Block_stmt;
 struct Return_stmt;
 struct Match_stmt;
 struct Case_stmt;
-struct Instr_stmt;
+struct Instruct_stmt;
 
 struct Value;
 

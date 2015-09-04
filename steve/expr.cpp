@@ -10,35 +10,14 @@
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_expr_name(Expr_kind k)
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Expr::node_name() const
 {
-  switch (k) {
-    case id_expr: return "id_expr";
-    case lookup_expr: return "lookup_expr";
-    case default_expr: return "default_expr";
-    case init_expr: return "init_expr";
-    case value_expr: return "value_expr";
-    case unary_expr: return "unary_expr";
-    case binary_expr: return "binary_expr";
-    case call_expr: return "call_expr";
-    case tuple_expr: return "tuple_expr";
-    case index_expr: return "index_expr";
-    case member_expr: return "member_expr";
-    case field_expr: return "field_expr";
-    case convert_expr: return "convert_expr";
-    case lengthof_expr: return "lengthof_expr";
-    case offsetof_expr: return "offsetof_expr";
-    case headerof_expr: return "headerof_expr";
-    case insert_expr: return "insert_expr";
-    case delete_expr: return "delete_expr";
-    case do_expr: return "do_expr";
-    case fld_idx_expr: return "fld_idx_expr";
-    case hdr_idx_expr: return "hdr_idx_expr";
-  }
-  lingo_unreachable("unhandled node kind ({})", (int)k);
+  return type_str(*this);
 }
+
 
 // -------------------------------------------------------------------------- //
 //                            Node definitions

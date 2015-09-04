@@ -206,21 +206,18 @@ get_enum_type(Decl const* d)
 Type const*
 get_user_defined_type(Decl const* d)
 {
-  switch (d->kind()) {
-    case record_decl:
-      return get_record_type(cast<Record_decl>(d));
-    case variant_decl:
-      return get_variant_type(cast<Variant_decl>(d));
-    case enum_decl:
-      return get_enum_type(cast<Enum_decl>(d));
-    case table_decl:
-      return get_table_type(cast<Table_decl>(d));
-    case flow_decl:
-      return get_flow_type(cast<Flow_decl>(d));
-    default:
-      error("'{}' does not name a type", d);
-      break;
-  }
+  if (is<Record_decl>(d))
+    return get_record_type(cast<Record_decl>(d));
+  if (is<Variant_decl>(d))
+    return get_variant_type(cast<Variant_decl>(d));
+  if (is<Enum_decl>(d))
+    return get_enum_type(cast<Enum_decl>(d));
+  if (is<Table_decl>(d))
+    return get_table_type(cast<Table_decl>(d));
+  if(is<Flow_decl>(d))
+    return get_flow_type(cast<Flow_decl>(d));
+
+  error("'{}' does not name a type", d);
   return get_error_type();
 }
 
@@ -713,26 +710,21 @@ Type const*
 check_return_type(Stmt const* s, Type const* t)
 {
   lingo_assert(is_valid_node(s));
-  switch (s->kind()) {
-    case block_stmt:
-      return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Block_stmt>(s))
+    return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Return_stmt>(s))
+    return check_return_type(cast<Return_stmt>(s), t);
+  if (is<Match_stmt>(s))
+    return check_return_type(cast<Match_stmt>(s), t);
+  if (is<Case_stmt>(s))
+    return check_return_type(cast<Case_stmt>(s), t);
+  // these do not indicate return types
+  if (is<Empty_stmt>(s) 
+   || is<Expr_stmt>(s) 
+   || is<Decl_stmt>(s) 
+   || is<Instruct_stmt>(s))
+    return nullptr;
 
-    case return_stmt: 
-      return check_return_type(cast<Return_stmt>(s), t);
-
-    case match_stmt:
-      return check_return_type(cast<Match_stmt>(s), t);
-
-    case case_stmt:
-      return check_return_type(cast<Case_stmt>(s), t);
-
-    case empty_stmt:
-    case expr_stmt:
-    case decl_stmt:
-    case instruct_stmt:
-      // These do not indicate return types.
-      return nullptr;
-  }
   lingo_unreachable("unhandled statement '{}'", s->node_name());
 }
 
