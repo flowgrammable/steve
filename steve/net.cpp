@@ -195,16 +195,11 @@ find_productions(Stmt const* s, Expr_seq& product)
 {
   if (is<Decl_stmt>(s)) {
     Decl_stmt const* ds = as<Decl_stmt>(s);
-    switch (ds->decl()->kind()) {
-      case extracts_decl:
-        register_extract(as<Extracts_decl>(ds->decl()), product);
-        break;
-      case rebind_decl:
-        register_rebind(as<Rebind_decl>(ds->decl()), product);
-        break;
-      default:
-        break;
-    }
+    
+    if (is<Extracts_decl>(ds->decl()))
+      register_extract(as<Extracts_decl>(ds->decl()), product);
+    if (is<Rebind_decl>(ds->decl()))
+      register_rebind(as<Rebind_decl>(ds->decl()), product);
   }
 }
 
@@ -278,13 +273,8 @@ find_branch(Decl_stmt const* s, Decl_set& branches)
   // for now we will only handle flow declarations
   // used in constant initialization of flow tables
   // as being possible branches
-  switch (s->decl()->kind()) {
-    case flow_decl: 
-      find_branch(cast<Flow_decl>(s->decl()), branches);
-      break;
-    default:
-      break;
-  }
+  if (is<Flow_decl>(s->decl())) 
+    find_branch(cast<Flow_decl>(s->decl()), branches);
 }
 
 
@@ -294,26 +284,16 @@ find_branch(Decl_stmt const* s, Decl_set& branches)
 void
 find_branch(Stmt const* s, Decl_set& branches)
 {
-  switch (s->kind()) {
-    case block_stmt: 
-      find_branch(cast<Block_stmt>(s), branches);
-      break;
-    case expr_stmt:  
-      find_branch(cast<Expr_stmt>(s), branches);
-      break;
-    case match_stmt: 
-      find_branch(cast<Match_stmt>(s), branches);
-      break;
-    case case_stmt:  
-      find_branch(cast<Case_stmt>(s), branches);
-      break;
-    case decl_stmt:  
-      find_branch(cast<Decl_stmt>(s), branches);
-      break;
-
-    // the rest cannot possibly have branches otherwise we're in trouble
-    default: break;
-  }
+  if (is<Block_stmt>(s)) 
+    find_branch(cast<Block_stmt>(s), branches);
+  if (is<Expr_stmt>(s))  
+    find_branch(cast<Expr_stmt>(s), branches);
+  if (is<Match_stmt>(s))
+    find_branch(cast<Match_stmt>(s), branches);
+  if (is<Case_stmt>(s))  
+    find_branch(cast<Case_stmt>(s), branches);
+  if (is<Decl_stmt>(s))  
+    find_branch(cast<Decl_stmt>(s), branches);
 }
 
 
@@ -375,16 +355,12 @@ Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
 {
   this->second = Expr_seq();
 
-  switch(d->kind()) {
-  case table_decl: 
+  if (is<Table_decl>(d))
     table_requirements(cast<Table_decl>(d), second); 
-    break;
-  case decode_decl: 
+  if (is<Decode_decl>(d)) 
     decode_requirements(cast<Decode_decl>(d), second);
-    break;
-  default:
-    lingo_unreachable("unhandled node kind ({})", d->kind());
-  }
+
+  lingo_unreachable("unhandled node kind ({})", d);
 }
 
 

@@ -529,6 +529,17 @@ is_runtime_type(Type const* t)
 }
 
 
+// Evalutes to true iff T1 and T2 have the same
+// dynamic type
+template<typename T1, typename T2>
+inline bool
+same_kind(T1 const* t1, T2 const* t2)
+{
+  return typeid(*t1) == typeid(*t2);
+}
+
+
+
 // -------------------------------------------------------------------------- //
 //                               Type accessors
 

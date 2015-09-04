@@ -220,15 +220,12 @@ Decl const*
 define(Decl const* d1, Decl const* d2)
 {
   fwd_.pop(d1->name());
+  if (is<Variable_decl>(d1)) return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
+  if (is<Function_decl>(d1)) return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
+  if (is<Decode_decl>(d1))   return define_decode(cast<Decode_decl>(d1), cast<Decode_decl>(d2));
+  if (is<Table_decl>(d1))    return define_table(cast<Table_decl>(d1), cast<Table_decl>(d2));
 
-  switch (d1->kind()) {
-    case variable_decl: return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
-    case function_decl: return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
-    case decode_decl:   return define_decode(cast<Decode_decl>(d1), cast<Decode_decl>(d2));
-    case table_decl:    return define_table(cast<Table_decl>(d1), cast<Table_decl>(d2));
-    default: 
-      return nullptr;
-  }
+  return nullptr;
 }
 
 

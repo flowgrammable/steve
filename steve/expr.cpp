@@ -23,7 +23,7 @@ Expr::node_name() const
 //                            Node definitions
 
 Id_expr::Id_expr(Location loc, Decl const* d)
-  : Expr(node_kind, loc, d->type()), decl_(d)
+  : Expr(loc, d->type()), decl_(d)
 { }
 
 
@@ -37,7 +37,7 @@ Id_expr::name() const
 // FIXME: What is the type of an overload set. For now, its
 // set to the void type. 
 Lookup_expr::Lookup_expr(Location loc, String const* s)
-  : Expr(node_kind, loc, get_void_type()), first(s)
+  : Expr(loc, get_void_type()), first(s)
 { }
 
 
@@ -524,25 +524,23 @@ void
 mark(Expr const* e)
 {
   lingo_assert(is_valid_node(e));
-  switch (e->kind()) {
-    case id_expr: return mark(cast<Id_expr>(e));
-    case value_expr: return mark(cast<Value_expr>(e));
-    case unary_expr: return mark(cast<Unary_expr>(e));
-    case binary_expr: return mark(cast<Binary_expr>(e));
-    case call_expr: return mark(cast<Call_expr>(e));
-    case tuple_expr: return mark(cast<Tuple_expr>(e));
-    case index_expr: return mark(cast<Index_expr>(e));
-    case member_expr: return mark(cast<Member_expr>(e));
-    case field_expr: return mark(cast<Field_expr>(e));
-    case convert_expr: return mark(cast<Convert_expr>(e));
-    case lengthof_expr: return mark(cast<Convert_expr>(e));
-    case offsetof_expr: return mark(cast<Convert_expr>(e));
-    case headerof_expr: return mark(cast<Headerof_expr>(e));
-    case insert_expr: return mark(cast<Insert_expr>(e));
-    case delete_expr: return mark(cast<Delete_expr>(e));
-    case do_expr: return mark(cast<Do_expr>(e));
-    default: return;
-  }
+  if (is<Id_expr>(e)) return mark(cast<Id_expr>(e));
+  if (is<Value_expr>(e)) return mark(cast<Value_expr>(e));
+  if (is<Unary_expr>(e)) return mark(cast<Unary_expr>(e));
+  if (is<Binary_expr>(e)) return mark(cast<Binary_expr>(e));
+  if (is<Call_expr>(e)) return mark(cast<Call_expr>(e));
+  if (is<Tuple_expr>(e)) return mark(cast<Tuple_expr>(e));
+  if (is<Index_expr>(e)) return mark(cast<Index_expr>(e));
+  if (is<Member_expr>(e)) return mark(cast<Member_expr>(e));
+  if (is<Field_expr>(e)) return mark(cast<Field_expr>(e));
+  if (is<Convert_expr>(e)) return mark(cast<Convert_expr>(e));
+  if (is<Lengthof_expr>(e)) return mark(cast<Convert_expr>(e));
+  if (is<Offsetof_expr>(e)) return mark(cast<Convert_expr>(e));
+  if (is<Headerof_expr>(e)) return mark(cast<Headerof_expr>(e));
+  if (is<Insert_expr>(e)) return mark(cast<Insert_expr>(e));
+  if (is<Delete_expr>(e)) return mark(cast<Delete_expr>(e));
+  if (is<Do_expr>(e)) return mark(cast<Do_expr>(e));
+
   lingo_unreachable("unevaluated node '{}'", e->node_name());
 }
 

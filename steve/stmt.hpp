@@ -98,6 +98,8 @@ struct Decl_stmt : Stmt
 
   Decl const* decl() const { return first; }
 
+  void accept(Stmt_visitor& v) const { v.visit(this); }
+
   Decl const* first;
 };
 

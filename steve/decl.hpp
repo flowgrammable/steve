@@ -61,26 +61,6 @@ struct Decl
   Prop const*   prop_;
 };
 
-
-// Different kinds of expressions in the core language.
-enum Decl_kind
-{
-  variable_decl,  // variable declarations
-  constant_decl,  // constant declarations
-  function_decl,  // function declarations
-  parameter_decl, // parameter declarations
-  record_decl,    // record declarations
-  member_decl,    // member declarations
-  variant_decl,   // variant type declaration
-  enum_decl,      // enumerations
-  decode_decl,    // decode declarations
-  table_decl,     // table declaration
-  flow_decl,      // flow declaration
-  extracts_decl,  // extracts decl
-  rebind_decl,    // extracts <field> as <field>
-};
-
-
 // The declaration visitor.
 struct Decl_visitor
 {
@@ -150,6 +130,8 @@ struct Function_decl : Decl
   bool                 has_impl() const { return body() ? true : false; }
 
   void set_body(Stmt const* s) { second = s; }
+
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Decl_seq    first;
   Stmt const* second;
