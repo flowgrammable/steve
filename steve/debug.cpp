@@ -22,8 +22,11 @@ struct Debug_fn
     : p(p)
   { }
 
+  // FIXME: I redirected to print for the time being
+  // for the sake of simple testing since we don't really
+  // have that many dedicated debug printing functions
   template<typename T>
-  void operator()(T const* t) { return debug(p, t); }
+  void operator()(T const* t) { return print(p, t); }
 
   Printer& p;
 };

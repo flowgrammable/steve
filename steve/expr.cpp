@@ -88,7 +88,7 @@ make_init_expr(Location loc, Init_kind k)
 Value_expr*
 make_bool_expr(Location loc, bool b)
 {
-  return gc().make<Value_expr>(loc, get_bool_type(), Integer_value(b));
+  return new Value_expr(loc, get_bool_type(), Integer_value(b));
 }
 
 
@@ -97,7 +97,7 @@ Value_expr*
 make_int_expr(Location loc, Integer const& n)
 {
   // An Integer is an Integer_value, so we don't need to cast.
-  return gc().make<Value_expr>(loc, get_int_type(), n);
+  return new Value_expr(loc, get_int_type(), n);
 }
 
 
@@ -108,7 +108,7 @@ make_int_expr(Location loc, Integer const& n)
 Value_expr*
 make_value_expr(Location loc, Type const* t, Value const& n)
 {
-  return gc().make<Value_expr>(loc, t, n);
+  return new Value_expr(loc, t, n);
 }
 
 
@@ -165,8 +165,7 @@ make_arithmetic_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   Converted_pair c = convert_to_common_type(e1, e2);
   if (!c)
     return nullptr;
-  return gc().make<Binary_expr>(loc, c.type(), op, c.first, c.second);
-  return nullptr;
+  return new Binary_expr(loc, c.type(), op, c.first, c.second);
 }
 
 
@@ -184,7 +183,7 @@ make_relational_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   Converted_pair c = convert_to_common_type(e1, e2);
   if (!c)
     return nullptr;
-  return gc().make<Binary_expr>(loc, get_bool_type(), op, c.first, c.second);
+  return new Binary_expr(loc, get_bool_type(), op, c.first, c.second);
 }
 
 
@@ -199,7 +198,7 @@ make_logical_expr(Location loc, Unary_op op, Expr const* e)
   Expr const* c = convert_to_boolean_type(e);
   if (!c)
     return nullptr;
-  return gc().make<Unary_expr>(loc, c->type(), op, c);
+  return new Unary_expr(loc, c->type(), op, c);
 }
 
 
@@ -212,7 +211,7 @@ make_logical_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   if (!c1 || !c2)
     return nullptr;
 
-  return gc().make<Binary_expr>(loc, get_bool_type(), op, c1, c2);
+  return new Binary_expr(loc, get_bool_type(), op, c1, c2);
 }
 
 
@@ -285,7 +284,7 @@ make_call_expr(Location loc, Expr const* f, Expr_seq const& args)
 
   // Convert arguments to operands.
   if (Converted_args conv = convert_to_parameter_types(loc, args, parms))
-    return gc().make<Call_expr>(loc, ret, f, conv);
+    return new Call_expr(loc, ret, f, conv);
   else
     return nullptr;
 }
@@ -297,7 +296,7 @@ Tuple_expr*
 make_tuple_expr(Location loc, Expr_seq const& es)
 {
   if (Required<Type> t = type_tuple_expr(es))
-    return gc().make<Tuple_expr>(loc, *t, es);
+    return new Tuple_expr(loc, *t, es);
   else
     return make_error_node<Tuple_expr>();
 }
@@ -313,7 +312,7 @@ Index_expr*
 make_index_expr(Location loc, Expr const* e, Expr const* n)
 {
   if (Required<Type> t = type_index_expr(e, n))
-    return gc().make<Index_expr>(loc, *t, e, n);
+    return new Index_expr(loc, *t, e, n);
   else
     return make_error_node<Index_expr>();
 }
@@ -341,7 +340,7 @@ Member_expr*
 make_member_expr(Location loc, Expr const* e, Expr const* n)
 {
   if (Required<Type> t = type_member_expr(e, n))
-    return gc().make<Member_expr>(loc, *t, e, n);
+    return new Member_expr(loc, *t, e, n);
   else
     return make_error_node<Member_expr>();
 }
@@ -354,7 +353,7 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
   if(Required<Type> t = type_field_expr(r, f))
     // Field_expr serve as indices. The type check is used later
     // to qualify the type of the fld idx expr
-    return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
+    return new Field_expr(loc, get_int_type(), *t, r, f);
   else
     return make_error_node<Field_expr>();
 }
@@ -366,7 +365,7 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
 Convert_expr*
 make_convert_expr(Location loc, Type const* t, Conversion_kind k, Expr const* e)
 {
-  return gc().make<Convert_expr>(loc, t, k, e);
+  return new Convert_expr(loc, t, k, e);
 }
 
 
@@ -374,7 +373,7 @@ make_convert_expr(Location loc, Type const* t, Conversion_kind k, Expr const* e)
 Expr*
 make_lengthof_expr(Location loc, Expr const* e)
 {
-  return gc().make<Lengthof_expr>(loc, get_uint_type(), e);
+  return new Lengthof_expr(loc, get_uint_type(), e);
 }
 
 
@@ -383,7 +382,7 @@ Expr*
 make_headerof_expr(Location loc, Decl const* d)
 {
   lingo_assert(is<Decode_decl>(d));
-  return gc().make<Headerof_expr>(loc, get_kind_type(), d);
+  return new Headerof_expr(loc, get_kind_type(), d);
 }
 
 
@@ -393,7 +392,7 @@ make_insert_expr(Location loc, Decl const* flw, Expr const* tbl)
   lingo_assert(is<Table_type>(tbl->type()));
   lingo_assert(is<Flow_decl>(flw));
 
-  return gc().make<Insert_expr>(loc, get_void_type(), flw, tbl);
+  return new Insert_expr(loc, get_void_type(), flw, tbl);
 }
 
 
@@ -403,7 +402,7 @@ make_delete_expr(Location loc, Decl const* flw, Expr const* tbl)
   lingo_assert(is<Table_type>(tbl->type()));
   lingo_assert(is<Flow_decl>(flw));
 
-  return gc().make<Delete_expr>(loc, get_void_type(), flw, tbl);
+  return new Delete_expr(loc, get_void_type(), flw, tbl);
 }
 
 
@@ -421,7 +420,7 @@ make_do_expr(Location loc, Do_kind k, Expr const* e)
       break;
   }
 
-  return gc().make<Do_expr>(loc, get_void_type(), k, e);
+  return new Do_expr(loc, get_void_type(), k, e);
 }
 
 
@@ -452,7 +451,7 @@ resolve_field_name(Field_expr const* e)
 Expr*
 make_offsetof_expr(Location loc, Expr const* e, Decl const* m)
 {
-  return gc().make<Offsetof_expr>(loc, get_uint_type(), e, m);
+  return new Offsetof_expr(loc, get_uint_type(), e, m);
 }
 
 
@@ -463,7 +462,7 @@ make_fld_idx_expr(Location loc, Expr const* e)
 
   Field_expr const* f = cast<Field_expr>(e);
 
-  return gc().make<Field_idx_expr>(loc, f->field_type(), f);
+  return new Field_idx_expr(loc, f->field_type(), f);
 }
 
 
@@ -476,7 +475,7 @@ make_hdr_idx_expr(Location loc, Expr const* e)
 
   lingo_assert(is<Record_decl>(id->decl()));
 
-  return gc().make<Header_idx_expr>(loc, id->type(), id);
+  return new Header_idx_expr(loc, id->type(), id);
 }
 
 
@@ -512,36 +511,6 @@ bool
 has_enum_type(Expr const* e)
 {
   return is<Enum_type>(e->type());
-}
-
-
-// -------------------------------------------------------------------------- //
-//                               Garbage collection
-
-
-// FIXME: Make all of this go away...
-void
-mark(Expr const* e)
-{
-  lingo_assert(is_valid_node(e));
-  if (is<Id_expr>(e)) return mark(cast<Id_expr>(e));
-  if (is<Value_expr>(e)) return mark(cast<Value_expr>(e));
-  if (is<Unary_expr>(e)) return mark(cast<Unary_expr>(e));
-  if (is<Binary_expr>(e)) return mark(cast<Binary_expr>(e));
-  if (is<Call_expr>(e)) return mark(cast<Call_expr>(e));
-  if (is<Tuple_expr>(e)) return mark(cast<Tuple_expr>(e));
-  if (is<Index_expr>(e)) return mark(cast<Index_expr>(e));
-  if (is<Member_expr>(e)) return mark(cast<Member_expr>(e));
-  if (is<Field_expr>(e)) return mark(cast<Field_expr>(e));
-  if (is<Convert_expr>(e)) return mark(cast<Convert_expr>(e));
-  if (is<Lengthof_expr>(e)) return mark(cast<Convert_expr>(e));
-  if (is<Offsetof_expr>(e)) return mark(cast<Convert_expr>(e));
-  if (is<Headerof_expr>(e)) return mark(cast<Headerof_expr>(e));
-  if (is<Insert_expr>(e)) return mark(cast<Insert_expr>(e));
-  if (is<Delete_expr>(e)) return mark(cast<Delete_expr>(e));
-  if (is<Do_expr>(e)) return mark(cast<Do_expr>(e));
-
-  lingo_unreachable("unevaluated node '{}'", e->node_name());
 }
 
 

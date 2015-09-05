@@ -1020,10 +1020,6 @@ bool has_enum_type(Expr const*);
 // -------------------------------------------------------------------------- //
 //                                  Facilities
 
-// Garbage collection
-void mark(Expr const*);
-
-
 } // namespace steve
 
 #endif
