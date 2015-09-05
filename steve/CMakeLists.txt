@@ -25,13 +25,14 @@ add_library(steve STATIC
   builtin.cpp
   lower.cpp
   token.cpp
-  lexer.cpp
-  parser.cpp
-  parse-type.cpp
-  parse-expr.cpp
-  parse-decl.cpp
-  parse-stmt.cpp
-  compiler.cpp)
+  # lexer.cpp
+  # parser.cpp
+  # parse-type.cpp
+  # parse-expr.cpp
+  # parse-decl.cpp
+  # parse-stmt.cpp
+  # compiler.cpp
+  )
 
 
 add_subdirectory(tests)

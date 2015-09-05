@@ -7,6 +7,7 @@
 // This module defines the set of tokens used by the language.
 
 #include "steve/prelude.hpp"
+#include "steve/value.hpp"
 
 #include "lingo/token.hpp"
 
@@ -26,6 +27,38 @@ using namespace lingo;
 
 enum Token_kind 
 {
+  // Punctuators
+  lbrace_tok,     // {
+  rbrace_tok,     // }
+  lparen_tok,     // )
+  rparen_tok,     // (
+  comma_tok,      // ,
+  colon_tok,      // :
+  semicolon_tok,  // ;
+  eq_tok,         // =
+  arrow_tok,      // ->
+  // Operators
+  plus_tok,       // +
+  minus_tok,      // -
+  star_tok,       // *
+  slash_tok,      // /
+  percent_tok,    // %
+  amp_tok,        // &
+  bar_tok,        // |
+  caret_tok,      // ^
+  tilde_tok,      // ~
+  lt_lt_tok,      // <<
+  gt_gt_tok,      // >>
+  eq_eq_tok,      // ==
+  bang_eq_tok,    // !=
+  lt_tok,         // <
+  gt_tok,         // >
+  lt_eq_tok,      // <=
+  gt_eq_tok,      // >=
+  amp_amp_tok,    // &&
+  bar_bar_tok,    // ||
+  bang_tok,       // !
+  // keywords
   alias_kw   , // alias
   bool_kw    , // bool
   buffer_kw  , // buffer
@@ -72,13 +105,17 @@ enum Token_kind
   umsbfn_tok , // umsbfN
   lsbfn_tok  , // lsbfN
   ulsbfn_tok , // ulsbfN
+  // Character classes
+  identifier_tok, // identifiers
+  boolean_tok,    // boolean values
+  integer_tok     // integers
 };
 
 String const* get_identifier(char const*);
 String const* get_identifier(String const&);
 
-Value as_bool(Token const&);
-Value as_int(Token const&);
+std::intmax_t as_bool(Token const&);
+std::intmax_t as_int(Token const&);
 
 void init_tokens();
 

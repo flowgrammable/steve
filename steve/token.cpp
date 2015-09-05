@@ -6,7 +6,6 @@
 namespace steve
 {
 
-
 // Returns an identifer.
 String const*
 get_identifier(char const* str)
@@ -104,7 +103,7 @@ init_tokens()
   get_symbol("false", boolean_tok);
 }
 
-Value
+std::intmax_t
 as_bool(Token const& tok)
 {
   lingo_assert(tok.kind() == boolean_tok);
@@ -112,12 +111,11 @@ as_bool(Token const& tok)
 }
 
 
-Value
+std::intmax_t
 as_int(Token const& tok)
 {
   lingo_assert(tok.kind() == integer_tok);
   return std::stol(*tok.str());
 }
-
 
 } // namespace steve

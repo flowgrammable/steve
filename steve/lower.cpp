@@ -196,31 +196,22 @@ lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
 void
 lower(Expr_stmt const* s, Stmt_seq& stmts)
 {
-  switch (s->expr()->kind()) {
-    case do_expr:
-      lower_do_expr(cast<Do_expr>(s->expr()), stmts);
-      break;
-    default:
-      stmts.push_back(s);
-      break;
-  }
+  if (is<Do_expr>(s->expr()))
+    lower_do_expr(cast<Do_expr>(s->expr()), stmts);
+  else
+    stmts.push_back(s);
 }
 
 
 void
 lower(Decl_stmt const* s, Stmt_seq& stmts)
 {
-  switch(s->decl()->kind()) {
-    case decode_decl:
-      lower_decode_decl(cast<Decode_decl>(s->decl()), stmts);
-      break;
-    case extracts_decl:
-      lower_extracts_decl(cast<Extracts_decl>(s->decl()), stmts);
-      break;
-    default:
-      stmts.push_back(s);
-      break;
-  }
+  if (is<Decode_decl>(s->decl()))
+    lower_decode_decl(cast<Decode_decl>(s->decl()), stmts);
+  else if (is<Extracts_decl>(s->decl()))
+    lower_extracts_decl(cast<Extracts_decl>(s->decl()), stmts);
+  else
+    stmts.push_back(s);
 }
 
 
@@ -252,24 +243,16 @@ lower(Case_stmt const* s, Stmt_seq& stmts)
 Stmt_seq
 lower(Stmt const* s, Stmt_seq& stmts)
 {
-  switch (s->kind())
-  {
-    case expr_stmt: 
-      lower(as<Expr_stmt>(s), stmts);
-      break;
-    case decl_stmt: 
-      lower(as<Decl_stmt>(s), stmts);
-      break;
-    case match_stmt:
-      lower(as<Match_stmt>(s), stmts);
-      break;
-    case case_stmt:
-      lower(as<Case_stmt>(s), stmts);
-      break;
-    default:
-      stmts.push_back(s);
-      break;
-  }
+  if (is<Expr_stmt>(s))
+    lower(as<Expr_stmt>(s), stmts);
+  else if (is<Decl_stmt>(s)) 
+    lower(as<Decl_stmt>(s), stmts);
+  else if (is<Match_stmt>(s))
+    lower(as<Match_stmt>(s), stmts);
+  else if (is<Case_stmt>(s))
+    lower(as<Case_stmt>(s), stmts);
+  else
+    stmts.push_back(s);
 
   // scan the stmts and push any declarations onto scope
   for (auto s : stmts) {

@@ -30,6 +30,15 @@ static int flow_cnt = 0;
 } // namespace
 
 
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Decl::node_name() const
+{
+  return type_str(*this);
+}
+
+
 // -------------------------------------------------------------------------- //
 //                             Node definitions
 

@@ -24,8 +24,8 @@ add_test_driver(test-ofp        ofp.cpp)
 add_test_driver(test-decode     decode.cpp)
 add_test_driver(test-length     length.cpp)
 
-add_test_driver(test-lex        lex.cpp)
-add_test_driver(test-parse      parse.cpp)
+# add_test_driver(test-lex        lex.cpp)
+# add_test_driver(test-parse      parse.cpp)
 
 # Actual unit tests.
 

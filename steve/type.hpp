@@ -401,6 +401,77 @@ struct Flow_type : Type, User_defined_type<Flow_decl>
   void accept(Type_visitor& v) const { v.visit(this); }
 };
 
+// -------------------------------------------------------------------------- //
+//                               Concepts
+
+// Returns true if T is a scalar type. The scalar
+// types are the `bool` type and the integer types.
+template<typename T>
+constexpr bool
+is_scalar_type()
+{
+  return std::is_base_of<T, Boolean_type>::value
+      || std::is_base_of<T, Integer_type>::value;
+}
+
+
+// Returns true if T aggregates subobjects of a
+// different type. This includes arrays, tuples,
+// records, variants, and match types.
+template<typename T>
+constexpr bool
+is_aggregate_type()
+{
+  return std::is_base_of<T, Array_type>::value
+      || std::is_base_of<T, Tuple_type>::value
+      || std::is_base_of<T, Match_type>::value
+      || std::is_base_of<T, Seq_type>::value
+      || std::is_base_of<T, Buffer_type>::value
+      || std::is_base_of<T, Until_type>::value
+      || std::is_base_of<T, Record_type>::value
+      || std::is_base_of<T, Variant_type>::value;
+}
+
+
+// Returns true if T is a user-defined type.
+template<typename T>
+constexpr bool
+is_user_defined_type()
+{
+  return std::is_base_of<T, Record_type>::value
+      || std::is_base_of<T, Variant_type>::value
+      || std::is_base_of<T, Enum_type>::value
+      || std::is_base_of<T, Table_type>::value
+      || std::is_base_of<T, Flow_type>::value;
+}
+
+
+// Returns true if the type T can define an object. The
+// object types are the scalars, aggregates, and user
+// defined types.
+template<typename T>
+constexpr bool
+is_object_type()
+{
+  return is_scalar_type<T>()
+      || is_aggregate_type<T>()
+      || is_user_defined_type<T>()
+      || std::is_base_of<T, Constant_type>::value;
+}
+
+
+// Returns true if T is dependent upon a runtime quantity.
+template<typename T>
+constexpr bool
+is_runtime_type()
+{
+  return std::is_base_of<T, Match_type>::value
+      || std::is_base_of<T, If_type>::value
+      || std::is_base_of<T, Seq_type>::value
+      || std::is_base_of<T, Buffer_type>::value
+      || std::is_base_of<T, Until_type>::value;
+}
+
 
 // -------------------------------------------------------------------------- //
 //                               Queries
