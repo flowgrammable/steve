@@ -359,8 +359,8 @@ Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
     table_requirements(cast<Table_decl>(d), second); 
   if (is<Decode_decl>(d)) 
     decode_requirements(cast<Decode_decl>(d), second);
-
-  lingo_unreachable("unhandled node kind ({})", d);
+  else
+    error("unhandled node kind in pipeline ({})", d);
 }
 
 

@@ -226,7 +226,7 @@ test1()
   lower_decodes(ipv4_d);
   lower_decodes(eth_d);
 
-  check_pipeline();
+  // check_pipeline();
 }
 
 
