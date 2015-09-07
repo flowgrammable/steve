@@ -312,6 +312,8 @@ check_stage(Decl const* d, Expr_seq const& requirements)
     auto search = cxt_bindings.find(as<Field_expr>(e)->name());
     if (search == cxt_bindings.end())
       error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
+    else
+      print (e);
   }
 }
 
@@ -359,7 +361,7 @@ Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
 
   if (is<Table_decl>(d))
     table_requirements(cast<Table_decl>(d), second); 
-  if (is<Decode_decl>(d)) 
+  else if (is<Decode_decl>(d)) 
     decode_requirements(cast<Decode_decl>(d), second);
   else
     error("unhandled node kind in pipeline ({})", d);
