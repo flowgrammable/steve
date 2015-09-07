@@ -24,8 +24,8 @@ namespace
 //
 // Table count is necessary to contrain gotos
 // Flow count is used to assign internal names to otherwise nameless flows
-static int table_cnt = 0;
-static int flow_cnt = 0;
+static int table_cnt = -1;
+static int flow_cnt = -1;
 
 } // namespace
 

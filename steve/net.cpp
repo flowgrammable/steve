@@ -1,5 +1,7 @@
 #include "net.hpp"
 
+#include <iostream>
+
 namespace steve 
 {
 
@@ -440,12 +442,11 @@ check_pipeline()
   // this should be a decoder, though be a table
   Stage* start = pipeline.front();
 
-  dfs(start);
-
   // we're going to do a depth first traversal
   // until we hit a stage with no branches
   // then we'll unwind and repeat until all branches
   // have been visited
+  dfs(start);
 
   return true;
 }

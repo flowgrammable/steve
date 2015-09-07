@@ -6,6 +6,7 @@
 #include "steve/decl.hpp"
 #include "steve/convert.hpp"
 
+#include <iostream>
 
 namespace steve
 {
@@ -353,7 +354,9 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
   if(Required<Type> t = type_field_expr(r, f))
     // Field_expr serve as indices. The type check is used later
     // to qualify the type of the fld idx expr
-    return new Field_expr(loc, get_int_type(), *t, r, f);
+    // FIXME: the GC or some container has to ensure the uniqueness of these
+    // otherwise name resolution is undefined behavior and I have no idea how or why
+    return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
   else
     return make_error_node<Field_expr>();
 }
@@ -430,12 +433,15 @@ String const*
 resolve_field_name(Field_expr const* e)
 {
   if (is<Id_expr>(e->record())) {
-
-    String name = String(*(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name()));
+    String name = *(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name());
+    // std::cout << (void*) as<Id_expr>(e->record())->name() << ' ';
+    // std::cout << (void*) as<Id_expr>(e->field())->name() << ' ';
+    // std::cout << (void*) get_identifier(name) << ' ';
+    // print(name);
     return get_identifier(name);
   }
   else if (is<Field_expr>(e->record())) {
-    String name = String(*resolve_field_name(as<Field_expr>(e->record())) + '.' + *(as<Id_expr>(e->field())->name()));
+    String name = *resolve_field_name(as<Field_expr>(e->record())) + '.' + *as<Id_expr>(e->field())->name();
     return get_identifier(name);
   }
   else

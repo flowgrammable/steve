@@ -359,7 +359,7 @@ struct Member_expr : Expr
 struct Field_expr : Expr
 {
   Field_expr(Location loc, Type const* t, Type const* ft, Expr const* r, Expr const* f)
-    : Expr(loc, t), first(r), second(f), third(ft)
+    : Expr(loc, t), first(r), second(f), third(ft), name_(resolve_field_name(this))
   {
     lingo_assert(lingo::is<Id_expr>(f));
   }
@@ -367,13 +367,15 @@ struct Field_expr : Expr
   Expr const* record() const { return first; }
   Id_expr const* field() const { return cast<Id_expr>(second); }
   Type const* field_type() const { return third; }
-  String const* name() const { return resolve_field_name(this); }
+  String const* name() const { return name_; }
 
   void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr const* second;
   Type const* third;
+
+  String const* name_;
 };
 
 

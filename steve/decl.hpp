@@ -61,6 +61,7 @@ struct Decl
   Prop const*   prop_;
 };
 
+
 // The declaration visitor.
 struct Decl_visitor
 {

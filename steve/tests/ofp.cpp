@@ -179,6 +179,7 @@ test1()
   // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
 
   // make a table
+  Table_decl* table1;
 
   // make the decoders
   Decode_decl* eth_d;
@@ -222,11 +223,11 @@ test1()
   register_stage(eth_d);
   register_stage(ipv4_d);
 
+  check_pipeline();
+
   // lowering has to happen in reverse as well
   lower_decodes(ipv4_d);
   lower_decodes(eth_d);
-
-  // check_pipeline();
 }
 
 
@@ -237,8 +238,13 @@ test2()
   Expr* nested = make_field_expr(id(ipv4), id(ipv4->members()[3]));
   Record_decl const* nested_rec = cast<Record_decl>(cast<Record_type>(cast<Member_decl>(ipv4->members()[3])->type())->decl());
   Expr* test = make_field_expr(nested, id(nested_rec->members()[1]));
+  Expr* test2 = make_field_expr(nested, id(nested_rec->members()[1]));
 
   print(resolve_field_name(as<Field_expr>(test)));
+  print(resolve_field_name(as<Field_expr>(test2)));
+
+  std::cout << resolve_field_name(as<Field_expr>(test)) << '\n';
+  std::cout << resolve_field_name(as<Field_expr>(test2)) << '\n';
 }
 
 
@@ -251,5 +257,6 @@ make_ofptable(int num, char const* name, Expr_seq const& matches)
 
 int main()
 {
-  test1();
+  // test1();
+  test2();
 }

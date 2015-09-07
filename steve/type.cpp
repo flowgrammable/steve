@@ -423,8 +423,9 @@ type_field_expr(Expr const* r, Expr const* f)
   if (is<Id_expr>(r)) {
     rd = cast<Id_expr>(r)->decl();
   }
-  else if(Record_type const* rt = as<Record_type>(r->type())) {
-    rd = rt->decl();
+  else if (Field_expr const* fe = as<Field_expr>(r)) {
+    if (Record_type const* rt = as<Record_type>(fe->field_type()))
+      rd = rt->decl();
   }
   else {
     error(r->location(), "invalid term '{}' is not a record identifier nor record type", r);
