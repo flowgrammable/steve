@@ -147,8 +147,6 @@ make_eth_table()
 void
 test1()
 {
-  Global_scope global;
-
   init_builtins();
 
   // make the headers
@@ -256,8 +254,6 @@ test1()
 void
 test2()
 {
-  Global_scope global;
-
   init_builtins();
 
   // make the headers
@@ -359,9 +355,101 @@ test2()
   // lower_decodes(eth_d);
 }
 
+// testing that table branches work
+void test3()
+{
+  // make the headers
+  Record_decl* eth = make_eth_header();
+  Record_decl* ipv4 = make_ipv4_header();
+
+  // make some field expressions
+  Expr* eth_src = make_field_expr(id(eth), id(eth->members()[0]));
+  Expr* eth_dst = make_field_expr(id(eth), id(eth->members()[1]));
+  Expr* eth_type = make_field_expr(id(eth), id(eth->members()[2]));
+
+  Expr* ipv4_src = make_field_expr(id(ipv4), id(ipv4->members()[0]));
+  Expr* ipv4_dst = make_field_expr(id(ipv4), id(ipv4->members()[1]));
+  Expr* ipv4_proto = make_field_expr(id(ipv4), id(ipv4->members()[2]));
+
+  // make some forward declarations
+  // requirements
+  Expr_seq req {
+    eth_src,
+    eth_dst,
+    eth_type,
+    ipv4_proto,
+  };
+  // construct with no flows to begin with
+  Table_decl* t1 = make_table_decl(get_identifier("t1"), req, {});
+  declare(t1->name(), t1);
+
+  // construct two decoders with no definitions yet
+  Decode_decl* eth_d = make_decode_decl(get_identifier("eth_d"), get_record_type(eth), nullptr);
+  Decode_decl* ipv4_d = make_decode_decl(get_identifier("ipv4_d"), get_record_type(ipv4), nullptr);
+
+  declare(eth_d->name(), eth_d);
+  declare(ipv4_d->name(), ipv4_d);
+
+  //
+  // Construct the bodies of these things
+  //
+
+  // eth_d -> t1 or ipv4
+  // t1 -> ipv4
+  // ipv4 -> t1
+
+  // eth_d definition
+  Stmt_seq eth_d_body {
+    make_decl_stmt(make_extracts_decl(eth_src)),
+    make_decl_stmt(make_extracts_decl(eth_dst)),
+    make_decl_stmt(make_extracts_decl(eth_type)),
+    make_match_stmt(eth_type, 
+      Stmt_seq {
+        make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
+        make_case(one(), make_do(Do_kind::table, t1)),
+      }
+    )
+  };
+  Decode_decl* eth_def = make_decode_decl(get_identifier("eth_d"), get_record_type(eth), make_block_stmt(eth_d_body));
+  declare(eth_def->name(), eth_def);
+
+  // ipv4_d definition
+  Stmt_seq ipv4_d_body {
+    make_decl_stmt(make_extracts_decl(ipv4_src)),
+    make_decl_stmt(make_extracts_decl(ipv4_dst)),
+    make_match_stmt(ipv4_proto, 
+      Stmt_seq {
+        make_case(zero(), make_do(Do_kind::table, t1)),
+        make_case(one(), empty()),
+      }
+    )
+  };
+  Decode_decl* ipv4_def = make_decode_decl(get_identifier("ipv4_d"), get_record_type(ipv4), make_block_stmt(ipv4_d_body));
+  declare(ipv4_def->name(), ipv4_def);
+
+  // flow table initializer
+  // flows
+  // TODO: type check flow initializer
+  Decl_seq flows {
+    // cond expr, prio, stmt
+    make_flow_decl({one(), two(), one()}, Value(1), make_block_stmt({make_do(Do_kind::decode, ipv4_d)}))
+  };
+  Table_decl* t1_def = make_table_decl(get_identifier("t1"), req, flows);
+  declare(get_identifier("t1"), t1_def);
+
+  //
+  // Register and type check stages in the pipeline
+  //
+  register_stage(eth_d);
+  register_stage(t1);
+  register_stage(ipv4_d);
+
+  check_pipeline();
+}
+
 
 void
-test3()
+test_nested()
 {
   Record_decl const* ipv4 = make_ipv4_nested_header();
   Expr* nested = make_field_expr(id(ipv4), id(ipv4->members()[3]));
@@ -386,6 +474,8 @@ make_ofptable(int num, char const* name, Expr_seq const& matches)
 
 int main()
 {
-  test1();
+  Global_scope global;
+  // test1();
   // test2();
+  test3();
 }
