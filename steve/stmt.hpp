@@ -15,30 +15,23 @@
 namespace steve
 {
 
+struct Stmt_visitor;
 
 // -------------------------------------------------------------------------- //
 //                            Statements kinds
 
-// Different kinds of statement in the core language.
-enum Stmt_kind
+
+struct Stmt_visitor
 {
-  empty_stmt,     // the empty statment (;)
-  expr_stmt,      // e;
-  decl_stmt,      // a declaration
-  block_stmt,     // a sequence of statements
-  return_stmt,    // return e;
-  match_stmt,     // match { }
-  case_stmt,      // <const_value> : stmt_seq;
-  instruct_stmt,  // one of the 6 open flow instructions
+  virtual void visit(Empty_stmt const*) { }
+  virtual void visit(Expr_stmt const*) { }
+  virtual void visit(Decl_stmt const*) { }
+  virtual void visit(Block_stmt const*) { }
+  virtual void visit(Return_stmt const*) { }
+  virtual void visit(Match_stmt const*) { }
+  virtual void visit(Case_stmt const*) { }
+  virtual void visit(Instruct_stmt const*) { }
 };
-
-
-char const* get_stmt_name(Stmt_kind);
-
-
-// Adapt the generic node-kinding template to this node type.
-template<Stmt_kind K>
-using Stmt_impl = lingo::Kind_base<Stmt_kind, K>;
 
 
 // -------------------------------------------------------------------------- //
@@ -54,26 +47,26 @@ struct Decl;
 // expression, or some other form of control.
 struct Stmt
 {
-  Stmt(Stmt_kind k)
-    : kind_(k)
-  { }
-
   virtual ~Stmt()
   { }
 
-  char const*   node_name() const { return get_stmt_name(kind_); }
-  Stmt_kind     kind() const      { return kind_; }
+  String node_name() const;
 
-  Stmt_kind     kind_;
+  // Accept a statement visitor.
+  virtual void accept(Stmt_visitor&) const = 0;
 };
 
 
 // The empty statement invokes no commands.
-struct Empty_stmt : Stmt, Stmt_impl<empty_stmt>
+struct Empty_stmt : Stmt
 {
   Empty_stmt(Location loc)
-    : Stmt(node_kind), loc_(loc)
+    : loc_(loc)
   { }
+
+  Location location() const { return loc_; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Location loc_;
 };
@@ -82,26 +75,30 @@ struct Empty_stmt : Stmt, Stmt_impl<empty_stmt>
 // An expression statement executes its expression
 // and discards the result. The runtime environment
 // may save the result in a log file (or terminal).
-struct Expr_stmt : Stmt, Stmt_impl<expr_stmt>
+struct Expr_stmt : Stmt
 {
   Expr_stmt(Expr const* e)
-    : Stmt(node_kind), first(e)
+    : first(e)
   { }
 
   Expr const* expr() const { return first; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
 
 
 // A declaration statement contains a delaration.
-struct Decl_stmt : Stmt, Stmt_impl<decl_stmt>
+struct Decl_stmt : Stmt
 {
   Decl_stmt(Decl const* d)
-    : Stmt(node_kind), first(d)
+    : first(d)
   { }
 
   Decl const* decl() const { return first; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Decl const* first;
 };
@@ -114,15 +111,17 @@ struct Decl_stmt : Stmt, Stmt_impl<decl_stmt>
 //
 // Note that in the current language the entire 
 // program is a single block statement.
-struct Block_stmt : Stmt, Stmt_impl<block_stmt>, Stmt_seq
+struct Block_stmt : Stmt, Stmt_seq
 {
   // TODO: Support move semantics for the statement sequence.
   Block_stmt(Location start, Location end, Stmt_seq const& s)
-    : Stmt(node_kind), Stmt_seq(s), start_(start), end_(end)
+    : Stmt_seq(s), start_(start), end_(end)
   { }
 
   Location start_location() const { return start_; }
   Location end_location()   const { return end_; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Location start_;
   Location end_;
@@ -133,14 +132,16 @@ struct Block_stmt : Stmt, Stmt_impl<block_stmt>, Stmt_seq
 //
 // TODO: How do we represent a return statement without
 // an operand? Return a synthetic void value?
-struct Return_stmt : Stmt, Stmt_impl<return_stmt>
+struct Return_stmt : Stmt
 {
   Return_stmt(Location loc, Expr const* e)
-    : Stmt(node_kind), loc_(loc), first(e)
+    : loc_(loc), first(e)
   { }
 
   Location    location() const { return loc_; }
   Expr const* result() const { return first; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Location    loc_;
   Expr const* first;
@@ -148,14 +149,16 @@ struct Return_stmt : Stmt, Stmt_impl<return_stmt>
 
 
 // A case statement.
-struct Case_stmt : Stmt, Stmt_impl<case_stmt>      
+struct Case_stmt : Stmt   
 {
   Case_stmt(Location loc, Expr const* e, Stmt const* s)
-    : Stmt(node_kind), loc_(loc), first(e), second(s)
+    : loc_(loc), first(e), second(s)
   { }
 
   Expr const* label() const { return first; }
   Stmt const* stmt() const  { return second; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Location    loc_;
   Expr const* first;
@@ -165,15 +168,17 @@ struct Case_stmt : Stmt, Stmt_impl<case_stmt>
 
 // A match statement defines a decision condition and a set 
 // of possible results based on that condition.
-struct Match_stmt : Stmt, Stmt_impl<match_stmt>
+struct Match_stmt : Stmt
 {
   Match_stmt(Location loc, Expr const* d, Stmt_seq const& b)
-    : Stmt(node_kind), loc_(loc), first(d), second(b)
+    : loc_(loc), first(d), second(b)
   { }
 
   Location        location() const { return loc_; }
   Expr     const* cond() const     { return first; }
   Stmt_seq const& cases() const    { return second; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Location    loc_;
   Expr const* first;
@@ -193,14 +198,16 @@ enum Instruct_kind
 
 
 // FIXME: Re-design this this.
-struct Instruct_stmt : Stmt, Stmt_impl<instruct_stmt>
+struct Instruct_stmt : Stmt
 {
   Instruct_stmt(Location loc, Instruct_kind k, Stmt_seq const& args)
-    : Stmt(node_kind), instr_(k), first(args)
+    : instr_(k), first(args)
   { }
 
   Stmt_seq const& args() const { return first; }
   Instruct_kind   instr() const { return instr_; }
+
+  void accept(Stmt_visitor& v) const { v.visit(this); }
 
   Instruct_kind instr_;
   Stmt_seq const first;
@@ -222,24 +229,35 @@ is_stmt()
 }
 
 
-// Apply the function to the statement `s`.
-template<typename T, typename F>
-auto
-apply(T const* s, F fn)
-  -> typename std::enable_if<is_stmt<T>(), decltype(fn((Expr_stmt*)0))>::type
+// -------------------------------------------------------------------------- //
+//                            Generic visitor
+
+// A parameterized visitor that dispatches to a function object.
+template<typename F, typename T>
+struct Generic_stmt_visitor : Stmt_visitor, Generic_visitor<F, T>
 {
-  lingo_alert(is_valid_node(s), "invalid statement");
-  switch (s->kind()) {
-  case empty_stmt: return fn(cast<Empty_stmt>(s));
-  case expr_stmt: return fn(cast<Expr_stmt>(s));
-  case decl_stmt: return fn(cast<Decl_stmt>(s));
-  case block_stmt: return fn(cast<Block_stmt>(s));
-  case return_stmt: return fn(cast<Return_stmt>(s));
-  case match_stmt: return fn(cast<Match_stmt>(s));
-  case case_stmt: return fn(cast<Case_stmt>(s));
-  case instruct_stmt: return fn(cast<Instruct_stmt>(s));
-  }
-  lingo_unreachable("unhandled statement '{}'", s->node_name());
+  Generic_stmt_visitor(F f)
+    : Generic_visitor<F, T>(f)
+  { }
+
+  void visit(Empty_stmt const* s) { this->invoke(s); }
+  void visit(Expr_stmt const* s) { this->invoke(s); }
+  void visit(Decl_stmt const* s) { this->invoke(s); }
+  void visit(Block_stmt const* s) { this->invoke(s); }
+  void visit(Return_stmt const* s) { this->invoke(s); }
+  void visit(Match_stmt const* s) { this->invoke(s); }
+  void visit(Case_stmt const* s) { this->invoke(s); }
+  void visit(Instruct_stmt const* s) { this->invoke(s); }
+};
+
+
+// Apply the function f to the statement s.
+template<typename F, typename T = typename std::result_of<F(Empty_stmt*)>::type>
+inline T
+apply(Stmt const* s, F fn)
+{
+  Generic_stmt_visitor<F, T> v(fn);
+  return accept(s, v);
 }
 
 

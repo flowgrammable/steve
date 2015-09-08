@@ -52,6 +52,7 @@ using lingo::mark;
 // Steve terms
 struct Type;
 struct Default_type;
+struct Kind_type;
 struct Void_type;
 struct Boolean_type;
 struct Integer_type;
@@ -76,6 +77,7 @@ struct Prop;
 
 struct Expr;
 struct Id_expr;
+struct Constant_expr;
 struct Lookup_expr;
 struct Default_expr;
 struct Init_expr;
@@ -88,11 +90,12 @@ struct Index_expr;
 struct Member_expr;
 struct Convert_expr;
 struct Field_expr;
-struct Lengthof_expr;
-struct Offsetof_expr;
 struct Do_expr;
 struct Lengthof_expr;
 struct Offsetof_expr;
+struct Headerof_expr;
+struct Insert_expr;
+struct Delete_expr;
 struct Field_idx_expr;
 struct Header_idx_expr;
 
@@ -109,6 +112,7 @@ struct Decode_decl;
 struct Table_decl;
 struct Flow_decl;
 struct Extracts_decl;
+struct Rebind_decl;
 
 struct Stmt;
 struct Empty_stmt;
@@ -118,7 +122,7 @@ struct Block_stmt;
 struct Return_stmt;
 struct Match_stmt;
 struct Case_stmt;
-struct Instr_stmt;
+struct Instruct_stmt;
 
 struct Value;
 

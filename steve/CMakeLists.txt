@@ -7,7 +7,8 @@ add_library(steve STATIC
   op.cpp
   value.cpp
   type.cpp
-  prop.cpp
+  # removing prop temporarily
+  # prop.cpp
   expr.cpp
   stmt.cpp
   decl.cpp
@@ -30,7 +31,8 @@ add_library(steve STATIC
   parse-expr.cpp
   parse-decl.cpp
   parse-stmt.cpp
-  compiler.cpp)
+  compiler.cpp
+  )
 
 
 add_subdirectory(tests)

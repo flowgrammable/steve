@@ -16,32 +16,12 @@
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_type_name(Type_kind k)
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Type::node_name() const
 {
-  switch (k) {
-    case kind_type: return "kind_type";
-    case void_type: return "void_type";
-    case boolean_type: return "boolean_type";
-    case integer_type: return "integer_type";
-    case constant_type: return "constant_type";
-    case reference_type: return "reference_type";
-    case function_type: return "function_type";
-    case array_type: return "array_type";
-    case tuple_type: return "tuple_type";
-    case record_type: return "record_type";
-    case variant_type: return "variant_type";
-    case enum_type: return "enum_type";
-    case match_type: return "match_type";
-    case if_type: return "if_type";
-    case seq_type: return "seq_type";
-    case buffer_type: return "buffer_type";
-    case until_type: return "until_type";
-    case table_type: return "table_type";
-    case flow_type: return "flow_type";
-  }
-  lingo_unreachable("unhandled type kind ({})", (int)k);
+  return type_str(*this);
 }
 
 
@@ -226,21 +206,18 @@ get_enum_type(Decl const* d)
 Type const*
 get_user_defined_type(Decl const* d)
 {
-  switch (d->kind()) {
-    case record_decl:
-      return get_record_type(cast<Record_decl>(d));
-    case variant_decl:
-      return get_variant_type(cast<Variant_decl>(d));
-    case enum_decl:
-      return get_enum_type(cast<Enum_decl>(d));
-    case table_decl:
-      return get_table_type(cast<Table_decl>(d));
-    case flow_decl:
-      return get_flow_type(cast<Flow_decl>(d));
-    default:
-      error("'{}' does not name a type", d);
-      break;
-  }
+  if (is<Record_decl>(d))
+    return get_record_type(cast<Record_decl>(d));
+  if (is<Variant_decl>(d))
+    return get_variant_type(cast<Variant_decl>(d));
+  if (is<Enum_decl>(d))
+    return get_enum_type(cast<Enum_decl>(d));
+  if (is<Table_decl>(d))
+    return get_table_type(cast<Table_decl>(d));
+  if(is<Flow_decl>(d))
+    return get_flow_type(cast<Flow_decl>(d));
+
+  error("'{}' does not name a type", d);
   return get_error_type();
 }
 
@@ -446,8 +423,9 @@ type_field_expr(Expr const* r, Expr const* f)
   if (is<Id_expr>(r)) {
     rd = cast<Id_expr>(r)->decl();
   }
-  else if(Record_type const* rt = as<Record_type>(r->type())) {
-    rd = rt->decl();
+  else if (Field_expr const* fe = as<Field_expr>(r)) {
+    if (Record_type const* rt = as<Record_type>(fe->field_type()))
+      rd = rt->decl();
   }
   else {
     error(r->location(), "invalid term '{}' is not a record identifier nor record type", r);
@@ -733,26 +711,21 @@ Type const*
 check_return_type(Stmt const* s, Type const* t)
 {
   lingo_assert(is_valid_node(s));
-  switch (s->kind()) {
-    case block_stmt:
-      return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Block_stmt>(s))
+    return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Return_stmt>(s))
+    return check_return_type(cast<Return_stmt>(s), t);
+  if (is<Match_stmt>(s))
+    return check_return_type(cast<Match_stmt>(s), t);
+  if (is<Case_stmt>(s))
+    return check_return_type(cast<Case_stmt>(s), t);
+  // these do not indicate return types
+  if (is<Empty_stmt>(s) 
+   || is<Expr_stmt>(s) 
+   || is<Decl_stmt>(s) 
+   || is<Instruct_stmt>(s))
+    return nullptr;
 
-    case return_stmt: 
-      return check_return_type(cast<Return_stmt>(s), t);
-
-    case match_stmt:
-      return check_return_type(cast<Match_stmt>(s), t);
-
-    case case_stmt:
-      return check_return_type(cast<Case_stmt>(s), t);
-
-    case empty_stmt:
-    case expr_stmt:
-    case decl_stmt:
-    case instruct_stmt:
-      // These do not indicate return types.
-      return nullptr;
-  }
   lingo_unreachable("unhandled statement '{}'", s->node_name());
 }
 

@@ -6,45 +6,25 @@
 #include "steve/decl.hpp"
 #include "steve/convert.hpp"
 
+#include <iostream>
 
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_expr_name(Expr_kind k)
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Expr::node_name() const
 {
-  switch (k) {
-    case id_expr: return "id_expr";
-    case lookup_expr: return "lookup_expr";
-    case default_expr: return "default_expr";
-    case init_expr: return "init_expr";
-    case value_expr: return "value_expr";
-    case unary_expr: return "unary_expr";
-    case binary_expr: return "binary_expr";
-    case call_expr: return "call_expr";
-    case tuple_expr: return "tuple_expr";
-    case index_expr: return "index_expr";
-    case member_expr: return "member_expr";
-    case field_expr: return "field_expr";
-    case convert_expr: return "convert_expr";
-    case lengthof_expr: return "lengthof_expr";
-    case offsetof_expr: return "offsetof_expr";
-    case headerof_expr: return "headerof_expr";
-    case insert_expr: return "insert_expr";
-    case delete_expr: return "delete_expr";
-    case do_expr: return "do_expr";
-    case fld_idx_expr: return "fld_idx_expr";
-    case hdr_idx_expr: return "hdr_idx_expr";
-  }
-  lingo_unreachable("unhandled node kind ({})", (int)k);
+  return type_str(*this);
 }
+
 
 // -------------------------------------------------------------------------- //
 //                            Node definitions
 
 Id_expr::Id_expr(Location loc, Decl const* d)
-  : Expr(node_kind, loc, d->type()), decl_(d)
+  : Expr(loc, d->type()), decl_(d)
 { }
 
 
@@ -58,7 +38,7 @@ Id_expr::name() const
 // FIXME: What is the type of an overload set. For now, its
 // set to the void type. 
 Lookup_expr::Lookup_expr(Location loc, String const* s)
-  : Expr(node_kind, loc, get_void_type()), first(s)
+  : Expr(loc, get_void_type()), first(s)
 { }
 
 
@@ -109,7 +89,7 @@ make_init_expr(Location loc, Init_kind k)
 Value_expr*
 make_bool_expr(Location loc, bool b)
 {
-  return gc().make<Value_expr>(loc, get_bool_type(), Integer_value(b));
+  return new Value_expr(loc, get_bool_type(), Integer_value(b));
 }
 
 
@@ -118,7 +98,7 @@ Value_expr*
 make_int_expr(Location loc, Integer const& n)
 {
   // An Integer is an Integer_value, so we don't need to cast.
-  return gc().make<Value_expr>(loc, get_int_type(), n);
+  return new Value_expr(loc, get_int_type(), n);
 }
 
 
@@ -129,7 +109,7 @@ make_int_expr(Location loc, Integer const& n)
 Value_expr*
 make_value_expr(Location loc, Type const* t, Value const& n)
 {
-  return gc().make<Value_expr>(loc, t, n);
+  return new Value_expr(loc, t, n);
 }
 
 
@@ -186,8 +166,7 @@ make_arithmetic_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   Converted_pair c = convert_to_common_type(e1, e2);
   if (!c)
     return nullptr;
-  return gc().make<Binary_expr>(loc, c.type(), op, c.first, c.second);
-  return nullptr;
+  return new Binary_expr(loc, c.type(), op, c.first, c.second);
 }
 
 
@@ -205,7 +184,7 @@ make_relational_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   Converted_pair c = convert_to_common_type(e1, e2);
   if (!c)
     return nullptr;
-  return gc().make<Binary_expr>(loc, get_bool_type(), op, c.first, c.second);
+  return new Binary_expr(loc, get_bool_type(), op, c.first, c.second);
 }
 
 
@@ -220,7 +199,7 @@ make_logical_expr(Location loc, Unary_op op, Expr const* e)
   Expr const* c = convert_to_boolean_type(e);
   if (!c)
     return nullptr;
-  return gc().make<Unary_expr>(loc, c->type(), op, c);
+  return new Unary_expr(loc, c->type(), op, c);
 }
 
 
@@ -233,7 +212,7 @@ make_logical_expr(Location loc, Binary_op op, Expr const* e1, Expr const* e2)
   if (!c1 || !c2)
     return nullptr;
 
-  return gc().make<Binary_expr>(loc, get_bool_type(), op, c1, c2);
+  return new Binary_expr(loc, get_bool_type(), op, c1, c2);
 }
 
 
@@ -306,7 +285,7 @@ make_call_expr(Location loc, Expr const* f, Expr_seq const& args)
 
   // Convert arguments to operands.
   if (Converted_args conv = convert_to_parameter_types(loc, args, parms))
-    return gc().make<Call_expr>(loc, ret, f, conv);
+    return new Call_expr(loc, ret, f, conv);
   else
     return nullptr;
 }
@@ -318,7 +297,7 @@ Tuple_expr*
 make_tuple_expr(Location loc, Expr_seq const& es)
 {
   if (Required<Type> t = type_tuple_expr(es))
-    return gc().make<Tuple_expr>(loc, *t, es);
+    return new Tuple_expr(loc, *t, es);
   else
     return make_error_node<Tuple_expr>();
 }
@@ -334,7 +313,7 @@ Index_expr*
 make_index_expr(Location loc, Expr const* e, Expr const* n)
 {
   if (Required<Type> t = type_index_expr(e, n))
-    return gc().make<Index_expr>(loc, *t, e, n);
+    return new Index_expr(loc, *t, e, n);
   else
     return make_error_node<Index_expr>();
 }
@@ -362,7 +341,7 @@ Member_expr*
 make_member_expr(Location loc, Expr const* e, Expr const* n)
 {
   if (Required<Type> t = type_member_expr(e, n))
-    return gc().make<Member_expr>(loc, *t, e, n);
+    return new Member_expr(loc, *t, e, n);
   else
     return make_error_node<Member_expr>();
 }
@@ -375,6 +354,8 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
   if(Required<Type> t = type_field_expr(r, f))
     // Field_expr serve as indices. The type check is used later
     // to qualify the type of the fld idx expr
+    // FIXME: the GC or some container has to ensure the uniqueness of these
+    // otherwise name resolution is undefined behavior and I have no idea how or why
     return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
   else
     return make_error_node<Field_expr>();
@@ -387,7 +368,7 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
 Convert_expr*
 make_convert_expr(Location loc, Type const* t, Conversion_kind k, Expr const* e)
 {
-  return gc().make<Convert_expr>(loc, t, k, e);
+  return new Convert_expr(loc, t, k, e);
 }
 
 
@@ -395,7 +376,7 @@ make_convert_expr(Location loc, Type const* t, Conversion_kind k, Expr const* e)
 Expr*
 make_lengthof_expr(Location loc, Expr const* e)
 {
-  return gc().make<Lengthof_expr>(loc, get_uint_type(), e);
+  return new Lengthof_expr(loc, get_uint_type(), e);
 }
 
 
@@ -404,7 +385,7 @@ Expr*
 make_headerof_expr(Location loc, Decl const* d)
 {
   lingo_assert(is<Decode_decl>(d));
-  return gc().make<Headerof_expr>(loc, get_kind_type(), d);
+  return new Headerof_expr(loc, get_kind_type(), d);
 }
 
 
@@ -414,7 +395,7 @@ make_insert_expr(Location loc, Decl const* flw, Expr const* tbl)
   lingo_assert(is<Table_type>(tbl->type()));
   lingo_assert(is<Flow_decl>(flw));
 
-  return gc().make<Insert_expr>(loc, get_void_type(), flw, tbl);
+  return new Insert_expr(loc, get_void_type(), flw, tbl);
 }
 
 
@@ -424,7 +405,7 @@ make_delete_expr(Location loc, Decl const* flw, Expr const* tbl)
   lingo_assert(is<Table_type>(tbl->type()));
   lingo_assert(is<Flow_decl>(flw));
 
-  return gc().make<Delete_expr>(loc, get_void_type(), flw, tbl);
+  return new Delete_expr(loc, get_void_type(), flw, tbl);
 }
 
 
@@ -442,7 +423,7 @@ make_do_expr(Location loc, Do_kind k, Expr const* e)
       break;
   }
 
-  return gc().make<Do_expr>(loc, get_void_type(), k, e);
+  return new Do_expr(loc, get_void_type(), k, e);
 }
 
 
@@ -452,12 +433,15 @@ String const*
 resolve_field_name(Field_expr const* e)
 {
   if (is<Id_expr>(e->record())) {
-
-    String name = String(*(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name()));
+    String name = *(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name());
+    // std::cout << (void*) as<Id_expr>(e->record())->name() << ' ';
+    // std::cout << (void*) as<Id_expr>(e->field())->name() << ' ';
+    // std::cout << (void*) get_identifier(name) << ' ';
+    // print(name);
     return get_identifier(name);
   }
   else if (is<Field_expr>(e->record())) {
-    String name = String(*resolve_field_name(as<Field_expr>(e->record())) + '.' + *(as<Id_expr>(e->field())->name()));
+    String name = *resolve_field_name(as<Field_expr>(e->record())) + '.' + *as<Id_expr>(e->field())->name();
     return get_identifier(name);
   }
   else
@@ -473,7 +457,7 @@ resolve_field_name(Field_expr const* e)
 Expr*
 make_offsetof_expr(Location loc, Expr const* e, Decl const* m)
 {
-  return gc().make<Offsetof_expr>(loc, get_uint_type(), e, m);
+  return new Offsetof_expr(loc, get_uint_type(), e, m);
 }
 
 
@@ -484,7 +468,7 @@ make_fld_idx_expr(Location loc, Expr const* e)
 
   Field_expr const* f = cast<Field_expr>(e);
 
-  return gc().make<Field_idx_expr>(loc, f->field_type(), f);
+  return new Field_idx_expr(loc, f->field_type(), f);
 }
 
 
@@ -497,7 +481,7 @@ make_hdr_idx_expr(Location loc, Expr const* e)
 
   lingo_assert(is<Record_decl>(id->decl()));
 
-  return gc().make<Header_idx_expr>(loc, id->type(), id);
+  return new Header_idx_expr(loc, id->type(), id);
 }
 
 
@@ -533,38 +517,6 @@ bool
 has_enum_type(Expr const* e)
 {
   return is<Enum_type>(e->type());
-}
-
-
-// -------------------------------------------------------------------------- //
-//                               Garbage collection
-
-
-// FIXME: Make all of this go away...
-void
-mark(Expr const* e)
-{
-  lingo_assert(is_valid_node(e));
-  switch (e->kind()) {
-    case id_expr: return mark(cast<Id_expr>(e));
-    case value_expr: return mark(cast<Value_expr>(e));
-    case unary_expr: return mark(cast<Unary_expr>(e));
-    case binary_expr: return mark(cast<Binary_expr>(e));
-    case call_expr: return mark(cast<Call_expr>(e));
-    case tuple_expr: return mark(cast<Tuple_expr>(e));
-    case index_expr: return mark(cast<Index_expr>(e));
-    case member_expr: return mark(cast<Member_expr>(e));
-    case field_expr: return mark(cast<Field_expr>(e));
-    case convert_expr: return mark(cast<Convert_expr>(e));
-    case lengthof_expr: return mark(cast<Convert_expr>(e));
-    case offsetof_expr: return mark(cast<Convert_expr>(e));
-    case headerof_expr: return mark(cast<Headerof_expr>(e));
-    case insert_expr: return mark(cast<Insert_expr>(e));
-    case delete_expr: return mark(cast<Delete_expr>(e));
-    case do_expr: return mark(cast<Do_expr>(e));
-    default: return;
-  }
-  lingo_unreachable("unevaluated node '{}'", e->node_name());
 }
 
 

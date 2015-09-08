@@ -17,44 +17,9 @@ namespace steve
 {
 
 // -------------------------------------------------------------------------- //
-//                                 Type kinds
-
-// Different kinds of types in the core language.
-enum Type_kind
-{
-  kind_type,      // type of types
-  void_type,      // void type
-  boolean_type,   // boolean type
-  integer_type,   // integer type
-  constant_type,  // constant oject types: const T
-  reference_type, // reference types: ref T
-  function_type,  // function types: (T1, ... ,Tn) -> T
-  array_type,     // array types: T[N]
-  tuple_type,     // tuple types: {T1, ..., Tn}
-  record_type,    // record types: record <name> { ... }
-  variant_type,   // variant types: variant <name> { ... }
-  enum_type,      // enum types: enum <name> [(base)] { ... }
-  match_type,     // match types: match(e) { ... }
-  if_type,        // if types: if(e) T
-  seq_type,       // sequence types: seq T (e)
-  buffer_type,    // buffer types: buf T (e)
-  until_type,     // sequence until types: until(pred) T
-  table_type,     // table types: table <ofptable_name>[(header fields)]
-  flow_type,      // flow type: flow <ofptable_name> [conds] { instr }
-};
-
-
-char const* get_type_name(Type_kind);
-
-
-// Adapt the generic node-kinding template to this node type.
-template<Type_kind K>
-using Type_impl = lingo::Kind_base<Type_kind, K>;
-
-
-// -------------------------------------------------------------------------- //
 //                                Types
 
+struct Type_visitor;
 
 // The Type class represents the set of all types defined
 // by and definable within the cmin language.
@@ -63,44 +28,58 @@ using Type_impl = lingo::Kind_base<Type_kind, K>;
 // they are (as of now, fully internal).
 struct Type
 {
-  Type(Type_kind k)
-    : kind_(k)
-  { }
-
   virtual ~Type()
   { }
 
-  char const* node_name() const { return get_type_name(kind_); }
-  Type_kind   kind() const      { return kind_; }
+  String node_name() const;
 
-  Type_kind kind_;
+  virtual void accept(Type_visitor&) const = 0;
+};
+
+
+// The type visitor.
+struct Type_visitor
+{
+  virtual void visit(Void_type const* t) { }
+  virtual void visit(Kind_type const* t) { }
+  virtual void visit(Boolean_type const* t) { }
+  virtual void visit(Integer_type const* t) { }
+  virtual void visit(Constant_type const* t) { }
+  virtual void visit(Function_type const* t) { }
+  virtual void visit(Reference_type const* t) { }
+  virtual void visit(Array_type const* t) { }
+  virtual void visit(Tuple_type const* t) { }
+  virtual void visit(Record_type const* t) { }
+  virtual void visit(Variant_type const* t) { }
+  virtual void visit(Enum_type const* t) { }
+  virtual void visit(Match_type const* t) { }
+  virtual void visit(If_type const* t) { }
+  virtual void visit(Seq_type const* t) { }
+  virtual void visit(Buffer_type const* t) { }
+  virtual void visit(Until_type const* t) { }
+  virtual void visit(Table_type const* t) { }  
+  virtual void visit(Flow_type const* t) { }
 };
 
 
 // The type of boolean values.
-struct Void_type : Type, Type_impl<void_type>
+struct Void_type : Type
 {
-  Void_type()
-    : Type(node_kind)
-  { }
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // The higher-order kind of types (the type of types).
-struct Kind_type : Type, Type_impl<kind_type>
+struct Kind_type : Type
 {
-  Kind_type()
-    : Type(node_kind)
-  { }
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // The type of boolean values.
-struct Boolean_type : Type, Type_impl<boolean_type>
+struct Boolean_type : Type
 {
-  Boolean_type()
-    : Type(node_kind)
-  { }
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
@@ -130,10 +109,10 @@ enum Integer_order
 //
 // For shorthand, int means "signed integer" and uint
 // means "unsigned integer".
-struct Integer_type : Type, Type_impl<integer_type>
+struct Integer_type : Type
 {
   Integer_type(int p, Integer_sign s, Integer_order o)
-    : Type(node_kind), first(p), second(s), third(o)
+    : first(p), second(s), third(o)
   { }
 
   int           precision() const       { return first; }
@@ -144,6 +123,8 @@ struct Integer_type : Type, Type_impl<integer_type>
   bool          is_native_order() const { return third == native_order; }
   bool          is_msbf_order() const   { return third == msbf_order; }
   bool          is_lsbf_order() const   { return third == lsbf_order; }
+
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   int           first;
   Integer_sign  second;
@@ -167,13 +148,14 @@ struct Integer_type : Type, Type_impl<integer_type>
 //
 //    f1(0); // error: cannot form a refernce to 0
 //    f2(0); // OK: potentially synthesize an object
-struct Constant_type : Type, Type_impl<constant_type>
+struct Constant_type : Type
 {
   Constant_type(Type const* t)
-    : Type(node_kind), first(t)
+    : first(t)
   { }
 
   Type const* type() const { return first; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type const* first;
 };
@@ -188,13 +170,14 @@ struct Constant_type : Type, Type_impl<constant_type>
 //
 // Reference types may be represented as pointers, or in
 // many cases, they can be erased.
-struct Reference_type : Type, Type_impl<reference_type>
+struct Reference_type : Type
 {
   Reference_type(Type const* t)
-    : Type(node_kind), first(t)
+    : first(t)
   { }
 
   Type const* type() const { return first; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type const* first;
 };
@@ -202,15 +185,16 @@ struct Reference_type : Type, Type_impl<reference_type>
 
 // A function type is that of a mapping of a sequence of
 // input types to an output type.
-struct Function_type : Type, Type_impl<function_type>
+struct Function_type : Type
 {
   // TODO: Support move semantics
   Function_type(Type_seq const& a, Type const* r)
-    : Type(node_kind), first(a), second(r)
+    : first(a), second(r)
   { }
 
   Type_seq const& parm_types() const { return first; }
   Type const*     ret_type() const   { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type_seq    first;
   Type const* second;
@@ -221,14 +205,15 @@ struct Function_type : Type, Type_impl<function_type>
 // of values having the same type.
 //
 // TODO: Make the extent a larger integer type?
-struct Array_type : Type, Type_impl<array_type>
+struct Array_type : Type
 {
   Array_type(Type const* t, Integer const& n)
-    : Type(node_kind), first(t), second(n)
+    : first(t), second(n)
   { }
 
   Type const* type() const   { return first; }
   Integer     extent() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type const* first;
   Integer     second;
@@ -240,13 +225,14 @@ struct Array_type : Type, Type_impl<array_type>
 //
 // TODO: Can a tuple have members that are not byte
 // aligned? That is, is this valid: `{int1, int1}`?
-struct Tuple_type : Type, Type_impl<tuple_type>
+struct Tuple_type : Type
 {
   Tuple_type(Type_seq const& t)
-    : Type(node_kind), first(t)
+    : first(t)
   { }
 
   Type_seq const& types() const { return first; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type_seq    first;
 };
@@ -254,16 +240,17 @@ struct Tuple_type : Type, Type_impl<tuple_type>
 
 // A helper class for defining user-defined types. A user-defined
 // type refers to a declaration.
-template<Type_kind K, typename T>
-struct User_defined_type : Type, Type_impl<K>
+template<typename T>
+struct User_defined_type
 {
   User_defined_type(Decl const* d)
-    : Type(K), first(d)
+    : first(d)
   {
     lingo_assert(is<T>(d));
   }
 
   T const* decl() const { return cast<T>(first); }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Decl const* first;
 };
@@ -272,29 +259,33 @@ struct User_defined_type : Type, Type_impl<K>
 // A record type is defined by its declaration.
 //
 // TODO: Support inheritance.
-struct Record_type : User_defined_type<record_type, Record_decl>
+struct Record_type : Type, User_defined_type<Record_decl>
 {
-  using User_defined_type<record_type, Record_decl>::User_defined_type;
+  using User_defined_type<Record_decl>::User_defined_type;
+
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // A variant type...
-struct Variant_type : User_defined_type<variant_type, Variant_decl>
+struct Variant_type : Type, User_defined_type<Variant_decl>
 {
-  using User_defined_type<variant_type, Variant_decl>::User_defined_type;
+  using User_defined_type<Variant_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // An enum type...
-struct Enum_type : User_defined_type<enum_type, Enum_decl>
+struct Enum_type : Type, User_defined_type<Enum_decl>
 {
-  using User_defined_type<enum_type, Enum_decl>::User_defined_type;
+  using User_defined_type<Enum_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // A type match is a member of a match type. It associates
 // a constant expression with its corresponding type.
-struct Match_term : Term<>, std::pair<Expr const*, Type const*>
+struct Match_term : std::pair<Expr const*, Type const*>
 {
   using std::pair<Expr const*, Type const*>::pair;
 
@@ -316,14 +307,15 @@ using Match_seq = std::vector<Match_term const*>;
 // Represents a match type.
 //
 // This is a structural and not a nominal type.
-struct Match_type : Type, Type_impl<match_type>
+struct Match_type : Type
 {
   Match_type(Expr const* e, Match_seq const& m)
-    : Type(node_kind), first(e), second(m)
+    : first(e), second(m)
   { }
   
   Expr const*      disc() const    { return first; }
   Match_seq const& members() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Match_seq   second;
@@ -331,14 +323,15 @@ struct Match_type : Type, Type_impl<match_type>
 
 
 // Represents a runtime `if` type.
-struct If_type : Type, Type_impl<match_type>
+struct If_type : Type
 {
   If_type(Expr const* e, Type const* t)
-    : Type(node_kind), first(e), second(t)
+    : first(e), second(t)
   { }
   
   Expr const* cond() const { return first; }
   Type const* type() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Type const* second;
@@ -346,14 +339,15 @@ struct If_type : Type, Type_impl<match_type>
 
 
 // A sequence type.
-struct Seq_type : Type, Type_impl<seq_type>
+struct Seq_type : Type
 {
   Seq_type(Type const* t, Expr const* e)
-    : Type(node_kind), first(t), second(e)
+    : first(t), second(e)
   { }
   
   Type const* type() const { return first; }
   Expr const* elems() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type const* first;
   Expr const* second;
@@ -361,14 +355,15 @@ struct Seq_type : Type, Type_impl<seq_type>
 
 
 // A sequence buffer type.
-struct Buffer_type : Type, Type_impl<buffer_type>
+struct Buffer_type : Type
 {
   Buffer_type(Type const* t, Expr const* e)
-    : Type(node_kind), first(t), second(e)
+    : first(t), second(e)
   { }
   
   Type const* type() const { return first; }
   Expr const* length() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Type const* first;
   Expr const* second;
@@ -376,14 +371,15 @@ struct Buffer_type : Type, Type_impl<buffer_type>
 
 
 // A terminated sequence type.
-struct Until_type : Type, Type_impl<until_type>
+struct Until_type : Type
 {
   Until_type(Expr const* e, Type const* t)
-    : Type(node_kind), first(e), second(t)
+    : first(e), second(t)
   { }
   
   Expr const* cond() const { return first; }
   Type const* type() const { return second; }
+  void accept(Type_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Type const* second;
@@ -391,35 +387,22 @@ struct Until_type : Type, Type_impl<until_type>
 
 
 // Table types.
-struct Table_type : User_defined_type<table_type, Table_decl>
+struct Table_type : Type, User_defined_type<Table_decl>
 {
-  using User_defined_type<table_type, Table_decl>::User_defined_type;
+  using User_defined_type<Table_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
 
 // open flow table entry
-struct Flow_type : User_defined_type<flow_type, Flow_decl>
+struct Flow_type : Type, User_defined_type<Flow_decl>
 {
-  using User_defined_type<flow_type, Flow_decl>::User_defined_type;
+  using User_defined_type<Flow_decl>::User_defined_type;
+  void accept(Type_visitor& v) const { v.visit(this); }
 };
 
-
 // -------------------------------------------------------------------------- //
-//                             Concepts and dispatch
-//
-
-
-// True when T is models the Expression concept. 
-//
-// Note that we assume that a Expression is already known 
-// to be Node, so we skip the explicit check.
-template<typename T>
-constexpr bool
-is_type()
-{
-  return std::is_base_of<Type, T>::value;
-}
-
+//                               Concepts
 
 // Returns true if T is a scalar type. The scalar
 // types are the `bool` type and the integer types.
@@ -427,8 +410,8 @@ template<typename T>
 constexpr bool
 is_scalar_type()
 {
-  return T::node_kind == boolean_type
-      || T::node_kind == integer_type;
+  return std::is_base_of<T, Boolean_type>::value
+      || std::is_base_of<T, Integer_type>::value;
 }
 
 
@@ -439,14 +422,14 @@ template<typename T>
 constexpr bool
 is_aggregate_type()
 {
-  return T::node_kind == array_type
-      || T::node_kind == tuple_type
-      || T::node_kind == match_type
-      || T::node_kind == seq_type
-      || T::node_kind == buffer_type
-      || T::node_kind == until_type
-      || T::node_kind == record_type
-      || T::node_kind == variant_type;
+  return std::is_base_of<T, Array_type>::value
+      || std::is_base_of<T, Tuple_type>::value
+      || std::is_base_of<T, Match_type>::value
+      || std::is_base_of<T, Seq_type>::value
+      || std::is_base_of<T, Buffer_type>::value
+      || std::is_base_of<T, Until_type>::value
+      || std::is_base_of<T, Record_type>::value
+      || std::is_base_of<T, Variant_type>::value;
 }
 
 
@@ -455,9 +438,11 @@ template<typename T>
 constexpr bool
 is_user_defined_type()
 {
-  return T::node_kind == record_type
-      || T::node_kind == variant_type
-      || T::node_kind == enum_type;
+  return std::is_base_of<T, Record_type>::value
+      || std::is_base_of<T, Variant_type>::value
+      || std::is_base_of<T, Enum_type>::value
+      || std::is_base_of<T, Table_type>::value
+      || std::is_base_of<T, Flow_type>::value;
 }
 
 
@@ -471,7 +456,7 @@ is_object_type()
   return is_scalar_type<T>()
       || is_aggregate_type<T>()
       || is_user_defined_type<T>()
-      || T::node_kind == constant_type;
+      || std::is_base_of<T, Constant_type>::value;
 }
 
 
@@ -480,48 +465,11 @@ template<typename T>
 constexpr bool
 is_runtime_type()
 {
-  return T::node_kind == match_type
-      || T::node_kind == if_type
-      || T::node_kind == seq_type
-      || T::node_kind == buffer_type
-      || T::node_kind == until_type;
-}
-
-
-// TODO: Are decode and type types user-defined? Are
-// they object types? They are probably distinct
-// closure types and so not subjet.
-
-
-// Apply function to the type `t`.
-template<typename T, typename F>
-auto
-apply(T const* t, F fn) 
-  -> typename std::enable_if<is_type<T>(), decltype(fn((Kind_type*)0))>::type
-{
-  lingo_alert(is_valid_node(t), "invalid type");
-  switch (t->kind()) {
-    case kind_type: return fn(cast<Kind_type>(t));
-    case void_type: return fn(cast<Void_type>(t));
-    case boolean_type: return fn(cast<Boolean_type>(t));
-    case integer_type: return fn(cast<Integer_type>(t));
-    case constant_type: return fn(cast<Constant_type>(t));
-    case reference_type: return fn(cast<Reference_type>(t));
-    case function_type: return fn(cast<Function_type>(t));
-    case array_type: return fn(cast<Array_type>(t));
-    case tuple_type: return fn(cast<Tuple_type>(t));
-    case record_type: return fn(cast<Record_type>(t));
-    case variant_type: return fn(cast<Variant_type>(t));
-    case enum_type: return fn(cast<Enum_type>(t));
-    case match_type: return fn(cast<Match_type>(t));
-    case if_type: return fn(cast<If_type>(t));
-    case seq_type: return fn(cast<Seq_type>(t));
-    case buffer_type: return fn(cast<Buffer_type>(t));
-    case until_type: return fn(cast<Until_type>(t));
-    case table_type: return fn(cast<Table_type>(t));
-    case flow_type: return fn(cast<Flow_type>(t));
-  }
-  lingo_unreachable();
+  return std::is_base_of<T, Match_type>::value
+      || std::is_base_of<T, If_type>::value
+      || std::is_base_of<T, Seq_type>::value
+      || std::is_base_of<T, Buffer_type>::value
+      || std::is_base_of<T, Until_type>::value;
 }
 
 
@@ -530,6 +478,18 @@ apply(T const* t, F fn)
 //
 // TODO: Unify these definitions with the concept definitions
 // above. Not quite sure if there's an elegant way of doing this.
+
+// True when T is models the Type concept. 
+//
+// Note that we assume that a Type is already known 
+// to be Node, so we skip the explicit check.
+template<typename T>
+constexpr bool
+is_type()
+{
+  return std::is_base_of<Type, T>::value;
+}
+
 
 // Returns ture if `t` is the boolean type.
 inline bool
@@ -613,7 +573,9 @@ is_user_defined_type(Type const* t)
 {
   return is_record_type(t) 
       || is_variant_type(t) 
-      || is_enum_type(t);
+      || is_enum_type(t)
+      || is<Table_type>(t)
+      || is<Flow_type>(t);
 }
 
 
@@ -622,8 +584,31 @@ is_object_type(Type const* t)
 {
   return is_scalar_type(t)
       || is_aggregate_type(t)
-      || is_user_defined_type(t);
+      || is_user_defined_type(t)
+      || is<Constant_type>(t);
 }
+
+
+inline bool
+is_runtime_type(Type const* t)
+{
+  return is<Match_type>(t)
+      || is<If_type>(t)
+      || is<Seq_type>(t)
+      || is<Buffer_type>(t)
+      || is<Until_type>(t);
+}
+
+
+// Evalutes to true iff T1 and T2 have the same
+// dynamic type
+template<typename T1, typename T2>
+inline bool
+same_kind(T1 const* t1, T2 const* t2)
+{
+  return typeid(*t1) == typeid(*t2);
+}
+
 
 
 // -------------------------------------------------------------------------- //
@@ -681,6 +666,56 @@ Seq_type const*       get_seq_type(Type const*, Expr const*);
 Buffer_type const*    get_buffer_type(Type const*, Expr const*);
 Until_type const*     get_until_type(Expr const*, Type const*);
 Record_type const*    get_context_type();
+
+
+// -------------------------------------------------------------------------- //
+//                            Generic visitor
+
+
+// A parameterized visitor that dispatches to a function 
+// object. F is the type of the function and T is its
+// return type.
+//
+// This class is never used directly. It is used only in
+// the apply function below.
+template<typename F, typename T>
+struct Generic_type_visitor : Type_visitor, Generic_visitor<F, T>
+{
+  Generic_type_visitor(F f)
+    : Generic_visitor<F, T>(f)
+  { }
+
+  void visit(Void_type const* t)      { this->invoke(t); }
+  void visit(Kind_type const* t)      { this->invoke(t); }
+  void visit(Boolean_type const* t)   { this->invoke(t); }
+  void visit(Integer_type const* t)   { this->invoke(t); }
+  void visit(Constant_type const* t)  { this->invoke(t); }
+  void visit(Function_type const* t)  { this->invoke(t); }
+  void visit(Reference_type const* t) { this->invoke(t); }
+  void visit(Array_type const* t)     { this->invoke(t); }
+  void visit(Tuple_type const* t)     { this->invoke(t); }
+  void visit(Record_type const* t)    { this->invoke(t); }
+  void visit(Variant_type const* t)   { this->invoke(t); }
+  void visit(Enum_type const* t)      { this->invoke(t); }
+  void visit(Match_type const* t)     { this->invoke(t); }
+  void visit(If_type const* t)        { this->invoke(t); }
+  void visit(Seq_type const* t)       { this->invoke(t); }
+  void visit(Buffer_type const* t)    { this->invoke(t); }
+  void visit(Until_type const* t)     { this->invoke(t); }
+  void visit(Table_type const* t)     { this->invoke(t); }  
+  void visit(Flow_type const* t)      { this->invoke(t); }
+};
+
+
+// Apply the function f to the type t.
+// The return type is that of the function object F.
+template<typename F, typename T = typename std::result_of<F(Void_type*)>::type>
+inline T
+apply(Type const* t, F fn)
+{
+  Generic_type_visitor<F, T> v(fn);
+  return accept(t, v);
+}
 
 
 // -------------------------------------------------------------------------- //

@@ -16,34 +16,7 @@
 namespace steve
 {
 
-// -------------------------------------------------------------------------- //
-//                            Declaration kinds
-
-// Different kinds of expressions in the core language.
-enum Decl_kind
-{
-  variable_decl,  // variable declarations
-  constant_decl,  // constant declarations
-  function_decl,  // function declarations
-  parameter_decl, // parameter declarations
-  record_decl,    // record declarations
-  member_decl,    // member declarations
-  variant_decl,   // variant type declaration
-  enum_decl,      // enumerations
-  decode_decl,    // decode declarations
-  table_decl,     // table declaration
-  flow_decl,      // flow declaration
-  extracts_decl,  // extracts decl
-  rebind_decl,    // extracts <field> as <field>
-};
-
-
-char const* get_decl_name(Decl_kind);
-
-
-// Adapt the generic node-kinding template to this node type.
-template<Decl_kind K>
-using Decl_impl = lingo::Kind_base<Decl_kind, K>;
+struct Decl_visitor;
 
 
 // -------------------------------------------------------------------------- //
@@ -65,22 +38,23 @@ struct Stmt;
 // declaration.
 struct Decl
 {
-  Decl(Decl_kind k, Location l, String const* n, Type const* t)
-    : kind_(k), loc_(l), name_(n), type_(t)
+  Decl(Location l, String const* n, Type const* t)
+    : loc_(l), name_(n), type_(t)
   { }
 
   virtual ~Decl()
   { }
 
-  char const*   node_name() const { return get_decl_name(kind_); }
-  Decl_kind     kind() const      { return kind_; }
+  String        node_name() const;
   Location      location() const  { return loc_; }
   String const* name() const      { return name_; }
   Type const*   type() const      { return type_; }
   Prop const*   prop() const      { return prop_; }
   virtual bool  has_impl() const  { return true; }
 
-  Decl_kind     kind_;
+    // Accept a declaration visitor.
+  virtual void accept(Decl_visitor&) const = 0;
+
   Location      loc_;
   String const* name_;
   Type const*   type_;
@@ -88,15 +62,35 @@ struct Decl
 };
 
 
+// The declaration visitor.
+struct Decl_visitor
+{
+  virtual void visit(Variable_decl const*) { }
+  virtual void visit(Constant_decl const*) { }
+  virtual void visit(Function_decl const*) { }
+  virtual void visit(Parameter_decl const*) { }
+  virtual void visit(Record_decl const*) { }
+  virtual void visit(Member_decl const*) { }
+  virtual void visit(Variant_decl const*) { }
+  virtual void visit(Enum_decl const*) { }
+  virtual void visit(Decode_decl const*) { }
+  virtual void visit(Table_decl const*) { }
+  virtual void visit(Flow_decl const*) { }
+  virtual void visit(Extracts_decl const*) { }
+  virtual void visit(Rebind_decl const*) { }
+};
+
+
 // A variable declares a name to be an object.
-struct Variable_decl : Decl, Decl_impl<variable_decl>
+struct Variable_decl : Decl
 {
   Variable_decl(Location loc, String const* n, Type const* t, Expr const* e)
-    : Decl(node_kind, loc, n, t), first(e)
+    : Decl(loc, n, t), first(e)
   { }
 
   Expr const* init() const { return first; }
-  bool        has_impl() const { if (init()) return true; else return false;}
+  bool        has_impl() const { return init() ? true : false; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   void set_init(Expr const* e) { first = e; }
 
@@ -109,13 +103,14 @@ struct Variable_decl : Decl, Decl_impl<variable_decl>
 // Unlike variables, constants are not stored in objects, and
 // their address cannot be taken. They represent compile-time
 // values.
-struct Constant_decl : Decl, Decl_impl<constant_decl>
+struct Constant_decl : Decl
 {
   Constant_decl(Location loc, String const* n, Type const* t, Expr const* e)
-    : Decl(node_kind, loc, n, t), first(e)
+    : Decl(loc, n, t), first(e)
   { }
 
   Expr const* init() const { return first; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
@@ -125,7 +120,7 @@ struct Constant_decl : Decl, Decl_impl<constant_decl>
 // of inputs to an output. The parameters of a function
 // determine the types of inputs. The body of a function is
 // a statement that computes the result.
-struct Function_decl : Decl, Decl_impl<function_decl>
+struct Function_decl : Decl
 {
   Function_decl(Location, String const*, Type const*, Decl_seq const&, Stmt const*);
 
@@ -133,9 +128,11 @@ struct Function_decl : Decl, Decl_impl<function_decl>
   Stmt const*          body() const  { return second; }
   Function_type const* type() const;
   Type const*          ret_type() const;
-  bool                 has_impl() const { if (body()) return true; else return false; }
+  bool                 has_impl() const { return body() ? true : false; }
 
   void set_body(Stmt const* s) { second = s; }
+
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Decl_seq    first;
   Stmt const* second;
@@ -145,22 +142,25 @@ struct Function_decl : Decl, Decl_impl<function_decl>
 // A parameter declaration.
 //
 // TODO: Support default arguments.
-struct Parameter_decl : Decl, Decl_impl<parameter_decl>
+struct Parameter_decl : Decl
 {
   Parameter_decl(Location loc, String const* n, Type const* t)
-    : Decl(node_kind, loc, n, t)
+    : Decl(loc, n, t)
   { }
+
+  void accept(Decl_visitor& v) const { v.visit(this); }
 };
 
 
 // A record declaration.
-struct Record_decl : Decl, Decl_impl<record_decl>
+struct Record_decl : Decl
 {
   Record_decl(Location loc, String const* n, Type const* t, Decl_seq const& m)
-    : Decl(node_kind, loc, n, t), first(m)
+    : Decl(loc, n, t), first(m)
   { }
 
   Decl_seq const& members() const { return first; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Decl_seq first;
 };
@@ -169,11 +169,13 @@ struct Record_decl : Decl, Decl_impl<record_decl>
 // A member declaration.
 //
 // TODO: Support member initializers.
-struct Member_decl : Decl, Decl_impl<member_decl>
+struct Member_decl : Decl
 {
   Member_decl(Location loc, String const* n, Type const* t)
-    : Decl(node_kind, loc, n, t)
+    : Decl(loc, n, t)
   { }
+
+  void accept(Decl_visitor& v) const { v.visit(this); }
 };
 
 
@@ -186,13 +188,14 @@ struct Member_decl : Decl, Decl_impl<member_decl>
 //    variant V {
 //      record R { ... }; // OK.
 //    }
-struct Variant_decl : Decl, Decl_impl<variant_decl>
+struct Variant_decl : Decl
 {
   Variant_decl(Location loc, String const* n, Type const* t, Type_seq const& ts)
-    : Decl(node_kind, loc, n, t), first(ts)
+    : Decl(loc, n, t), first(ts)
   { }
 
   Type_seq const& types() const { return first; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Type_seq first;
 };
@@ -201,14 +204,15 @@ struct Variant_decl : Decl, Decl_impl<variant_decl>
 // An enumeration declaration. An enumeration may
 // be parameterized over an underlying type and has
 // a sequence of constant declarations.
-struct Enum_decl : Decl, Decl_impl<enum_decl>
+struct Enum_decl : Decl
 {
   Enum_decl(Location loc, String const* n, Type const* t, Type const* b, Decl_seq const& d)
-    : Decl(node_kind, loc, n, t), first(b), second(d)
+    : Decl(loc, n, t), first(b), second(d)
   { }
 
   Type const*     base() const    { return first; }
   Decl_seq const& members() const { return second; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Type const* first;
   Decl_seq    second;
@@ -220,15 +224,16 @@ struct Enum_decl : Decl, Decl_impl<enum_decl>
 //
 // Stmt* s is a block stmt containing all stmt inside a decoder
 // Type* h is the header type 
-struct Decode_decl : Decl, Decl_impl<decode_decl>
+struct Decode_decl : Decl
 {
   Decode_decl(Location loc, String const* n, Type const* t, Stmt const* s, Type const* h)
-    : Decl(node_kind, loc, n, t), first(h), second(s)
+    : Decl(loc, n, t), first(h), second(s)
   { }
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
-  bool         has_impl() const { if (body()) return true; else return false; }
+  bool         has_impl() const { return body() ? true : false; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   void set_body(Stmt const* s) { second = s; }
 
@@ -238,20 +243,21 @@ struct Decode_decl : Decl, Decl_impl<decode_decl>
 
 
 // A flow table.
-struct Table_decl : Decl, Decl_impl<table_decl> 
+struct Table_decl : Decl
 {
   Table_decl(Location loc, String const* n, Type const* t, int num, Expr_seq const& conds)
-    : Decl(node_kind, loc, n, t), first(num), second(conds)
+    : Decl(loc, n, t), first(num), second(conds)
   { }
 
   Table_decl(Location loc, String const* n, Type const* t, int num, Expr_seq const& conds, Decl_seq const& init)
-    : Decl(node_kind, loc, n, t), first(num), second(conds), third(init)
+    : Decl(loc, n, t), first(num), second(conds), third(init)
   { }
 
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
   Decl_seq const& body() const { return third; }
-  bool has_impl() const { if(body().size() > 0) return true; else return false; }
+  bool has_impl() const { return (body().size() > 0) ? true : false; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   void set_body(Decl_seq const& d) { third = d; }
 
@@ -262,15 +268,16 @@ struct Table_decl : Decl, Decl_impl<table_decl>
 
 
 // An entry within a flow table.
-struct Flow_decl : Decl, Decl_impl<flow_decl> 
+struct Flow_decl : Decl
 {
   Flow_decl(Location loc, String const* n, Type const* t, Expr_seq const& conds, Value const& prio, Stmt const* i)
-    : Decl(node_kind, loc, n, t), first(prio), second(conds), third(i)
+    : Decl(loc, n, t), first(prio), second(conds), third(i)
   { }
   
   Value const&    priority() const { return first; }
   Expr_seq const& conditions() const { return second; }
   Stmt const*     instructions() const { return third; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Value first;
   Expr_seq const second;
@@ -278,34 +285,33 @@ struct Flow_decl : Decl, Decl_impl<flow_decl>
 };
 
 
-struct Extracts_decl : Decl, Decl_impl<extracts_decl>
+struct Extracts_decl : Decl
 {
   Extracts_decl(Location loc, String const* n, Type const* t, Expr const* e)
-    : Decl(node_kind, loc, n, t), first(e)
+    : Decl(loc, n, t), first(e)
   { }
 
   Expr const* field() const { return first; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
 
 
-struct Rebind_decl : Decl, Decl_impl<extracts_decl>
+struct Rebind_decl : Decl
 {
   Rebind_decl(Location loc, String const* n, Type const* t, Expr const* e1, Expr const* e2)
-    : Decl(node_kind, loc, n, t), first(e1), second(e2)
+    : Decl(loc, n, t), first(e1), second(e2)
   { }
 
   Expr const* field1() const { return first; }
   Expr const* field2() const { return second; }
+  void accept(Decl_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr const* second;
 };
 
-
-// -------------------------------------------------------------------------- //
-//                           Concepts and dispatch
 
 // True when T is models the Declaration concept. 
 //
@@ -319,29 +325,40 @@ is_decl()
 }
 
 
-// Apply function to the declaration `d`.
-template<typename T, typename F>
-auto
-apply(T const* d, F fn)
-  -> typename std::enable_if<is_decl<T>(), decltype(fn((Variable_decl*)0))>::type
+// -------------------------------------------------------------------------- //
+//                            Generic visitor
+
+// A parameterized visitor that dispatches to a function object.
+template<typename F, typename T>
+struct Generic_decl_visitor : Decl_visitor, Generic_visitor<F, T>
 {
-  lingo_assert(is_valid_node(d));
-  switch (d->kind()) {
-    case variable_decl: return fn(cast<Variable_decl>(d));
-    case constant_decl: return fn(cast<Constant_decl>(d));
-    case function_decl: return fn(cast<Function_decl>(d));
-    case parameter_decl: return fn(cast<Parameter_decl>(d));
-    case record_decl: return fn(cast<Record_decl>(d));
-    case member_decl: return fn(cast<Member_decl>(d));
-    case variant_decl: return fn(cast<Variant_decl>(d));
-    case enum_decl: return fn(cast<Enum_decl>(d));
-    case decode_decl: return fn(cast<Decode_decl>(d));
-    case table_decl: return fn(cast<Table_decl>(d));
-    case flow_decl: return fn(cast<Flow_decl>(d));
-    case extracts_decl: return fn(cast<Extracts_decl>(d));
-    case rebind_decl: return fn(cast<Rebind_decl>(d));
-  }
-  lingo_unreachable("unhandled declaration '{}'", d->node_name());
+  Generic_decl_visitor(F f)
+    : Generic_visitor<F, T>(f)
+  { }
+
+  void visit(Variable_decl const* d) { this->invoke(d); }
+  void visit(Constant_decl const* d) { this->invoke(d); }
+  void visit(Function_decl const* d) { this->invoke(d); }
+  void visit(Parameter_decl const* d) { this->invoke(d); }
+  void visit(Record_decl const* d) { this->invoke(d); }
+  void visit(Member_decl const* d) { this->invoke(d); }
+  void visit(Variant_decl const* d) { this->invoke(d); }
+  void visit(Enum_decl const* d) { this->invoke(d); }
+  void visit(Decode_decl const* d) { this->invoke(d); }
+  void visit(Table_decl const* d) { this->invoke(d); }
+  void visit(Flow_decl const* d) { this->invoke(d); }
+  void visit(Extracts_decl const* d) { this->invoke(d); }
+  void visit(Rebind_decl const* d) { this->invoke(d); }
+};
+
+
+// Apply the function f to the statement s.
+template<typename F, typename T = typename std::result_of<F(Variable_decl*)>::type>
+inline T
+apply(Decl const* s, F fn)
+{
+  Generic_decl_visitor<F, T> v(fn);
+  return accept(s, v);
 }
 
 

@@ -8,6 +8,7 @@
 #include "steve/stmt.hpp"
 
 #include <algorithm>
+#include <typeindex>
 
 
 namespace steve
@@ -150,156 +151,267 @@ Term_less<T>::operator()(T const* a, T const* b) const
 }
 
 
+// Dispatch to an appropriate function.
+struct Less_type_fn
+{
+  Less_type_fn(Type const* t)
+    : t2(t)
+  { }
+
+  bool operator()(Kind_type const* t1) const
+  {
+    return less(t1, static_cast<Kind_type const*>(t2));
+  }
+
+  bool operator()(Void_type const* t1) const
+  { 
+    return less(t1, static_cast<Void_type const*>(t2)); 
+  }
+  
+  bool operator()(Boolean_type const* t1) const
+  { 
+    return less(t1, static_cast<Boolean_type const*>(t2)); 
+  }
+  
+  bool operator()(Integer_type const* t1) const
+  { 
+    return less(t1, static_cast<Integer_type const*>(t2)); 
+  }
+
+  bool operator()(Constant_type const* t1) const
+  {
+    return less(t1, static_cast<Constant_type const*>(t2));
+  }
+
+  bool operator()(Reference_type const* t1) const
+  {
+    return less(t1, static_cast<Reference_type const*>(t2));
+  }
+  
+  bool operator()(Function_type const* t1) const
+  { 
+    return less(t1, static_cast<Function_type const*>(t2)); 
+  }
+
+  bool operator()(Array_type const* t1) const
+  {
+    return less(t1, static_cast<Array_type const*>(t2));
+  }
+
+  bool operator()(Tuple_type const* t1) const
+  {
+    return less(t1, static_cast<Tuple_type const*>(t2));
+  }
+
+  bool operator()(Record_type const* t1) const
+  {
+    return less(t1, static_cast<Record_type const*>(t2));
+  }
+
+  bool operator()(Variant_type const* t1) const
+  {
+    return less_udt(t1, static_cast<Variant_type const*>(t2));
+  }
+
+  bool operator()(Enum_type const* t1) const
+  {
+    return less_udt(t1, static_cast<Enum_type const*>(t2));
+  }
+
+  bool operator()(If_type const* t1) const
+  {
+    return less(t1, static_cast<If_type const*>(t2));
+  }
+
+  bool operator()(Match_type const* t1) const
+  {
+    return less(t1, static_cast<Match_type const*>(t2));
+  }
+
+  bool operator()(Seq_type const* t1) const
+  {
+    return less(t1, static_cast<Seq_type const*>(t2));
+  }
+
+  bool operator()(Buffer_type const* t1) const
+  {
+    return less(t1, static_cast<Buffer_type const*>(t2));
+  }
+
+  bool operator()(Until_type const* t1) const
+  {
+    return less(t1, static_cast<Until_type const*>(t2));
+  }
+
+  bool operator()(Table_type const* t1) const
+  {
+    return less(t1, static_cast<Table_type const*>(t2));
+  }
+
+  bool operator()(Flow_type const* t1) const
+  {
+    return less(t1, static_cast<Flow_type const*>(t2));
+  }
+
+  Type const* t2;
+};
+
+
+struct Less_expr_fn
+{
+  Less_expr_fn(Expr const* t)
+    : t2(t)
+  { }
+
+  bool operator()(Value_expr const* t1) const
+  {
+    return less(t1, cast<Value_expr>(t2));
+  }
+
+  bool operator()(Id_expr const* t1) const
+  {
+    return less(t1, cast<Id_expr>(t2));
+  }
+
+  bool operator()(Lookup_expr const* t1) const
+  {
+    return less(t1, cast<Lookup_expr>(t2));
+  }
+
+  bool operator()(Constant_expr const* t1) const
+  {
+    return less(t1, cast<Lookup_expr>(t2));
+  }
+
+  bool operator()(Default_expr const* t1) const
+  {
+    return less(t1, cast<Default_expr>(t2));
+  }
+
+  bool operator()(Init_expr const* t1) const
+  {
+    return less(t1, cast<Init_expr>(t2));
+  }
+
+  bool operator()(Unary_expr const* t1) const
+  {
+    return less(t1, cast<Unary_expr>(t2));
+  }
+
+  bool operator()(Binary_expr const* t1) const
+  {
+    return less(t1, cast<Binary_expr>(t2));
+  }
+
+  bool operator()(Call_expr const* t1) const
+  {
+    return less(t1, cast<Call_expr>(t2));
+  }
+
+  bool operator()(Tuple_expr const* t1) const
+  {
+    return less(t1, cast<Tuple_expr>(t2));
+  }
+
+  bool operator()(Index_expr const* t1) const
+  {
+    return less(t1, cast<Index_expr>(t2));
+  }
+
+  bool operator()(Member_expr const* t1) const
+  {
+    return less(t1, cast<Member_expr>(t2));
+  }
+
+  bool operator()(Field_expr const* t1) const
+  {
+    return less(t1, cast<Field_expr>(t2));
+  }
+
+  bool operator()(Convert_expr const* t1) const
+  {
+    return less(t1, cast<Convert_expr>(t2));
+  }
+
+  bool operator()(Lengthof_expr const* t1) const
+  {
+    return less(t1, cast<Lengthof_expr>(t2));
+  }
+
+  bool operator()(Offsetof_expr const* t1) const
+  {
+    return less(t1, cast<Offsetof_expr>(t2));
+  }
+
+  bool operator()(Headerof_expr const* t1) const
+  {
+    return less(t1, cast<Headerof_expr>(t2));
+  }
+
+  bool operator()(Insert_expr const* t1) const
+  {
+    return less(t1, cast<Insert_expr>(t2));
+  }
+
+  bool operator()(Delete_expr const* t1) const
+  {
+    return less(t1, cast<Delete_expr>(t2));
+  }
+
+  bool operator()(Do_expr const* t1) const
+  {
+    return less(t1, cast<Do_expr>(t2));
+  }
+
+  bool operator()(Field_idx_expr const* t1) const
+  {
+    return less(t1, cast<Field_idx_expr>(t2));
+  }
+
+  bool operator()(Header_idx_expr const* t1) const
+  {
+    return less(t1, cast<Header_idx_expr>(t2));
+  }
+
+  Expr const* t2;
+};
+
+
 } // namespace
 
 
+// Returns true if one type is less than another.
 bool 
 less(Type const* a, Type const* b)
 {
-  if (a->kind() < b->kind())
+  // Abritrarily order types by their type information.
+  std::type_index t1 = typeid(*a);
+  std::type_index t2 = typeid(*b);
+  if (t1 < t2)
     return true;
-  if (b->kind() < a->kind())
+  if (t2 < t1)
     return false;
-  
-  switch (a->kind()) {
-    case kind_type:
-    case void_type:
-    case boolean_type:
-      // Ground types are equivalent.
-      return false;
 
-    case integer_type:
-      return less(cast<Integer_type>(a), cast<Integer_type>(b));
-    
-    case constant_type:
-      return less(cast<Constant_type>(a), cast<Constant_type>(b));
-
-    case reference_type:
-      return less(cast<Reference_type>(a), cast<Reference_type>(b));
-
-    case function_type: 
-      return less(cast<Function_type>(a), cast<Function_type>(b));
-
-    case array_type: 
-      return less(cast<Array_type>(a), cast<Array_type>(b));
-
-    case tuple_type:
-      return less(cast<Tuple_type>(a), cast<Tuple_type>(b));
-
-    case record_type:
-      return less_udt(cast<Record_type>(a), cast<Record_type>(b));
-
-    case variant_type:
-      return less_udt(cast<Variant_type>(a), cast<Variant_type>(b));
-
-    case enum_type:
-      return less_udt(cast<Enum_type>(a), cast<Enum_type>(b));
-
-    case if_type:
-      return less(cast<If_type>(a), cast<If_type>(b));
-
-    case match_type:
-      return less(cast<Match_type>(a), cast<Match_type>(b));
-
-    case seq_type:
-      return less(cast<Seq_type>(a), cast<Seq_type>(b));
-    
-    case buffer_type:
-      return less(cast<Buffer_type>(a), cast<Buffer_type>(b));
-
-    case until_type:
-      return less(cast<Until_type>(a), cast<Until_type>(b));
-
-    case table_type:
-      return less_udt(cast<Table_type>(a), cast<Table_type>(b));
-
-    case flow_type:
-      return less_udt(cast<Flow_type>(a), cast<Flow_type>(b));
-
-  }  
-  lingo_unreachable("unhandled type '{}'", a->node_name());
+  // If two types are equivalent, then dispatch to
+  // an appropriate function.
+  return apply(a, Less_type_fn(b));
 }
 
 
 bool
 less(Expr const* a, Expr const* b)
 {
-  if (a->kind() < b->kind())
+  // Abritrarily order types by their type information.
+  std::type_index t1 = typeid(*a);
+  std::type_index t2 = typeid(*b);
+  if (t1 < t2)
     return true;
-  if (b->kind() < a->kind())
+  if (t2 < t1)
     return false;
 
-  switch(a->kind()) {
-    case value_expr:
-      return less(cast<Value_expr>(a), cast<Value_expr>(b));
-    
-    case id_expr: 
-      // FIXME: I don't think that this is right because it
-      // always returns false (Id_expr is actually nullary).
-      // Determining when id expressions are equivalent would
-      // be helpful in determining when they are less. Note
-      // that different contexts may need different answers.
-      return less(cast<Id_expr>(a), cast<Id_expr>(b));
-
-    case lookup_expr: 
-      return less(cast<Lookup_expr>(a), cast<Lookup_expr>(b));
-
-    case default_expr: 
-      return false;
-
-    case init_expr: 
-      return less(cast<Init_expr>(a), cast<Init_expr>(b));
-    
-    case unary_expr: 
-      return less(cast<Unary_expr>(a), cast<Unary_expr>(b));
-    
-    case binary_expr:
-      return less(cast<Binary_expr>(a), cast<Binary_expr>(b));
-    
-    case call_expr:
-      return less(cast<Call_expr>(a), cast<Call_expr>(b));
-    
-    case tuple_expr: 
-      return less(cast<Tuple_expr>(a), cast<Tuple_expr>(b));
-    
-    case index_expr: 
-      return less(cast<Index_expr>(a), cast<Index_expr>(b));
-    
-    case member_expr:
-      return less(cast<Member_expr>(a), cast<Member_expr>(b));
-
-    case field_expr:
-      return less(cast<Field_expr>(a), cast<Field_expr>(b));
-
-    case convert_expr:
-      return less(cast<Convert_expr>(a), cast<Convert_expr>(b));
-
-    case lengthof_expr:
-      return less(cast<Lengthof_expr>(a), cast<Lengthof_expr>(b));
-
-    case offsetof_expr:
-      return less(cast<Offsetof_expr>(a), cast<Offsetof_expr>(b));
-
-    case headerof_expr:
-      return less(cast<Headerof_expr>(a), cast<Headerof_expr>(b));
-
-    case insert_expr:
-      return less(cast<Insert_expr>(a), cast<Insert_expr>(b));
-
-    case delete_expr:
-      return less(cast<Delete_expr>(a), cast<Delete_expr>(b));
-
-    case do_expr:
-      return less(cast<Do_expr>(a), cast<Do_expr>(b));
-
-    case fld_idx_expr:
-      return less(cast<Field_idx_expr>(a), cast<Field_idx_expr>(b));
-
-    case hdr_idx_expr:
-      return less(cast<Header_idx_expr>(a), cast<Header_idx_expr>(b));
-  }
-
-  lingo_unreachable("unhandled expression '{}'", a->node_name());
+  // If two types are equivalent, then dispatch to
+  // an appropriate function.
+  return apply(a, Less_expr_fn(b));
 }
 
 

@@ -19,13 +19,14 @@ add_test_driver(test-call       call.cpp)
 add_test_driver(test-overload   overload.cpp)
 add_test_driver(test-lookup     lookup.cpp)
 add_test_driver(test-forward-decl forward-decl.cpp)
+add_test_driver(test-name name.cpp)
 
 add_test_driver(test-ofp        ofp.cpp)
 add_test_driver(test-decode     decode.cpp)
 add_test_driver(test-length     length.cpp)
 
-add_test_driver(test-lex        lex.cpp)
-add_test_driver(test-parse      parse.cpp)
+# add_test_driver(test-lex        lex.cpp)
+# add_test_driver(test-parse      parse.cpp)
 
 # Actual unit tests.
 
@@ -42,6 +43,7 @@ add_test(test-call       test-call)
 add_test(test-overload   test-overload)
 add_test(test-lookup     test-lookup)
 add_test(test-forward-decl test-forward-decl)
+add_test(test-name test-name)
 
 add_test(test-ofp        test-ofp)
 add_test(test-decode     test-decode)
