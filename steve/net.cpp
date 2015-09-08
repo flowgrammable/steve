@@ -312,8 +312,6 @@ check_stage(Decl const* d, Expr_seq const& requirements)
     auto search = cxt_bindings.find(as<Field_expr>(e)->name());
     if (search == cxt_bindings.end())
       error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
-    else
-      print (e);
   }
 }
 
@@ -449,6 +447,10 @@ check_pipeline()
   // then we'll unwind and repeat until all branches
   // have been visited
   dfs(start);
+
+  // for (auto stage : pipeline) {
+  //   print(stage);
+  // }
 
   return true;
 }
