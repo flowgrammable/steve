@@ -32,6 +32,7 @@ init_tokens()
   install(rbrace_tok,     "}");
   install(lparen_tok,     ")");
   install(rparen_tok,     "(");
+  install(dot_tok,        ".");
   install(comma_tok,      ",");
   install(colon_tok,      ":");
   install(semicolon_tok,  ";");

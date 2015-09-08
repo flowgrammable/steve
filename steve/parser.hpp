@@ -62,6 +62,45 @@ struct Parser
 };
 
 
+// ---------------------------------------------------------------------------//
+//                          Parsing support
+
+// Parse a paren-enclosed term.
+template<typename Parser, 
+         typename Stream, 
+         typename Rule,
+         typename Term = Term_type<Parser, Stream, Rule>>
+Enclosed_term<Term> const*
+parse_paren_enclosed(Parser& p, Stream& ts, Rule rule)
+{
+  return parse_enclosed(p, ts, lparen_tok, rparen_tok, rule);
+}
+
+
+// Parse a brace-enclose term.
+template<typename Parser, 
+         typename Stream, 
+         typename Rule,
+         typename Term = Term_type<Parser, Stream, Rule>>
+Enclosed_term<Term> const*
+parse_brace_enclosed(Parser& p, Stream& ts, Rule rule)
+{
+  return parse_enclosed(p, ts, lbrace_tok, rbrace_tok, rule);
+}
+
+
+// Parse a comma-separated list of terms.
+template<typename Parser, 
+         typename Stream, 
+         typename Rule,
+         typename Term = Term_type<Parser, Stream, Rule>>
+inline Sequence_term<Term> const*
+parse_comma_list(Parser& p, Stream& ts, Rule rule)
+{
+  return parse_list(p, ts, comma_tok, rule);
+}
+
+
 // The type of a parse function. Use to disambiguate
 // overloads in certain cases.
 using Parse_fn = Expr const* (*)(Parser&, Token_stream&);

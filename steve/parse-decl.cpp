@@ -48,7 +48,7 @@ parse_initializer_clause(Parser& p, Token_stream& ts)
     return p.on_default_init(tok);
 
   // Match direct initialization
-  if (Token const* tok = match_token(ts, equal_tok)) {
+  if (Token const* tok = match_token(ts, eq_tok)) {
     if (Required<Expr> expr = parse_expr(p, ts)) {
       
       // Check for the trailing semicolon, but don't fail
@@ -151,7 +151,7 @@ parse_parameter_clause(Parser& p, Token_stream& ts)
 Type const*
 parse_return_clause(Parser& p, Token_stream& ts)
 {
-  if (expect_token(p, ts, minus_gt_tok))
+  if (expect_token(p, ts, arrow_tok))
     return parse_type(p, ts);
   else
     return make_error_node<Type>();
@@ -159,7 +159,7 @@ parse_return_clause(Parser& p, Token_stream& ts)
 
 
 // Represents a parsed function signature.
-struct Signature : Term<>
+struct Signature
 {
   Signature(Decl_seq const& ps, Type const* t)
     : first(std::move(ps)), second(t)
@@ -202,7 +202,7 @@ Stmt const*
 parse_function_def(Parser& p, Token_stream& ts)
 {
   // Match a simple definition. 
-  if (match_token(ts, equal_tok)) {
+  if (match_token(ts, eq_tok)) {
     if (Required<Expr> expr = parse_expr(p, ts)) {
 
       // This is required, but we can probably continue

@@ -145,7 +145,7 @@ make_eth_table()
 
 
 void
-test2()
+test1()
 {
   Global_scope global;
 

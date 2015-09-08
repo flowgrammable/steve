@@ -114,14 +114,14 @@ Parser::on_id_expr(Token const* tok)
 Expr const*
 Parser::on_boolean_expr(Token const* tok)
 {
-  return make_bool_expr(tok->location(), as_boolean(*tok));
+  return make_bool_expr(tok->location(), as_bool(*tok));
 }
 
 
 Expr const*
 Parser::on_integer_expr(Token const* tok)
 {
-  return make_int_expr(tok->location(), as_integer(*tok));
+  return make_int_expr(tok->location(), as_int(*tok));
 }
 
 

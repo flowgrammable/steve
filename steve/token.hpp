@@ -33,6 +33,7 @@ enum Token_kind
   lparen_tok,     // )
   rparen_tok,     // (
   comma_tok,      // ,
+  dot_tok,        // .
   colon_tok,      // :
   semicolon_tok,  // ;
   eq_tok,         // =
@@ -59,52 +60,57 @@ enum Token_kind
   bar_bar_tok,    // ||
   bang_tok,       // !
   // keywords
-  alias_kw   , // alias
-  bool_kw    , // bool
-  buffer_kw  , // buffer
-  const_kw   , // const
-  do_kw      , // do
-  decode_kw  , // decode
-  def_kw     , // def
-  default_kw , // default
-  else_kw    , // else
-  enum_kw    , // enum
-  extract_kw , // extract
-  for_kw     , // for
-  if_kw      , // if
-  include_kw , // include
-  int_kw     , // int
-  import_kw  , // import
-  long_kw    , // long
-  match_kw   , // match
-  ref_kw     , // ref
-  record_kw  , // record
-  requires_kw, // requires
-  seq_kw     , // seq
-  short_kw   , // short
-  table_kw   , // table
-  uint_kw    , // uint
-  ulong_kw   , // ulong
-  until_kw   , // until
-  ushort_kw  , // ushort
-  using_kw   , // using
-  var_kw     , // var
-  variant_kw , // variant
-  void_kw    , // void
-  while_kw   , // while
-  insert_kw  , // insert
-  into_kw    , // into
-  delete_kw  , // delete
-  from_kw    , // from
-  as_kw      , // as
+  alias_kw,     // alias
+  bool_kw,      // bool
+  buffer_kw,    // buffer
+  const_kw,     // const
+  do_kw,        // do
+  decode_kw,    // decode
+  def_kw,       // def
+  default_kw,   // default
+  else_kw,      // else
+  enum_kw,      // enum
+  extract_kw,   // extract
+  for_kw,       // for
+  if_kw,        // if
+  include_kw,   // include
+  int_kw,       // int
+  import_kw,    // import
+  long_kw,      // long
+  match_kw,     // match
+  ref_kw,       // ref
+  record_kw,    // record
+  requires_kw,  // requires
+  seq_kw,       // seq
+  short_kw,     // short
+  table_kw,     // table
+  uint_kw,      // uint
+  ulong_kw,     // ulong
+  until_kw,     // until
+  ushort_kw,    // ushort
+  using_kw,     // using
+  var_kw,      // var
+  variant_kw,  // variant
+  void_kw,     // void
+  while_kw,    // while
+  insert_kw,   // insert
+  into_kw,     // into
+  delete_kw,   // delete
+  from_kw,     // from
+  as_kw,       // as
 
   // Integer specification.
-  intn_tok   , // intN
-  uintn_tok  , // uintN
-  msbfn_tok  , // msbfN
-  umsbfn_tok , // umsbfN
-  lsbfn_tok  , // lsbfN
-  ulsbfn_tok , // ulsbfN
+  intn_tok, // intN
+  uintn_tok, // uintN
+  msbfn_tok, // msbfN
+  umsbfn_tok, // umsbfN
+  lsbfn_tok, // lsbfN
+  ulsbfn_tok, // ulsbfN
+  binary_integer_tok,
+  octal_integer_tok,
+  decimal_integer_tok,
+  hexadecimal_integer_tok,
+
   // Character classes
   identifier_tok, // identifiers
   boolean_tok,    // boolean values
