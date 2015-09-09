@@ -97,6 +97,10 @@ struct Extracted_less
 Unique_factory<Stage, Stage_less> stages_;
 Unique_factory<Extracted, Extracted_less> extracted_;
 
+// Let's us print the stack leading up to errors
+// in requirement detection
+std::vector<Stage*> stack_;
+
 
 } // namespace
 
