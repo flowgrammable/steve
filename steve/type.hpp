@@ -387,18 +387,32 @@ struct Until_type : Type
 
 
 // Table types.
-struct Table_type : Type, User_defined_type<Table_decl>
+struct Table_type : Type
 {
-  using User_defined_type<Table_decl>::User_defined_type;
+  Table_type(Decl_seq const& d)
+    : first(d)
+  { }
+
+  Decl_seq const& key_fields() const { return first; }
+
   void accept(Type_visitor& v) const { v.visit(this); }
+
+  Decl_seq const first;
 };
 
 
 // open flow table entry
-struct Flow_type : Type, User_defined_type<Flow_decl>
+struct Flow_type : Type
 {
-  using User_defined_type<Flow_decl>::User_defined_type;
+  Flow_type(Type_seq const& t)
+    : first(t)
+  { }
+
+  Type_seq const& key_types() const { return first; }
+
   void accept(Type_visitor& v) const { v.visit(this); }
+
+  Type_seq const first;
 };
 
 // -------------------------------------------------------------------------- //
@@ -440,9 +454,7 @@ is_user_defined_type()
 {
   return std::is_base_of<T, Record_type>::value
       || std::is_base_of<T, Variant_type>::value
-      || std::is_base_of<T, Enum_type>::value
-      || std::is_base_of<T, Table_type>::value
-      || std::is_base_of<T, Flow_type>::value;
+      || std::is_base_of<T, Enum_type>::value;
 }
 
 
@@ -456,7 +468,9 @@ is_object_type()
   return is_scalar_type<T>()
       || is_aggregate_type<T>()
       || is_user_defined_type<T>()
-      || std::is_base_of<T, Constant_type>::value;
+      || std::is_base_of<T, Constant_type>::value
+      || std::is_base_of<T, Table_type>::value
+      || std::is_base_of<T, Flow_type>::value;
 }
 
 
@@ -573,9 +587,7 @@ is_user_defined_type(Type const* t)
 {
   return is_record_type(t) 
       || is_variant_type(t) 
-      || is_enum_type(t)
-      || is<Table_type>(t)
-      || is<Flow_type>(t);
+      || is_enum_type(t);
 }
 
 
@@ -585,7 +597,9 @@ is_object_type(Type const* t)
   return is_scalar_type(t)
       || is_aggregate_type(t)
       || is_user_defined_type(t)
-      || is<Constant_type>(t);
+      || is<Constant_type>(t)
+      || is<Table_type>(t)
+      || is<Flow_type>(t);
 }
 
 
@@ -657,8 +671,8 @@ Record_type const*    get_record_type(Decl const*);
 Variant_type const*   get_variant_type(Decl const*);
 Enum_type const*      get_enum_type(Decl const*);
 Match_type const*     get_match_type(Expr const*, Match_seq const&);
-Table_type const*     get_table_type(Decl const*);
-Flow_type const*      get_flow_type(Decl const*);
+Table_type const*     get_table_type(Decl_seq const&);
+Flow_type const*      get_flow_type(Type_seq const&);
 Type const*           get_user_defined_type(Decl const*);
 Match_type const*     get_match_type(Expr const*, Match_seq const&);
 Match_term const*     make_match_term(Expr const*, Type const*);
@@ -730,6 +744,8 @@ Type const* type_field_expr(Expr const*, Expr const*);
 bool check_initializer(Type const*, Expr const*);
 bool check_function_decl(Type const*, Stmt const*);
 bool check_decode_decl(Type const*, Stmt const*);
+bool check_flow_decl(Decl const*, Type const*);
+bool check_table_initializer(Decl_seq const&, Type const*);
 
 bool check_match_stmt(Expr const*, Stmt_seq const&);
 bool check_do_decode_stmt(Expr const*);

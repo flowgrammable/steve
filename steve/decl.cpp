@@ -212,7 +212,20 @@ make_table_decl(Location loc, String const* n, Expr_seq const& e, Decl_seq const
 {
   table_cnt++;
 
-  return gc().make<Table_decl>(loc, n, get_kind_type(), table_cnt, e, d);
+  Decl_seq members;
+
+  // construct the table type
+  for (auto expr : e) {
+    lingo_assert(is<Field_expr>(expr));
+    Member_decl const* mem = field_to_member(as<Field_expr>(expr));
+    members.push_back(mem);
+  }
+  Type const* tbl_t = get_table_type(members);
+  if (!check_table_initializer(d, tbl_t))
+    return nullptr;
+
+  // TODO: check that the initializing flows are valid for this table type
+  return gc().make<Table_decl>(loc, n, tbl_t, table_cnt, e, d);
 }
 
 
@@ -224,7 +237,14 @@ make_flow_decl(Location loc, Expr_seq const& e, Value const v, Stmt const* s)
 
   String* n = new String("flow" + flow_cnt);
 
-  return gc().make<Flow_decl>(loc, n, get_kind_type(), e, v, s);
+  Type_seq types;
+  for (auto expr : e) {
+    types.push_back(expr->type());
+  }
+
+  Type const* flw_t = get_flow_type(types);
+
+  return gc().make<Flow_decl>(loc, n, flw_t, e, v, s);
 }
 
 

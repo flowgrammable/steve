@@ -189,7 +189,7 @@ type_conversion(Expr const* e, Type const* src, Type const* dst)
   // Check for tuple conversions.
   if (Tuple_type const* t1 = as<Tuple_type>(src))
     if (Record_type const* t2 = as<Record_type>(dst))
-      return record_convesion(e, t1, t2);
+      return record_conversion(e, t1, t2);
 
   return e;
 }

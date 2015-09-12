@@ -36,3 +36,4 @@ add_library(steve STATIC
 
 
 add_subdirectory(tests)
+add_subdirectory(translate)

@@ -62,7 +62,20 @@ lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
 void
 lower_do_table(Do_expr const* e, Stmt_seq& stmts)
 {
+  auto advance = builtin_function(__advance);
 
+  if (Overload const* c = lookup("_cxt_")) {
+    if (Overload const* h = lookup("_header_")) {
+      // makes the call expr to __advance
+      Expr_seq args {
+        id(c->front()),
+        make_lengthof_expr(id(h->front()))
+      };
+      stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
+
+      // make a call to the next table
+    }
+  }
 }
 
 
@@ -129,7 +142,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
   // FIXME: a bit of a hack but it works
-  // going to declare a variable named header for the explicit and only purpose
+  // going to declare a parameter named header for the explicit and only purpose
   // of determining what type the immediate decode handles. This lets me carry the type
   // across lower() calls using scoping.
   // it is no longer being used as a parameter for the decode function
@@ -231,7 +244,14 @@ void
 lower(Case_stmt const* s, Stmt_seq& stmts)
 {
   Stmt_seq new_stmts;
-  lower(s->stmt(), new_stmts);
+  // if there is a block stmt instead of a single stmt
+  if (is<Block_stmt>(s->stmt()))
+    // lower each stmt in the block in turn
+    for (auto stmt : *as<Block_stmt>(s->stmt()))
+      lower(stmt, new_stmts);
+  // otherwise its a single stmt and lower as normal
+  else
+    lower(s->stmt(), new_stmts);
 
   Block_stmt const* b = make_block_stmt(new_stmts);
   stmts.push_back(make_case_stmt(s->label(), b)); 

@@ -244,8 +244,8 @@ test1()
   check_pipeline();
 
   // lowering has to happen in reverse as well
-  // lower_decodes(ipv4_d);
-  // lower_decodes(eth_d);
+  lower_decodes(ipv4_d);
+  lower_decodes(eth_d);
 }
 
 
@@ -466,6 +466,35 @@ test_nested()
 
 
 void
+test_table_types()
+{
+  // make the headers
+  Record_decl* eth = make_eth_header();
+
+  // make some field expressions
+  Expr* eth_src = make_field_expr(id(eth), id(eth->members()[0]));
+  Expr* eth_dst = make_field_expr(id(eth), id(eth->members()[1]));
+  Expr* eth_type = make_field_expr(id(eth), id(eth->members()[2]));
+
+  // requirements
+  Expr_seq req {
+    eth_src,
+    eth_dst,
+    eth_type,
+  };
+
+  Decl_seq flows {
+    // This flow should fail because there are less subkeys than table
+    make_flow_decl({one(), two()}, Value(1), make_block_stmt({})),
+    // this flow should fail because there are mismatched types in the keys
+    make_flow_decl({one(), two(), truth()}, Value(1), make_block_stmt({})),
+  };
+
+  Table_decl* t1 = make_table_decl(get_identifier("t1"), req, flows);
+}
+
+
+void
 make_ofptable(int num, char const* name, Expr_seq const& matches)
 {
 
@@ -476,6 +505,7 @@ int main()
 {
   Global_scope global;
   // test1();
+  test_table_types();
   // test2();
-  test3();
+  // test3();
 }

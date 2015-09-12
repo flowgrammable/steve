@@ -495,7 +495,7 @@ parse_bit_or_expr(Parser& p, Token_stream& ts)
 
 // Match the logical and operator.
 inline Token const*
-parse_lgoical_and_op(Parser& p, Token_stream& ts)
+parse_logical_and_op(Parser& p, Token_stream& ts)
 {
   return match_token(ts, bar_tok);
 }
@@ -505,7 +505,7 @@ parse_lgoical_and_op(Parser& p, Token_stream& ts)
 Expr const*
 parse_logical_and_expr(Parser& p, Token_stream& ts)
 {
-  auto op = parse_lgoical_and_op;
+  auto op = parse_logical_and_op;
   auto sub = parse_bit_or_expr;
   return parse_left_infix_term(p, ts, op, sub, on_binary_expr(p));
 }

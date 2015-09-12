@@ -314,8 +314,13 @@ check_stage(Decl const* d, Expr_seq const& requirements)
 {
   for (auto e : requirements) {
     auto search = cxt_bindings.find(as<Field_expr>(e)->name());
-    if (search == cxt_bindings.end())
+    if (search == cxt_bindings.end()) {
       error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
+      error(d->location(), "Broken path: ");
+      for (auto stage : stack_) {
+        error(d->location(), "{} ->", stage->decl()->name());
+      }
+    }
   }
 }
 
@@ -332,6 +337,9 @@ dfs(Stage* s)
   // push the header name onto the bindings stack
   cxt_bindings.insert(s->decl()->name());
 
+  // push stage onto stack for debugging purposes
+  stack_.push_back(s);  
+
   // check this stage
   check_stage(s->decl(), s->requirements());
 
@@ -341,6 +349,10 @@ dfs(Stage* s)
       if(stage->visited == false)
         dfs(stage);
   }
+
+  // cleanup
+  // pop off debugging stack
+  stack_.pop_back();
 
   // pop all of the bindings off
   for (auto p : s->productions())

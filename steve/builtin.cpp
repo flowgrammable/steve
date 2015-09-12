@@ -21,7 +21,7 @@ make_empty_block()
 // Needed since each decode dispatch has a different type
 // Using this function instead of casting because dealing with
 // casting in codegen seems easier than in steve
-struct Decode_dispatch_fn
+struct Match_dispatch_fn
 {
   template<typename T>
   Decl const* operator()(T const* t) const { return dispatch(t); }
@@ -41,10 +41,8 @@ struct Decode_dispatch_fn
     Decl_seq parms =
     {
       make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-      make_parameter_decl(get_identifier("header"), get_reference_type(t))
+      make_parameter_decl(get_identifier("table"), get_reference_type(t))
     };
-    
-    return make_function_decl(get_identifier(__decode), parms, get_void_type(), make_empty_block());
   }
 };
 
@@ -102,7 +100,6 @@ advance()
 }
 
 
-
 // An intrinsic function which returns an object of context type
 // In theory this will be part of the lowering process which retrieves
 // the context type which gets passed around 
@@ -113,18 +110,6 @@ get_context()
   Decl_seq parms;
 
   return make_function_decl(n, parms, get_context_type(), make_empty_block());
-}
-
-
-// __decode(ref context, id decoder)
-// Takes a reference to a context and an identifier which points
-// to the next decoder to be called.
-// This function will handle the reinterpretation of packet data
-// into the _header_ object with correct type
-Function_decl const*
-decode()
-{
-  return nullptr;
 }
 
 
@@ -216,21 +201,17 @@ builtin_type(String const n)
 
 // This function has to be called AFTER the builtins are
 // initialized
-// Type 't' should be a function type
-// __decode(cxt, decoder_id)
+// Type 't' should be a table
+// __match(cxt, table_id)
 Function_decl const*
-make_decode_fn(Type const* t)
+make_match_fn(Type const* t)
 {
   lingo_assert(builtin_functions_.size() > 0);
 
-  Decode_dispatch_fn dis;
-  Decl const* d = apply(t, dis);
+  Match_dispatch_fn mfn;
+  Decl const* d = apply(t, mfn);
 
-  lingo_assert(is<Function_decl>(d));
-
-  Function_decl const* fn = cast<Function_decl>(d);
-  builtin_functions_.insert(std::make_pair(__decode, fn));
-  return fn;
+  return nullptr;
 }
 
 
