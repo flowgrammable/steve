@@ -63,6 +63,7 @@ void
 lower_do_table(Do_expr const* e, Stmt_seq& stmts)
 {
   auto advance = builtin_function(__advance);
+  auto match = get_match_fn(e->target()->type());
 
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
@@ -74,6 +75,7 @@ lower_do_table(Do_expr const* e, Stmt_seq& stmts)
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
 
       // make a call to the next table
+      stmts.push_back(make_expr_stmt(make_call_expr(id(match), {id(c->front()), e->target()})));
     }
   }
 }

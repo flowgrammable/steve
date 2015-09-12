@@ -289,7 +289,6 @@ print(Printer& p, Table_type const* t)
   print(p, "table<");
   for (auto d : t->key_fields()) {
     print(p, d);
-    print(p, ", ");
   }
   print(p, ">");
 }

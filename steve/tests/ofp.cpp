@@ -168,7 +168,7 @@ test1()
   // make a table
   Table_decl* table1;
   Table_decl* table2;
-  
+
   // flows
   Decl_seq flows {
     make_flow_decl({one(), two(), one()}, Value(1), empty())
@@ -222,8 +222,9 @@ test1()
   make_match_fn(table1->type());
   make_match_fn(table2->type());
 
-  // check all functions declared
-  print_name_bindings();
+  // // check all functions declared correctly
+  // print(get_match_fn(table1->type()));
+  // print(get_match_fn(table2->type()));
 
   // register stages
   register_stage(eth_d);
@@ -233,8 +234,8 @@ test1()
   check_pipeline();
 
   // lowering has to happen in reverse as well
-  // lower_decodes(ipv4_d);
-  // lower_decodes(eth_d);
+  lower_decodes(ipv4_d);
+  lower_decodes(eth_d);
 }
 
 
