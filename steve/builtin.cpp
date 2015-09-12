@@ -1,4 +1,5 @@
 #include "builtin.hpp"
+#include "lookup.hpp"
 
 
 namespace steve
@@ -17,32 +18,32 @@ make_empty_block()
 }
 
 
-// Used to construct __decode(cxt, decode_func : T)
-// Needed since each decode dispatch has a different type
-// Using this function instead of casting because dealing with
-// casting in codegen seems easier than in steve
+// Used to construct __match(cxt, table : Table_type)
+// Needed since each table has a different type
 struct Match_dispatch_fn
 {
   template<typename T>
-  Decl const* operator()(T const* t) const { return dispatch(t); }
+  Function_decl const* operator()(T const* t) const { return dispatch(t); }
 
   // Fail on non-object types.
   template<typename T>
-    static typename std::enable_if<!is_object_type<T>(), Decl const*>::type
+    static typename std::enable_if<!is_object_type<T>(), Function_decl const*>::type
   dispatch(T const* t)
   {
     lingo_unreachable();
   }
 
   template<typename T>
-    static typename std::enable_if<is_object_type<T>(), Decl const*>::type
+    static typename std::enable_if<is_object_type<T>(), Function_decl const*>::type
   dispatch(T const* t)
   {
     Decl_seq parms =
     {
       make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-      make_parameter_decl(get_identifier("table"), get_reference_type(t))
+      make_parameter_decl(get_identifier("table"), t)
     };
+
+    return make_function_decl(get_identifier(__match), parms, get_void_type(), make_empty_block());
   }
 };
 
@@ -163,10 +164,13 @@ init_builtins()
     {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
     {__advance, advance()},
-    // {__get_context, get_context()}
   };
 
   builtin_functions_ = builtin_func;
+
+  for (auto it : builtin_functions_) {
+    declare(it.second->name(), it.second);
+  }
 }
 
 
@@ -201,19 +205,46 @@ builtin_type(String const n)
 
 // This function has to be called AFTER the builtins are
 // initialized
-// Type 't' should be a table
-// __match(cxt, table_id)
+// Type 't' should be a table type
+// __match(cxt, table_id : t)
+//
+// NOTE: This function makes the assumption that it is called
+// within global scope or within the same scope that the pipeline
+// is being define in
 Function_decl const*
 make_match_fn(Type const* t)
 {
   lingo_assert(builtin_functions_.size() > 0);
 
   Match_dispatch_fn mfn;
-  Decl const* d = apply(t, mfn);
+  Function_decl const* d = apply(t, mfn);
+
+  builtin_functions_.insert(std::make_pair(__match, d));
+
+  // declare
+  declare(d->name(), d);
+
+  return d;
+}
+
+
+// fetch the correct match function
+// with the appropriate table type as the parameter
+Function_decl const*
+get_match_fn(Type const* t)
+{
+  auto match_fn = builtin_functions_.equal_range(__match);
+  
+  for (auto it = match_fn.first; it != match_fn.second; it++) {
+    Function_decl const* fn = it->second;
+    // look at the second parameter (or at[1] on the 0 scale)
+    lingo_assert(fn->parms().size() == 2);
+    if (fn->parms().at(1)->type() == t)
+      return fn;
+  }
 
   return nullptr;
 }
-
 
 } // namespace steve
 

@@ -152,15 +152,9 @@ test1()
   // make the headers
   Record_decl* eth = make_eth_header();
   Record_decl* ipv4 = make_ipv4_header();
-  Record_decl* ipv6 = make_ipv6_header();
-  Record_decl* tcp = make_tcp_header();
-  Record_decl* udp = make_udp_header();
 
   print("{}", eth);
   print("{}", ipv4);
-  print("{}", ipv6);
-  print("{}", tcp);
-  print("{}", udp);
 
   // make some field expressions
   Expr* eth_src = make_field_expr(id(eth), id(eth->members()[0]));
@@ -171,34 +165,17 @@ test1()
   Expr* ipv4_dst = make_field_expr(id(ipv4), id(ipv4->members()[1]));
   Expr* ipv4_proto = make_field_expr(id(ipv4), id(ipv4->members()[2]));
 
-  // Expr* ipv6_src = make_field_expr(id(ipv6), id(ipv6->members()[0]));
-  // Expr* ipv6_dst = make_field_expr(id(ipv6), id(ipv6->members()[1]));
-  // Expr* ipv6_proto = make_field_expr(id(ipv6), id(ipv6->members()[2]));
-
-  // Expr* tcp_src = make_field_expr(id(tcp), id(tcp->members()[0]));
-  // Expr* tcp_dst = make_field_expr(id(tcp), id(tcp->members()[1]));
-  // Expr* tcp_port = make_field_expr(id(tcp), id(tcp->members()[2]));
-
-  // Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
-  // Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
-  // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
-
   // make a table
   Table_decl* table1;
-
-  // requirements
-  Expr_seq req {
-    eth_src,
-    eth_dst,
-    ipv4_dst,
-  };
-
+  Table_decl* table2;
+  
   // flows
   Decl_seq flows {
     make_flow_decl({one(), two(), one()}, Value(1), empty())
   };
 
-  table1 = make_table_decl(get_identifier("tbl1"), req, flows);
+  table1 = make_table_decl(get_identifier("tbl1"), { eth_src, eth_dst, ipv4_dst}, flows);
+  table2 = make_table_decl(get_identifier("tbl2"), { eth_src, eth_dst, ipv4_proto}, flows);
 
   // make the decoders
   Decode_decl* eth_d;
@@ -215,10 +192,7 @@ test1()
     )
   };
 
-
   ipv4_d = as<Decode_decl>(make_decode("ipv4_d", get_record_type(ipv4), make_block_stmt(ipv4_d_body)));
-  print(ipv4_d);
-
 
   Stmt_seq eth_d_body {
     make_decl_stmt(make_extracts_decl(eth_src)),
@@ -234,7 +208,22 @@ test1()
 
   // make the decoders
   eth_d = as<Decode_decl>(make_decode("eth_d", get_record_type(eth), make_block_stmt(eth_d_body)));
+
+  // print
   print(eth_d);
+  print(ipv4_d);
+  print(table1);
+
+  // some declarations
+  declare(table1->name(), table1);
+  declare(table2->name(), table2);
+
+  // declare the appropriate match fn for the tables
+  make_match_fn(table1->type());
+  make_match_fn(table2->type());
+
+  // check all functions declared
+  print_name_bindings();
 
   // register stages
   register_stage(eth_d);
@@ -244,8 +233,8 @@ test1()
   check_pipeline();
 
   // lowering has to happen in reverse as well
-  lower_decodes(ipv4_d);
-  lower_decodes(eth_d);
+  // lower_decodes(ipv4_d);
+  // lower_decodes(eth_d);
 }
 
 
@@ -259,15 +248,9 @@ test2()
   // make the headers
   Record_decl* eth = make_eth_header();
   Record_decl* ipv4 = make_ipv4_header();
-  Record_decl* ipv6 = make_ipv6_header();
-  Record_decl* tcp = make_tcp_header();
-  Record_decl* udp = make_udp_header();
 
   print("{}", eth);
   print("{}", ipv4);
-  print("{}", ipv6);
-  print("{}", tcp);
-  print("{}", udp);
 
   // make some field expressions
   Expr* eth_src = make_field_expr(id(eth), id(eth->members()[0]));
@@ -277,18 +260,6 @@ test2()
   Expr* ipv4_src = make_field_expr(id(ipv4), id(ipv4->members()[0]));
   Expr* ipv4_dst = make_field_expr(id(ipv4), id(ipv4->members()[1]));
   Expr* ipv4_proto = make_field_expr(id(ipv4), id(ipv4->members()[2]));
-
-  // Expr* ipv6_src = make_field_expr(id(ipv6), id(ipv6->members()[0]));
-  // Expr* ipv6_dst = make_field_expr(id(ipv6), id(ipv6->members()[1]));
-  // Expr* ipv6_proto = make_field_expr(id(ipv6), id(ipv6->members()[2]));
-
-  // Expr* tcp_src = make_field_expr(id(tcp), id(tcp->members()[0]));
-  // Expr* tcp_dst = make_field_expr(id(tcp), id(tcp->members()[1]));
-  // Expr* tcp_port = make_field_expr(id(tcp), id(tcp->members()[2]));
-
-  // Expr* udp_src = make_field_expr(id(udp), id(udp->members()[0]));
-  // Expr* udp_dst = make_field_expr(id(udp), id(udp->members()[0]));
-  // Expr* udp_port = make_field_expr(id(udp), id(udp->members()[0]));
 
   // make a table
   Table_decl* table1;
@@ -322,10 +293,7 @@ test2()
     )
   };
 
-
   ipv4_d = as<Decode_decl>(make_decode("ipv4_d", get_record_type(ipv4), make_block_stmt(ipv4_d_body)));
-  print(ipv4_d);
-
 
   Stmt_seq eth_d_body {
     make_decl_stmt(make_extracts_decl(eth_src)),
@@ -341,7 +309,11 @@ test2()
 
   // make the decoders
   eth_d = as<Decode_decl>(make_decode("eth_d", get_record_type(eth), make_block_stmt(eth_d_body)));
+
+  // print
   print(eth_d);
+  print(ipv4_d);
+  print(table1);
 
   // register stages
   register_stage(eth_d);
@@ -351,8 +323,8 @@ test2()
   check_pipeline();
 
   // lowering has to happen in reverse as well
-  // lower_decodes(ipv4_d);
-  // lower_decodes(eth_d);
+  lower_decodes(ipv4_d);
+  lower_decodes(eth_d);
 }
 
 // testing that table branches work
@@ -490,22 +462,15 @@ test_table_types()
     make_flow_decl({one(), two(), truth()}, Value(1), make_block_stmt({})),
   };
 
-  Table_decl* t1 = make_table_decl(get_identifier("t1"), req, flows);
-}
-
-
-void
-make_ofptable(int num, char const* name, Expr_seq const& matches)
-{
-
+  make_table_decl(get_identifier("t1"), req, flows);
 }
 
 
 int main()
 {
   Global_scope global;
-  // test1();
-  test_table_types();
+  test1();
+  // test_table_types();
   // test2();
   // test3();
 }

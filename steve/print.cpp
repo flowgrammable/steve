@@ -286,8 +286,12 @@ print(Printer& p, Enum_type const* t)
 void
 print(Printer& p, Table_type const* t)
 {
-  for (auto d : t->key_fields())
+  print(p, "table<");
+  for (auto d : t->key_fields()) {
     print(p, d);
+    print(p, ", ");
+  }
+  print(p, ">");
 }
 
 
@@ -764,9 +768,13 @@ print(Printer& p, Decode_decl const* d)
 void
 print_table_conditions(Printer& p, Table_decl const* d)
 {
-  print(p, "[");
-  print_nested(p, d->conditions());
-  print(p, "]");
+  print(p, "<");
+  for (auto it = d->conditions().begin(); it < d->conditions().end() - 1; ++it) {
+    print(p, *it);
+    print(p, ", ");
+  }
+  print(p, *(d->conditions().end() - 1));
+  print(p, ">");
 }
 
 
