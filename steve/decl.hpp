@@ -547,6 +547,19 @@ make_rebind_decl(Expr const* e1, Expr const* e2)
 
 
 // -------------------------------------------------------------------------- //
+//                                  Queries
+
+// Defines a set of declarations which can be rewritten
+// after they've been declared. For now, this is only applicable
+// to declarations which can be lowered.
+inline bool
+is_rewriteable(Decl const* d)
+{
+  return is<Decode_decl>(d);
+}
+
+
+// -------------------------------------------------------------------------- //
 //                                  Facilities
 
 // Garbage collection

@@ -201,8 +201,10 @@ Decode_decl*
 make_decode_decl(Location loc, String const* n, Type const* h, Stmt const* s)
 {
   // Defer any checks until pipeline checking stage
-  return gc().make<Decode_decl>(loc, n, get_void_type(), s, h);
+  Type const* t = get_reference_type(get_context_type());
+  return gc().make<Decode_decl>(loc, n, get_function_type({t}, get_void_type()), s, h);
 }
+
 
 // Make a table declaration.
 // Defer any type/consistency checking of the table until it has been

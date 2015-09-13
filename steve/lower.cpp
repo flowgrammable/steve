@@ -65,6 +65,11 @@ lower_do_table(Do_expr const* e, Stmt_seq& stmts)
   auto advance = builtin_function(__advance);
   auto match = get_match_fn(e->target()->type());
 
+  if (!match) {
+    error(Location::none, "No match function found for '{}'.", e->target());
+    return;
+  }
+
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
       // makes the call expr to __advance
@@ -139,8 +144,12 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   Local_scope local;
 
-  lingo_assert(is<Block_stmt>(d->body()));
-  Block_stmt const* body = as<Block_stmt>(d->body());
+  Block_stmt const* body = nullptr;
+  if (is<Block_stmt>(d->body()))
+    body = as<Block_stmt>(d->body());
+  else {
+    error(d->location(), "Decode declaration '{}' has invalid body.", d);
+  }
 
   Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
   // FIXME: a bit of a hack but it works
@@ -190,7 +199,6 @@ void
 lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
 {
   if (auto bind_offset = builtin_function(__bind_offset)) {
-    lingo_assert(is<Field_expr>(d->field()));
     Field_expr const* f = as<Field_expr>(d->field());
 
     if (Overload const* oc = lookup(get_identifier(_cxt_))) {
@@ -279,7 +287,7 @@ lower(Stmt const* s, Stmt_seq& stmts)
   // scan the stmts and push any declarations onto scope
   for (auto s : stmts) {
     if (Decl_stmt const* d = as<Decl_stmt>(s)) {
-      declare(d->decl()->name(), d->decl());
+      rewrite_declare(d->decl()->name(), d->decl());
     }
   }
 

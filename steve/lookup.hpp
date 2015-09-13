@@ -134,6 +134,8 @@ Overload const* declare(String const*, Decl const*);
 Overload const* declare(Decl const*);
 bool            declare(Decl_seq const&);
 
+Overload const* rewrite_declare(String const*, Decl const*);
+
 Overload const* lookup(String const*);
 Overload const* lookup(char const*);
 

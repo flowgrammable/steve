@@ -321,6 +321,29 @@ declare(Decl_seq const& ds)
 }
 
 
+// Finds the string, removes the declaration from the table and
+// environment. Replaces it with a new declaration.
+Overload const*
+rewrite_declare(String const* n, Decl const* d)
+{ 
+  Scope* s = &current_scope();
+
+  // if d is rewritable
+  // and if d has a binding and is in the current scope
+  Scope::Binding* b = env_.binding(n);
+  // attempt to overwrite the binding
+  if (b && b->scope == s) {
+    if (is_rewriteable(b->ovl->front())) {
+      b->ovl->clear();
+      b->ovl->push_back(d);
+    }
+  }
+  
+  
+  return nullptr;
+}
+
+
 // -------------------------------------------------------------------------- //
 //                             Name lookup
 
