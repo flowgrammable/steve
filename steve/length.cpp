@@ -496,7 +496,7 @@ length(Type const* t)
 //
 // The general definition of a length function is:
 //
-//    def: length(T t) -> uint { ... }
+//    def: lengthof(T t) -> uint { ... }
 //
 // where `T` is the type under consideration.
 //
@@ -508,7 +508,7 @@ length(Type const* t)
 
 // Build a length function with the following definition.
 //
-//    def length(t : T) { return <length T>; }
+//    def lengthof(t : T) { return <length T>; }
 //
 // where <length T> is the length of the given type (see
 // `length` above).
@@ -531,7 +531,7 @@ struct Synth_fn
   {
     Stmt const* r = ret(length(t));
     Decl const* p = make_parm("t", t);
-    return make_fn("length", {p}, get_uint_type(), {r});
+    return make_fn("lengthof", {p}, get_uint_type(), {r});
   }
 };
 
@@ -556,6 +556,14 @@ Expr const*
 get_length(Expr const* e)
 {
   return length(e->type());
+}
+
+// Returns an expression that computes the length of a
+// type in bytes
+Expr const*
+get_length(Type const* t)
+{
+  return length(t);
 }
 
 

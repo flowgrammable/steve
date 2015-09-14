@@ -2,6 +2,8 @@
 #include "steve/builtin.hpp"
 #include "steve/lookup.hpp"
 #include "steve/net.hpp"
+#include "steve/offset.hpp"
+#include "steve/length.hpp"
 
 // ----------------------------------------------------------------- //
 //                    Lower decls
@@ -25,6 +27,62 @@ make_empty_block()
 
 
 // ------------------------------------------------------------ //
+//             Lengthof and Offset of Expr
+
+// We need to be able to resolve lengthof expressions into
+// function calls.
+// 1. A lengthof expr resolved into a function call iff there exists a length(T t)->int in scope
+// 2. A lengthof expr causes a function call to be synthesized iff no length(T t)->int is declared
+//     within scope. Then the lengthof expr is resolved into a function call.
+Expr const*
+lower_lengthof(Expr const* e)
+{
+  lingo_assert(is<Lengthof_expr>(e));
+  Lengthof_expr const* len = as<Lengthof_expr>(e);
+
+  Overload const* ovl = lookup("lengthof");
+  Function_decl const* len_fn = nullptr;
+
+  if (ovl) {
+    for (auto decl : *ovl) {
+      lingo_assert(is<Function_decl>(decl));
+      Function_decl const* fn = as<Function_decl>(decl);
+
+      // check that there is exactly one parameter and get its type
+      if (fn->parms().size() == 1)
+        if (fn->parms().at(0)->type() == len->arg()->type()) {
+          len_fn = fn;
+          break;
+        }
+    }
+
+    if (len_fn)
+      return make_call_expr(id(len_fn), {len->arg()});
+  }
+
+  // otherwise if there are no lengthof fn then return an expr calculating length
+  return get_length(len->arg()->type());
+}
+
+
+// We need to be able to resolve offsetof expressions into values
+// or function calls which determine the offsetof a given field.
+Expr const*
+lower_offset(Expr const* e)
+{
+  lingo_assert(is<Offsetof_expr>(e));
+  Offsetof_expr const* off = as<Offsetof_expr>(e);
+  // confirm this has record type
+  lingo_assert(is<Record_type>(off->object()->type()));
+
+  // get the record declaration from the record type
+  Record_decl const* rd = as<Record_type>(off->object()->type())->decl();
+
+  return get_offset(rd, off->member());
+}
+
+
+// ------------------------------------------------------------ //
 //             Lower Expressions
 
 // FIXME: there should be two calls generated here
@@ -40,7 +98,7 @@ lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
       // makes the call expr to __advance
       Expr_seq args {
         id(c->front()),
-        make_lengthof_expr(id(h->front()))
+        lower_lengthof(make_lengthof_expr(id(h->front())))
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
 
@@ -75,7 +133,7 @@ lower_do_table(Do_expr const* e, Stmt_seq& stmts)
       // makes the call expr to __advance
       Expr_seq args {
         id(c->front()),
-        make_lengthof_expr(id(h->front()))
+        lower_lengthof(make_lengthof_expr(id(h->front())))
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
 
@@ -202,15 +260,17 @@ lower_extracts_decl(Extracts_decl const* d, Stmt_seq& stmts)
     Field_expr const* f = as<Field_expr>(d->field());
 
     if (Overload const* oc = lookup(get_identifier(_cxt_))) {
-      Expr_seq args {
-        id(oc->front()),
-        make_value_expr(get_int_type(), lookup_field_binding(f->name())),
-        make_offsetof_expr(f->record(), f->field()->decl())
-      };
+      if (Overload const* oh = lookup(get_identifier(_header_))) {
+        Expr_seq args {
+          id(oc->front()),
+          make_value_expr(get_int_type(), lookup_field_binding(f->name())),
+          lower_offset(make_offsetof_expr(id(oh->front()), f->field()->decl()))
+        };
 
-      // make call
-      Call_expr* call = make_call_expr(id(bind_offset), args);
-      stmts.push_back(make_expr_stmt(call));
+        // make call
+        Call_expr* call = make_call_expr(id(bind_offset), args);
+        stmts.push_back(make_expr_stmt(call));
+      }
     }
   }
 }

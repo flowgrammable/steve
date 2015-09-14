@@ -25,6 +25,19 @@ Record_decl*
 make_eth_header()
 {
   Decl_seq mem {
+    make_int_member("src"),
+    make_int_member("dest"),
+    make_int_member("protocol"),
+  };
+
+  return make_record("eth", mem);
+}
+
+
+Record_decl*
+make_real_eth_header()
+{
+  Decl_seq mem {
     make_member("src", get_msbf_type(48)),
     make_member("dest", get_msbf_type(48)),
     make_member("type", get_msbf_type(16)),

@@ -22,6 +22,7 @@ add_library(steve STATIC
   debug.cpp
   net.cpp
   length.cpp
+  offset.cpp
   builtin.cpp
   lower.cpp
   token.cpp
