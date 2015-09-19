@@ -5,8 +5,7 @@
 #include "steve/offset.hpp"
 #include "steve/length.hpp"
 
-// ----------------------------------------------------------------- //
-//                    Lower decls
+
 
 namespace steve
 {
@@ -24,6 +23,10 @@ make_empty_block()
   Stmt_seq s;
   return make_block_stmt(s);
 }
+
+
+// ----------------------------------------------------------------- //
+//                    Lower exprs
 
 
 // ------------------------------------------------------------ //
@@ -81,9 +84,6 @@ lower_offset(Expr const* e)
   return get_offset(rd, off->member());
 }
 
-
-// ------------------------------------------------------------ //
-//             Lower Expressions
 
 // FIXME: there should be two calls generated here
 // Need to add expr for reinterpreting members of cxt as correct header type
@@ -157,6 +157,70 @@ lower_do_expr(Do_expr const* e, Stmt_seq& stmts)
   }
 }
 
+
+Expr const*
+lower_header_lookup(Header_idx_expr const* e)
+{
+  lingo_assert(is<Id_expr>(e->header()));
+  Id_expr const* hdr = as<Id_expr>(e->header());
+
+  lingo_assert(is<Record_decl>(hdr->decl()));
+  Record_decl const* rd = as<Record_decl>(hdr->decl());
+
+  auto lookup_fn = builtin_function(__lookup_hdr);
+
+  if (auto cxt = lookup_decl(get_identifier(_cxt_))) {
+    Expr_seq args {
+      id(cxt),
+      make_value_expr(get_int_type(), lookup_header_binding(rd->name())),
+    };
+    return make_call_expr(id(lookup_fn), args);
+  }
+  else
+    error("Unable to find context '_cxt_' within scope.");
+
+  return nullptr;
+}
+
+
+Expr const*
+lower_field_lookup(Field_idx_expr const* e)
+{
+  lingo_assert(is<Field_expr>(e->field()));
+  Field_expr const* fld = as<Field_expr>(e->field());
+
+  auto lookup_fn = builtin_function(__lookup_fld);
+
+  if (auto cxt = lookup_decl(get_identifier(_cxt_))) {
+    Expr_seq args {
+      id(cxt),
+      make_value_expr(get_int_type(), lookup_field_binding(fld->name())),
+    };
+    
+    return make_call_expr(id(lookup_fn), args);
+  }
+  else
+    error("Unable to find context '_cxt_' within scope.");
+
+  return nullptr;
+}
+
+
+// We don't handle do exprs here because those can only occur
+// in specific context
+//
+// TODO: refactor into visitor pattern
+Expr const*
+lower(Expr const* e)
+{
+  // TODO: do the rest of the expressions
+  if (Header_idx_expr const* h = as<Header_idx_expr>(e))
+    return lower_header_lookup(h);
+  if (Field_idx_expr const* f = as<Field_idx_expr>(e))
+    return lower_field_lookup(f);
+
+  return e;
+}
 
 
 // ------------------------------------------------------------ //
@@ -306,7 +370,7 @@ lower(Match_stmt const* s, Stmt_seq& stmts)
     lower(c, new_stmts);
   }
 
-  stmts.push_back(make_match_stmt(s->cond(), new_stmts));
+  stmts.push_back(make_match_stmt(lower(s->cond()), new_stmts));
 }
 
 

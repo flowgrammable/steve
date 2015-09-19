@@ -101,6 +101,43 @@ advance()
 }
 
 
+// __lookup_hdr(cxt: CXT, n : int) ->int
+// Causes a lookup of the last extracted header with the integer binding 'n'
+// FIXME: this isnt right. the return type should be the type of the header
+// also the syntax needs to change
+Function_decl*
+lookup_header()
+{
+  String const* n = get_identifier(__lookup_hdr);
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("n"), get_uint_type())
+  };
+
+  return make_function_decl(n, parms, get_int_type(), make_empty_block());
+}
+
+
+// __lookup_fld(cxt: CXT, n : int) -> int
+// Causes a lookup of the last extracted field with the integer binding 'n'
+// FIXME: this isnt right
+// the return type should be the type of the field
+// do we even need this?
+Function_decl*
+lookup_field()
+{
+  String const* n = get_identifier(__lookup_fld);
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("n"), get_uint_type())
+  };
+
+  return make_function_decl(n, parms, get_int_type(), make_empty_block());
+}
+
+
 // An intrinsic function which returns an object of context type
 // In theory this will be part of the lowering process which retrieves
 // the context type which gets passed around 
@@ -164,6 +201,8 @@ init_builtins()
     {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
     {__advance, advance()},
+    // {__lookup_hdr, lookup_header()},
+    // {__lookup_fld, lookup_field()},
   };
 
   builtin_functions_ = builtin_func;

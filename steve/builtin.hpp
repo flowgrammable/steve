@@ -15,6 +15,8 @@ String const __bind_offset  = "__bind_offset";
 String const __advance      = "__advance";
 String const __get_context  = "__get_context";
 String const __match        = "__match";
+String const __lookup_hdr   = "__lookup_hdr";
+String const __lookup_fld   = "__lookup_fld";
 String const __context_type = "context";
 
 std::unordered_multimap<String, Function_decl const*> builtin_functions();

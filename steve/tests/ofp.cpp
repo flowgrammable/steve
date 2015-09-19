@@ -236,26 +236,37 @@ test1()
   //----------------------------------------------------------------//
   //              Definitions
 
-  Stmt_seq ipv4_d_body {
-    make_decl_stmt(make_extracts_decl(ipv4_src)),
-    make_decl_stmt(make_extracts_decl(ipv4_dst)),
-    make_match_stmt(ipv4_proto, 
-      Stmt_seq {
-        make_case(zero(), make_do(Do_kind::table, t1)),
-        make_case(one(), make_do(Do_kind::decode, eth_d)),
-      }
-    )
-  };
+  Parameter_decl* _header_1 = make_parameter_decl(
+                                get_identifier("_header_"), 
+                                get_record_type(eth));
 
+  Parameter_decl* _header_2 = make_parameter_decl(
+                                get_identifier("_header_"), 
+                                get_record_type(ipv4));
+
+  Expr* cond1 = make_member_expr(id(_header_1), id(eth->members()[2]));
+  Expr* cond2 = make_member_expr(id(_header_2), id(ipv4->members()[2]));
 
   Stmt_seq eth_d_body {
     make_decl_stmt(make_extracts_decl(eth_src)),
     make_decl_stmt(make_extracts_decl(eth_dst)),
     make_decl_stmt(make_extracts_decl(eth_type)),
-    make_match_stmt(eth_type, 
+    make_match_stmt(cond1, 
       Stmt_seq {
         make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
         make_case(one(), make_do(Do_kind::decode, ipv4_d)),
+      }
+    )
+  };
+
+
+  Stmt_seq ipv4_d_body {
+    make_decl_stmt(make_extracts_decl(ipv4_src)),
+    make_decl_stmt(make_extracts_decl(ipv4_dst)),
+    make_match_stmt(cond2, 
+      Stmt_seq {
+        make_case(zero(), make_do(Do_kind::table, t1)),
+        make_case(one(), make_do(Do_kind::decode, eth_d)),
       }
     )
   };

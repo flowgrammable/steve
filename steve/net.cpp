@@ -394,7 +394,7 @@ register_stage(Decode_decl const* d)
   // Keep track of what fields each stage produces
   Expr_seq product;
 
-  // bind the header type into header environment
+  // bind the header decl into header environment
   lingo_assert(is<Record_type>(d->header()));
   Record_type const* htype = cast<Record_type>(d->header()); 
   pipeline.env().headers().push(htype->decl()->name(), htype->decl());
