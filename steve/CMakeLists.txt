@@ -22,6 +22,7 @@ add_library(steve STATIC
   debug.cpp
   net.cpp
   length.cpp
+  offset.cpp
   builtin.cpp
   lower.cpp
   token.cpp
@@ -36,3 +37,4 @@ add_library(steve STATIC
 
 
 add_subdirectory(tests)
+add_subdirectory(translate)

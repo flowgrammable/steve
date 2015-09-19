@@ -147,6 +147,12 @@ using Decl_seq = std::vector<Decl const*>;
 using Stmt_seq = std::vector<Stmt const*>;
 
 
+// The concept of a program is a sequence of stmts
+struct Program : Stmt_seq
+{
+  void push(Stmt const* s) { this->push_back(s); }
+};
+
 } // namespace steve
 
 

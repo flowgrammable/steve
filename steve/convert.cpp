@@ -167,7 +167,7 @@ integer_conversion(Expr const* e, Integer_type const* src, Integer_type const* d
 // type, where the type of each member matches the type of the 
 // corresponding elements in the tuple value.
 Expr const*
-record_convesion(Expr const* e, Tuple_type const* src, Record_type const* dst)
+record_conversion(Expr const* e, Tuple_type const* src, Record_type const* dst)
 {
   Tuple_type const* t = get_tuple_type(dst);
   if (src == t)
@@ -189,7 +189,7 @@ type_conversion(Expr const* e, Type const* src, Type const* dst)
   // Check for tuple conversions.
   if (Tuple_type const* t1 = as<Tuple_type>(src))
     if (Record_type const* t2 = as<Record_type>(dst))
-      return record_convesion(e, t1, t2);
+      return record_conversion(e, t1, t2);
 
   return e;
 }

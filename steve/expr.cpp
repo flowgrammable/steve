@@ -353,7 +353,8 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
 {
   if(Required<Type> t = type_field_expr(r, f))
     // Field_expr serve as indices. The type check is used later
-    // to qualify the type of the fld idx expr
+    // to determine the type of the fld idx expr
+
     // FIXME: the GC or some container has to ensure the uniqueness of these
     // otherwise name resolution is undefined behavior and I have no idea how or why
     return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
@@ -517,6 +518,50 @@ bool
 has_enum_type(Expr const* e)
 {
   return is<Enum_type>(e->type());
+}
+
+
+// Converts a field expression
+// into the member declaration it refers to
+Member_decl const*
+field_to_member(Field_expr const* e)
+{
+  Expr const* r = e->record();
+  Expr const* f = e->field();
+  // 'r' is either a record identifier
+  // or it is an expression that has record type
+  Decl const* rd; 
+  
+  if (is<Id_expr>(r)) {
+    rd = cast<Id_expr>(r)->decl();
+  }
+  else if (Field_expr const* fe = as<Field_expr>(r)) {
+    if (Record_type const* rt = as<Record_type>(fe->field_type()))
+      rd = rt->decl();
+  }
+  else {
+    error(r->location(), "invalid term '{}' is not a record identifier nor record type", r);
+    return nullptr;
+  }
+
+  // This must be a record decl
+  lingo_assert(is<Record_decl>(rd));
+  Record_decl const* rec = cast<Record_decl>(rd);
+
+  if (!is<Id_expr>(f)) {
+    error(f->location(), "invalid member selector '{}'", f);
+    return nullptr;
+  }
+  
+  Decl const* mem = cast<Id_expr>(f)->decl();
+  
+  // The declaration had better be a member. Otherwise the program
+  // is internally inconsistent: lookup of a member name returned a
+  // non-member.
+  lingo_assert(is<Member_decl>(mem));
+  lingo_assert(has_member(rec, cast<Member_decl>(mem)));
+
+  return cast<Member_decl>(mem);
 }
 
 

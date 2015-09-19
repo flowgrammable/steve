@@ -212,10 +212,6 @@ get_user_defined_type(Decl const* d)
     return get_variant_type(cast<Variant_decl>(d));
   if (is<Enum_decl>(d))
     return get_enum_type(cast<Enum_decl>(d));
-  if (is<Table_decl>(d))
-    return get_table_type(cast<Table_decl>(d));
-  if(is<Flow_decl>(d))
-    return get_flow_type(cast<Flow_decl>(d));
 
   error("'{}' does not name a type", d);
   return get_error_type();
@@ -237,17 +233,21 @@ get_match_type(Expr const* e, Match_seq const& m)
 }
 
 
+// A table type requires a sequence of member declarations
+// which uniquely declare its type
 Table_type const*
-get_table_type(Decl const* d)
+get_table_type(Decl_seq const& mem)
 {
-  return table_.make(d);
+  return table_.make(mem);
 }
 
 
+// A flow type requires a sequence of types
+// which refer to each element in its key
 Flow_type const*
-get_flow_type(Decl const* d)
+get_flow_type(Type_seq const& types)
 {
-  return flow_.make(d);
+  return flow_.make(types);
 }
 
 
@@ -409,8 +409,9 @@ type_member_expr(Expr const* e, Expr const* s)
 }
 
 
-// Used to provide a type for the member that
-// the field expr refers to
+// Used to check the type of the member decl that the
+// field expr refers to.
+//
 // Field exprs themselves have type int and are used
 // as indices for hdr/fld idx exprs
 Type const*
@@ -773,5 +774,64 @@ check_decode_decl(Type const* t, Stmt const* s)
   return true;
 }
 
+
+// Takes the flows of a table
+// and the type of that table
+bool
+check_flow_decl(Decl const* f, Type const* t)
+{
+  bool ok = true;
+
+  // for each member in the table type
+  // check that the corresponding element in the flow
+  // key has the same type as the member
+  lingo_assert(is<Table_type>(t));
+  lingo_assert(is<Flow_decl>(f));
+  lingo_assert(is<Flow_type>(f->type()));
+
+  Table_type const* tbl_t = cast<Table_type>(t);
+  Flow_decl const* flow = cast<Flow_decl>(f);
+  Flow_type const* flw_t = cast<Flow_type>(f->type());
+
+  // first check that the number of fields in the flow key
+  // match the number of fields in the table type
+  if (flw_t->key_types().size() != tbl_t->key_fields().size()) {
+    error(f->location(), "Flow '{}' key length does not match table '{}' key length.", flow, tbl_t);
+    ok = false;
+  }
+
+  // next check the corresponding types
+  auto it_f = flw_t->key_types().begin();
+  auto it_t = tbl_t->key_fields().begin();
+
+  int count = 0;
+  while ((it_f != flw_t->key_types().end()) && (it_t != tbl_t->key_fields().end())) {
+    if (*it_f != (*it_t)->type()) {
+      error(f->location(), "Subkey index '{}' of type '{}' in flow '{}' does not match table subkey '{}' of type '{}'",
+            count, *it_f, flow, *it_t, (*it_t)->type());
+      ok = false;
+    }
+    count++;
+    it_f++;
+    it_t++;
+  }
+
+  return ok;
+}
+
+
+bool
+check_table_initializer(Decl_seq const& init, Type const* tbl_t)
+{
+  bool ok = true;
+
+  for (auto decl : init) {
+    lingo_assert(is<Flow_type>(decl->type()));
+    if (!check_flow_decl(decl, tbl_t))
+      ok = false;
+  }
+
+  return ok;
+}
 
 } // namespace steve

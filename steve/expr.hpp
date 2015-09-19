@@ -1022,6 +1022,8 @@ bool has_enum_type(Expr const*);
 // -------------------------------------------------------------------------- //
 //                                  Facilities
 
+Member_decl const* field_to_member(Field_expr const*);
+
 } // namespace steve
 
 #endif

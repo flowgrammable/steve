@@ -97,6 +97,10 @@ struct Extracted_less
 Unique_factory<Stage, Stage_less> stages_;
 Unique_factory<Extracted, Extracted_less> extracted_;
 
+// Let's us print the stack leading up to errors
+// in requirement detection
+std::vector<Stage*> stack_;
+
 
 } // namespace
 
@@ -310,8 +314,13 @@ check_stage(Decl const* d, Expr_seq const& requirements)
 {
   for (auto e : requirements) {
     auto search = cxt_bindings.find(as<Field_expr>(e)->name());
-    if (search == cxt_bindings.end())
+    if (search == cxt_bindings.end()) {
       error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
+      error(d->location(), "Broken path: ");
+      for (auto stage : stack_) {
+        error(d->location(), "{} ->", stage->decl()->name());
+      }
+    }
   }
 }
 
@@ -328,6 +337,9 @@ dfs(Stage* s)
   // push the header name onto the bindings stack
   cxt_bindings.insert(s->decl()->name());
 
+  // push stage onto stack for debugging purposes
+  stack_.push_back(s);  
+
   // check this stage
   check_stage(s->decl(), s->requirements());
 
@@ -337,6 +349,10 @@ dfs(Stage* s)
       if(stage->visited == false)
         dfs(stage);
   }
+
+  // cleanup
+  // pop off debugging stack
+  stack_.pop_back();
 
   // pop all of the bindings off
   for (auto p : s->productions())
@@ -378,7 +394,7 @@ register_stage(Decode_decl const* d)
   // Keep track of what fields each stage produces
   Expr_seq product;
 
-  // bind the header type into header environment
+  // bind the header decl into header environment
   lingo_assert(is<Record_type>(d->header()));
   Record_type const* htype = cast<Record_type>(d->header()); 
   pipeline.env().headers().push(htype->decl()->name(), htype->decl());

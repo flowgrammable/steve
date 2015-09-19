@@ -321,6 +321,14 @@ make_fn(char const* n, Decl_seq const& p)
 }
 
 
+// Defines a void function with no statement block (forward-decl)
+inline Function_decl*
+make_forward_fn(char const* n, Decl_seq const& p)
+{
+  return make_function_decl(get_identifier(n), p, get_void_type(), nullptr);
+}
+
+
 // Defines a function with the given parameters and type and
 // a sequence of statements. This constructs a block around the
 // statement sequence.

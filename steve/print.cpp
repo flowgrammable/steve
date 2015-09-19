@@ -286,14 +286,19 @@ print(Printer& p, Enum_type const* t)
 void
 print(Printer& p, Table_type const* t)
 {
-  print(p, t->decl()->name());
+  print(p, "table<");
+  for (auto d : t->key_fields()) {
+    print(p, d);
+  }
+  print(p, ">");
 }
 
 
 void
 print(Printer& p, Flow_type const* t)
 {
-  print(p, t->decl()->name());
+  for (auto type : t->key_types())
+    print(p, type);
 }
 
 
@@ -762,9 +767,13 @@ print(Printer& p, Decode_decl const* d)
 void
 print_table_conditions(Printer& p, Table_decl const* d)
 {
-  print(p, "[");
-  print_nested(p, d->conditions());
-  print(p, "]");
+  print(p, "<");
+  for (auto it = d->conditions().begin(); it < d->conditions().end() - 1; ++it) {
+    print(p, *it);
+    print(p, ", ");
+  }
+  print(p, *(d->conditions().end() - 1));
+  print(p, ">");
 }
 
 
@@ -788,11 +797,21 @@ print(Printer& p, Table_decl const* d)
 
 
 void
+print_flow_key(Printer& p, Expr_seq const& e)
+{
+  for (auto it = e.begin(); it < e.end() - 1; it++) {
+    print(p, *it);
+    print(p, ", ");
+  }
+  print(p, *(e.end() - 1));
+}
+
+void
 print(Printer& p, Flow_decl const* d)
 {
   print(p, d->priority());
   print(p, ". {");
-  print_nested(p, d->conditions());
+  print_flow_key(p, d->conditions());
   print(p, "} -> ");
   print(p, d->instructions());
 }

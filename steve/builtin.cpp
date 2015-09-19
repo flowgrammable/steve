@@ -1,4 +1,5 @@
 #include "builtin.hpp"
+#include "lookup.hpp"
 
 
 namespace steve
@@ -17,34 +18,32 @@ make_empty_block()
 }
 
 
-// Used to construct __decode(cxt, decode_func : T)
-// Needed since each decode dispatch has a different type
-// Using this function instead of casting because dealing with
-// casting in codegen seems easier than in steve
-struct Decode_dispatch_fn
+// Used to construct __match(cxt, table : Table_type)
+// Needed since each table has a different type
+struct Match_dispatch_fn
 {
   template<typename T>
-  Decl const* operator()(T const* t) const { return dispatch(t); }
+  Function_decl const* operator()(T const* t) const { return dispatch(t); }
 
   // Fail on non-object types.
   template<typename T>
-    static typename std::enable_if<!is_object_type<T>(), Decl const*>::type
+    static typename std::enable_if<!is_object_type<T>(), Function_decl const*>::type
   dispatch(T const* t)
   {
     lingo_unreachable();
   }
 
   template<typename T>
-    static typename std::enable_if<is_object_type<T>(), Decl const*>::type
+    static typename std::enable_if<is_object_type<T>(), Function_decl const*>::type
   dispatch(T const* t)
   {
     Decl_seq parms =
     {
-      make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-      make_parameter_decl(get_identifier("header"), get_reference_type(t))
+      make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
+      make_parameter_decl(get_identifier("_table_"), t)
     };
-    
-    return make_function_decl(get_identifier(__decode), parms, get_void_type(), make_empty_block());
+
+    return make_function_decl(get_identifier(__match), parms, get_void_type(), make_empty_block());
   }
 };
 
@@ -102,6 +101,78 @@ advance()
 }
 
 
+// __decode(cxt : CXT, decode_fn : (*)(cxt CXT)) -> void
+// the decode dispatching function which dispatches a context
+// off to given decoding function
+Function_decl*
+decode_fn()
+{
+  String const* n = get_identifier(__decode);
+
+  Type_seq dec_parms {
+    get_reference_type(get_context_type())
+  };
+
+  Type const* d_fn_t = get_function_type(dec_parms, get_void_type());
+
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("_decoder_"), d_fn_t)
+  };
+
+  return make_function_decl(n, parms, get_void_type(), make_empty_block());
+}
+
+
+// __lookup_hdr(cxt: CXT, n : int) ->int
+// Causes a lookup of the last extracted header with the integer binding 'n'
+// FIXME: this isnt right. the return type should be the type of the header
+// also the syntax needs to change
+Function_decl*
+lookup_header()
+{
+  String const* n = get_identifier(__lookup_hdr);
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("n"), get_uint_type())
+  };
+
+  return make_function_decl(n, parms, get_int_type(), make_empty_block());
+}
+
+
+// __lookup_fld(cxt: CXT, n : int) -> int
+// Causes a lookup of the last extracted field with the integer binding 'n'
+// FIXME: this isnt right
+// the return type should be the type of the field
+// do we even need this?
+Function_decl*
+lookup_field()
+{
+  String const* n = get_identifier(__lookup_fld);
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("n"), get_uint_type())
+  };
+
+  return make_function_decl(n, parms, get_int_type(), make_empty_block());
+}
+
+
+// header_cast() is injected at the beginning of every decode function
+// the result is declaring a variable named _header_ 
+// and assigning a reinterpret cast of packet
+// memory from the context as its value
+Function_decl*
+header_cast()
+{
+  String const* n = get_identifier(__header_cast);
+  return make_function_decl(n, {}, get_void_type(), make_empty_block());
+}
+
 
 // An intrinsic function which returns an object of context type
 // In theory this will be part of the lowering process which retrieves
@@ -113,18 +184,6 @@ get_context()
   Decl_seq parms;
 
   return make_function_decl(n, parms, get_context_type(), make_empty_block());
-}
-
-
-// __decode(ref context, id decoder)
-// Takes a reference to a context and an identifier which points
-// to the next decoder to be called.
-// This function will handle the reinterpretation of packet data
-// into the _header_ object with correct type
-Function_decl const*
-decode()
-{
-  return nullptr;
 }
 
 
@@ -178,10 +237,17 @@ init_builtins()
     {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
     {__advance, advance()},
-    // {__get_context, get_context()}
+    {__decode, decode_fn()},
+    {__header_cast, header_cast()},
+    // {__lookup_hdr, lookup_header()},
+    // {__lookup_fld, lookup_field()},
   };
 
   builtin_functions_ = builtin_func;
+
+  for (auto it : builtin_functions_) {
+    declare(it.second->name(), it.second);
+  }
 }
 
 
@@ -216,22 +282,48 @@ builtin_type(String const n)
 
 // This function has to be called AFTER the builtins are
 // initialized
-// Type 't' should be a function type
-// __decode(cxt, decoder_id)
+// Type 't' should be a table type
+// __match(cxt, table_id : t)
+//
+// NOTE: This function makes the assumption that it is called
+// within global scope or within the same scope that the pipeline
+// is being define in
 Function_decl const*
-make_decode_fn(Type const* t)
+make_match_fn(Type const* t)
 {
   lingo_assert(builtin_functions_.size() > 0);
 
-  Decode_dispatch_fn dis;
-  Decl const* d = apply(t, dis);
+  Match_dispatch_fn mfn;
+  Function_decl const* d = apply(t, mfn);
 
-  lingo_assert(is<Function_decl>(d));
+  builtin_functions_.insert(std::make_pair(__match, d));
 
-  Function_decl const* fn = cast<Function_decl>(d);
-  builtin_functions_.insert(std::make_pair(__decode, fn));
-  return fn;
+  // declare
+  declare(d->name(), d);
+
+  return d;
 }
+
+
+// fetch the correct match function
+// with the appropriate table type as the parameter
+Function_decl const*
+get_match_fn(Type const* t)
+{
+  auto match_fn = builtin_functions_.equal_range(__match);
+  
+  for (auto it = match_fn.first; it != match_fn.second; it++) {
+    Function_decl const* fn = it->second;
+    // look at the second parameter (or at[1] on the 0 scale)
+    lingo_assert(fn->parms().size() == 2);
+    if (fn->parms().at(1)->type() == t)
+      return fn;
+  }
+
+  return nullptr;
+}
+
+
 
 
 } // namespace steve
