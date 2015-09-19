@@ -279,7 +279,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   // of determining what type the immediate decode handles. This lets me carry the type
   // across lower() calls using scoping.
   // it is no longer being used as a parameter for the decode function
-  Parameter_decl const* header = make_parameter_decl(get_identifier(_header_), d->header());
+  Variable_decl const* header = make_variable_decl(get_identifier(_header_), d->header());
 
   declare(cxt->name(), cxt);
   declare(header->name(), header);

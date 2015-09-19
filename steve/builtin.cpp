@@ -39,8 +39,8 @@ struct Match_dispatch_fn
   {
     Decl_seq parms =
     {
-      make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-      make_parameter_decl(get_identifier("table"), t)
+      make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
+      make_parameter_decl(get_identifier("_table_"), t)
     };
 
     return make_function_decl(get_identifier(__match), parms, get_void_type(), make_empty_block());
@@ -99,6 +99,11 @@ advance()
 
   return make_function_decl(n, parms, get_void_type(), make_empty_block());
 }
+
+
+// __decode(cxt : CXT, decode_fn : (*)(cxt CXT)) -> void
+// the decode dispatching function which dispatches a context
+// off to given decoding function
 
 
 // __lookup_hdr(cxt: CXT, n : int) ->int
@@ -284,6 +289,9 @@ get_match_fn(Type const* t)
 
   return nullptr;
 }
+
+
+
 
 } // namespace steve
 
