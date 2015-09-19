@@ -92,6 +92,7 @@ void
 lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
 {
   auto advance = builtin_function(__advance);
+  auto decode = builtin_function(__decode);
 
   if (Overload const* c = lookup("_cxt_")) {
     if (Overload const* h = lookup("_header_")) {
@@ -102,12 +103,13 @@ lower_do_decode(Do_expr const* e, Stmt_seq& stmts)
       };
       stmts.push_back(make_expr_stmt(make_call_expr(id(advance), args)));
 
-      // make call to next decoder
+      // make call to the decode dispatcher
       Expr_seq cargs {
-        id(c->front()),
+        id(c->front()), // context
+        id(lookup_decl(as<Id_expr>(e->target())->name())), // decode function pointer
       };
-      Decl const* target = lookup_decl(as<Id_expr>(e->target())->name());
-      stmts.push_back(make_expr_stmt(make_call_expr(id(target), cargs)));
+
+      stmts.push_back(make_expr_stmt(make_call_expr(id(decode), cargs)));
     }
   }
 }
@@ -262,7 +264,8 @@ void
 lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
-  Function_decl const* bind_header = builtin_function(__bind_header);
+  auto bind_header = builtin_function(__bind_header);
+  auto header_cast = builtin_function(__header_cast);
 
   Local_scope local;
 
@@ -289,7 +292,12 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
     cxt,
   };
 
+  // stmts for the new decode function
   Stmt_seq new_stmts;
+
+  // the first line is always a call to header_cast()
+  new_stmts.push_back(make_expr_stmt(make_call_expr(id(header_cast), {})));
+
   Expr_seq args {
     id(cxt), 
     make_value_expr(get_int_type(), lookup_header_binding(as<Record_type>(d->header())->decl()->name()))

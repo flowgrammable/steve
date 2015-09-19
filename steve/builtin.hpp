@@ -16,6 +16,7 @@ String const __advance      = "__advance";
 String const __get_context  = "__get_context";
 String const __match        = "__match";
 String const __decode       = "__decode";
+String const __header_cast  = "__header_cast";
 String const __lookup_hdr   = "__lookup_hdr";
 String const __lookup_fld   = "__lookup_fld";
 String const __context_type = "context";

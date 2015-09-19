@@ -104,6 +104,25 @@ advance()
 // __decode(cxt : CXT, decode_fn : (*)(cxt CXT)) -> void
 // the decode dispatching function which dispatches a context
 // off to given decoding function
+Function_decl*
+decode_fn()
+{
+  String const* n = get_identifier(__decode);
+
+  Type_seq dec_parms {
+    get_reference_type(get_context_type())
+  };
+
+  Type const* d_fn_t = get_function_type(dec_parms, get_void_type());
+
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("_decoder_"), d_fn_t)
+  };
+
+  return make_function_decl(n, parms, get_void_type(), make_empty_block());
+}
 
 
 // __lookup_hdr(cxt: CXT, n : int) ->int
@@ -140,6 +159,18 @@ lookup_field()
   };
 
   return make_function_decl(n, parms, get_int_type(), make_empty_block());
+}
+
+
+// header_cast() is injected at the beginning of every decode function
+// the result is declaring a variable named _header_ 
+// and assigning a reinterpret cast of packet
+// memory from the context as its value
+Function_decl*
+header_cast()
+{
+  String const* n = get_identifier(__header_cast);
+  return make_function_decl(n, {}, get_void_type(), make_empty_block());
 }
 
 
@@ -206,6 +237,8 @@ init_builtins()
     {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
     {__advance, advance()},
+    {__decode, decode_fn()},
+    {__header_cast, header_cast()},
     // {__lookup_hdr, lookup_header()},
     // {__lookup_fld, lookup_field()},
   };
