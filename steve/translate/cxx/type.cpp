@@ -4,6 +4,74 @@
 namespace cxx
 {
 
+namespace
+{
+
+// C standard ints
+// The type 'uint8_t'
+Uint8_t uint8_;
+
+// The type 'uint16_t'
+Uint16_t uint16_;
+
+// The type 'uint32_t'
+Uint32_t uint32_;
+
+// The type 'uint64_t'
+Uint64_t uint64_;
+
+// The type 'uint128_t'
+Uint128_t uint128_;
+
+// The type 'uint24_t'
+Uint64_t uint24_;
+
+// The type 'uint48_t'
+Uint128_t uint48_;
+
+}
+
+Type* get_uint8_type()
+{
+  return &uint8_;
+}
+
+Type* get_uint16_type()
+{
+  return &uint16_;
+}
+
+
+Type* get_uint32_type()
+{
+  return &uint32_;
+}
+
+
+Type* get_uint64_type()
+{
+  return &uint64_;
+}
+
+
+Type* get_uint128_type()
+{
+  return &uint128_;
+}
+
+
+Type* get_uint24_type()
+{
+  return &uint24_;
+}
+
+
+Type* get_uint48_type()
+{
+  return &uint48_;
+}
+
+
 // FIXME: Implement check for declared but not defined classes.
 bool
 is_incomplete_object_type(Type* t) {

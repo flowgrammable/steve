@@ -5,6 +5,8 @@ add_executable(steve-translate
 	translate-decl.cpp
 	translate-expr.cpp
 	translate-pipeline.cpp
-	translator.cpp
+	test-translate.cpp
 )
-
+target_link_libraries(steve-translate steve)
+target_link_libraries(steve-translate lingo)
+target_link_libraries(steve-translate metal-cxx)

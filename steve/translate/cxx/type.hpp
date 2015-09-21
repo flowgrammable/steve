@@ -56,6 +56,16 @@ constexpr Node_kind decltype_type               = make_type_node(1120); // declt
 constexpr Node_kind base_type                   = make_type_node(1130); // base class
 constexpr Node_kind namespace_type              = make_type_node(1140); // namespace {...}
 constexpr Node_kind id_type                     = make_type_node(1141); // unresolved type
+// C standard integers
+constexpr Node_kind uint8_type                  = make_type_node(1142);
+constexpr Node_kind uint16_type                 = make_type_node(1143);
+constexpr Node_kind uint32_type                 = make_type_node(1144);
+constexpr Node_kind uint64_type                 = make_type_node(1145);
+constexpr Node_kind uint128_type                = make_type_node(1146);
+// special non standard ints that will be needed for packets
+constexpr Node_kind uint24_type                 = make_type_node(1147);
+constexpr Node_kind uint48_type                 = make_type_node(1148);
+
 
 // -------------------------------------------------------------------------- //
 // Types                                                           [basic.types]
@@ -114,6 +124,27 @@ struct Unsigned_long_int_type : Basic_type<unsigned_long_int_type> { };
 
 // The type 'unsigned long long int'.
 struct Unsigned_long_long_int_type : Basic_type<unsigned_long_long_int_type> { };
+
+// The type 'uint8_t'
+struct Uint8_t : Basic_type<uint8_type> { };
+
+// The type 'uint16_t'
+struct Uint16_t : Basic_type<uint16_type> { };
+
+// The type 'uint32_t'
+struct Uint32_t : Basic_type<uint32_type> { };
+
+// The type 'uint64_t'
+struct Uint64_t : Basic_type<uint64_type> { };
+
+// The type 'uint128_t'
+struct Uint128_t : Basic_type<uint128_type> { };
+
+// The type 'uint24_t'
+struct Uint24_t : Basic_type<uint24_type> { };
+
+// The type 'uint48_t'
+struct Uint48_t : Basic_type<uint48_type> { };
 
 // The type 'bool'.
 struct Bool_type : Basic_type<bool_type> { };
@@ -270,21 +301,21 @@ struct Function_type : Type, Kind_of<function_type> {
 // 'n' is the name of the class, 'b' is a sequence of base types, 
 // and 'm' is a sequence of member declaration.
 struct Class_type : Type, Kind_of<class_type> {
-  Class_type(Name* n, Type_seq* b, Decl_seq* m)
+  Class_type(Name* n, Type_seq b, Decl_seq m)
     : Type(Kind, class_type), first(n), second(b), third(m) { }
 
   // TODO: The declaration specifiers must include either 
   // struct_spec or class_spec, but not both.
-  Class_type(Decl_spec s, Name* n, Type_seq* b, Decl_seq* m)
+  Class_type(Decl_spec s, Name* n, Type_seq b, Decl_seq m)
     : Type(Kind, s), first(n), second(b), third(m) { }
 
   Name* name() const { return first; }
-  Type_seq* bases() const { return second; }
-  Decl_seq* members() const { return third; }
+  Type_seq bases() const { return second; }
+  Decl_seq members() const { return third; }
 
   Name* first;
-  Type_seq* second;
-  Decl_seq* third;
+  Type_seq second;
+  Decl_seq third;
 };
 
 // Represents a union type has the form 'union n { m }' where 'n'
@@ -339,6 +370,21 @@ struct Member_pointer_type : Type, Kind_of<member_pointer_type> {
   Type* first;
   Type* second;
 };
+
+// ------------------------------------------------------------------- //
+//            Type construction
+
+// TODO: Implement the rest of these
+
+Type* get_uint8_type();
+Type* get_uint16_type();
+Type* get_uint32_type();
+Type* get_uint64_type();
+Type* get_uint128_type();
+// special integer lengths
+Type* get_uint24_type();
+Type* get_uint48_type();
+
 
 // // The type of a type template parameter.
 // struct Typename_type : Type {

@@ -5,6 +5,7 @@
 #include "steve/expr.hpp"
 #include "steve/decl.hpp"
 #include "steve/stmt.hpp"
+#include "steve/type.hpp"
 
 #include "cxx/ast.hpp"
 #include "cxx/decl.hpp"
@@ -12,6 +13,7 @@
 #include "cxx/expr.hpp"
 #include "cxx/stmt.hpp"
 #include "cxx/name.hpp"
+#include "cxx/string.hpp"
 
 #include "translate-stmt.hpp"
 #include "translate-expr.hpp"

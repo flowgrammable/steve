@@ -4,11 +4,24 @@
 #include <cstring>
 #include <string>
 #include <iosfwd>
+#include <unordered_set>
 
 #include "format.hpp"
 
 namespace cxx
 {
+
+namespace {
+
+// The string table.
+static std::unordered_set<std::string> strings_;
+
+// Returns a pointer to a unique string with the same spelling as str.
+const std::string* 
+intern(const std::string& str) { return &*strings_.insert(str).first; }
+
+} // namesapce
+
 
 // The String class is a handle to an interned string. Its usage guarantees
 // that each unique occurrence of a string in the text of a program appears
@@ -21,10 +34,18 @@ public:
   using const_iterator = std::string::const_iterator;
 
   // Constructors
-  String();
-  String(const std::string& s);
-  String(const char* s);
-  String(const char* s, std::size_t n);
+  String() 
+  : str_(nullptr) { }
+  
+  String(const std::string& s)
+    : str_(intern(s)) { }
+
+  String(const char* s)
+    : String(std::string(s)) { }
+
+  String(const char* s, std::size_t n)
+    : String(std::string(s, n)) { }
+
 
   template<typename I> String(I first, I last);
 
@@ -43,9 +64,6 @@ public:
 
   const_iterator begin() const;
   const_iterator end() const;
-
-private:
-  static const std::string* intern(const std::string&);
 
 private:
   const std::string* str_;

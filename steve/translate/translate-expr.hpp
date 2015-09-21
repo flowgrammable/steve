@@ -8,7 +8,7 @@
 namespace steve
 {
 
-std::string translate(Expr const* s);
+cxx::Expr* translate(Expr const* s);
 
 }
 

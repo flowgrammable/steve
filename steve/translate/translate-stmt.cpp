@@ -6,56 +6,56 @@ namespace steve
 struct Stmt_translator
 {
   // decl stmt
-  std::string operator()(Decl_stmt const* s) 
+  cxx::Expr* operator()(Decl_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // expr stmt
-  std::string operator()(Expr_stmt const* s) 
+  cxx::Expr* operator()(Expr_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // empty stmt
-  std::string operator()(Empty_stmt const* s) 
+  cxx::Expr* operator()(Empty_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // block stmt
-  std::string operator()(Block_stmt const* s) 
+  cxx::Expr* operator()(Block_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // return stmt
-  std::string operator()(Return_stmt const* s) 
+  cxx::Expr* operator()(Return_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // match stmt
-  std::string operator()(Match_stmt const* s) 
+  cxx::Expr* operator()(Match_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // case stmt
-  std::string operator()(Case_stmt const* s) 
+  cxx::Expr* operator()(Case_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 
   // instruct stmt (to be removed)
-  std::string operator()(Instruct_stmt const* s) 
+  cxx::Expr* operator()(Instruct_stmt const* s) 
   {
-    return "";
+    return nullptr;
   }
 };
 
 
-std::string
+cxx::Expr*
 translate(Stmt const* s)
 {
   Stmt_translator stmt_fn;

@@ -75,7 +75,6 @@ struct Type_decl : Decl, Kind_of<type_decl> {
   Type_decl(Type* t)
     : Decl(type_decl), type(t)
   { }
-
   Type* type;
 };
 
