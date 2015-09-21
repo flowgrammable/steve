@@ -13,6 +13,9 @@
 
 #include "ast.hpp"
 
+namespace cxx
+{
+
 constexpr Node_kind labeled_stmt   = make_stmt_node(6001); // e;
 constexpr Node_kind expr_stmt      = make_stmt_node(6002); // e;
 constexpr Node_kind block_stmt     = make_stmt_node(6003); // { stmts* }
@@ -179,5 +182,7 @@ struct Continue_stmt : Stmt, Kind_of<continue_stmt> {
   Continue_stmt()
     : Stmt(Kind, nullptr, unknown_cat) { }
 };
+
+} // namespace cxx
 
 #endif

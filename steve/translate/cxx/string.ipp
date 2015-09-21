@@ -1,4 +1,7 @@
 
+namespace cxx
+{
+
 inline 
 String::String() 
   : str_(nullptr) { }
@@ -91,10 +94,12 @@ template<typename C, typename T>
   inline std::basic_ostream<C, T>&
   operator<<(std::basic_ostream<C, T>& os, String s) { return os << s.str(); }
 
+} // namespace cxx
+
 namespace std {
 
 inline std::size_t 
-hash<String>::operator()(String str) const {
+hash<cxx::String>::operator()(cxx::String str) const {
   hash<const void*> h;
   return h(str.ptr());
 }

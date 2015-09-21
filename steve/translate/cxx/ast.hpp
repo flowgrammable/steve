@@ -4,6 +4,9 @@
 
 #include "nodes.hpp"
 
+namespace cxx
+{
+
 // This module defines the high-level framework for representing
 // the different kinds of terms in the C++ programming language.
 // Specific kinds of terms are found in the name, type, expr,
@@ -36,10 +39,11 @@ constexpr Decl_spec class_spec        = 1 << 11;
 constexpr Decl_spec union_spec        = 1 << 12;
 constexpr Decl_spec enum_spec         = 1 << 13;
 constexpr Decl_spec typename_spec     = 1 << 14;
+constexpr Decl_spec simple_type_spec  = 1 << 15;
 // Other specifiers
-constexpr Decl_spec friend_spec       = 1 << 15;
-constexpr Decl_spec constexpr_spec    = 1 << 16;
-constexpr Decl_spec export_spec       = 1 << 17;
+constexpr Decl_spec friend_spec       = 1 << 16;
+constexpr Decl_spec constexpr_spec    = 1 << 17;
+constexpr Decl_spec export_spec       = 1 << 18;
 
 // -------------------------------------------------------------------------- //
 // Value categories                                              [basic.lval] //
@@ -170,5 +174,7 @@ using Decl_seq = Seq<Decl>;
 
 // void pretty_print(Printer&, Term*);
 // void debug_print(Printer&, Term*);
+
+} // namespace cxx
 
 #endif

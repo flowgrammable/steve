@@ -7,6 +7,9 @@
 
 #include "format.hpp"
 
+namespace cxx
+{
+
 // The String class is a handle to an interned string. Its usage guarantees
 // that each unique occurrence of a string in the text of a program appears
 // only once in the memory of the program.
@@ -70,16 +73,21 @@ template<typename C>
 template<typename C, typename T>
   std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>&, String);
 
+} // namespace cxx
+
+
 // Hash support for Strings.
 namespace std {
 
 template<>
-  struct hash<String> {
-    std::size_t operator()(String str) const;
+  struct hash<cxx::String> {
+    std::size_t operator()(cxx::String str) const;
   };
 
 } // namesapce std
 
 #include "string.ipp"
+
+
 
 #endif

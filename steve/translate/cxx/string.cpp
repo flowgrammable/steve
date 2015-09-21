@@ -12,6 +12,9 @@ static std::unordered_set<std::string> strings_;
 
 } // namesapce
 
+namespace cxx
+{
+
 // Returns a pointer to a unique string with the same spelling as str.
 const std::string* 
 String::intern(const std::string& str) { return &*strings_.insert(str).first; }
@@ -30,3 +33,5 @@ to_upper(String s) {
   std::transform(s.begin(), s.end(), r.begin(), toupper);
   return r;
 }
+
+} // namespace cxx

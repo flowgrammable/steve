@@ -4,6 +4,9 @@
 
 #include "ast.hpp"
 
+namespace cxx
+{
+
 // Narrow character types
 constexpr Node_kind char_type                   = make_type_node(1100);
 constexpr Node_kind signed_char_type            = make_type_node(1101);
@@ -349,5 +352,7 @@ struct Member_pointer_type : Type, Kind_of<member_pointer_type> {
 //   Name* name;
 //   Seq<Decl>* decls;
 // };
+
+} // namespace cxx
 
 #endif

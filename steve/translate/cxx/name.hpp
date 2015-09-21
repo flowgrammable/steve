@@ -4,6 +4,9 @@
 
 #include "ast.hpp"
 
+namespace cxx
+{
+
 // This module defines the kinds of names that are used to
 // declare functions, variables, and types. These terms also 
 // correspond to the kinds of terms that can are id-expressions.
@@ -131,5 +134,7 @@ struct Intrinsic_id : Name, Kind_of<intrinsic_id> {
 
   String first;
 };
+
+} // namespace cxx
 
 #endif

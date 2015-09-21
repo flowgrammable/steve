@@ -12,6 +12,9 @@
 #include <cassert>
 #include <stdexcept>
 
+namespace cxx
+{
+
 // Check the given condition. If it it not satisfied, trigger an
 // assertion with the given message. Note that assertions are
 // removed when compiling without debugging informaiton.
@@ -40,5 +43,7 @@ struct Assertion_error : std::runtime_error {
 std::string demangle(const char*);
 
 #include "debug.ipp"
+
+} // namespace cxx
 
 #endif

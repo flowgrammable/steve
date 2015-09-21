@@ -11,6 +11,9 @@
 
 #include "ast.hpp"
 
+namespace cxx
+{
+
 // Literal primary expressions
 constexpr Node_kind int_expr              = make_term_node(2001);
 constexpr Node_kind char_expr             = make_term_node(2002);
@@ -396,5 +399,8 @@ struct Binary_expr : Expr, Kind_of<binary_expr> {
   Expr*       second;
   Expr*       third;
 };
+
+
+} // namespace cxx
 
 #endif

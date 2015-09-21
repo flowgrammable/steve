@@ -4,6 +4,9 @@
 
 #include "ast.hpp"
 
+namespace cxx
+{
+
 // Declarations
 constexpr Node_kind label_decl            = make_decl_node(1300); // l:
 constexpr Node_kind variable_decl         = make_decl_node(1301); // T x = e;
@@ -21,7 +24,9 @@ constexpr Node_kind specialization_decl   = make_decl_node(1312); // template<..
 // Special declarations
 constexpr Node_kind translation_decl      = make_decl_node(1340); // translation unit
 constexpr Node_kind parameter_decl        = make_decl_node(1342); // parameter declarations
-constexpr Node_kind foreign_decl          = make_decl_node(1343); // extern "X" declarations
+constexpr Node_kind foreign_decl          = make_decl_node(1343); // extern declarations
+constexpr Node_kind foreign_c_decl        = make_decl_node(1344); // extern "C" declarations
+constexpr Node_kind foreign_cpp_decl      = make_decl_node(1345); // extern "C++" declarations
 
 
 // -------------------------------------------------------------------------- //
@@ -185,12 +190,38 @@ struct Parameter_decl : Decl, Kind_of<parameter_decl> {
   Name* n;
 };
 
-// // An foreign linkage specification declaration.
-// struct Foreign_decl : Decl {
-//   Foreign_decl(const Token&, Decl*);
-//   Token lang;
-//   Decl* decl;
-// };
+// An foreign linkage specification declaration.
+// i.e. extern type function_decl()
+struct Foreign_decl : Decl, Kind_of<foreign_decl> {
+  Foreign_decl(Decl* d)
+    : Decl(foreign_decl), decl(d)
+  { };
 
+  Decl* decl;
+};
+
+
+// An foreign linkage specification declaration.
+// i.e. extern "C" type function_decl()
+struct Foreign_c_decl : Decl, Kind_of<foreign_c_decl> {
+  Foreign_c_decl(Decl* d)
+    : Decl(foreign_c_decl), decl(d)
+  { };
+  
+  Decl* decl;
+};
+
+
+// An foreign linkage specification declaration.
+// i.e. extern "C++" type function_decl()
+struct Foreign_cpp_decl : Decl, Kind_of<foreign_cpp_decl> {
+  Foreign_cpp_decl(Decl* d)
+    : Decl(foreign_cpp_decl), decl(d)
+  { };
+  
+  Decl* decl;
+};
+
+} // namespace cxx
 
 #endif

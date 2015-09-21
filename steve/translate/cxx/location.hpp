@@ -4,6 +4,9 @@
 
 #include <iosfwd>
 
+namespace cxx
+{
+
 // Types for special location constructors.
 enum no_location_t { no_location };
 enum eof_location_t { eof_location };
@@ -32,5 +35,7 @@ template<typename C, typename T>
   operator<<(std::basic_ostream<C, T>&, const Location&);
 
 #include "location.ipp"
+
+} // namespace cxx
 
 #endif

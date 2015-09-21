@@ -8,6 +8,9 @@
 
 #include <cstdint>
 
+namespace cxx
+{
+
 // -------------------------------------------------------------------------- //
 // Node classification
 
@@ -160,5 +163,7 @@ template<typename U, typename T> bool is(const T* t);
 String node_name(Node*);
 
 #include "nodes.ipp"
+
+} // namespace cxx
 
 #endif

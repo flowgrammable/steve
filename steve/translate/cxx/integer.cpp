@@ -4,6 +4,9 @@
 
 #include <memory>
 
+namespace cxx
+{
+
 // Consruct an integer with the value in s in base b. Behavior is undefined
 // if s does not represent an integer in base b.
 Integer::Integer(String s, int b) 
@@ -54,3 +57,5 @@ operator<<(std::ostream& os, const Integer& z) {
   }
   return os << buf.get(); 
 }
+
+} // namespace cxx

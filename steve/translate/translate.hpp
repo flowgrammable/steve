@@ -7,6 +7,11 @@
 #include "steve/stmt.hpp"
 
 #include "cxx/ast.hpp"
+#include "cxx/decl.hpp"
+#include "cxx/type.hpp"
+#include "cxx/expr.hpp"
+#include "cxx/stmt.hpp"
+#include "cxx/name.hpp"
 
 #include "translate-stmt.hpp"
 #include "translate-expr.hpp"

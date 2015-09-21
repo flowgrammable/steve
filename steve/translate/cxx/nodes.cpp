@@ -4,6 +4,9 @@
 
 #include <unordered_map>
 
+namespace cxx
+{
+
 namespace {
 
 // Global table of node names. This is used primarily for debugging
@@ -40,3 +43,4 @@ node_name(Node_kind k) {
 String
 node_name(Node* t) { return node_name(t->kind); }
 
+} // namespace cxx

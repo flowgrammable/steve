@@ -7,6 +7,9 @@
 #include "string.hpp"
 #include "debug.hpp"
 
+namespace cxx
+{
+
 // The Integer class represents arbitrary integer values.
 class Integer {
 public:
@@ -84,5 +87,7 @@ Integer operator>>(const Integer&, const Integer&);
 std::ostream& operator<<(std::ostream&, const Integer&);
 
 #include "integer.ipp"
+
+} // namespace cxx
 
 #endif
