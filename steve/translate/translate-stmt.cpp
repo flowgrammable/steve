@@ -26,7 +26,15 @@ struct Stmt_translator
   // block stmt
   cxx::Expr* operator()(Block_stmt const* s) 
   {
-    return nullptr;
+    cxx::Stmt_seq stmt_seq;
+    // converts block stmt into c++ block expr
+    for (auto stmt : *s) {
+      cxx::Expr* cstmt = translate(stmt);
+      assert(cxx::is<cxx::Stmt>(cstmt));
+      stmt_seq.push_back(cxx::as<cxx::Stmt>(cstmt));
+    }
+
+    return new cxx::Block_stmt(nullptr, stmt_seq);
   }
 
   // return stmt

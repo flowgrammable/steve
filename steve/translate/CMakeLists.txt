@@ -4,6 +4,7 @@ add_executable(steve-translate
 	translate-stmt.cpp
 	translate-decl.cpp
 	translate-expr.cpp
+	translate-type.cpp
 	translate-pipeline.cpp
 	test-translate.cpp
 )

@@ -24,10 +24,12 @@ Uint64_t uint64_;
 Uint128_t uint128_;
 
 // The type 'uint24_t'
-Uint64_t uint24_;
+Uint24_t uint24_;
 
 // The type 'uint48_t'
-Uint128_t uint48_;
+Uint48_t uint48_;
+
+Int_type int_;
 
 }
 
@@ -69,6 +71,13 @@ Type* get_uint24_type()
 Type* get_uint48_type()
 {
   return &uint48_;
+}
+
+
+// Fundametal Types
+Type* get_int_type()
+{
+  return &int_;
 }
 
 

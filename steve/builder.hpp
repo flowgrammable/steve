@@ -16,6 +16,19 @@
 namespace steve
 {
 
+inline Stmt*
+statement(Decl const* d)
+{
+  return make_decl_stmt(d);
+}
+
+
+inline Stmt*
+statement(Expr const* e)
+{
+  return make_expr_stmt(e);
+}
+
 
 // Boolean constants
 

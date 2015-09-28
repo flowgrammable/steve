@@ -21,5 +21,6 @@
 #include "translate-stmt.hpp"
 #include "translate-expr.hpp"
 #include "translate-decl.hpp"
+#include "translate-type.hpp"
 
 #endif

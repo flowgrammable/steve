@@ -7,18 +7,18 @@
 #include <iostream>
 
 
-inline Stmt*
-statement(Decl const* d)
-{
-  return make_decl_stmt(d);
-}
+// inline Stmt*
+// statement(Decl const* d)
+// {
+//   return make_decl_stmt(d);
+// }
 
 
-inline Stmt*
-statement(Expr const* e)
-{
-  return make_expr_stmt(e);
-}
+// inline Stmt*
+// statement(Expr const* e)
+// {
+//   return make_expr_stmt(e);
+// }
 
 
 Record_decl*
@@ -62,7 +62,6 @@ make_ipv4_nested_header()
 }
 
 
-// For testing nested field exprs
 Record_decl*
 make_ipv4_header()
 {

@@ -178,6 +178,10 @@ struct Pointer_expr : Expr, Kind_of<pointer_expr> {
 struct Id_expr : Expr, Kind_of<id_expr> {
   Id_expr(Type* t, Value_cat c, Name* n, Decl* d)
     : Expr(id_expr, t, c), first(n), second(d) { }
+
+  Name* name() const { return first; }
+  Decl* decl() const { return second; }
+
   Name* first;
   Decl* second;
 };
@@ -225,14 +229,17 @@ struct Lambda_expr : Expr, Kind_of<lambda_expr> {
 //
 // See 5.2.2p10 for the value category of this expression.
 struct Call_expr : Expr, Kind_of<call_expr> {
-  Call_expr(Type* t, Value_cat c, Expr* f, Expr_seq* a)
-    : Expr(Kind, t, c), first(f), second(a) { }
+  Call_expr(Type* t, Value_cat c, Expr* f, Expr_seq a, Name* n)
+    : Expr(Kind, t, c), first(f), second(a), third(n) 
+  { }
 
   Expr* fn() const { return first; }
-  Expr_seq* args() const { return second; }
+  Expr_seq args() const { return second; }
+  Name* fn_name() const { return third; }
 
   Expr* first;
-  Expr_seq* second;
+  Expr_seq second;
+  Name* third;
 };
 
 // An explicit conversion of the form 'T(e1, ..., en)'.

@@ -60,22 +60,30 @@ struct Variable_decl : Decl, Kind_of<variable_decl> {
 
 // A function declaration.
 struct Function_decl : Decl, Kind_of<function_decl> {
-  Function_decl(Decl_spec d, Name* n, Seq<Decl>* p, Type* t, Expr* b)
-    : Decl(function_decl, d, t), name(n), parms(p), result(t), body(b)
+  Function_decl(Decl_spec d, Name* n, Decl_seq p, Type* t, Expr* b)
+    : Decl(function_decl, d, t), name_(n), parms_(p), result(t), body_(b)
   { }
 
-  Name* name;
-  Seq<Decl>* parms;
+  Name* name() const { return name_; }
+  Decl_seq parms() const { return parms_; }
+  Type* ret_type() const { return result; }
+  Expr* body() const { return body_; }
+
+  Name* name_;
+  Decl_seq parms_;
   Type* result;
-  Expr* body;
+  Expr* body_;
 };
 
 // A type declaration introduces a new type.
 struct Type_decl : Decl, Kind_of<type_decl> {
   Type_decl(Type* t)
-    : Decl(type_decl), type(t)
+    : Decl(type_decl), type_(t)
   { }
-  Type* type;
+
+  Type* type() const { return type_; }
+
+  Type* type_;
 };
 
 // // A namespace declaration.
@@ -180,7 +188,7 @@ struct Enumerator_decl : Decl, Kind_of<enumerator_decl> {
 // with parameters. Or maybe provide that as a wrapper 
 // facility.
 struct Parameter_decl : Decl, Kind_of<parameter_decl> {
-  Parameter_decl(Decl_spec d, Type* t, Name* n)
+  Parameter_decl(Decl_spec d, Name* n, Type* t)
     : Decl(parameter_decl, d, t), n(n)
   { }
 

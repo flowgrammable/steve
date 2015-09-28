@@ -7,9 +7,19 @@ namespace steve
 struct Expr_translator
 {
   cxx::Expr*
-  operator()(Id_expr const*)
+  operator()(Id_expr const* e)
   { 
-    return nullptr;
+    cxx::Basic_id* name = new cxx::Basic_id(*e->name());
+    
+    cxx::Type* type = translate(e->type());
+
+    // FIXME: We really don't need to translate the underlying decl
+    // for translation do we?
+    //
+    // cxx::Expr* d = translate(e->decl());
+    // assert(cxx::is<cxx::Decl>(d));
+    // assert(type);
+    return new cxx::Id_expr(type, cxx::lvalue_cat, name, nullptr);
   }
 
 
@@ -41,9 +51,22 @@ struct Expr_translator
   }
 
 
+  // Returns the expression with the appropriate value
   cxx::Expr*
-  operator()(Value_expr const*)
+  operator()(Value_expr const* e)
   { 
+    cxx::Type* type = translate(e->type());
+
+    if (e->type() == get_bool_type()) {
+      bool b = e->value().get_boolean();
+      return new cxx::Bool_expr(type, b);
+    }
+
+    if (e->value().is_integer()) {
+      Integer_value const& val = e->value().get_integer();
+      return new cxx::Int_expr(type, val.gets());
+    }
+
     return nullptr;
   }
 
@@ -61,11 +84,36 @@ struct Expr_translator
     return nullptr;
   }
 
-
+  // Call expr
+  // look at the name of the call expr
   cxx::Expr*
-  operator()(Call_expr const*)
+  operator()(Call_expr const* e)
   { 
-    return nullptr;
+    cxx::Type* type = translate(e->type());
+    assert(type);
+
+    // steve id expr
+    assert(is<Id_expr>(e->fn())); 
+    steve::Id_expr const* id = as<steve::Id_expr>(e->fn());
+
+    // make the c++ name
+    cxx::Basic_id* name = new cxx::Basic_id(*id->name());
+    assert(name);
+
+    // translate the args
+    cxx::Expr_seq args;
+    for (auto a : e->args()) {
+      args.push_back(translate(a));
+    }
+
+    // Calls are rvalue
+    // TODO: Right not we do not create the Id_expr which
+    // points to the translated function declaration
+    // For the sake of translating, all we care about is 
+    // the name of the function and the arguments.
+    // We rely on steve to get the semantics correct before translating
+    // into c++
+    return new cxx::Call_expr(type, cxx::rvalue_cat, nullptr, args, name);
   }
 
 

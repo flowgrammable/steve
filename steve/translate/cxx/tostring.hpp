@@ -13,11 +13,11 @@ namespace cxx
 {
 
 // All things in C++ are expressions except for types
-std::string tostring(Expr const*);
+std::string const tostring(Expr const*);
 // For turning types into strings
-std::string tostring(Type const*);
+std::string const tostring(Type const*);
 // For names
-std::string tostring(Name const*);
+std::string const tostring(Name const*);
 
 }
 

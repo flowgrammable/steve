@@ -64,12 +64,12 @@ struct Expr_stmt : Stmt, Kind_of<expr_stmt> {
 // TODO: the type and value category of a block should be derived
 // from its return statements or its last statement.
 struct Block_stmt : Stmt, Kind_of<block_stmt> {
-  Block_stmt(Type* t, Stmt_seq* s)
+  Block_stmt(Type* t, Stmt_seq s)
     : Stmt(Kind, t, unknown_cat), first(s) { }
 
-  Stmt_seq* stmts() const { return first; }
+  Stmt_seq stmts() const { return first; }
 
-  Stmt_seq* first;
+  Stmt_seq first;
 };
 
 // An if-then statement has the for 'if (e) s' where e is a boolean

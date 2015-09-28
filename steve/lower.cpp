@@ -417,11 +417,12 @@ lower(Stmt const* s, Stmt_seq& stmts)
     stmts.push_back(s);
 
   // scan the stmts and push any declarations onto scope
-  for (auto s : stmts) {
-    if (Decl_stmt const* d = as<Decl_stmt>(s)) {
-      rewrite_declare(d->decl()->name(), d->decl());
-    }
-  }
+  // FIXME: this is actually unnecessary for now i think
+  // for (auto s : stmts) {
+  //   if (Decl_stmt const* d = as<Decl_stmt>(s)) {
+  //     rewrite_declare(d->decl()->name(), d->decl());
+  //   }
+  // }
 
   return stmts;
 }

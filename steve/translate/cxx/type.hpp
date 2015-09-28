@@ -385,6 +385,12 @@ Type* get_uint128_type();
 Type* get_uint24_type();
 Type* get_uint48_type();
 
+// Fundamental types
+Type* get_int_type();
+Type* get_void_type();
+Type* get_bool_type();
+Type* get_char_type();
+
 
 // // The type of a type template parameter.
 // struct Typename_type : Type {
