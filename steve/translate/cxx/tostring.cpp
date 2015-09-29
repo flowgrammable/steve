@@ -4,10 +4,10 @@
 
 #include <iostream>
 #include <cassert>
+#include <string>
 
 namespace cxx
 {
-
 
 // -------------------------------------------------- //
 //            Utilities
@@ -48,7 +48,31 @@ tostring_paren_seq(T seq)
 namespace
 {
 
-const std::string indent = "  ";
+struct Indentor 
+{
+  Indentor()
+    : indent_lvl(0), base_indent(2)
+  { }
+
+  void indent_level() {
+    indent_lvl++;
+  } 
+
+  void undent_level() {
+    assert(indent_lvl > 0);
+    indent_lvl--;
+  }
+
+  std::string const indent()
+  {
+    return std::string(indent_lvl * base_indent, ' ');
+  }
+
+  int indent_lvl;
+  int base_indent;
+};
+
+Indentor indentor;
 
 // unsigned integers
 const std::string uint8 = "uint8_t";
@@ -65,7 +89,7 @@ const std::string void_ = "void";
 const std::string bool_ = "bool";
 const std::string char_ = "char";
 
-}
+} // namespace
 
 // -------------------------------------------------- //
 //            Declarations
@@ -154,7 +178,7 @@ tostring(Class_type const* t)
   for (auto mem : t->members())
   {
     assert(is<Variable_decl>(mem));
-    struct_ += indent + tostring(mem);
+    struct_ += indentor.indent() + tostring(mem);
   }
 
   // close brace
@@ -257,21 +281,43 @@ tostring(Type const* t)
 
 std::string const
 tostring(Block_stmt const* s)
-{
+{  
   std::string block;
   // opening brace
-  block += "\n{\n";
+  block += '\n' + indentor.indent() + "{\n";
+
+  indentor.indent_level();
 
   // body
   for (auto stmt : s->stmts())
   {
     assert(stmt);
-    block += indent + tostring(stmt);
+    block += indentor.indent() + tostring(stmt) + '\n';
   }
 
+  indentor.undent_level();
+
   // closing brace
-  block += "\n}\n";
+  block += indentor.indent() + "}";
   return block;
+}
+
+
+std::string const
+tostring(Switch_stmt const* s)
+{
+  std::string sw = "switch (";
+  sw += tostring(s->arg()) + ")";
+  sw += tostring(s->body());
+
+  return sw;
+}
+
+
+std::string const
+tostring(Case_stmt const* s)
+{
+  return "case " + tostring(s->label()) + ": " + tostring(s->stmt());
 }
 
 
@@ -287,7 +333,13 @@ tostring(Stmt const* s)
 {
   switch (s->kind) {
     case block_stmt: return tostring(as<Block_stmt>(s));
+    case switch_stmt: return tostring(as<Switch_stmt>(s));
+    case case_stmt: return tostring(as<Case_stmt>(s));
     case expr_stmt: return tostring(as<Expr_stmt>(s));
+
+    // keyword stmts
+    case break_stmt: return "break;";
+    case empty_stmt: return ";";
     default:
       return "<error stmt>";
   }

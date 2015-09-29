@@ -31,6 +31,7 @@ constexpr Node_kind goto_stmt      = make_stmt_node(6012); // goto l
 constexpr Node_kind return_stmt    = make_stmt_node(6013); // return e;
 constexpr Node_kind break_stmt     = make_stmt_node(6014); // break
 constexpr Node_kind continue_stmt  = make_stmt_node(6015); // continue
+constexpr Node_kind empty_stmt     = make_stmt_node(6016); // ;
 
 // -------------------------------------------------------------------------- //
 // Statements
@@ -100,6 +101,9 @@ struct If_else_stmt : Stmt, Kind_of<if_else_stmt> {
 // nearly always a block statement containing if labels (but this
 // need not be the case).
 struct Switch_stmt : Stmt, Kind_of<switch_stmt> {
+  Switch_stmt(Expr* a, Stmt* b)
+    : Stmt(Kind, nullptr, unknown_cat), first(a), second(b)
+  { }
 
   Expr* arg() const { return first; }
   Stmt* body() const { return second; }
@@ -111,6 +115,10 @@ struct Switch_stmt : Stmt, Kind_of<switch_stmt> {
 // A labeled statement within a switch. Note that the label
 // can be a default expression.
 struct Case_stmt : Stmt, Kind_of<case_stmt> {
+  Case_stmt(Expr* l, Stmt* s)
+    : Stmt(Kind, nullptr, unknown_cat), first(l), second(s)
+  { }
+
   Expr* label() const { return first; }
   Stmt* stmt() const { return second; }
 
@@ -181,6 +189,13 @@ struct Break_stmt : Stmt, Kind_of<break_stmt> {
 struct Continue_stmt : Stmt, Kind_of<continue_stmt> {
   Continue_stmt()
     : Stmt(Kind, nullptr, unknown_cat) { }
+};
+
+
+struct Empty_stmt : Stmt, Kind_of<empty_stmt> {
+  Empty_stmt()
+    : Stmt(Kind, nullptr, unknown_cat)
+  { }
 };
 
 } // namespace cxx
