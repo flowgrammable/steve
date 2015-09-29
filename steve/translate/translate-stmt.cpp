@@ -1,5 +1,7 @@
 #include "translate-stmt.hpp"
 
+#include <cassert>
+
 namespace steve
 {
 
@@ -14,7 +16,10 @@ struct Stmt_translator
   // expr stmt
   cxx::Expr* operator()(Expr_stmt const* s) 
   {
-    return nullptr;
+    cxx::Expr* expr = translate(s->expr());
+    assert(expr);
+
+    return new cxx::Expr_stmt(expr);
   }
 
   // empty stmt
@@ -44,8 +49,12 @@ struct Stmt_translator
   }
 
   // match stmt
+  // translates into a c++ switch stmt
+  // FIXME: making the assumption that the value
+  // being matched on is always an integer value
   cxx::Expr* operator()(Match_stmt const* s) 
   {
+    assert(is<Integer_type>(s->cond()));
     return nullptr;
   }
 

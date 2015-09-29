@@ -482,6 +482,9 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
   Type const* t = e->type();
   bool ok = true;
 
+  if (!is<Integer_type>(t))
+    error("Non-integer condition '{}' found in match stmt.", e);
+
   std::set<Stmt const*, Case_less> cases;
 
   for (Stmt const* s : sq) {
@@ -489,7 +492,12 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
     Case_stmt const* c = cast<Case_stmt>(s);
 
     Expr const* lab = c->label();
-    if (lab->type() != t) {
+    lingo_assert(is<Value_expr>(lab));
+    
+    if (!is<Value_expr>(lab))
+      error(Location::none, "'{}' is a non-value expression found in match case.", lab);
+
+    if (!is<Integer_type>(lab->type())) {
       error(Location::none, "'{}' (of type '{}') does not have the "
                             "same type as the condition '{}'", 
                             lab, lab->type(), e, t);

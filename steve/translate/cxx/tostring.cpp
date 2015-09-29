@@ -266,7 +266,7 @@ tostring(Block_stmt const* s)
   for (auto stmt : s->stmts())
   {
     assert(stmt);
-    block += tostring(stmt);
+    block += indent + tostring(stmt);
   }
 
   // closing brace
@@ -276,10 +276,18 @@ tostring(Block_stmt const* s)
 
 
 std::string const
+tostring(Expr_stmt const* s)
+{
+  return tostring(s->expr()) + ";";
+}
+
+
+std::string const
 tostring(Stmt const* s)
 {
   switch (s->kind) {
     case block_stmt: return tostring(as<Block_stmt>(s));
+    case expr_stmt: return tostring(as<Expr_stmt>(s));
     default:
       return "<error stmt>";
   }
