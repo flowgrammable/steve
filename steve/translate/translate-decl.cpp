@@ -139,8 +139,7 @@ struct Decl_translator
     cxx::Decl_seq struct_mems; 
 
     for (auto member : d->members()) {
-      Decl_translator decl_fn;  
-      cxx::Expr* mem = apply(member, decl_fn);
+      cxx::Expr* mem = translate(member);
       assert(cxx::is<cxx::Decl>(mem));
 
       struct_mems.push_back(cxx::as<cxx::Decl>(mem));

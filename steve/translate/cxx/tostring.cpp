@@ -94,11 +94,53 @@ const std::string char_ = "char";
 // -------------------------------------------------- //
 //            Declarations
 
+// Class type declaration
+std::string const
+tostring_typedecl(Class_type const* t)
+{
+  // class type
+  std::string struct_ = "struct ";
+
+  assert(is<cxx::Basic_id>(t->name()));
+  cxx::Basic_id* id = as<cxx::Basic_id>(t->name());
+
+  // class name
+  struct_ += tostring(id); 
+
+  // braces
+  struct_ += "\n{\n";
+
+  indentor.indent_level();
+
+  // members all public
+  for (auto mem : t->members())
+  {
+    assert(is<Variable_decl>(mem));
+    struct_ += indentor.indent() + tostring(mem);
+  }
+
+  indentor.undent_level();
+
+  // close brace
+  struct_ += "};\n";
+  return struct_;
+}
+
+
 // Type declarations
+// Supported type declarations are
+// class | struct | union | enum
 std::string const
 tostring(Type_decl const* d)
 {
-  return tostring(d->type());
+
+  switch (d->type()->kind) {
+    case class_type: return tostring_typedecl(as<Class_type>(d->type()));
+    case union_type:
+    case enum_type:
+    default:
+      return "<error typedecl>";
+  }
 }
 
 
@@ -162,28 +204,7 @@ tostring(Decl const* d)
 std::string const
 tostring(Class_type const* t)
 {
-  // class type
-  std::string struct_ = "struct ";
-
-  assert(is<cxx::Basic_id>(t->name()));
-  cxx::Basic_id* id = as<cxx::Basic_id>(t->name());
-
-  // class name
-  struct_ += tostring(id); 
-
-  // braces
-  struct_ += "\n{\n";
-
-  // members all public
-  for (auto mem : t->members())
-  {
-    assert(is<Variable_decl>(mem));
-    struct_ += indentor.indent() + tostring(mem);
-  }
-
-  // close brace
-  struct_ += "};\n";
-  return struct_;
+  return tostring(t->name());
 }
 
 
@@ -298,7 +319,7 @@ tostring(Block_stmt const* s)
   indentor.undent_level();
 
   // closing brace
-  block += indentor.indent() + "}";
+  block += indentor.indent() + "}\n";
   return block;
 }
 

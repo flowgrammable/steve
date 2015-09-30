@@ -196,12 +196,12 @@ context()
   String const* n = get_identifier(__context_type);
 
   // FIXME: should we be using buffer types here?
-  Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(0));
-  Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+  // Buffer_type const* pkt_buf = get_buffer_type(get_int_type(), make_int_expr(0));
+  // Buffer_type const* meta_buf = get_buffer_type(get_int_type(), make_int_expr(0));
 
   Decl_seq mem {
-    make_member_decl(get_identifier("packet"), pkt_buf),
-    make_member_decl(get_identifier("metadata"), meta_buf)
+    // make_member_decl(get_identifier("packet"), pkt_buf),
+    // make_member_decl(get_identifier("metadata"), meta_buf)
   };
 
   Record_decl const* r = make_record_decl(n, mem); 
