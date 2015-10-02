@@ -256,6 +256,13 @@ struct Construct_expr : Expr, Kind_of<construct_expr> {
 
 // A member access expression of the form 'e1.e2'.
 struct Dot_expr : Expr, Kind_of<dot_expr> {
+  Dot_expr(Type* t, Value_cat c, Expr* e1, Expr* e2)
+    : Expr(Kind, t, c), first(e1), second(e2)
+  { }
+
+  Expr* object() const { return first; }
+  Expr* member() const { return second; }
+
   Expr* first;
   Expr* second;
 };

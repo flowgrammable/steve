@@ -19,7 +19,7 @@ String const __decode       = "__decode";
 String const __header_cast  = "__header_cast";
 String const __lookup_hdr   = "__lookup_hdr";
 String const __lookup_fld   = "__lookup_fld";
-String const __context_type = "context";
+String const __context_type = "Context";
 
 std::unordered_multimap<String, Function_decl const*> builtin_functions();
 

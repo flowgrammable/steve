@@ -12,6 +12,58 @@ namespace cxx
 // -------------------------------------------------- //
 //            Utilities
 
+
+std::string const
+tostring(Binary_kind op)
+{
+  switch(op) {
+    // Object operators
+    case arrow_op: return "->";         // e1->e2
+    case arrow_star_op: return "->*";   // e1->*e2
+    // FIXME: subscript not right
+    case subscript_op: return "[]";    // e1[e2]
+    // Arithmetic operators
+    case mul_op: return "*";          // e1 * e2
+    case div_op: return "/";          // e1 / e2
+    case mod_op: return "*";          // e1 % e2
+    case add_op: return "+";          // e1 + e2
+    case sub_op: return "-";          // e1 - e2
+    // Bitwise expressions
+    case lsh_op: return "<<";          // e1 << e2
+    case rsh_op: return ">>";          // e1 >> e2
+    case band_op: return "&";         // e1 & e2
+    case bxor_op: return "^";         // e1 ^ e2
+    case bor_op: return "|";          // e1 | e2
+    // Relational expressions
+    case lt_op: return "<";           // e1 < e2
+    case gt_op: return ">";           // e1 > e2
+    case le_op: return "<=";           // e1 <= e2
+    case ge_op: return ">=";           // e1 >= e2
+    case eq_op: return "==";           // e1 == e2
+    case ne_op: return "!=";           // e1 != e2
+    // Locigal operators
+    case and_op: return "&&";          // e1 && e2
+    case or_op: return "||";           // e1 || e2
+    // Assignment operators
+    case assign_op: return "=";       // e1 = e2
+    case mul_assign_op: return "*=";   // e1 *= e2
+    case div_assign_op: return "/=";   // e1 /= e2
+    case mod_assign_op: return "%=";   // e1 %= e2
+    case add_assign_op: return "+=";   // e1 += e2
+    case sub_assign_op: return "-=";   // e1 -= e2
+    case lsh_assign_op: return "<<=";   // e1 <<= e2
+    case rsh_assign_op: return ">>=";   // e1 >>= e2
+    case band_assign_op: return "&=";  // e1 &= e2
+    case bxor_assign_op: return "^=";  // e1 ^= e2
+    case bor_assign_op: return "|=";   // e1 |= e2
+    // Comma operators
+    case comma_op: return ",";      // e1, ..., en
+  }
+
+  return "<bad operator>";
+}
+
+
 std::string const
 tostring(Basic_id const* n)
 {
@@ -34,6 +86,9 @@ template<typename T>
 std::string const
 tostring_paren_seq(T seq)
 {
+  if (seq.size() == 0)
+    return "()";
+
   std::string str = "(";
   // all but last element
   for (auto mem = seq.begin(); mem < seq.end() - 1; ++mem) {
@@ -201,12 +256,6 @@ tostring(Decl const* d)
 // -------------------------------------------------- //
 //            Types
 
-std::string const
-tostring(Class_type const* t)
-{
-  return tostring(t->name());
-}
-
 
 inline std::string const
 tostring(Uint8_t const* t)
@@ -274,11 +323,30 @@ tostring(Bool_type const* t)
 }
 
 
+// Class type
+// 
+// T n
+std::string const
+tostring(Class_type const* t)
+{
+  return tostring(t->name());
+}
+
+
+// Lvalue Reference type
+// 
+// T& n
+std::string const
+tostring(Lvalue_reference_type const* t)
+{
+  return tostring(t->referent()) + "&";
+}
+
+
 std::string const
 tostring(Type const* t)
 {
   switch (t->kind) {
-    case class_type: return tostring(as<Class_type>(t));
     case uint8_type: return tostring(as<Uint8_t>(t));            
     case uint16_type: return tostring(as<Uint16_t>(t));           
     case uint32_type: return tostring(as<Uint32_t>(t));           
@@ -290,6 +358,8 @@ tostring(Type const* t)
     case void_type: return tostring(as<Void_type>(t));
     case int_type: return tostring(as<Int_type>(t));
     case bool_type: return tostring(as<Bool_type>(t));
+    case class_type: return tostring(as<Class_type>(t));
+    case lvalue_reference_type: return tostring(as<Lvalue_reference_type>(t));
     default:
       return "<error type>";
   }
@@ -382,10 +452,7 @@ tostring(Int_expr const* e)
 std::string const
 tostring(Bool_expr const* e)
 {
-  if (e->value())
-    return "true";
-
-  return "false";
+  return (e->value()) ? "true" : "false"; 
 }
 
 
@@ -405,10 +472,27 @@ tostring(Call_expr const* e)
 }
 
 
+// e1 (+ | - | * | ...etc) e2
+std::string const
+tostring(Binary_expr const* e)
+{
+  return tostring(e->left()) + tostring(e->op()) + tostring(e->right());
+}
+
+
+// obj.mem
+std::string const
+tostring(Dot_expr const* e)
+{
+  return tostring(e->object()) + "." + tostring(e->member());
+}
+
+
 std::string const
 tostring(Expr const* e)
 {
-  assert(e);
+  if (!e)
+    return "<null error>";
 
   if (is_type_node(e->kind))
     return tostring(as<Type>(e));
@@ -422,6 +506,8 @@ tostring(Expr const* e)
     case int_expr: return tostring(as<Int_expr>(e));
     case bool_expr: return tostring(as<Bool_expr>(e));
     case id_expr: return tostring(as<Id_expr>(e));
+    case binary_expr: return tostring(as<Binary_expr>(e));
+    case dot_expr: return tostring(as<Dot_expr>(e));
     default:
       return "<error expr>";
   }

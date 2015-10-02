@@ -57,7 +57,7 @@ struct Stmt_translator
   // decl stmt
   cxx::Expr* operator()(Decl_stmt const* s) 
   {
-    return nullptr;
+    return translate(s->decl());
   }
 
   // expr stmt
