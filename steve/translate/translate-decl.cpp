@@ -180,6 +180,13 @@ struct Decl_translator
     return nullptr;
   }
 
+
+  cxx::Expr*
+  operator()(Forward_decl const* d)
+  {
+    return nullptr;
+  }
+
   // we lower these into regular function calls
   // then translate them into c++
   // i dont think this ever gets called because

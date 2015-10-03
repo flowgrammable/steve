@@ -73,6 +73,7 @@ struct Decl_visitor
   virtual void visit(Member_decl const*) { }
   virtual void visit(Variant_decl const*) { }
   virtual void visit(Enum_decl const*) { }
+  virtual void visit(Forward_decl const*) { }
   virtual void visit(Decode_decl const*) { }
   virtual void visit(Table_decl const*) { }
   virtual void visit(Flow_decl const*) { }
@@ -219,6 +220,47 @@ struct Enum_decl : Decl
 };
 
 
+// Forward declaration placeholder
+//
+// Because forward declarations eventually get defined
+// those decl nodes get their definitions added before the
+// end of the compiling process. It is convenient to emit
+// a forward declaration node where the forward declaration
+// is made for the sake of easy conversion into C.
+//
+// This decl never gets added to scope, but rather it works as
+// a placeholder for translation. Therefore, the only thing we
+// need to remember is what kind of declaration was made and
+// what the name of that declaration is. The original decl
+// does not need to be stored here.
+//
+// Note: The type of a forward declaration node is actually meaningless
+// we only care about its kind.
+enum Fwd_kind {
+  // currently supported
+  function_fwd,
+  decode_fwd,
+  table_fwd,
+
+  // FIXME: not yet supported
+  record_fwd,
+  enum_fwd,
+  variant_fwd,  
+};
+
+
+struct Forward_decl : Decl
+{
+  Forward_decl(Location loc, String const* n, Fwd_kind k)
+    : Decl(loc, n, nullptr)
+  { }
+
+  Fwd_kind kind() const { return first; }
+
+  Fwd_kind first;
+};
+
+
 // A decode declaration  is defined for a type and gives 
 // conditions  to determine the next decoder in line.
 //
@@ -344,6 +386,7 @@ struct Generic_decl_visitor : Decl_visitor, Generic_visitor<F, T>
   void visit(Member_decl const* d) { this->invoke(d); }
   void visit(Variant_decl const* d) { this->invoke(d); }
   void visit(Enum_decl const* d) { this->invoke(d); }
+  void visit(Forward_decl const* d) { this->invoke(d); }
   void visit(Decode_decl const* d) { this->invoke(d); }
   void visit(Table_decl const* d) { this->invoke(d); }
   void visit(Flow_decl const* d) { this->invoke(d); }

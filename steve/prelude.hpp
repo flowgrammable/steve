@@ -108,6 +108,7 @@ struct Record_decl;
 struct Member_decl;
 struct Enum_decl;
 struct Variant_decl;
+struct Forward_decl;
 struct Decode_decl;
 struct Table_decl;
 struct Flow_decl;
