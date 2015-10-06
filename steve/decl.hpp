@@ -298,6 +298,7 @@ struct Table_decl : Decl
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
   Decl_seq const& body() const { return third; }
+
   bool has_impl() const { return (body().size() > 0) ? true : false; }
   void accept(Decl_visitor& v) const { v.visit(this); }
 
@@ -310,6 +311,10 @@ struct Table_decl : Decl
 
 
 // An entry within a flow table.
+//
+// FIXME: We should check during compile time that the
+// length of the subkey does not exceed the maximum key
+// size of the table.
 struct Flow_decl : Decl
 {
   Flow_decl(Location loc, String const* n, Type const* t, Expr_seq const& conds, Value const& prio, Stmt const* i)
@@ -317,7 +322,7 @@ struct Flow_decl : Decl
   { }
   
   Value const&    priority() const { return first; }
-  Expr_seq const& conditions() const { return second; }
+  Expr_seq const& keys() const { return second; }
   Stmt const*     instructions() const { return third; }
   void accept(Decl_visitor& v) const { v.visit(this); }
 

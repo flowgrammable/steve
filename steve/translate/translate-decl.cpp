@@ -8,69 +8,6 @@ namespace steve
 namespace
 {
 
-// Construct a c++ integer member variable
-// cxx::Decl* 
-// cxx_integer_var(cxx::Name* name, Value precision)
-// {
-//   // Construct an integer with the appropriate type and precision
-//   if (precision.is_integer()) {
-//     Integer_value const& byte_len = precision.get_integer();
-
-//     cxx::Type* type;
-//     // switch on the number of bytes
-//     // TODO: we don't actually handle 5, 7, 9-15 byte long fields
-//     // I don't believe these are frequent enough to matter
-//     switch (byte_len.gets()) {
-//       case 1: 
-//         type = cxx::get_uint8_type();
-//         break;
-//       case 2:
-//         type = cxx::get_uint16_type();
-//         break;
-//       case 3:
-//         type = cxx::get_uint24_type();
-//         break;
-//       case 4:
-//         type = cxx::get_uint32_type();
-//         break;
-//       case 6:
-//         type = cxx::get_uint48_type();
-//         break;
-//       case 8:
-//         type = cxx::get_uint64_type();
-//         break;
-//       case 16:
-//         type = cxx::get_uint128_type();
-//         break;
-//       default:
-//         type = nullptr;
-//         break;
-//     }
-    
-//     // if we got an integer type
-//     if (type)  {
-//       // construct a variable declaration with that type
-//       // and default initializer
-//       return new cxx::Variable_decl(cxx::simple_type_spec, name, type, nullptr);
-//     }   
-//   }
-
-//   error("no variable decl");
-//   return nullptr;
-// }
-
-
-// Takes a c++ type and guesses the declaration specifier
-// cxx::Decl_spec
-// derive_decl_spec(cxx::Type const* t)
-// {
-//   switch (t->kind) {
-//     // any integer type returns the simple_type spec
-//   }
-
-//   return cxx::simple_type_spec;
-// }
-
 
 struct Decl_translator
 {
@@ -123,6 +60,7 @@ struct Decl_translator
 
     return new cxx::Parameter_decl(cxx::simple_type_spec, name, type);
   }
+
 
   // A record decl translates into a C++
   // class with the same name.
@@ -201,17 +139,78 @@ struct Decl_translator
 
   // lowering of table declarations should handle this
   // before we translated
-  cxx::Expr* 
+  //
+  // However, for now we'll do all the work here
+  cxx::Expr*
   operator()(Table_decl const* d) 
   { 
-    return nullptr;
+    cxx::Basic_id* name = new cxx::Basic_id(*d->name());
+
+    cxx::Type* type = translate(d->type());
+
+    assert(type);
+
+    // we translate each flow decl into
+    // an init expr of the form
+    // {make_key(...), Flow(...)}
+    //
+    // The initializer list for tables
+    // thus ends up being an init expr list containing
+    // a sequence of init expr
+    //
+    // Hash_table t = {
+    //    init_expr,
+    //    init_expr,...
+    // }
+    cxx::Expr_seq seq;
+
+    for (auto decl : d->body()) {
+      assert(is<Flow_decl>(decl));
+      seq.push_back(translate(decl));
+    }
+
+    // Init_expr have unknown type
+    cxx::Init_expr* init = new cxx::Init_expr(nullptr, seq);
+
+    return new cxx::Variable_decl(cxx::simple_type_spec, name, type, init);
   }
 
-  // lowering of flow declarations should hande this before we translate
+
+  // lowering of flow declarations should handle this before we translate
+  //
+  // however for now we'll do all the work here
+  //
+  // A flow decl becomes a pair initializer for a map when translated into
+  // C++.
+  // The first element of the pair is the key which is synthesized by a function
+  // and the second element is the length of the key.
+  //
+  // {subkey1, subkey2, subkey3} => { flow_instructions }
+  // becomes an initializer expression of the form
+  // {make_key(subkey1, subkey2, subkey3), Flow({})}
   cxx::Expr* 
   operator()(Flow_decl const* d) 
   { 
-    return nullptr;
+    cxx::Expr_seq subkeys;
+
+    for (auto val : d->keys()) {
+      subkeys.push_back(translate(val));
+    }
+
+    // the return type is meaningless here
+    // we're never going to get a type other than Key
+    // unless the program was malformed
+    static cxx::Basic_id* name = new cxx::Basic_id("make_key");
+    cxx::Call_expr* make_key = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, subkeys, name);
+
+    // Flow constructor
+    // FIXME: currently only a placeholder
+
+    static cxx::Basic_id flow_type_name("Flow");
+    static cxx::Class_type flow_type(&flow_type_name, {}, {}); 
+    cxx::Construct_expr* flow_construct = new cxx::Construct_expr(&flow_type, {});
+
+    return new cxx::Init_expr(nullptr, {make_key, flow_construct});
   }
 
 

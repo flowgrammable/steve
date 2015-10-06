@@ -488,6 +488,34 @@ tostring(Dot_expr const* e)
 }
 
 
+// { e1, ..., en }
+std::string const
+tostring(Init_expr const* e)
+{
+  std::string init = "{";
+
+  Expr_seq elems = e->elems();
+
+  for (auto it = elems.begin(); it < elems.end() - 1; ++it) {
+    init += tostring(*it) + ", ";
+  }
+
+  init += tostring(*(elems.end() - 1));
+
+  init += "}";
+
+  return init;
+}
+
+
+// T(e1, ..., en)
+std::string const
+tostring(Construct_expr const* e)
+{
+  return tostring(e->result()) + tostring_paren_seq(e->args());
+}
+
+
 std::string const
 tostring(Expr const* e)
 {
@@ -508,6 +536,8 @@ tostring(Expr const* e)
     case id_expr: return tostring(as<Id_expr>(e));
     case binary_expr: return tostring(as<Binary_expr>(e));
     case dot_expr: return tostring(as<Dot_expr>(e));
+    case init_expr: return tostring(as<Init_expr>(e));
+    case construct_expr: return tostring(as<Construct_expr>(e));
     default:
       return "<error expr>";
   }

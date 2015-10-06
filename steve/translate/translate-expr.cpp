@@ -148,7 +148,7 @@ struct Expr_translator
     }
 
     // Calls are rvalue
-    // TODO: Right not we do not create the Id_expr which
+    // TODO: Right now we do not create the Id_expr which
     // points to the translated function declaration
     // For the sake of translating, all we care about is 
     // the name of the function and the arguments.

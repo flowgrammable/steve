@@ -205,12 +205,12 @@ struct Default_expr : Expr, Kind_of<this_expr> {
 // A braced initializer list has the form '{e1, ..., en}'.
 // Note that this expression shall have unknown type.
 struct Init_expr : Expr, Kind_of<init_expr> {
-  Init_expr(Type* t, Expr_seq* e)
+  Init_expr(Type* t, Expr_seq e)
     : Expr(init_expr, t, unknown_cat), first(e) { }
 
-  Expr_seq* elems() const { return first; }
+  Expr_seq elems() const { return first; }
 
-  Expr_seq* first;
+  Expr_seq first;
 };
 
 // A lambda expression.
@@ -244,14 +244,14 @@ struct Call_expr : Expr, Kind_of<call_expr> {
 
 // An explicit conversion of the form 'T(e1, ..., en)'.
 struct Construct_expr : Expr, Kind_of<construct_expr> {
-  Construct_expr(Type* t, Expr_seq* a)
+  Construct_expr(Type* t, Expr_seq a)
     : Expr(Kind, t, prvalue_cat), first(t), second(a) { }
 
   Type* result() const { return first; }
-  Expr_seq* args() const { return second; }
+  Expr_seq args() const { return second; }
 
   Type* first;
-  Expr_seq* second;
+  Expr_seq second;
 };
 
 // A member access expression of the form 'e1.e2'.

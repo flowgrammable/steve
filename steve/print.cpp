@@ -811,7 +811,7 @@ print(Printer& p, Flow_decl const* d)
 {
   print(p, d->priority());
   print(p, ". {");
-  print_flow_key(p, d->conditions());
+  print_flow_key(p, d->keys());
   print(p, "} -> ");
   print(p, d->instructions());
 }
