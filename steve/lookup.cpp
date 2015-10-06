@@ -220,15 +220,12 @@ Decl const*
 define(Decl const* d1, Decl const* d2)
 {
   fwd_.pop(d1->name());
+  if (is<Variable_decl>(d1)) return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
+  if (is<Function_decl>(d1)) return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
+  if (is<Decode_decl>(d1))   return define_decode(cast<Decode_decl>(d1), cast<Decode_decl>(d2));
+  if (is<Table_decl>(d1))    return define_table(cast<Table_decl>(d1), cast<Table_decl>(d2));
 
-  switch (d1->kind()) {
-    case variable_decl: return define_variable(cast<Variable_decl>(d1), cast<Variable_decl>(d2));
-    case function_decl: return define_function(cast<Function_decl>(d1), cast<Function_decl>(d2));
-    case decode_decl:   return define_decode(cast<Decode_decl>(d1), cast<Decode_decl>(d2));
-    case table_decl:    return define_table(cast<Table_decl>(d1), cast<Table_decl>(d2));
-    default: 
-      return nullptr;
-  }
+  return nullptr;
 }
 
 
@@ -321,6 +318,29 @@ declare(Decl_seq const& ds)
     if (!declare(d))
       return false;
   return true;
+}
+
+
+// Finds the string, removes the declaration from the table and
+// environment. Replaces it with a new declaration.
+Overload const*
+rewrite_declare(String const* n, Decl const* d)
+{ 
+  Scope* s = &current_scope();
+
+  // if d is rewritable
+  // and if d has a binding and is in the current scope
+  Scope::Binding* b = env_.binding(n);
+  // attempt to overwrite the binding
+  if (b && b->scope == s) {
+    if (is_rewriteable(b->ovl->front())) {
+      b->ovl->clear();
+      b->ovl->push_back(d);
+    }
+  }
+  
+  
+  return nullptr;
 }
 
 

@@ -11,6 +11,8 @@ Decl* synthesize_length(Type const*);
 
 Expr* get_length(Expr const*);
 
+Expr const* get_length(Type const*);
+
 } // namespace steve
 
 

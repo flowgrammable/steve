@@ -30,6 +30,7 @@ struct Lexer
   Token on_digraph(Location, char const*);
 
   Token on_identifier(Location, char const*, char const*);
+  Token on_integer(Location loc, char const*, char const*, int);
   Token on_binary_integer(Location, char const*, char const*);
   Token on_octal_integer(Location, char const*, char const*);
   Token on_decimal_integer(Location, char const*, char const*);

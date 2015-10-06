@@ -76,15 +76,12 @@ bool
 can_overload(Decl const* d1, Decl const* d2)
 {
   // If the types are the same, these declare the same function.
-  //
-  // TOOD: Allow forward declarations. This is only a redefinition
-  // if there is no previous definition.
-  if (d2->type() == d2->type()) {
+  if (d1->type() == d2->type()) {
     // if d1 has an implementation then it is a redefinition
     if (d1->has_impl()) {
-      error(d2->location(), "redefinition of '{}'", d2->name());
+      error(d2->location(), "redefinition of '{}'", d2);
       note(d1->location(), "    previous definition here");
-      error(d1->location(), "'{}'", d1);
+      note(d1->location(), "    '{}'", d1);
     }
     // otherwise we want to treat d1 as a forward declaration
     // and define it using d2

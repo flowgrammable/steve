@@ -24,31 +24,18 @@ namespace
 //
 // Table count is necessary to contrain gotos
 // Flow count is used to assign internal names to otherwise nameless flows
-static int table_cnt = 0;
-static int flow_cnt = 0;
+static int table_cnt = -1;
+static int flow_cnt = -1;
 
 } // namespace
 
-// Returns a textual representation of the node's name.
-char const*
-get_decl_name(Decl_kind k)
+
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Decl::node_name() const
 {
-  switch (k) {
-    case variable_decl: return "variable_decl";
-    case constant_decl: return "constant_decl";
-    case function_decl: return "function_decl";
-    case parameter_decl: return "parameter_decl";
-    case record_decl: return "record_decl";
-    case member_decl: return "member_decl";
-    case variant_decl: return "variant_decl";
-    case enum_decl: return "enum_decl";
-    case decode_decl: return "decode_decl";
-    case table_decl: return "table_decl";
-    case flow_decl: return "flow_decl";
-    case extracts_decl: return "extracts_decl";
-    case rebind_decl: return "rebind_decl";
-  }
-  lingo_unreachable("unhandled node kind ({})", (int)k);
+  return type_str(*this);
 }
 
 
@@ -57,7 +44,7 @@ get_decl_name(Decl_kind k)
 
 
 Function_decl::Function_decl(Location loc, String const* n, Type const* t, Decl_seq const& a, Stmt const* b)
-  : Decl(node_kind, loc, n, t), first(a), second(b)
+  : Decl(loc, n, t), first(a), second(b)
 { 
   lingo_assert(lingo::is<Function_type>(t)); // FIXME: Why is this qualified?
 }
@@ -79,29 +66,6 @@ Function_decl::ret_type() const
 
 // -------------------------------------------------------------------------- //
 //                             Declaration builders
-
-// Create an identifier and return it. This updates the symbol
-// table.
-String const*
-get_identifier(String const& str)
-{
-  Symbol& sym = lingo::get_symbol(str);
-  if (sym.desc.kind == identifier_sym) {
-    // Sanity check... make sure that we've got the right
-    // token kind.
-    lingo_assert(sym.desc.token == identifier_tok);
-    return &sym.str;
-  }
-
-  // Make sure we aren't trying to say that '(' is an identifier.
-  if (sym.desc.kind != unspecified_sym)
-    lingo_unreachable("symbol '{}' is bound to another kind of symbol", sym.str);
-
-  // Initialize symbol and its binding.
-  sym.desc.kind = identifier_sym;
-  sym.desc.token = identifier_tok;
-  return &sym.str;
-}
 
 
 // Partially construct a variable. The declaration must be
@@ -237,8 +201,10 @@ Decode_decl*
 make_decode_decl(Location loc, String const* n, Type const* h, Stmt const* s)
 {
   // Defer any checks until pipeline checking stage
-  return gc().make<Decode_decl>(loc, n, get_void_type(), s, h);
+  Type const* t = get_reference_type(get_context_type());
+  return gc().make<Decode_decl>(loc, n, get_function_type({t}, get_void_type()), s, h);
 }
+
 
 // Make a table declaration.
 // Defer any type/consistency checking of the table until it has been
@@ -248,7 +214,20 @@ make_table_decl(Location loc, String const* n, Expr_seq const& e, Decl_seq const
 {
   table_cnt++;
 
-  return gc().make<Table_decl>(loc, n, get_kind_type(), table_cnt, e, d);
+  Decl_seq members;
+
+  // construct the table type
+  for (auto expr : e) {
+    lingo_assert(is<Field_expr>(expr));
+    Member_decl const* mem = field_to_member(as<Field_expr>(expr));
+    members.push_back(mem);
+  }
+  Type const* tbl_t = get_table_type(members);
+  if (!check_table_initializer(d, tbl_t))
+    return nullptr;
+
+  // TODO: check that the initializing flows are valid for this table type
+  return gc().make<Table_decl>(loc, n, tbl_t, table_cnt, e, d);
 }
 
 
@@ -260,7 +239,14 @@ make_flow_decl(Location loc, Expr_seq const& e, Value const v, Stmt const* s)
 
   String* n = new String("flow" + flow_cnt);
 
-  return gc().make<Flow_decl>(loc, n, get_kind_type(), e, v, s);
+  Type_seq types;
+  for (auto expr : e) {
+    types.push_back(expr->type());
+  }
+
+  Type const* flw_t = get_flow_type(types);
+
+  return gc().make<Flow_decl>(loc, n, flw_t, e, v, s);
 }
 
 
@@ -317,21 +303,19 @@ void
 mark(Decl const* d)
 {
   lingo_assert(is_valid_node(d));
-  switch (d->kind()) {
-    case variable_decl: return mark(cast<Variable_decl>(d));
-    case constant_decl: return mark(cast<Constant_decl>(d));
-    case function_decl: return mark(cast<Function_decl>(d));
-    case parameter_decl: return mark(cast<Parameter_decl>(d));
-    case member_decl: return mark(cast<Member_decl>(d));
-    case record_decl: return mark(cast<Record_decl>(d));
-    case variant_decl: return mark(cast<Variant_decl>(d));
-    case enum_decl: return mark(cast<Enum_decl>(d));
-    case decode_decl: return mark(cast<Decode_decl>(d));
-    case table_decl: return mark(cast<Table_decl>(d));
-    case flow_decl: return mark(cast<Flow_decl>(d));
-    case extracts_decl: return mark(cast<Extracts_decl>(d));
-    case rebind_decl: return mark(cast<Rebind_decl>(d));
-  }
+  if (is<Variable_decl>(d)) return mark(cast<Variable_decl>(d));
+  if (is<Constant_decl>(d)) return mark(cast<Constant_decl>(d));
+  if (is<Function_decl>(d)) return mark(cast<Function_decl>(d));
+  if (is<Parameter_decl>(d)) return mark(cast<Parameter_decl>(d));
+  if (is<Member_decl>(d)) return mark(cast<Member_decl>(d));
+  if (is<Record_decl>(d)) return mark(cast<Record_decl>(d));
+  if (is<Variant_decl>(d)) return mark(cast<Variant_decl>(d));
+  if (is<Enum_decl>(d)) return mark(cast<Enum_decl>(d));
+  if (is<Decode_decl>(d)) return mark(cast<Decode_decl>(d));
+  if (is<Table_decl>(d)) return mark(cast<Table_decl>(d));
+  if (is<Flow_decl>(d)) return mark(cast<Flow_decl>(d));
+  if (is<Extracts_decl>(d)) return mark(cast<Extracts_decl>(d));
+  if (is<Rebind_decl>(d)) return mark(cast<Rebind_decl>(d));
   lingo_unreachable("unevaluated node '{}'", d->node_name());
 }
 

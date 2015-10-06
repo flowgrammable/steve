@@ -66,6 +66,33 @@ precedence(Binary_expr const* e)
 }
 
 
+struct Precedence_fn
+{
+  int operator()(Value_expr const* t1) const { return 0; }
+  int operator()(Id_expr const* t1) const { return 0; }
+  int operator()(Lookup_expr const* t1) const { return 0; }
+  int operator()(Constant_expr const* t1) const { return 0; }
+  int operator()(Default_expr const* t1) const { return 0; }
+  int operator()(Tuple_expr const* t1) const { return 0; }
+  int operator()(Insert_expr const* t1) const { return 0; }
+  int operator()(Delete_expr const* t1) const { return 0; }
+  int operator()(Unary_expr const* t1) const { return 1; }
+  int operator()(Lengthof_expr const* t1) const { return 1; }
+  int operator()(Offsetof_expr const* t1) const { return 1; }
+  int operator()(Headerof_expr const* t1) const { return 1; }
+  int operator()(Do_expr const* t1) const { return 1; }
+  int operator()(Call_expr const* t1) const { return 2; }
+  int operator()(Init_expr const* t1) const { return 2; }
+  int operator()(Index_expr const* t1) const { return 2; }
+  int operator()(Member_expr const* t1) const { return 2; }
+  int operator()(Field_expr const* t1) const { return 2; }
+  int operator()(Convert_expr const* t1) const { return 2; }
+  int operator()(Field_idx_expr const* t1) const { return 2; }
+  int operator()(Header_idx_expr const* t1) const { return 2; }
+  int operator()(Binary_expr const* t1) const { return precedence(t1); }
+};
+
+
 // Returns the precendence of the term e. The precedence of terms
 // is given by the following table:
 //
@@ -86,44 +113,9 @@ int
 precedence(Expr const* e)
 {
   lingo_assert(is_valid_node(e));
-  switch (e->kind()) {
-    case id_expr:
-    case lookup_expr:
-    case default_expr:
-    case value_expr:
-    case tuple_expr:
-    case insert_expr:
-    case delete_expr:
-      // Literals, names, tuples are primary expressions.
-      return 0;
-
-    case unary_expr:
-    case lengthof_expr:
-    case offsetof_expr:
-    case headerof_expr:
-    case do_expr:
-      // All unary expressions (thusfar) are prefix expressions.
-      return 1;
-
-    case call_expr:
-    case index_expr:
-    case member_expr:
-    case field_expr:
-    case init_expr:
-    case convert_expr:
-    case fld_idx_expr:
-    case hdr_idx_expr:
-      // Call, index, and member expressions are postfix expression.
-      // We include conversions here also.
-      return 2;
-
-    case binary_expr:
-      // For binary expressions, we need to elaborate.
-      return precedence(as<Binary_expr>(e));
-
-  }
-  lingo_unreachable("precedence undefined for '{}'", e->node_name());
+  return apply(e, Precedence_fn());
 }
+
 
 // A subexpression needs parens only when its prcedence is
 // greater than that of the subexpression. This function
@@ -294,14 +286,19 @@ print(Printer& p, Enum_type const* t)
 void
 print(Printer& p, Table_type const* t)
 {
-  print(p, t->decl()->name());
+  print(p, "table<");
+  for (auto d : t->key_fields()) {
+    print(p, d);
+  }
+  print(p, ">");
 }
 
 
 void
 print(Printer& p, Flow_type const* t)
 {
-  print(p, t->decl()->name());
+  for (auto type : t->key_types())
+    print(p, type);
 }
 
 
@@ -770,9 +767,13 @@ print(Printer& p, Decode_decl const* d)
 void
 print_table_conditions(Printer& p, Table_decl const* d)
 {
-  print(p, "[");
-  print_nested(p, d->conditions());
-  print(p, "]");
+  print(p, "<");
+  for (auto it = d->conditions().begin(); it < d->conditions().end() - 1; ++it) {
+    print(p, *it);
+    print(p, ", ");
+  }
+  print(p, *(d->conditions().end() - 1));
+  print(p, ">");
 }
 
 
@@ -796,11 +797,21 @@ print(Printer& p, Table_decl const* d)
 
 
 void
+print_flow_key(Printer& p, Expr_seq const& e)
+{
+  for (auto it = e.begin(); it < e.end() - 1; it++) {
+    print(p, *it);
+    print(p, ", ");
+  }
+  print(p, *(e.end() - 1));
+}
+
+void
 print(Printer& p, Flow_decl const* d)
 {
   print(p, d->priority());
   print(p, ". {");
-  print_nested(p, d->conditions());
+  print_flow_key(p, d->keys());
   print(p, "} -> ");
   print(p, d->instructions());
 }

@@ -13,22 +13,11 @@
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_stmt_name(Stmt_kind k)
+String
+Stmt::node_name() const
 {
-  switch (k) {
-  case expr_stmt: return "expr_stmt";
-  case decl_stmt: return "decl_stmt";
-  case block_stmt: return "block_stmt";
-  case return_stmt: return "return_stmt";
-  case match_stmt: return "match_stmt";
-  case case_stmt: return "case_stmt";
-  default:
-    lingo_unreachable("unhandled node kind ({})", (int)k);
-  }
+  return type_str(*this);
 }
-
 
 // -------------------------------------------------------------------------- //
 //                             Statement builders
@@ -57,7 +46,8 @@ make_decl_stmt(Decl const* d)
 Block_stmt* 
 make_block_stmt(Location start, Location end, Stmt_seq const& seq)
 {
-  return gc().make<Block_stmt>(start, end, seq);
+  // FIXME: using the GC causes an ambiguous call error
+  return new Block_stmt(start, end, seq);
 }
 
 
@@ -93,16 +83,21 @@ void
 mark(Stmt const* s)
 {
   lingo_assert(is_valid_node(s));
-  switch (s->kind()) {
-  case expr_stmt: return mark(cast<Expr_stmt>(s));
-  case decl_stmt: return mark(cast<Decl_stmt>(s));
-  case block_stmt: return mark(cast<Block_stmt>(s));
-  case match_stmt: return mark(cast<Match_stmt>(s));
-  case case_stmt: return mark(cast<Case_stmt>(s));
-  case instruct_stmt: return mark(cast<Instruct_stmt>(s));
-  default:
-    lingo_unreachable("unevaluated node '{}'", s->node_name());
-  }
+  if (is<Expr_stmt>(s))
+    return mark(cast<Expr_stmt>(s));
+  if (is<Decl_stmt>(s))
+    return mark(cast<Decl_stmt>(s));
+  // somehow ambiguous
+  // if (is<Block_stmt>(s))
+  //   return mark(cast<Block_stmt>(s));
+  if (is<Match_stmt>(s))
+    return mark(cast<Match_stmt>(s));
+  if (is<Case_stmt>(s))
+    return mark(cast<Case_stmt>(s));
+  if (is<Instruct_stmt>(s))
+    return mark(cast<Instruct_stmt>(s));
+
+  lingo_unreachable("unevaluated node '{}'", s->node_name());
 }
 
 

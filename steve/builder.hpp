@@ -16,6 +16,19 @@
 namespace steve
 {
 
+inline Stmt*
+statement(Decl const* d)
+{
+  return make_decl_stmt(d);
+}
+
+
+inline Stmt*
+statement(Expr const* e)
+{
+  return make_expr_stmt(e);
+}
+
 
 // Boolean constants
 
@@ -318,6 +331,14 @@ inline Function_decl*
 make_fn(char const* n, Decl_seq const& p)
 {
   return make_function_decl(get_identifier(n), p, get_void_type(), block({}));
+}
+
+
+// Defines a void function with no statement block (forward-decl)
+inline Function_decl*
+make_forward_fn(char const* n, Decl_seq const& p)
+{
+  return make_function_decl(get_identifier(n), p, get_void_type(), nullptr);
 }
 
 

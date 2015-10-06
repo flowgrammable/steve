@@ -1,5 +1,7 @@
 #include "net.hpp"
 
+#include <iostream>
+
 namespace steve 
 {
 
@@ -94,6 +96,10 @@ struct Extracted_less
 
 Unique_factory<Stage, Stage_less> stages_;
 Unique_factory<Extracted, Extracted_less> extracted_;
+
+// Let's us print the stack leading up to errors
+// in requirement detection
+std::vector<Stage*> stack_;
 
 
 } // namespace
@@ -195,16 +201,11 @@ find_productions(Stmt const* s, Expr_seq& product)
 {
   if (is<Decl_stmt>(s)) {
     Decl_stmt const* ds = as<Decl_stmt>(s);
-    switch (ds->decl()->kind()) {
-      case extracts_decl:
-        register_extract(as<Extracts_decl>(ds->decl()), product);
-        break;
-      case rebind_decl:
-        register_rebind(as<Rebind_decl>(ds->decl()), product);
-        break;
-      default:
-        break;
-    }
+    
+    if (is<Extracts_decl>(ds->decl()))
+      register_extract(as<Extracts_decl>(ds->decl()), product);
+    if (is<Rebind_decl>(ds->decl()))
+      register_rebind(as<Rebind_decl>(ds->decl()), product);
   }
 }
 
@@ -278,13 +279,8 @@ find_branch(Decl_stmt const* s, Decl_set& branches)
   // for now we will only handle flow declarations
   // used in constant initialization of flow tables
   // as being possible branches
-  switch (s->decl()->kind()) {
-    case flow_decl: 
-      find_branch(cast<Flow_decl>(s->decl()), branches);
-      break;
-    default:
-      break;
-  }
+  if (is<Flow_decl>(s->decl())) 
+    find_branch(cast<Flow_decl>(s->decl()), branches);
 }
 
 
@@ -294,26 +290,16 @@ find_branch(Decl_stmt const* s, Decl_set& branches)
 void
 find_branch(Stmt const* s, Decl_set& branches)
 {
-  switch (s->kind()) {
-    case block_stmt: 
-      find_branch(cast<Block_stmt>(s), branches);
-      break;
-    case expr_stmt:  
-      find_branch(cast<Expr_stmt>(s), branches);
-      break;
-    case match_stmt: 
-      find_branch(cast<Match_stmt>(s), branches);
-      break;
-    case case_stmt:  
-      find_branch(cast<Case_stmt>(s), branches);
-      break;
-    case decl_stmt:  
-      find_branch(cast<Decl_stmt>(s), branches);
-      break;
-
-    // the rest cannot possibly have branches otherwise we're in trouble
-    default: break;
-  }
+  if (is<Block_stmt>(s)) 
+    find_branch(cast<Block_stmt>(s), branches);
+  if (is<Expr_stmt>(s))  
+    find_branch(cast<Expr_stmt>(s), branches);
+  if (is<Match_stmt>(s))
+    find_branch(cast<Match_stmt>(s), branches);
+  if (is<Case_stmt>(s))  
+    find_branch(cast<Case_stmt>(s), branches);
+  if (is<Decl_stmt>(s))  
+    find_branch(cast<Decl_stmt>(s), branches);
 }
 
 
@@ -328,8 +314,13 @@ check_stage(Decl const* d, Expr_seq const& requirements)
 {
   for (auto e : requirements) {
     auto search = cxt_bindings.find(as<Field_expr>(e)->name());
-    if (search == cxt_bindings.end())
+    if (search == cxt_bindings.end()) {
       error(d->location(), "Invalid field requirement. Field '{}' required but not decoded.", e);
+      error(d->location(), "Broken path: ");
+      for (auto stage : stack_) {
+        error(d->location(), "{} ->", stage->decl()->name());
+      }
+    }
   }
 }
 
@@ -346,6 +337,9 @@ dfs(Stage* s)
   // push the header name onto the bindings stack
   cxt_bindings.insert(s->decl()->name());
 
+  // push stage onto stack for debugging purposes
+  stack_.push_back(s);  
+
   // check this stage
   check_stage(s->decl(), s->requirements());
 
@@ -355,6 +349,10 @@ dfs(Stage* s)
       if(stage->visited == false)
         dfs(stage);
   }
+
+  // cleanup
+  // pop off debugging stack
+  stack_.pop_back();
 
   // pop all of the bindings off
   for (auto p : s->productions())
@@ -375,16 +373,12 @@ Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
 {
   this->second = Expr_seq();
 
-  switch(d->kind()) {
-  case table_decl: 
+  if (is<Table_decl>(d))
     table_requirements(cast<Table_decl>(d), second); 
-    break;
-  case decode_decl: 
+  else if (is<Decode_decl>(d)) 
     decode_requirements(cast<Decode_decl>(d), second);
-    break;
-  default:
-    lingo_unreachable("unhandled node kind ({})", d->kind());
-  }
+  else
+    error("unhandled node kind in pipeline ({})", d);
 }
 
 
@@ -400,7 +394,7 @@ register_stage(Decode_decl const* d)
   // Keep track of what fields each stage produces
   Expr_seq product;
 
-  // bind the header type into header environment
+  // bind the header decl into header environment
   lingo_assert(is<Record_type>(d->header()));
   Record_type const* htype = cast<Record_type>(d->header()); 
   pipeline.env().headers().push(htype->decl()->name(), htype->decl());
@@ -464,12 +458,15 @@ check_pipeline()
   // this should be a decoder, though be a table
   Stage* start = pipeline.front();
 
-  dfs(start);
-
   // we're going to do a depth first traversal
   // until we hit a stage with no branches
   // then we'll unwind and repeat until all branches
   // have been visited
+  dfs(start);
+
+  // for (auto stage : pipeline) {
+  //   print(stage);
+  // }
 
   return true;
 }

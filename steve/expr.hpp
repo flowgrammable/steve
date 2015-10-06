@@ -20,44 +20,9 @@
 namespace steve
 {
 
-// -------------------------------------------------------------------------- //
-//                              Expression kinds
+struct Expr_visitor;
 
-// Different kinds of expressions in the core language.
-enum Expr_kind
-{
-  id_expr,       // reference to a declaration
-  lookup_expr,   // reference to an unresolved lookup
-  default_expr,  // The "default" expression
-  init_expr,     // A variable initializer
-  value_expr,    // A literal or computed constant expression
-  unary_expr,    // unary operations: op e
-  binary_expr,   // binary operations: e1 op e2
-  call_expr,     // function call: f(e1, ..., en)
-  tuple_expr,    // tuples: {e1, e2, ..., en}
-  index_expr,    // member access: e.n (n is a number)
-  member_expr,   // member access: e.m (m is a member id)
-  field_expr,    // ref to field in a record: r.f (r is a record, f is a field name)
-  convert_expr,  // An implict conversion
-  lengthof_expr, // lengthof e
-  offsetof_expr, // offsetof e
-  headerof_expr, // headerof d
-  do_expr,       // do <decode/table> id
-  insert_expr,   // insert <flow> into <table>
-  delete_expr,   // remove <flow> from <table>
-  fld_idx_expr,  // _fields_[field_expr]
-  hdr_idx_expr,  // _header_[id header]
-};
-
-
-char const* get_expr_name(Expr_kind);
 String const* resolve_field_name(Field_expr const*);
-
-
-// Adapt the generic node-kinding template to this node type.
-template<Expr_kind K>
-using Expr_impl = lingo::Kind_base<Expr_kind, K>;
-
 
 // -------------------------------------------------------------------------- //
 //                                Expressions
@@ -70,36 +35,82 @@ using Expr_impl = lingo::Kind_base<Expr_kind, K>;
 // sub-expression of a larger expression.
 struct Expr
 {
-  Expr(Expr_kind k, Location l, Type const* t)
-    : kind_(k), loc_(l), type_(t)
+  Expr(Location l, Type const* t)
+    : loc_(l), type_(t)
   { }
 
   virtual ~Expr()
   { }
 
-  char const* node_name() const { return get_expr_name(kind_); }
-  Expr_kind   kind() const      { return kind_; }
+  String      node_name() const;
   Location    location() const  { return loc_; }
   Type const* type() const      { return type_; }
 
+  virtual void accept(Expr_visitor&) const = 0;
+
   void set_type(Type const* t) { type_ = t; }
 
-  Expr_kind   kind_;
   Location    loc_;
   Type const* type_;
 };
 
 
+// The expression visitor.
+struct Expr_visitor
+{
+  virtual void visit(Id_expr const*) { }
+  virtual void visit(Constant_expr const*) { }
+  virtual void visit(Lookup_expr const*) { }
+  virtual void visit(Default_expr const*) { }
+  virtual void visit(Init_expr const*) { }
+  virtual void visit(Value_expr const*) { }
+  virtual void visit(Unary_expr const*) { }
+  virtual void visit(Binary_expr const*) { }
+  virtual void visit(Call_expr const*) { }
+  virtual void visit(Tuple_expr const*) { }
+  virtual void visit(Index_expr const*) { }
+  virtual void visit(Member_expr const*) { }
+  virtual void visit(Field_expr const*) { }
+  virtual void visit(Convert_expr const*) { }
+  virtual void visit(Lengthof_expr const*) { }
+  virtual void visit(Offsetof_expr const*) { }
+  virtual void visit(Headerof_expr const*) { }
+  virtual void visit(Do_expr const*) { }
+  virtual void visit(Insert_expr const*) { }
+  virtual void visit(Delete_expr const*) { }
+  virtual void visit(Field_idx_expr const*) { }
+  virtual void visit(Header_idx_expr const*) { }
+};
+
+
 // A reference to a declaration. The type of the expression
 // is that of the referenced declaration.
-struct Id_expr : Expr, Expr_impl<id_expr>
+struct Id_expr : Expr
 {
   Id_expr(Location, Decl const*);
 
   String const* name() const;
   Decl const*   decl() const { return decl_; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Decl const* decl_;
+};
+
+
+// An expression that holds a constant value of some type. 
+// Values are represented as widest integer type of the host 
+// system.
+struct Constant_expr : Expr
+{
+  Constant_expr(Location loc, Type const* t, Value n)
+    : Expr(loc, t), value_(n)
+  { }
+
+  void accept(Expr_visitor& v) const { v.visit(this); }
+
+  Value value() const { return value_; }
+
+  Value value_;
 };
 
 
@@ -110,11 +121,12 @@ struct Id_expr : Expr, Expr_impl<id_expr>
 // may refer to no declarations (but found via ADL).
 //
 // TODO: What is the type of a lookup expr.
-struct Lookup_expr : Expr, Expr_impl<lookup_expr>
+struct Lookup_expr : Expr
 {
   Lookup_expr(Location, String const*);
 
   String const* name() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   String const* first;
 };
@@ -123,13 +135,14 @@ struct Lookup_expr : Expr, Expr_impl<lookup_expr>
 // An expression that holds a value. Note that the "shape" of
 // the value (it's layout and properties) is determined by
 // its type.
-struct Value_expr : Expr, Expr_impl<value_expr>
+struct Value_expr : Expr
 {
   Value_expr(Location loc, Type const* t, Value const& v)
-    : Expr(node_kind, loc, t), first(v)
+    : Expr(loc, t), first(v)
   { }
 
   Value const& value() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Value first;
 };
@@ -142,11 +155,13 @@ struct Value_expr : Expr, Expr_impl<value_expr>
 //
 // The type of a default expression is determined from the context
 // in which it appears.
-struct Default_expr : Expr, Expr_impl<default_expr>
+struct Default_expr : Expr
 {
   Default_expr(Location loc, Type const* t)
-    : Expr(node_kind, loc, t)
+    : Expr(loc, t)
   { }
+
+  void accept(Expr_visitor& v) const { v.visit(this); }
 };
 
 
@@ -170,20 +185,21 @@ enum Init_kind
 // need separate notions of initialization, just like C++ has.
 // Maybe there's a more uniform treatment, but I'm not quite
 // sure.
-struct Init_expr : Expr, Expr_impl<init_expr>
+struct Init_expr : Expr
 {
   // Construct a default or zero initializer.
   Init_expr(Location loc, Init_kind k)
-    : Expr(node_kind, loc, nullptr), init_(k), first(nullptr)
+    : Expr(loc, nullptr), init_(k), first(nullptr)
   { }
 
   // Construct a direct.
   Init_expr(Init_kind k, Expr const* e)
-    : Expr(node_kind, e->location(), e->type()), init_(k), first(e)
+    : Expr(e->location(), e->type()), init_(k), first(e)
   { }
 
   Init_kind   init() const { return init_; }
   Expr const* expr() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
   
   void set_expr(Expr const* e) { first = e; }
 
@@ -197,14 +213,15 @@ struct Init_expr : Expr, Expr_impl<init_expr>
 //
 // Note that the source location for a unary operation is the
 // location of its operator.
-struct Unary_expr : Expr, Expr_impl<unary_expr>
+struct Unary_expr : Expr
 {
   Unary_expr(Location loc, Type const* t, Unary_op op, Expr const* e)
-    : Expr(node_kind, loc, t), first(op), second(e)
+    : Expr(loc, t), first(op), second(e)
   { }
 
   Unary_op    op() const  { return first; }
   Expr const* arg() const { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Unary_op    first;
   Expr const* second;
@@ -216,15 +233,16 @@ struct Unary_expr : Expr, Expr_impl<unary_expr>
 //
 // Note that the source location of a binary expression is the
 // location of its operator.
-struct Binary_expr : Expr, Expr_impl<binary_expr>
+struct Binary_expr : Expr
 {
   Binary_expr(Location loc, Type const* t, Binary_op op, Expr const* l, Expr const* r)
-    : Expr(node_kind, loc, t), first(op), second(l), third(r)
+    : Expr(loc, t), first(op), second(l), third(r)
   { }
 
   Binary_op   op() const    { return first; }
   Expr const* left() const  { return second; }
   Expr const* right() const { return third; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Binary_op   first;
   Expr const* second;
@@ -237,14 +255,15 @@ struct Binary_expr : Expr, Expr_impl<binary_expr>
 // Note that the target of a function call is an expression.
 // This is required to be resolved to a declaration during
 // translation.
-struct Call_expr : Expr, Expr_impl<call_expr>
+struct Call_expr : Expr
 {
   Call_expr(Location loc, Type const* t, Expr const* f, Expr_seq const& a)
-    : Expr(node_kind, loc, t), first(f), second(a)
+    : Expr(loc, t), first(f), second(a)
   { }
 
   Expr const*     fn() const   { return first; }
   Expr_seq const& args() const { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr_seq    second;
@@ -256,13 +275,14 @@ struct Call_expr : Expr, Expr_impl<call_expr>
 // Note that the target of a function call is an expression.
 // This is required to be resolved to a declaration during
 // translation.
-struct Tuple_expr : Expr, Expr_impl<tuple_expr>
+struct Tuple_expr : Expr
 {
   Tuple_expr(Location loc, Type const* t, Expr_seq const& e)
-    : Expr(node_kind, loc, t), first(e)
+    : Expr(loc, t), first(e)
   { }
 
   Expr_seq const& exprs() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr_seq    first;
 };
@@ -277,14 +297,15 @@ struct Tuple_expr : Expr, Expr_impl<tuple_expr>
 // at least one member.
 //
 // TODO: Must e2 be constant?
-struct Index_expr : Expr, Expr_impl<index_expr>
+struct Index_expr : Expr
 {
   Index_expr(Location loc, Type const* t, Expr const* e, Expr const* n)
-    : Expr(node_kind, loc, t), first(e), second(n)
+    : Expr(loc, t), first(e), second(n)
   { }
 
   Expr const* object() const { return first; }
   Expr const* index() const  { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr const* second;
@@ -301,16 +322,17 @@ struct Index_expr : Expr, Expr_impl<index_expr>
 // subexpressions: one that computes the object being 
 // accessed (possibly another member expression) and an 
 // id expression.
-struct Member_expr : Expr, Expr_impl<member_expr>
+struct Member_expr : Expr
 {
   Member_expr(Location loc, Type const* t, Expr const* e, Expr const* s)
-    : Expr(node_kind, loc, t), first(e), second(s)
+    : Expr(loc, t), first(e), second(s)
   { 
     lingo_assert(lingo::is<Id_expr>(s));
   }
 
   Expr const*    object() const   { return first; }
   Id_expr const* selector() const { return cast<Id_expr>(second); }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr const* second;
@@ -334,10 +356,10 @@ struct Member_expr : Expr, Expr_impl<member_expr>
 // which field they refer to in the context environment. These values
 // are determined by walking the program an assigning a value to each
 // field found in an extracts decl
-struct Field_expr : Expr, Expr_impl<field_expr>
+struct Field_expr : Expr
 {
   Field_expr(Location loc, Type const* t, Type const* ft, Expr const* r, Expr const* f)
-    : Expr(node_kind, loc, t), first(r), second(f), third(ft)
+    : Expr(loc, t), first(r), second(f), third(ft), name_(resolve_field_name(this))
   {
     lingo_assert(lingo::is<Id_expr>(f));
   }
@@ -345,11 +367,15 @@ struct Field_expr : Expr, Expr_impl<field_expr>
   Expr const* record() const { return first; }
   Id_expr const* field() const { return cast<Id_expr>(second); }
   Type const* field_type() const { return third; }
-  String const* name() const { return resolve_field_name(this); }
+  String const* name() const { return name_; }
+
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Expr const* second;
   Type const* third;
+
+  String const* name_;
 };
 
 
@@ -360,14 +386,15 @@ struct Field_expr : Expr, Expr_impl<field_expr>
 // The type of the expression is that of the target type.
 //
 // TODO: Model this as a unary expression?
-struct Convert_expr : Expr, Expr_impl<convert_expr>
+struct Convert_expr : Expr
 {
   Convert_expr(Location loc, Type const* t, Conversion_kind k, Expr const* e)
-    : Expr(node_kind, loc, t), first(k), second(e)
+    : Expr(loc, t), first(k), second(e)
   { }
 
   Conversion_kind conv() const { return first; }
   Expr const*     arg() const  { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Conversion_kind first;
   Expr const*     second;
@@ -383,13 +410,14 @@ struct Convert_expr : Expr, Expr_impl<convert_expr>
 // by inlining into a single expression. It would be useful
 // in a template, where we neeed to preserve non-resolvable
 // expressions, but not in non-dependent contexts.
-struct Lengthof_expr : Expr, Expr_impl<lengthof_expr>
+struct Lengthof_expr : Expr
 {
   Lengthof_expr(Location loc, Type const* t, Expr const* e)
-    : Expr(node_kind, loc, t), first(e)
+    : Expr(loc, t), first(e)
   { }
 
   Expr const* arg() const  { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
@@ -400,13 +428,14 @@ struct Lengthof_expr : Expr, Expr_impl<lengthof_expr>
 // 
 // decode d1(eth);
 //  headerof d1 -> eth
-struct Headerof_expr : Expr, Expr_impl<headerof_expr>
+struct Headerof_expr : Expr
 {
   Headerof_expr(Location loc, Type const* t, Decl const* d)
-    : Expr(node_kind, loc, t), first(d)
+    : Expr(loc, t), first(d)
   { }
 
   Decl const* decoder() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Decl const* first;
 };
@@ -421,14 +450,15 @@ enum Do_kind {
 // A do statement used to chain decoders and tables together
 // Either a decode or a table
 // Takes an id expr to the respective decl
-struct Do_expr : Expr, Expr_impl<do_expr>
+struct Do_expr : Expr
 {
   Do_expr(Location loc, Type const* t, Do_kind d, Expr const* e)
-    : Expr(node_kind, loc, t), first(d), second(e)
+    : Expr(loc, t), first(d), second(e)
   { }
 
   Do_kind     do_what()     const { return first; }
   Expr const* target()      const { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Do_kind first;
   Expr const* second;
@@ -445,14 +475,15 @@ struct Do_expr : Expr, Expr_impl<do_expr>
 //
 // TODO: This expression wouldn't actually stay in a lowered
 // representation of a program. 
-struct Offsetof_expr : Expr, Expr_impl<offsetof_expr>
+struct Offsetof_expr : Expr
 {
   Offsetof_expr(Location loc, Type const* t, Expr const* e, Decl const* m)
-    : Expr(node_kind, loc, t), first(e), second(m)
+    : Expr(loc, t), first(e), second(m)
   { }
 
   Expr const* object() const  { return first; }
   Decl const* member() const  { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
   Decl const* second;
@@ -460,28 +491,30 @@ struct Offsetof_expr : Expr, Expr_impl<offsetof_expr>
 
 
 // Insert expressions are used to insert flows into tables
-struct Insert_expr : Expr, Expr_impl<insert_expr>
+struct Insert_expr : Expr
 {
   Insert_expr(Location loc, Type const* t, Decl const* flw, Expr const* tbl)
-    : Expr(node_kind, loc, t), first(flw), second(tbl)
+    : Expr(loc, t), first(flw), second(tbl)
   { }
 
   Decl const* flow()  const { return first; }
   Expr const* table() const { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Decl const* first;
   Expr const* second;
 };
 
 
-struct Delete_expr : Expr, Expr_impl<delete_expr>
+struct Delete_expr : Expr
 {
   Delete_expr(Location loc, Type const* t, Decl const* flw, Expr const* tbl)
-    : Expr(node_kind, loc, t), first(flw), second(tbl)
+    : Expr(loc, t), first(flw), second(tbl)
   { }
 
   Decl const* flow()  const { return first; }
   Expr const* table() const { return second; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Decl const* first;
   Expr const* second;
@@ -493,35 +526,32 @@ struct Delete_expr : Expr, Expr_impl<delete_expr>
 // i.e. _header_.ethertype => _header_[#]
 // All field_expr resolve into integer representations
 // so field access becomes a trivial array lookup
-struct Field_idx_expr : Expr, Expr_impl<fld_idx_expr>
+struct Field_idx_expr : Expr
 {
   Field_idx_expr(Location loc, Type const* t, Expr const* f)
-    : Expr(node_kind, loc, t), first(f)
+    : Expr(loc, t), first(f)
   { }
 
   Expr const* field() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
 
 
 // Used to access a header within a context
-struct Header_idx_expr : Expr, Expr_impl<hdr_idx_expr>
+struct Header_idx_expr : Expr
 {
   Header_idx_expr(Location loc, Type const* t, Expr const* h)
-    : Expr(node_kind, loc, t), first(h)
+    : Expr(loc, t), first(h)
   { }
 
   Expr const* header() const { return first; }
+  void accept(Expr_visitor& v) const { v.visit(this); }
 
   Expr const* first;
 };
 
-
-
-
-// -------------------------------------------------------------------------- //
-//                           Concepts and dispatch
 
 // True when T is models the Expression concept. 
 //
@@ -535,37 +565,50 @@ is_expr()
 }
 
 
-// Apply the function to the expression `e`.
-template<typename T, typename F>
-auto
-apply(T const* e, F fn) 
-  -> typename std::enable_if<is_expr<T>(), decltype(fn((Value_expr*)0))>::type
+// -------------------------------------------------------------------------- //
+//                            Generic visitor
+
+
+// A parameterized visitor that dispatches to a function object.
+template<typename F, typename T>
+struct Generic_expr_visitor : Expr_visitor, Generic_visitor<F, T>
 {
-  lingo_assert(is_valid_node(e));
-  switch (e->kind()) {
-    case id_expr: return fn(cast<Id_expr>(e));
-    case lookup_expr: return fn(cast<Lookup_expr>(e));
-    case default_expr: return fn(cast<Default_expr>(e));
-    case init_expr: return fn(cast<Init_expr>(e));
-    case value_expr: return fn(cast<Value_expr>(e));
-    case unary_expr: return fn(cast<Unary_expr>(e));
-    case binary_expr: return fn(cast<Binary_expr>(e));
-    case call_expr: return fn(cast<Call_expr>(e));
-    case tuple_expr: return fn(cast<Tuple_expr>(e));
-    case index_expr: return fn(cast<Index_expr>(e));
-    case member_expr: return fn(cast<Member_expr>(e));
-    case field_expr: return fn(cast<Field_expr>(e));
-    case convert_expr: return fn(cast<Convert_expr>(e));
-    case lengthof_expr: return fn(cast<Lengthof_expr>(e));
-    case offsetof_expr: return fn(cast<Offsetof_expr>(e));
-    case headerof_expr: return fn(cast<Headerof_expr>(e));
-    case do_expr: return fn(cast<Do_expr>(e));
-    case insert_expr: return fn(cast<Insert_expr>(e));
-    case delete_expr: return fn(cast<Delete_expr>(e));
-    case fld_idx_expr: return fn(cast<Field_idx_expr>(e));
-    case hdr_idx_expr: return fn(cast<Header_idx_expr>(e));
-  }
-  lingo_unreachable("unhandled expression '{}'", e->node_name());
+  Generic_expr_visitor(F f)
+    : Generic_visitor<F, T>(f)
+  { }
+
+  void visit(Id_expr const* e) { this->invoke(e); }
+  void visit(Constant_expr const* e) { this->invoke(e); }
+  void visit(Lookup_expr const* e) { this->invoke(e); }
+  void visit(Default_expr const* e) { this->invoke(e); }
+  void visit(Init_expr const* e) { this->invoke(e); }
+  void visit(Value_expr const* e) { this->invoke(e); }
+  void visit(Unary_expr const* e) { this->invoke(e); }
+  void visit(Binary_expr const* e) { this->invoke(e); }
+  void visit(Call_expr const* e) { this->invoke(e); }
+  void visit(Tuple_expr const* e) { this->invoke(e); }
+  void visit(Index_expr const* e) { this->invoke(e); }
+  void visit(Member_expr const* e) { this->invoke(e); }
+  void visit(Field_expr const* e) { this->invoke(e); }
+  void visit(Convert_expr const* e) { this->invoke(e); }
+  void visit(Lengthof_expr const* e) { this->invoke(e); }
+  void visit(Offsetof_expr const* e) { this->invoke(e); }
+  void visit(Headerof_expr const* e) { this->invoke(e); }
+  void visit(Do_expr const* e) { this->invoke(e); }
+  void visit(Insert_expr const* e) { this->invoke(e); }
+  void visit(Delete_expr const* e) { this->invoke(e); }
+  void visit(Field_idx_expr const* e) { this->invoke(e); }
+  void visit(Header_idx_expr const* e) { this->invoke(e); }
+};
+
+
+// Apply the function f to the expression e.
+template<typename F, typename T = typename std::result_of<F(Constant_expr*)>::type>
+inline T
+apply(Expr const* e, F fn)
+{
+  Generic_expr_visitor<F, T> v(fn);
+  return accept(e, v);
 }
 
 
@@ -979,9 +1022,7 @@ bool has_enum_type(Expr const*);
 // -------------------------------------------------------------------------- //
 //                                  Facilities
 
-// Garbage collection
-void mark(Expr const*);
-
+Member_decl const* field_to_member(Field_expr const*);
 
 } // namespace steve
 

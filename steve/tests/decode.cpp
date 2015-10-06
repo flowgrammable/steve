@@ -63,10 +63,10 @@ Decl*
 make_decode_decl1()
 {
   Record_decl const* rd = make_record();
-  debug(rd);
+  print(rd);
   Record_type const* record = get_record_type(rd);
-  debug(record->decl());
-  debug(record);
+  print(record->decl());
+  print(record);
 
   Stmt* match = make_match_stmt1(rd, one());
   Stmt* body = block({match});

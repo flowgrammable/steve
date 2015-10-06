@@ -138,12 +138,12 @@ token(Lexer& lex, Character_stream& cs)
     
     default:
       // TODO: Expand cases.
-      if (is_ident_head(cs.peek()))
+      if (is_identifier_start(cs.peek()))
         return lex_identifier(lex, cs, loc);
       
       // TODO: Expand to cases.
       if (is_decimal_digit(cs.peek()))
-        return lex_number(lex, cs, loc);
+        return lex_decimal_integer(lex, cs, loc);
       
       error(loc, "unrecognized character '{}'", cs.peek());
       cs.get();
@@ -168,6 +168,14 @@ Token
 Lexer::on_digraph(Location loc, char const* str)
 {
   return Token(loc, str, 2);
+}
+
+
+Token
+Lexer::on_integer(Location loc, char const* first, char const* last, int)
+{
+  // The integer base is currently ignored.
+  return Token(loc, integer_tok, first, last);
 }
 
 
@@ -208,11 +216,7 @@ Lexer::on_hexadecimal_integer(Location loc, char const* first, char const* last)
 Token
 Lexer::on_identifier(Location loc, char const* first, char const* last)
 {
-  Symbol& sym = get_symbol(first, last);
-  if (sym.desc.kind == language_sym)
-    return Token(loc, sym);
-  else
-    return Token::make_identifier(loc, sym);
+  return Token(loc, identifier_tok, first, last);
 }
 
 
@@ -242,7 +246,7 @@ Lexer::on_expected(Location loc, char const* what)
 Token
 Lexer::on_expected(Location loc, char const* what, Token const& tok)
 {
-  error(loc, "expected '{}' but got '{}'", what, tok.token_spelling());
+  error(loc, "expected '{}' but got '{}'", what, tok.token_name());
   return {};
 }
 

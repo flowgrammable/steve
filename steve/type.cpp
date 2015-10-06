@@ -16,32 +16,12 @@
 namespace steve
 {
 
-// Returns a textual representation of the node's name.
-char const*
-get_type_name(Type_kind k)
+// Returns the name of the node. This is the same
+// as the class name.
+String
+Type::node_name() const
 {
-  switch (k) {
-    case kind_type: return "kind_type";
-    case void_type: return "void_type";
-    case boolean_type: return "boolean_type";
-    case integer_type: return "integer_type";
-    case constant_type: return "constant_type";
-    case reference_type: return "reference_type";
-    case function_type: return "function_type";
-    case array_type: return "array_type";
-    case tuple_type: return "tuple_type";
-    case record_type: return "record_type";
-    case variant_type: return "variant_type";
-    case enum_type: return "enum_type";
-    case match_type: return "match_type";
-    case if_type: return "if_type";
-    case seq_type: return "seq_type";
-    case buffer_type: return "buffer_type";
-    case until_type: return "until_type";
-    case table_type: return "table_type";
-    case flow_type: return "flow_type";
-  }
-  lingo_unreachable("unhandled type kind ({})", (int)k);
+  return type_str(*this);
 }
 
 
@@ -226,21 +206,14 @@ get_enum_type(Decl const* d)
 Type const*
 get_user_defined_type(Decl const* d)
 {
-  switch (d->kind()) {
-    case record_decl:
-      return get_record_type(cast<Record_decl>(d));
-    case variant_decl:
-      return get_variant_type(cast<Variant_decl>(d));
-    case enum_decl:
-      return get_enum_type(cast<Enum_decl>(d));
-    case table_decl:
-      return get_table_type(cast<Table_decl>(d));
-    case flow_decl:
-      return get_flow_type(cast<Flow_decl>(d));
-    default:
-      error("'{}' does not name a type", d);
-      break;
-  }
+  if (is<Record_decl>(d))
+    return get_record_type(cast<Record_decl>(d));
+  if (is<Variant_decl>(d))
+    return get_variant_type(cast<Variant_decl>(d));
+  if (is<Enum_decl>(d))
+    return get_enum_type(cast<Enum_decl>(d));
+
+  error("'{}' does not name a type", d);
   return get_error_type();
 }
 
@@ -260,17 +233,21 @@ get_match_type(Expr const* e, Match_seq const& m)
 }
 
 
+// A table type requires a sequence of member declarations
+// which uniquely declare its type
 Table_type const*
-get_table_type(Decl const* d)
+get_table_type(Decl_seq const& mem)
 {
-  return table_.make(d);
+  return table_.make(mem);
 }
 
 
+// A flow type requires a sequence of types
+// which refer to each element in its key
 Flow_type const*
-get_flow_type(Decl const* d)
+get_flow_type(Type_seq const& types)
 {
-  return flow_.make(d);
+  return flow_.make(types);
 }
 
 
@@ -432,8 +409,9 @@ type_member_expr(Expr const* e, Expr const* s)
 }
 
 
-// Used to provide a type for the member that
-// the field expr refers to
+// Used to check the type of the member decl that the
+// field expr refers to.
+//
 // Field exprs themselves have type int and are used
 // as indices for hdr/fld idx exprs
 Type const*
@@ -446,8 +424,9 @@ type_field_expr(Expr const* r, Expr const* f)
   if (is<Id_expr>(r)) {
     rd = cast<Id_expr>(r)->decl();
   }
-  else if(Record_type const* rt = as<Record_type>(r->type())) {
-    rd = rt->decl();
+  else if (Field_expr const* fe = as<Field_expr>(r)) {
+    if (Record_type const* rt = as<Record_type>(fe->field_type()))
+      rd = rt->decl();
   }
   else {
     error(r->location(), "invalid term '{}' is not a record identifier nor record type", r);
@@ -503,6 +482,9 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
   Type const* t = e->type();
   bool ok = true;
 
+  if (!is<Integer_type>(t))
+    error("Non-integer condition '{}' found in match stmt.", e);
+
   std::set<Stmt const*, Case_less> cases;
 
   for (Stmt const* s : sq) {
@@ -510,7 +492,12 @@ check_match_stmt(Expr const* e, Stmt_seq const& sq)
     Case_stmt const* c = cast<Case_stmt>(s);
 
     Expr const* lab = c->label();
-    if (lab->type() != t) {
+    lingo_assert(is<Value_expr>(lab));
+    
+    if (!is<Value_expr>(lab))
+      error(Location::none, "'{}' is a non-value expression found in match case.", lab);
+
+    if (!is<Integer_type>(lab->type())) {
       error(Location::none, "'{}' (of type '{}') does not have the "
                             "same type as the condition '{}'", 
                             lab, lab->type(), e, t);
@@ -733,26 +720,21 @@ Type const*
 check_return_type(Stmt const* s, Type const* t)
 {
   lingo_assert(is_valid_node(s));
-  switch (s->kind()) {
-    case block_stmt:
-      return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Block_stmt>(s))
+    return check_return_type(cast<Block_stmt>(s), t);
+  if (is<Return_stmt>(s))
+    return check_return_type(cast<Return_stmt>(s), t);
+  if (is<Match_stmt>(s))
+    return check_return_type(cast<Match_stmt>(s), t);
+  if (is<Case_stmt>(s))
+    return check_return_type(cast<Case_stmt>(s), t);
+  // these do not indicate return types
+  if (is<Empty_stmt>(s) 
+   || is<Expr_stmt>(s) 
+   || is<Decl_stmt>(s) 
+   || is<Instruct_stmt>(s))
+    return nullptr;
 
-    case return_stmt: 
-      return check_return_type(cast<Return_stmt>(s), t);
-
-    case match_stmt:
-      return check_return_type(cast<Match_stmt>(s), t);
-
-    case case_stmt:
-      return check_return_type(cast<Case_stmt>(s), t);
-
-    case empty_stmt:
-    case expr_stmt:
-    case decl_stmt:
-    case instruct_stmt:
-      // These do not indicate return types.
-      return nullptr;
-  }
   lingo_unreachable("unhandled statement '{}'", s->node_name());
 }
 
@@ -800,5 +782,64 @@ check_decode_decl(Type const* t, Stmt const* s)
   return true;
 }
 
+
+// Takes the flows of a table
+// and the type of that table
+bool
+check_flow_decl(Decl const* f, Type const* t)
+{
+  bool ok = true;
+
+  // for each member in the table type
+  // check that the corresponding element in the flow
+  // key has the same type as the member
+  lingo_assert(is<Table_type>(t));
+  lingo_assert(is<Flow_decl>(f));
+  lingo_assert(is<Flow_type>(f->type()));
+
+  Table_type const* tbl_t = cast<Table_type>(t);
+  Flow_decl const* flow = cast<Flow_decl>(f);
+  Flow_type const* flw_t = cast<Flow_type>(f->type());
+
+  // first check that the number of fields in the flow key
+  // match the number of fields in the table type
+  if (flw_t->key_types().size() != tbl_t->key_fields().size()) {
+    error(f->location(), "Flow '{}' key length does not match table '{}' key length.", flow, tbl_t);
+    ok = false;
+  }
+
+  // next check the corresponding types
+  auto it_f = flw_t->key_types().begin();
+  auto it_t = tbl_t->key_fields().begin();
+
+  int count = 0;
+  while ((it_f != flw_t->key_types().end()) && (it_t != tbl_t->key_fields().end())) {
+    if (*it_f != (*it_t)->type()) {
+      error(f->location(), "Subkey index '{}' of type '{}' in flow '{}' does not match table subkey '{}' of type '{}'",
+            count, *it_f, flow, *it_t, (*it_t)->type());
+      ok = false;
+    }
+    count++;
+    it_f++;
+    it_t++;
+  }
+
+  return ok;
+}
+
+
+bool
+check_table_initializer(Decl_seq const& init, Type const* tbl_t)
+{
+  bool ok = true;
+
+  for (auto decl : init) {
+    lingo_assert(is<Flow_type>(decl->type()));
+    if (!check_flow_decl(decl, tbl_t))
+      ok = false;
+  }
+
+  return ok;
+}
 
 } // namespace steve
