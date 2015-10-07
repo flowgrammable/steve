@@ -325,6 +325,8 @@ check_stage(Decl const* d, Expr_seq const& requirements)
 }
 
 
+// FIXME: PROVE THAT THIS ACTUALLY WORKS
+// 
 // depth first search
 void
 dfs(Stage* s)
@@ -345,10 +347,12 @@ dfs(Stage* s)
   check_stage(s->decl(), s->requirements());
 
   for (auto decl : s->branches()) {
-    Stage* stage = pipeline.find(decl);
-    if(stage)
-      if(stage->visited == false)
-        dfs(stage);
+    if (decl != s->decl()) {
+      Stage* stage = pipeline.find(decl);
+      if (stage) 
+        if (!stage->visited)
+          dfs(stage);
+    }
   }
 
   // cleanup
@@ -358,9 +362,14 @@ dfs(Stage* s)
   // pop all of the bindings off
   for (auto p : s->productions())
     cxt_bindings.erase(as<Field_expr>(p)->name());
-  
+
   // pop the header name off bindings stack
   cxt_bindings.erase(s->decl()->name());
+
+  // unset the visited as you come back from recursion
+  // so that we can explore all possible paths instead of
+  // just one path
+  s->visited = false;
 }
 
 

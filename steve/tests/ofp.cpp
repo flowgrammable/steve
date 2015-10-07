@@ -561,10 +561,12 @@ test4()
 
   // dummy with no extractions
   Decode_decl* dummy = make_decode_decl(get_identifier("dummy"), get_record_type(eth), nullptr);
+  Decode_decl* dummy2 = make_decode_decl(get_identifier("dummy2"), get_record_type(eth), nullptr);
 
   declare(eth_d->name(), eth_d);
   declare(ipv4_d->name(), ipv4_d);
   declare(dummy->name(), dummy);
+  declare(dummy2->name(), dummy2);
 
   //----------------------------------------------------------------//
   //              Definitions
@@ -608,8 +610,17 @@ test4()
   Stmt_seq dummy_body {
     make_match_stmt(cond1, 
       Stmt_seq {
+        make_case(one(), make_do(Do_kind::decode, eth_d)),
+        make_case(zero(), make_do(Do_kind::decode, dummy2)),
+      }
+    )
+  };
+
+
+  Stmt_seq dummy_body2 {
+    make_match_stmt(cond1, 
+      Stmt_seq {
         make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
-        make_case(one(), make_do(Do_kind::decode, ipv4_d)),
       }
     )
   };
@@ -618,6 +629,7 @@ test4()
   declare(eth_d->name(), make_decode_decl(get_identifier("eth_d"), get_record_type(eth), block(eth_d_body)));
   declare(ipv4_d->name(), make_decode_decl(get_identifier("ipv4_d"), get_record_type(ipv4), block(ipv4_d_body)));
   declare(dummy->name(), make_decode_decl(get_identifier("dummy"), get_record_type(eth), block(dummy_body)));
+  declare(dummy2->name(), make_decode_decl(get_identifier("dummy2"), get_record_type(eth), block(dummy_body2)));
 
   // define the tables
   Decl_seq flows {
@@ -631,15 +643,17 @@ test4()
   make_match_fn(t1->type());
 
   // print
-  print(eth_d);
-  print(ipv4_d);
   print(dummy);
+  print(eth_d);
+  print(dummy2);
+  print(ipv4_d);
   print(t1);
 
   // register stages
-  register_stage(eth_d);
-  register_stage(ipv4_d);
   register_stage(dummy);
+  register_stage(eth_d);
+  register_stage(dummy2);
+  register_stage(ipv4_d);
   register_stage(t1);
 
   check_pipeline();
