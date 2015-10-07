@@ -7,6 +7,7 @@ add_library(steve-translate STATIC
 	translate-type.cpp
 	translate-pipeline.cpp
 	tostring.cpp
+	translate.cpp
 )
 
 target_link_libraries(steve-translate steve)

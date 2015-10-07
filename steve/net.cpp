@@ -509,4 +509,10 @@ lookup_header_binding(String const* n)
 }
 
 
+Pipeline const&
+get_pipeline()
+{
+  return pipeline;
+}
+
 } // namespace steve

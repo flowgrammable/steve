@@ -402,7 +402,7 @@ lower(Case_stmt const* s, Stmt_seq& stmts)
 
 } // namespace
 
-Stmt_seq
+Stmt_seq const&
 lower(Stmt const* s, Stmt_seq& stmts)
 {
   if (is<Expr_stmt>(s))

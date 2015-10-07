@@ -13,7 +13,7 @@
 namespace steve
 {
 
-Stmt_seq lower(Stmt const*, Stmt_seq&);
+Stmt_seq const& lower(Stmt const*, Stmt_seq&);
 
 } // namespace steve
 

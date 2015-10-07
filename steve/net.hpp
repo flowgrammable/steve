@@ -126,8 +126,10 @@ void register_stage(Decode_decl const*);
 void register_stage(Table_decl const*);
 bool check_pipeline();
 
-Value lookup_field_binding(String const* n);
-Value lookup_header_binding(String const* n);
+Value lookup_field_binding(String const*);
+Value lookup_header_binding(String const*);
+
+Pipeline const& get_pipeline();
 
 } // namespace steve
 

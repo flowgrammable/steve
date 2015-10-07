@@ -32,6 +32,9 @@
 // Support sequences of terms.
 #include <vector>
 
+// Supporting Program abstraction
+#include <list>
+
 
 namespace steve
 {
