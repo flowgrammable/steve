@@ -334,6 +334,7 @@ dfs(Stage* s)
   // push all of its productions onto the bindings stack
   for (auto p : s->productions())
     cxt_bindings.insert(as<Field_expr>(p)->name());
+
   // push the header name onto the bindings stack
   cxt_bindings.insert(s->decl()->name());
 
@@ -357,6 +358,7 @@ dfs(Stage* s)
   // pop all of the bindings off
   for (auto p : s->productions())
     cxt_bindings.erase(as<Field_expr>(p)->name());
+  
   // pop the header name off bindings stack
   cxt_bindings.erase(s->decl()->name());
 }

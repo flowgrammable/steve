@@ -16,8 +16,8 @@
 #include "cxx/stmt.hpp"
 #include "cxx/name.hpp"
 #include "cxx/string.hpp"
-#include "cxx/tostring.hpp"
 
+#include "tostring.hpp"
 #include "translate-stmt.hpp"
 #include "translate-expr.hpp"
 #include "translate-decl.hpp"

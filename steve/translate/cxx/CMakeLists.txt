@@ -13,5 +13,4 @@ add_library(metal-cxx STATIC
   expr.cpp
   decl.cpp
   stmt.cpp
-  tostring.cpp
 )
