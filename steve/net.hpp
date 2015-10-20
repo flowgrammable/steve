@@ -115,8 +115,8 @@ struct Pipeline : std::vector<Stage*>
   Context_bindings& bindings() { return bindings_; }
   Context_environment& env() { return env_; }
 
-  Context_bindings bindings_;
-  Context_environment env_;
+  Context_bindings& bindings_;
+  Context_environment& env_;
 
   Stage* find(Decl const*) const;
 };
@@ -130,6 +130,9 @@ Value lookup_field_binding(String const*);
 Value lookup_header_binding(String const*);
 
 Pipeline const& get_pipeline();
+
+int get_num_headers();
+int get_num_fields();
 
 } // namespace steve
 

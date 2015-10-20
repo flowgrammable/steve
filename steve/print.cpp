@@ -89,6 +89,7 @@ struct Precedence_fn
   int operator()(Convert_expr const* t1) const { return 2; }
   int operator()(Field_idx_expr const* t1) const { return 2; }
   int operator()(Header_idx_expr const* t1) const { return 2; }
+  int operator()(Header_cast_expr const* t1) const { return 2; }
   int operator()(Binary_expr const* t1) const { return precedence(t1); }
 };
 
@@ -600,6 +601,13 @@ print(Printer& p, Header_idx_expr const* e)
 
 
 void
+print(Printer& p, Header_cast_expr const* e)
+{
+  print(p, "__header_cast()");
+}
+
+
+void
 print(Printer& p, Decl const* d)
 {
   print_term(p, d);
@@ -644,7 +652,7 @@ print(Printer& p, Variable_decl const* d)
   print(p, "var ");
   print_object_decl(p, d);
   print_initializer_clause(p, d);
-  print(p, ';');
+  // print(p, ';');
 }
 
 

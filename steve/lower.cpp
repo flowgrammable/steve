@@ -265,7 +265,18 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
   auto bind_header = builtin_function(__bind_header);
-  auto header_cast = builtin_function(__header_cast);
+  auto header_cast = make_header_cast(d->header());
+
+  // FIXME: a bit of a hack but it works
+  // going to declare a parameter named header for the explicit and only purpose
+  // of determining what type the immediate decode handles. This lets me carry the type
+  // across lower() calls using scoping.
+  // it is no longer being used as a parameter for the decode function
+  //
+  // Technically this entire line is not type checked because the type check would fail
+  // since header_cast neither has the correct return type nor a return at all, but 
+  // this works.
+  Variable_decl const* header_var = make_variable_decl(get_identifier(_header_), d->header(), header_cast);
 
   Local_scope local;
 
@@ -276,16 +287,10 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
     error(d->location(), "Decode declaration '{}' has invalid body.", d);
   }
 
-  Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));
-  // FIXME: a bit of a hack but it works
-  // going to declare a parameter named header for the explicit and only purpose
-  // of determining what type the immediate decode handles. This lets me carry the type
-  // across lower() calls using scoping.
-  // it is no longer being used as a parameter for the decode function
-  Variable_decl const* header = make_variable_decl(get_identifier(_header_), d->header());
+  Parameter_decl const* cxt = make_parameter_decl(get_identifier(_cxt_), get_reference_type(get_context_type()));  
 
   declare(cxt->name(), cxt);
-  declare(header->name(), header);
+  declare(header_var->name(), header_var);
 
   Decl_seq parms =
   {
@@ -296,7 +301,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   Stmt_seq new_stmts;
 
   // the first line is always a call to header_cast()
-  new_stmts.push_back(make_expr_stmt(make_call_expr(id(header_cast), {})));
+  new_stmts.push_back(make_decl_stmt(header_var));
 
   Expr_seq args {
     id(cxt), 
@@ -314,7 +319,8 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   // construct a new function declaration
   // FIXME: replace the body
-  Function_decl const* fn = make_function_decl(d->name(), parms, get_void_type(), new_body);
+  Function_decl* fn = make_function_decl(d->name(), parms, get_void_type(), new_body);
+  fn->set_foreign();
 
   stmts.push_back(make_decl_stmt(fn));
 }

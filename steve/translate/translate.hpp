@@ -8,6 +8,7 @@
 #include "steve/decl.hpp"
 #include "steve/stmt.hpp"
 #include "steve/type.hpp"
+#include "steve/builtin.hpp"
 
 #include "cxx/ast.hpp"
 #include "cxx/decl.hpp"

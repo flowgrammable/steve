@@ -52,9 +52,15 @@ print(Extracted* e) {
 namespace
 {
 
+// Important elements to the pipeline
 Context_bindings cxt_bindings;
 Context_environment cxt_env;
 Pipeline pipeline(cxt_bindings, cxt_env);
+// maintain the first stage in the pipeline
+Stage* entry = nullptr;
+// maintain if any component in the pipeline is in error
+bool is_error_state = false;
+
 
 void
 print_header_env()
@@ -388,8 +394,10 @@ Stage::Stage(Decl const* d, Decl_set const& b, Expr_seq const& p)
     table_requirements(cast<Table_decl>(d), second); 
   else if (is<Decode_decl>(d)) 
     decode_requirements(cast<Decode_decl>(d), second);
-  else
+  else {
+    is_error_state = true;
     error("unhandled node kind in pipeline ({})", d);
+  }
 }
 
 
@@ -420,6 +428,17 @@ register_stage(Decode_decl const* d)
 
   Stage* stage = stages_.make(d, branches, product);
   pipeline.push_back(stage);
+
+  if (d->is_start()) {
+    if (!entry)
+      entry = stage;
+    else {
+      error("Multiple entry points found in pipeline.");
+      note("   First start: {}", entry->decl()->name());
+      note("   Second start: {}", d->name());
+      is_error_state = true;
+    }
+  }
 }
 
 
@@ -445,6 +464,15 @@ register_stage(Table_decl const* d)
 
   Stage* stage = stages_.make(d, branches, product);
   pipeline.push_back(stage);
+
+  if (d->is_start()) {
+    if (!entry)
+      entry = stage;
+    else {
+      is_error_state = true;
+      error("Multiple entry points found in pipeline.");
+    }
+  }
 }
 
 
@@ -463,23 +491,18 @@ check_pipeline()
   if (!pipeline.size() > 0) 
     return false;
 
-  // we assume that the first declaration registered
-  // is the start of the pipeline
-  //
-  // this should be a decoder, though be a table
-  Stage* start = pipeline.front();
-
   // we're going to do a depth first traversal
   // until we hit a stage with no branches
   // then we'll unwind and repeat until all branches
   // have been visited
-  dfs(start);
+  if (entry)
+    dfs(entry);
+  else {
+    error("No start declared for pipeline.");
+    return false;
+  }
 
-  // for (auto stage : pipeline) {
-  //   print(stage);
-  // }
-
-  return true;
+  return !is_error_state;
 }
 
 
@@ -513,6 +536,18 @@ Pipeline const&
 get_pipeline()
 {
   return pipeline;
+}
+
+
+int get_num_headers()
+{
+  return cxt_env.headers().size();
+}
+
+
+int get_num_fields()
+{
+  return cxt_env.fields().size();
 }
 
 } // namespace steve

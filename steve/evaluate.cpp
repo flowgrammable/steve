@@ -545,6 +545,16 @@ evaluate(Member_expr const* e)
 }
 
 
+// FIXME: IDK why the compiler is forcing me to
+// have this here. Do we evaluate lvalue references
+// all the time causing this to happen?
+inline Value
+evaluate(Header_cast_expr const* e)
+{
+  lingo_unreachable("not implemented");
+}
+
+
 // -------------------------------------------------------------------------- //
 //                        Evaluation of conversions
 

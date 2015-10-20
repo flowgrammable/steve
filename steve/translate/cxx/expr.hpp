@@ -274,7 +274,15 @@ struct Dot_star_expr : Expr, Kind_of<dot_star_expr> {
 };
 
 // A dynamic cast expression of the form 'dynamic_cast<T>(e)'
+// FIXME: change that unknown_cat
 struct Dynamic_cast_expr : Expr, Kind_of<dynamic_cast_expr> {
+  Dynamic_cast_expr(Type* t, Expr* e)
+    : Expr(Kind, t, unknown_cat), first(t), second(e)
+  { }
+
+  Type* cast_type() const { return first; }
+  Expr* object() const { return second; }
+
   Type* first;
   Expr* second;
 };

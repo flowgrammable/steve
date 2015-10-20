@@ -1,6 +1,6 @@
 #include "builtin.hpp"
 #include "lookup.hpp"
-
+#include "builder.hpp"
 
 namespace steve
 {
@@ -238,7 +238,7 @@ init_builtins()
     {__bind_header, bind_header()},
     {__advance, advance()},
     {__decode, decode_fn()},
-    {__header_cast, header_cast()},
+    // {__header_cast, header_cast()},
     // {__lookup_hdr, lookup_header()},
     // {__lookup_fld, lookup_field()},
   };
@@ -320,10 +320,19 @@ get_match_fn(Type const* t)
       return fn;
   }
 
-  return nullptr;
+  // if we got this far then it doesnt exist so make it
+  return make_match_fn(t);
 }
 
-
+//
+// NOTE: This function makes the assumption that it is called
+// within global scope or within the same scope that the pipeline
+// is being define in
+Expr const*
+make_header_cast(Type const* t)
+{
+  return gc().make<Header_cast_expr>(t);
+}
 
 
 } // namespace steve

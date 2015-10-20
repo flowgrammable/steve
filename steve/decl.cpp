@@ -44,7 +44,7 @@ Decl::node_name() const
 
 
 Function_decl::Function_decl(Location loc, String const* n, Type const* t, Decl_seq const& a, Stmt const* b)
-  : Decl(loc, n, t), first(a), second(b)
+  : Decl(loc, n, t), first(a), second(b), is_foreign_(false)
 { 
   lingo_assert(lingo::is<Function_type>(t)); // FIXME: Why is this qualified?
 }
@@ -271,6 +271,12 @@ make_rebind_decl(Location loc, Expr const* e1, Expr const* e2)
   return gc().make<Rebind_decl>(loc, f->name(), e1->type(), e1, e2);
 }
 
+
+Forward_decl*
+make_forward_decl(Location loc, Decl const* d, Fwd_kind k)
+{
+  return gc().make<Forward_decl>(loc, d, k);
+}
 
 // -------------------------------------------------------------------------- //
 //                             Define

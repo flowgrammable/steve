@@ -101,6 +101,7 @@ struct Insert_expr;
 struct Delete_expr;
 struct Field_idx_expr;
 struct Header_idx_expr;
+struct Header_cast_expr;
 
 struct Decl;
 struct Variable_decl;

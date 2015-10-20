@@ -229,17 +229,20 @@ test1()
   Decode_decl* eth_d = make_decode_decl(get_identifier("eth_d"), get_record_type(eth), nullptr);
   Decode_decl* ipv4_d = make_decode_decl(get_identifier("ipv4_d"), get_record_type(ipv4), nullptr);
 
+  // set the start flag
+  eth_d->set_start();
+  // ipv4_d->set_start();
   declare(eth_d->name(), eth_d);
   declare(ipv4_d->name(), ipv4_d);  
 
   //----------------------------------------------------------------//
   //              Definitions
 
-  Parameter_decl* _header_1 = make_parameter_decl(
+  Variable_decl* _header_1 = make_variable_decl(
                                 get_identifier("_header_"), 
                                 get_record_type(eth));
 
-  Parameter_decl* _header_2 = make_parameter_decl(
+  Variable_decl* _header_2 = make_variable_decl(
                                 get_identifier("_header_"), 
                                 get_record_type(ipv4));
 
@@ -282,11 +285,6 @@ test1()
   declare(t1->name(), make_table_decl(get_identifier("t1"), { eth_src, eth_dst, ipv4_dst }, flows));
   declare(t2->name(), make_table_decl(get_identifier("t2"), { eth_src, eth_dst, ipv4_proto }, flows));
 
-  // some match functions
-  // declare the appropriate match fn for the tables
-  make_match_fn(t1->type());
-  make_match_fn(t2->type());
-
   // print
   print(eth_d);
   print(ipv4_d);
@@ -299,27 +297,28 @@ test1()
   register_stage(t1);
   register_stage(t2);
 
-  check_pipeline();
+  // check pipeline and push only if check_pipeline succeeds
+  if (check_pipeline()) {
+    // lowering has to happen in reverse as well
+    // FIXME: every Decode_decl should cause a forward-decl
+    // for the lowered function first
+    lower_decodes(eth_d);
+    lower_decodes(ipv4_d);
 
-  // lowering has to happen in reverse as well
-  // FIXME: every Decode_decl should cause a forward-decl
-  // for the lowered function first
-  lower_decodes(eth_d);
-  lower_decodes(ipv4_d);
+    // IMPORTANT: the call expressions in their lowered form
+    // may actually point to the decode-decl rather than it's lowered
+    // function form. This should still be fine as the call is opaque during
+    // translation to C++ and the declaration it points to should not matter
+    // as long as the name is correct.
 
-  // IMPORTANT: the call expressions in their lowered form
-  // may actually point to the decode-decl rather than it's lowered
-  // function form. This should still be fine as the call is opaque during
-  // translation to C++ and the declaration it points to should not matter
-  // as long as the name is correct.
-
-  // make the program
-  program.push(statement(eth));
-  program.push(statement(ipv4));
-  program.push(statement(t1));
-  program.push(statement(t2));
-  program.push(statement(eth_d));
-  program.push(statement(ipv4_d));
+    // make the program
+    program.push(statement(eth));
+    program.push(statement(ipv4));
+    program.push(statement(t1));
+    program.push(statement(t2));
+    program.push(statement(eth_d));
+    program.push(statement(ipv4_d));
+  }
 }
 
 
@@ -664,9 +663,9 @@ test4()
 int main()
 {
   Global_scope global;
-  // test1();
+  test1();
   // test_table_types();
   // test2();
   // test3();
-  test4();
+  // test4();
 }

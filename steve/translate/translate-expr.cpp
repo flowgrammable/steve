@@ -276,6 +276,20 @@ struct Expr_translator
     std::cout << "hdridx\n";
     return nullptr;
   }
+
+  // header cast
+  cxx::Expr*
+  operator()(Header_cast_expr const* e)
+  {
+    static cxx::Basic_id cxt_name("_cxt_");
+    static cxx::Basic_id get_current_byte("get_current_byte");
+
+    auto cxt = new cxx::Id_expr(nullptr, cxx::unknown_cat, &cxt_name, nullptr);
+    auto current_byte = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, {}, &get_current_byte);
+    auto access = new cxx::Dot_expr(nullptr, cxx::unknown_cat, cxt, current_byte);
+
+    return new cxx::Dynamic_cast_expr(translate(e->type()), access); 
+  }
 };
 
 

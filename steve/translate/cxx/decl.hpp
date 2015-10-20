@@ -223,10 +223,12 @@ struct Foreign_c_decl : Decl, Kind_of<foreign_c_decl> {
 // i.e. extern "C++" type function_decl()
 struct Foreign_cpp_decl : Decl, Kind_of<foreign_cpp_decl> {
   Foreign_cpp_decl(Decl* d)
-    : Decl(foreign_cpp_decl), decl(d)
+    : Decl(foreign_cpp_decl), d(d)
   { };
+
+  Decl const* decl() const { return d; }
   
-  Decl* decl;
+  Decl* d;
 };
 
 } // namespace cxx

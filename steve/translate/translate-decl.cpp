@@ -9,12 +9,73 @@ namespace
 {
 
 
+cxx::Expr*
+translate_fwd_function(Function_decl const* d)
+{
+   // translate return type
+  cxx::Type* ret_t = translate(d->ret_type());
+  cxx::Basic_id* name = new cxx::Basic_id(*d->name());
+
+  cxx::Decl_seq parms;
+
+  for (auto p : d->parms()) {
+    cxx::Expr* parm = translate(p);
+    assert(cxx::is<cxx::Parameter_decl>(parm));
+    parms.push_back(cxx::as<cxx::Parameter_decl>(parm));
+  }
+
+  cxx::Function_decl* fn = new cxx::Function_decl(cxx::simple_type_spec, name, parms, ret_t, new cxx::Empty_stmt());
+
+  if (!d->is_foreign())
+    return fn;
+
+  return new cxx::Foreign_cpp_decl(fn);
+}
+
+
+cxx::Expr* 
+translate_fwd_decode(Decode_decl const* d)
+{
+  cxx::Basic_id* name = new cxx::Basic_id(*d->name());
+
+  //synthesize a parameter name and a fake Context type
+  static cxx::Basic_id cxt_name("_cxt_");
+
+  cxx::Type* cxt_type = translate(get_context_type());
+  cxx::Type* void_type = translate(get_void_type());
+
+  cxx::Parameter_decl* cxt = new cxx::Parameter_decl(cxx::simple_type_spec, &cxt_name, cxt_type);
+
+  return new cxx::Function_decl(cxx::simple_type_spec, name, { cxt }, void_type, new cxx::Empty_stmt());
+}
+
+
+cxx::Expr*
+translate_fwd_table(Table_decl const* d)
+{
+  cxx::Basic_id* name = new cxx::Basic_id(*d->name());
+  cxx::Type* type = translate(d->type());
+  cxx::Variable_decl* table = new cxx::Variable_decl(cxx::simple_type_spec, name, type, nullptr);
+
+  return new cxx::Foreign_cpp_decl(table);
+}
+
+
 struct Decl_translator
 {
   cxx::Expr* 
   operator()(Variable_decl const* d) 
   { 
-    return nullptr;
+    assert(d->init());
+
+    cxx::Type* type = translate(d->type());
+    cxx::Basic_id* name = new cxx::Basic_id(*d->name());
+    cxx::Expr* init = translate(d->init());
+
+    assert(type);
+    assert(init);
+
+    return new cxx::Variable_decl(cxx::simple_type_spec, name, type, init);
   }
 
 
@@ -46,7 +107,12 @@ struct Decl_translator
 
     cxx::Expr* body = translate(as<Block_stmt>(d->body()));
 
-    return new cxx::Function_decl(cxx::simple_type_spec, name, parms, ret_t, body);
+    cxx::Function_decl* fn = new cxx::Function_decl(cxx::simple_type_spec, name, parms, ret_t, body);
+
+    if (!d->is_foreign())
+      return fn;
+
+    return new cxx::Foreign_cpp_decl(fn);
   }
 
 
@@ -122,6 +188,17 @@ struct Decl_translator
   cxx::Expr*
   operator()(Forward_decl const* d)
   {
+    switch (d->kind()) {
+      case function_fwd: return translate_fwd_function(as<Function_decl>(d->decl()));
+      case table_fwd: return translate_fwd_table(as<Table_decl>(d->decl()));
+      case decode_fwd: return translate_fwd_decode(as<Decode_decl>(d->decl()));
+
+      // not supported yet
+      case record_fwd:
+      case variant_fwd: 
+      case enum_fwd:
+        return nullptr;
+    }
     return nullptr;
   }
 
@@ -171,10 +248,14 @@ struct Decl_translator
 
     // Init_expr have unknown type
     cxx::Init_expr* init = new cxx::Init_expr(nullptr, seq);
+    // Id_expr for the table name
+    cxx::Id_expr* table_name = new cxx::Id_expr(nullptr, cxx::unknown_cat, name, nullptr);
 
-    return new cxx::Variable_decl(cxx::simple_type_spec, name, type, init);
+    // assignment
+    cxx::Binary_expr* assign = new cxx::Binary_expr(type, cxx::unknown_cat, nullptr, cxx::assign_op, table_name, init);
+
+    return new cxx::Expr_stmt(assign);
   }
-
 
   // lowering of flow declarations should handle this before we translate
   //

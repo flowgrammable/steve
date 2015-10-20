@@ -6,6 +6,7 @@
 #include "steve/expr.hpp"
 #include "steve/decl.hpp"
 #include "steve/stmt.hpp"
+#include "steve/builtin.hpp"
 
 #include <algorithm>
 #include <typeindex>
@@ -140,6 +141,13 @@ less(Do_expr const* a, Do_expr const* b)
     return false;
 
   return less(a->target(), b->target());
+}
+
+
+inline bool
+less(Header_cast_expr const* a, Header_cast_expr const* b)
+{
+  return less(a->type(), b->type());
 }
 
 
@@ -371,6 +379,11 @@ struct Less_expr_fn
   bool operator()(Header_idx_expr const* t1) const
   {
     return less(t1, cast<Header_idx_expr>(t2));
+  }
+
+  bool operator()(Header_cast_expr const* t1) const
+  {
+    return less(t1, cast<Header_cast_expr>(t2));
   }
 
   Expr const* t2;

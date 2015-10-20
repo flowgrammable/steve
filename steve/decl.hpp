@@ -130,13 +130,17 @@ struct Function_decl : Decl
   Function_type const* type() const;
   Type const*          ret_type() const;
   bool                 has_impl() const { return body() ? true : false; }
+  bool                 is_foreign() const { return is_foreign_; }
 
   void set_body(Stmt const* s) { second = s; }
+  void set_foreign() { is_foreign_ = true; }
 
   void accept(Decl_visitor& v) const { v.visit(this); }
 
   Decl_seq    first;
   Stmt const* second;
+
+  bool is_foreign_;
 };
 
 
@@ -251,13 +255,17 @@ enum Fwd_kind {
 
 struct Forward_decl : Decl
 {
-  Forward_decl(Location loc, String const* n, Fwd_kind k)
-    : Decl(loc, n, nullptr)
+  Forward_decl(Location loc, Decl const* d, Fwd_kind k)
+    : Decl(loc, d->name(), nullptr), first(d), second(k)
   { }
 
-  Fwd_kind kind() const { return first; }
+  Decl const* decl() const { return first; }
+  Fwd_kind kind() const { return second; }
 
-  Fwd_kind first;
+  void accept(Decl_visitor& v) const { v.visit(this); }
+
+  Decl const* first;
+  Fwd_kind second;
 };
 
 
@@ -269,18 +277,22 @@ struct Forward_decl : Decl
 struct Decode_decl : Decl
 {
   Decode_decl(Location loc, String const* n, Type const* t, Stmt const* s, Type const* h)
-    : Decl(loc, n, t), first(h), second(s)
+    : Decl(loc, n, t), first(h), second(s), start_(false)
   { }
 
   Type  const* header() const { return first; }
   Stmt  const* body()  const { return second; }
   bool         has_impl() const { return body() ? true : false; }
+  bool         is_start() const { return start_; }
+
   void accept(Decl_visitor& v) const { v.visit(this); }
 
   void set_body(Stmt const* s) { second = s; }
+  void set_start() { start_ = true; }
 
   Type const* first;
   Stmt const* second;
+  bool start_;
 };
 
 
@@ -288,25 +300,28 @@ struct Decode_decl : Decl
 struct Table_decl : Decl
 {
   Table_decl(Location loc, String const* n, Type const* t, int num, Expr_seq const& conds)
-    : Decl(loc, n, t), first(num), second(conds)
+    : Decl(loc, n, t), first(num), second(conds), start_(false)
   { }
 
   Table_decl(Location loc, String const* n, Type const* t, int num, Expr_seq const& conds, Decl_seq const& init)
-    : Decl(loc, n, t), first(num), second(conds), third(init)
+    : Decl(loc, n, t), first(num), second(conds), third(init), start_(false)
   { }
 
   int             number() const     { return first; }
   Expr_seq const& conditions() const { return second; }
   Decl_seq const& body() const { return third; }
-
   bool has_impl() const { return (body().size() > 0) ? true : false; }
+  bool is_start() const { return start_; }
+
   void accept(Decl_visitor& v) const { v.visit(this); }
 
   void set_body(Decl_seq const& d) { third = d; }
+  void set_start() { start_ = true; }
 
   int      first;
   Expr_seq second;
   Decl_seq third;
+  bool start_;
 };
 
 
@@ -465,6 +480,8 @@ Flow_decl*      make_flow_decl(Location, Expr_seq const&, Value const, Stmt cons
 Extracts_decl*  make_extracts_decl(Location, Expr const*);
 Rebind_decl*    make_rebind_decl(Location, Expr const*, Expr const*);
 
+Forward_decl*   make_forward_decl(Location, Decl const*, Fwd_kind);
+
 
 // Add definitions to declarations that don't have them
 void define(Decode_decl*, Stmt const*);
@@ -591,6 +608,21 @@ inline Rebind_decl*
 make_rebind_decl(Expr const* e1, Expr const* e2)
 {
   return make_rebind_decl(Location::none, e1, e1);
+}
+
+
+// TODO: implement the rest of forward decls
+inline Forward_decl*
+make_forward_decl(Decl const* d)
+{
+  if (is<Function_decl>(d))
+    return make_forward_decl(Location::none, d, function_fwd);
+  if (is<Decode_decl>(d))
+    return make_forward_decl(Location::none, d, decode_fwd);
+  if (is<Table_decl>(d))
+    return make_forward_decl(Location::none, d, table_fwd);
+
+  return nullptr;
 }
 
 

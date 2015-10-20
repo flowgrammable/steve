@@ -51,6 +51,9 @@ Value evaluate(Index_expr const*);
 Value evaluate(Member_expr const*);
 Value evaluate(Convert_expr const*);
 
+// FIXME: why is this function being forced to be here?
+Value evaluate(Header_cast_expr const*);
+
 void evaluate(Decl const*);
 void evaluate(Variable_decl const*);
 

@@ -80,6 +80,8 @@ struct Expr_visitor
   virtual void visit(Delete_expr const*) { }
   virtual void visit(Field_idx_expr const*) { }
   virtual void visit(Header_idx_expr const*) { }
+  // builtins
+  virtual void visit(Header_cast_expr const*) { }
 };
 
 
@@ -599,6 +601,8 @@ struct Generic_expr_visitor : Expr_visitor, Generic_visitor<F, T>
   void visit(Delete_expr const* e) { this->invoke(e); }
   void visit(Field_idx_expr const* e) { this->invoke(e); }
   void visit(Header_idx_expr const* e) { this->invoke(e); }
+  // builtin
+  void visit(Header_cast_expr const* e) { this->invoke(e); }
 };
 
 
