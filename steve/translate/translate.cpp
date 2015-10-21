@@ -104,10 +104,10 @@ Translator::codegen()
   code += "#include <iostream>\n"
           "#include \"lang/include.hpp\"\n"
           "using namespace fp;\n"
-          "using App_cxt = App_context<" + std::to_string(get_num_headers()) + ", "
-                                         + std::to_string(get_num_fields()) + ", " 
-                                         + std::to_string(max_extract) +
-                                         ">;\n";
+          "using App_cxt = Application_context<" + std::to_string(get_num_headers()) + ", "
+                                                 + std::to_string(get_num_fields()) + ", " 
+                                                 + std::to_string(max_extract) +
+                                                 ">;\n";
 
 
   for (auto stmt : program) {
@@ -116,11 +116,14 @@ Translator::codegen()
 
   std::string entry_code;
   switch (entry_.second) {
+    // we have to dereference the _cxt_ because it is passed
+    // via pointer but we want to pass it via reference
+    // for the duration of the application runtime
     case Entry_kind::decode:
-      entry_code += "__decode(_cxt_, " + entry_.first + ");\n";
+      entry_code += "__decode(*_cxt_, " + entry_.first + ");\n";
       break;
     case Entry_kind::match:
-      entry_code += "__match(_cxt_, " + entry_.first + ");\n";
+      entry_code += "__match(*_cxt_, " + entry_.first + ");\n";
       break;
   }
 
