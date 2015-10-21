@@ -68,7 +68,7 @@ bind_offset()
 }
 
 
-// __bind_header(cxt: ref CXT, header_env : int)
+// __bind_header(cxt: ref CXT, header_env : int, length : int)
 // cxt: context
 // offset: offset of the header within the buffer
 Function_decl* 
@@ -78,7 +78,8 @@ bind_header()
   Decl_seq parms =
   {
     make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-    make_parameter_decl(get_identifier("env_offset"), get_uint_type())
+    make_parameter_decl(get_identifier("env_offset"), get_uint_type()),
+    make_parameter_decl(get_identifier("len"), get_uint_type())
   };
 
   return make_function_decl(n, parms, get_void_type(), make_empty_block());

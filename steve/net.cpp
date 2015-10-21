@@ -550,4 +550,33 @@ int get_num_fields()
   return cxt_env.fields().size();
 }
 
+
+// get the number mapped to the header within the
+// simplified environment
+Value_expr*
+get_header_binding(String const* s)
+{
+  return make_value_expr(get_int_type(), lookup_header_binding(s));
+}
+
+
+// get the number mapped to the field within the
+// simplified environment
+Value_expr*
+get_field_binding(String const* s)
+{
+  return make_value_expr(get_int_type(), lookup_field_binding(s));
+}
+
+
+Decl const*
+get_start()
+{
+  if (entry) {
+    return entry->decl();
+  }
+  
+  return nullptr;
+}
+
 } // namespace steve

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <stdexcept>
 
 namespace steve
 {
@@ -25,6 +26,8 @@ enum Entry_kind {
 
 std::pair<std::string, Entry_kind> entry_;
 
+int max_extract = 4;
+
 } // namespace
 
 // Extract the pipeline and maintain the statement location
@@ -37,30 +40,18 @@ void
 Translator::extract_pipeline()
 {
   int count = 0;
-  // flag to help determine entry point
-  bool is_start = true;
 
   for (auto stmt : program) {
     // If it is a declaration stmt declaring a pipeline stage
     if (Decl_stmt const* s = as<Decl_stmt>(stmt)) {
       // decode decl
       if (is<Decode_decl>(s->decl())) {
-        if (is_start) {
-          entry_ = std::make_pair(*(s->decl()->name()), Entry_kind::decode);
-          is_start = false;
-        }
-
         register_stage(as<Decode_decl>(s->decl()));
         locations_.insert({stmt, count});
       }
 
       // table decl
       if (is<Table_decl>(s->decl())) {
-        if (is_start) {
-          entry_ = std::make_pair(*(s->decl()->name()), Entry_kind::match);
-          is_start = false;
-        }
-
         register_stage(as<Table_decl>(s->decl()));
         locations_.insert({stmt, count});
       }
@@ -70,7 +61,13 @@ Translator::extract_pipeline()
   }
 
   // check the pipeline
-  check_pipeline();
+  if (check_pipeline()) {
+    // get the start of the pipeline so
+    // we know how to generate the entry point
+    // entry_ = std::make_pair()
+  }
+  else
+    throw std::runtime_error("Bad pipeline.");
 }
 
 
@@ -101,12 +98,13 @@ Translator::codegen()
 
   // inject the include statements
   code += "#include <iostream>\n"
-          "#include \"builtin.hpp\"\n"
-          "#include \"app_context.hpp\"\n"
-          "#include \"include.hpp\"\n"
+          "#include \"lang/include.hpp\"\n"
           "using namespace fp;\n"
           "using App_cxt = App_context<" + std::to_string(get_num_headers()) + ", "
-                                         + std::to_string(get_num_fields()) + ">;\n";
+                                         + std::to_string(get_num_fields()) + ", " 
+                                         + std::to_string(max_extract) +
+                                         ">;\n";
+
 
   for (auto stmt : program) {
     code += tostring(translate(stmt));
@@ -132,7 +130,7 @@ Translator::codegen()
   // inject the entry into the pipeline
   code += "Context* ingress(App_cxt* _cxt_)"
           "{\n"
-          "   App_cxt a = new App_cxt(_cxt_);\n"
+          "   App_cxt* a = new App_cxt(_cxt_);\n"
           "   delete _cxt_;\n"
           "   _cxt_ = a;\n"
           "   " + entry_code + 

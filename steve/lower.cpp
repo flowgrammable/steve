@@ -305,8 +305,10 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 
   Expr_seq args {
     id(cxt), 
-    make_value_expr(get_int_type(), lookup_header_binding(as<Record_type>(d->header())->decl()->name()))
+    make_value_expr(get_int_type(), lookup_header_binding(as<Record_type>(d->header())->decl()->name())),
+    lower_lengthof(make_lengthof_expr(id(header_var)))
   };
+
   new_stmts.push_back(make_expr_stmt(make_call_expr(id(bind_header), args)));
 
   // for each stmt, attempt to lower it and at it to the new body

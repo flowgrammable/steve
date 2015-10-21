@@ -1,6 +1,7 @@
 #include "translate-decl.hpp"
 #include "steve/length.hpp"
 #include "steve/evaluate.hpp"
+#include "steve/net.hpp"
 
 namespace steve
 {
@@ -41,7 +42,7 @@ translate_fwd_decode(Decode_decl const* d)
   //synthesize a parameter name and a fake Context type
   static cxx::Basic_id cxt_name("_cxt_");
 
-  cxx::Type* cxt_type = translate(get_context_type());
+  cxx::Type* cxt_type = translate(get_reference_type(get_context_type()));
   cxx::Type* void_type = translate(get_void_type());
 
   cxx::Parameter_decl* cxt = new cxx::Parameter_decl(cxx::simple_type_spec, &cxt_name, cxt_type);
@@ -233,9 +234,10 @@ struct Decl_translator
     //
     // The initializer list for tables
     // thus ends up being an init expr list containing
-    // a sequence of init expr
+    // a sequence of init expr and a key vector
     //
-    // Hash_table t = {
+    // Exact_table t( { key vector }, 
+    // { // initializer list
     //    init_expr,
     //    init_expr,...
     // }
@@ -246,15 +248,30 @@ struct Decl_translator
       seq.push_back(translate(decl));
     }
 
+    cxx::Expr_seq key_vec;
+    for (auto f : d->conditions()) {
+      assert(is<Field_expr>(f));
+      Field_expr const* field = as<Field_expr>(f);
+      auto binding = translate(get_field_binding(field->name()));
+      key_vec.push_back(binding);
+    }
+
+    // key_vec init expr
+    cxx::Init_expr* keys = new cxx::Init_expr(nullptr, key_vec);
     // Init_expr have unknown type
-    cxx::Init_expr* init = new cxx::Init_expr(nullptr, seq);
+    // flow initializers
+    cxx::Init_expr* flows = new cxx::Init_expr(nullptr, seq);
+
+    // constructions
+    cxx::Construct_expr* ctor = new cxx::Construct_expr(type, {keys, flows});
+
     // Id_expr for the table name
-    cxx::Id_expr* table_name = new cxx::Id_expr(nullptr, cxx::unknown_cat, name, nullptr);
+    // cxx::Id_expr* table_name = new cxx::Id_expr(nullptr, cxx::unknown_cat, name, nullptr);
 
     // assignment
-    cxx::Binary_expr* assign = new cxx::Binary_expr(type, cxx::unknown_cat, nullptr, cxx::assign_op, table_name, init);
+    cxx::Variable_decl* table = new cxx::Variable_decl(cxx::simple_type_spec, name, type, ctor);
 
-    return new cxx::Expr_stmt(assign);
+    return table;
   }
 
   // lowering of flow declarations should handle this before we translate

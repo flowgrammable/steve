@@ -134,6 +134,12 @@ Pipeline const& get_pipeline();
 int get_num_headers();
 int get_num_fields();
 
+// get the integer representation for a field
+Value_expr* get_header_binding(String const*);
+Value_expr* get_field_binding(String const*);
+
+Decl const* get_start();
+
 } // namespace steve
 
 #endif
