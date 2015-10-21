@@ -570,7 +570,7 @@ get_field_binding(String const* s)
 
 
 Decl const*
-get_start()
+pipeline_get_start()
 {
   if (entry) {
     return entry->decl();

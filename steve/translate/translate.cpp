@@ -64,7 +64,11 @@ Translator::extract_pipeline()
   if (check_pipeline()) {
     // get the start of the pipeline so
     // we know how to generate the entry point
-    // entry_ = std::make_pair()
+    Decl const* start_decl = pipeline_get_start();
+    if (is<Decode_decl>(start_decl))
+      entry_ = std::make_pair(*start_decl->name(), Entry_kind::decode);
+    else if (is<Table_decl>(start_decl))
+      entry_ = std::make_pair(*start_decl->name(), Entry_kind::match);
   }
   else
     throw std::runtime_error("Bad pipeline.");

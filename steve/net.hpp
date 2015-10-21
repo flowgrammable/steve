@@ -138,7 +138,7 @@ int get_num_fields();
 Value_expr* get_header_binding(String const*);
 Value_expr* get_field_binding(String const*);
 
-Decl const* get_start();
+Decl const* pipeline_get_start();
 
 } // namespace steve
 
