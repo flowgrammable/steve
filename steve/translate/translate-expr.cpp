@@ -288,7 +288,7 @@ struct Expr_translator
     auto current_byte = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, {}, &get_current_byte);
     auto access = new cxx::Dot_expr(nullptr, cxx::unknown_cat, cxt, current_byte);
 
-    return new cxx::Dynamic_cast_expr(translate(e->type()), access); 
+    return new cxx::Reinterpret_cast_expr(translate(e->type()), access); 
   }
 };
 

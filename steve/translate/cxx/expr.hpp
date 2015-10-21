@@ -295,6 +295,13 @@ struct Static_cast_expr : Expr, Kind_of<static_cast_expr> {
 
 // A reinterpret cast expression.
 struct Reinterpret_cast_expr : Expr, Kind_of<reinterpret_cast_expr> {
+  Reinterpret_cast_expr(Type* t, Expr* e)
+    : Expr(Kind, t, unknown_cat), first(t), second(e)
+  { }
+
+  Type* cast_type() const { return first; }
+  Expr* object() const { return second; }
+
   Type* first;
   Expr* second;
 };
