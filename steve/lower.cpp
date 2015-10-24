@@ -278,7 +278,8 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
   auto bind_header = builtin_function(__bind_header);
-  auto header_cast = make_header_cast(get_reference_type(d->header()));
+  // FIXME: header_cast expr implicitly has type ref(d->header)
+  auto header_cast = make_header_cast(d->header());
 
   // FIXME: a bit of a hack but it works
   // going to declare a parameter named header for the explicit and only purpose

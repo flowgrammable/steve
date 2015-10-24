@@ -243,11 +243,14 @@ struct Decl_translator
     // }
     cxx::Expr_seq seq;
 
+    // translate each flow decl
     for (auto decl : d->body()) {
       assert(is<Flow_decl>(decl));
       seq.push_back(translate(decl));
     }
 
+    // create an integer based key vector from the environment bindings
+    // for each field
     cxx::Expr_seq key_vec;
     for (auto f : d->conditions()) {
       assert(is<Field_expr>(f));
@@ -298,13 +301,13 @@ struct Decl_translator
     // the return type is meaningless here
     // we're never going to get a type other than Key
     // unless the program was malformed
-    static cxx::Basic_id* name = new cxx::Basic_id("make_key");
+    static cxx::Basic_id* name = new cxx::Basic_id("fp::make_key");
     cxx::Call_expr* make_key = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, subkeys, name);
 
     // Flow constructor
     // FIXME: currently only a placeholder
 
-    static cxx::Basic_id flow_type_name("Flow");
+    static cxx::Basic_id flow_type_name("fp::Flow");
     static cxx::Class_type flow_type(&flow_type_name, {}, {}); 
     cxx::Construct_expr* flow_construct = new cxx::Construct_expr(&flow_type, {});
 

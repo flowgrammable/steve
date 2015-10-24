@@ -128,20 +128,20 @@ Translator::codegen()
   }
 
   // inject egress code
-  code += "void egress(App_cxt* _cxt_)"
+  code += "void egress(fp::Context* _cxt_)"
           "{\n"
           "   std::cout << _cxt_ << \'\\n\';\n"
           "   delete _cxt_;\n"
           "}\n";
 
   // inject the entry into the pipeline
-  code += "Context* ingress(App_cxt* _cxt_)"
+  code += "Context* ingress(fp::Context* _cxt_)"
           "{\n"
-          "   App_cxt* a = new App_cxt(_cxt_);\n"
+          "   App_cxt* a = new App_cxt(*_cxt_);\n"
           "   delete _cxt_;\n"
           "   _cxt_ = a;\n"
           "   " + entry_code + 
-          "   egress(*a);\n"
+          "   egress(_cxt_);\n"
           "}\n";
 
   std::cout << code;

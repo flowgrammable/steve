@@ -381,11 +381,9 @@ struct Less_expr_fn
     return less(t1, cast<Header_idx_expr>(t2));
   }
 
-  // FIXME: this is technically a nullary so less
-  // will generally fail here.
   bool operator()(Header_cast_expr const* t1) const
   {
-    return false;
+    return less(t1, cast<Header_cast_expr>(t2));
   }
 
   Expr const* t2;

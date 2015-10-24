@@ -20,10 +20,14 @@ namespace steve
 struct Header_cast_expr : Expr 
 {
   Header_cast_expr(Type const* t)
-    : Expr(Location::none, t)
+    : Expr(Location::none, get_reference_type(t)), first(t)
   { }
 
+  Type const* cast_type() const { return first; }
+
   void accept(Expr_visitor& v) const { v.visit(this); }
+
+  Type const* first;
 };
 
 

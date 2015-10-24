@@ -294,7 +294,7 @@ struct Expr_translator
     auto cxt = new cxx::Id_expr(nullptr, cxx::unknown_cat, &cxt_name, nullptr);
     auto current_byte = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, {}, &get_current_byte);
     auto access = new cxx::Dot_expr(nullptr, cxx::unknown_cat, cxt, current_byte);
-    auto reint = new cxx::Reinterpret_cast_expr(new cxx::Pointer_type(translate(e->type())), access); 
+    auto reint = new cxx::Reinterpret_cast_expr(new cxx::Pointer_type(translate(e->cast_type())), access); 
 
     return new cxx::Unary_expr(nullptr, cxx::unknown_cat, nullptr, cxx::deref_op, reint);
   }
