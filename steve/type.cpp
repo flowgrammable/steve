@@ -809,21 +809,30 @@ check_flow_decl(Decl const* f, Type const* t)
   }
 
   // next check the corresponding types
-  auto it_f = flw_t->key_types().begin();
-  auto it_t = tbl_t->key_fields().begin();
+  // iterator for elements within the table key
+  auto it_table_t = tbl_t->key_fields().begin();
+  // iterator for keys within the flow
+  auto it_subkey = flow->keys().begin();
 
   int count = 0;
-  while ((it_f != flw_t->key_types().end()) && (it_t != tbl_t->key_fields().end())) {
-    if (*it_f != (*it_t)->type()) {
-      error(f->location(), "Subkey index '{}' of type '{}' in flow '{}' does not match table subkey '{}' of type '{}'",
-            count, *it_f, flow, *it_t, (*it_t)->type());
-      ok = false;
+  while (it_subkey != flow->keys().end() && it_table_t != tbl_t->key_fields().end()) {
+    // check that the types match
+    if ((*it_subkey)->type() != (*it_table_t)->type()) {
+      // if they don't then check if a conversion is possible
+      Expr const* c = convert(*it_subkey, (*it_table_t)->type());
+      // if conversion failed
+      if (!c) {
+        error(f->location(), "Subkey index '{}' of type '{}' in flow '{}' does not match table subkey '{}' of type '{}'",
+              count, (*it_subkey)->type(), flow, *it_table_t, (*it_table_t)->type());
+        ok = false;
+      }
     }
-    count++;
-    it_f++;
-    it_t++;
+    // iterate all iterators
+    ++count;
+    ++it_table_t;
+    ++it_subkey;
   }
-
+  
   return ok;
 }
 

@@ -24,6 +24,7 @@ add_test_driver(test-name name.cpp)
 add_test_driver(test-ofp        ofp.cpp)
 add_test_driver(test-decode     decode.cpp)
 add_test_driver(test-length     length.cpp)
+add_test_driver(test-table      table.cpp)
 
 add_test_driver(test-lex        lex.cpp)
 add_test_driver(test-parse      parse.cpp)
@@ -47,3 +48,4 @@ add_test(test-name test-name)
 
 add_test(test-ofp        test-ofp)
 add_test(test-decode     test-decode)
+add_test(test-table      test-table)

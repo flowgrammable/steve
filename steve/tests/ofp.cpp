@@ -79,23 +79,20 @@ Record_decl*
 make_real_ipv4_header()
 {
   Decl_seq mem {
-    make_member("version", get_msbf_type(4)),
-    make_member("ihl", get_msbf_type(4)),
-    make_member("dscp", get_msbf_type(6)),
-    make_member("len", get_msbf_type(16)),
-    make_member("id", get_msbf_type(16)),
-    make_member("flags", get_msbf_type(3)),
-    make_member("frag", get_msbf_type(13)),
-    make_member("ttl", get_msbf_type(8)),
-    make_member("protocol", get_msbf_type(8)),
-    make_member("checksum", get_msbf_type(16)),
-    make_member("src", get_msbf_type(6)),
-    make_member("dst", get_msbf_type(6)),
+    make_member("version_ihl", get_umsbf_type(8)),
+    make_member("dscp_ecn", get_umsbf_type(8)),
+    make_member("len", get_umsbf_type(16)),
+    make_member("id", get_umsbf_type(16)),
+    make_member("frag", get_umsbf_type(16)),
+    make_member("ttl", get_umsbf_type(8)),
+    make_member("protocol", get_umsbf_type(8)),
+    make_member("checksum", get_umsbf_type(16)),
+    make_member("src", get_umsbf_type(32)),
+    make_member("dst", get_umsbf_type(32)),
   };
 
   return make_record("ipv4", mem);
 }
-
 
 Record_decl*
 make_ipv6_header()

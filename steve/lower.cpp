@@ -84,6 +84,7 @@ lower_offset(Expr const* e)
     return get_offset(rd, off->member());
   }
 
+  // It might have reference type
   if (Reference_type const* ref = as<Reference_type>(off->object()->type())) {
     if (is<Record_type>(ref->type())) {
       // get the record declaration from the record type
