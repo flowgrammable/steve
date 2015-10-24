@@ -468,6 +468,8 @@ is_object_type()
   return is_scalar_type<T>()
       || is_aggregate_type<T>()
       || is_user_defined_type<T>()
+      // FIXME: is a reference really an object tpye
+      || std::is_base_of<T, Reference_type>::value
       || std::is_base_of<T, Constant_type>::value
       || std::is_base_of<T, Table_type>::value
       || std::is_base_of<T, Flow_type>::value;
@@ -597,6 +599,8 @@ is_object_type(Type const* t)
   return is_scalar_type(t)
       || is_aggregate_type(t)
       || is_user_defined_type(t)
+      // FIXME: is a reference really of object type?
+      || is<Reference_type>(t)
       || is<Constant_type>(t)
       || is<Table_type>(t)
       || is<Flow_type>(t);

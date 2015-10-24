@@ -528,6 +528,15 @@ test_table_types()
 }
 
 
+// Test for path finding on graphs with cycles (\\ is loop)
+//       dummy
+//   /            \
+//  eth_d  ---   dummy2
+//(loops self)
+//      \\        /
+//          ipv4
+//           |
+//           t1
 void
 test4()
 {
@@ -570,11 +579,11 @@ test4()
   //----------------------------------------------------------------//
   //              Definitions
 
-  Parameter_decl* _header_1 = make_parameter_decl(
+  Variable_decl* _header_1 = make_variable_decl(
                                 get_identifier("_header_"), 
                                 get_record_type(eth));
 
-  Parameter_decl* _header_2 = make_parameter_decl(
+  Variable_decl* _header_2 = make_variable_decl(
                                 get_identifier("_header_"), 
                                 get_record_type(ipv4));
 
@@ -587,8 +596,9 @@ test4()
     make_decl_stmt(make_extracts_decl(eth_type)),
     make_match_stmt(cond1, 
       Stmt_seq {
-        make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
+        make_case(zero(), make_do(Do_kind::decode, eth_d)),
         make_case(one(), make_do(Do_kind::decode, ipv4_d)),
+        make_case(two(), make_do(Do_kind::decode, ipv4_d)),
       }
     )
   };
@@ -599,8 +609,8 @@ test4()
     make_decl_stmt(make_extracts_decl(ipv4_dst)),
     make_match_stmt(cond2, 
       Stmt_seq {
-        make_case(zero(), make_do(Do_kind::table, t1)),
         make_case(one(), make_do(Do_kind::decode, eth_d)),
+        make_case(zero(), make_do(Do_kind::table, t1)),
       }
     )
   };
@@ -620,6 +630,7 @@ test4()
     make_match_stmt(cond1, 
       Stmt_seq {
         make_case(zero(), make_do(Do_kind::decode, ipv4_d)),
+        make_case(one(), make_do(Do_kind::decode, eth_d)),
       }
     )
   };
@@ -649,6 +660,7 @@ test4()
   print(t1);
 
   // register stages
+  dummy->set_start();
   register_stage(dummy);
   register_stage(eth_d);
   register_stage(dummy2);
@@ -660,12 +672,13 @@ test4()
 
 
 
+
 int main()
 {
   Global_scope global;
-  test1();
+  // test1();
   // test_table_types();
   // test2();
   // test3();
-  // test4();
+  test4();
 }

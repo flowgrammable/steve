@@ -36,8 +36,23 @@ test_1()
 }
 
 
+void 
+test_2()
+{
+  Decl_seq parms {
+    make_parm("n", get_reference_type(get_int_type())),
+    make_parm("b", get_bool_type())
+  };
+  Decl const* fn = make_fn("f1", parms);
+
+
+  Expr const* c1 = call(fn, {zero(), truth()});
+}
+
+
 int
 main()
 {
-  test_1();
+  // test_1();
+  test_2();
 }

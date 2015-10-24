@@ -4,7 +4,7 @@
 #include "steve/net.hpp"
 #include "steve/offset.hpp"
 #include "steve/length.hpp"
-
+#include "steve/convert.hpp"
 
 
 namespace steve
@@ -75,13 +75,25 @@ lower_offset(Expr const* e)
 {
   lingo_assert(is<Offsetof_expr>(e));
   Offsetof_expr const* off = as<Offsetof_expr>(e);
+
   // confirm this has record type
-  lingo_assert(is<Record_type>(off->object()->type()));
+  if (is<Record_type>(off->object()->type())) {
+    // get the record declaration from the record type
+    Record_decl const* rd = as<Record_type>(off->object()->type())->decl();
 
-  // get the record declaration from the record type
-  Record_decl const* rd = as<Record_type>(off->object()->type())->decl();
+    return get_offset(rd, off->member());
+  }
 
-  return get_offset(rd, off->member());
+  if (Reference_type const* ref = as<Reference_type>(off->object()->type())) {
+    if (is<Record_type>(ref->type())) {
+      // get the record declaration from the record type
+      Record_decl const* rd = as<Record_type>(ref->type())->decl();
+
+      return get_offset(rd, off->member());
+    }
+  }
+
+  return nullptr;
 }
 
 
@@ -265,7 +277,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
 {
   // Find the bind header functions
   auto bind_header = builtin_function(__bind_header);
-  auto header_cast = make_header_cast(d->header());
+  auto header_cast = make_header_cast(get_reference_type(d->header()));
 
   // FIXME: a bit of a hack but it works
   // going to declare a parameter named header for the explicit and only purpose
@@ -276,7 +288,7 @@ lower_decode_decl(Decode_decl const* d, Stmt_seq& stmts)
   // Technically this entire line is not type checked because the type check would fail
   // since header_cast neither has the correct return type nor a return at all, but 
   // this works.
-  Variable_decl const* header_var = make_variable_decl(get_identifier(_header_), d->header(), header_cast);
+  Variable_decl const* header_var = make_variable_decl(get_identifier(_header_), get_reference_type(d->header()), header_cast);
 
   Local_scope local;
 

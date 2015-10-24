@@ -456,6 +456,13 @@ length(Until_type const* t)
 }
 
 
+Expr const*
+length(Reference_type const* t)
+{
+  return length(t->type());
+}
+
+
 struct Length_fn
 {
   template<typename T>

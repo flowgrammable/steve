@@ -120,10 +120,10 @@ Translator::codegen()
     // via pointer but we want to pass it via reference
     // for the duration of the application runtime
     case Entry_kind::decode:
-      entry_code += "__decode(*_cxt_, " + entry_.first + ");\n";
+      entry_code += "__decode(*a, " + entry_.first + ");\n";
       break;
     case Entry_kind::match:
-      entry_code += "__match(*_cxt_, " + entry_.first + ");\n";
+      entry_code += "__match(*a, " + entry_.first + ");\n";
       break;
   }
 
@@ -141,7 +141,7 @@ Translator::codegen()
           "   delete _cxt_;\n"
           "   _cxt_ = a;\n"
           "   " + entry_code + 
-          "   egress(_cxt_);\n"
+          "   egress(*a);\n"
           "}\n";
 
   std::cout << code;

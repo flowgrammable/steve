@@ -210,7 +210,11 @@ struct Expr_translator
       return new cxx::Int_expr(type, val.gets());
     }
 
-    return nullptr;
+    // otherwise if we cannot evaluate then
+    // the conversion implictly returns the original
+    // argument
+
+    return translate(e->arg());
   }
 
 
@@ -277,7 +281,10 @@ struct Expr_translator
     return nullptr;
   }
 
+
   // header cast
+  // header_cast() ->
+  // T& _header_ = *reinterpret_cast<T*>(_cxt_.get_current_byte());
   cxx::Expr*
   operator()(Header_cast_expr const* e)
   {
@@ -287,8 +294,9 @@ struct Expr_translator
     auto cxt = new cxx::Id_expr(nullptr, cxx::unknown_cat, &cxt_name, nullptr);
     auto current_byte = new cxx::Call_expr(nullptr, cxx::unknown_cat, nullptr, {}, &get_current_byte);
     auto access = new cxx::Dot_expr(nullptr, cxx::unknown_cat, cxt, current_byte);
+    auto reint = new cxx::Reinterpret_cast_expr(new cxx::Pointer_type(translate(e->type())), access); 
 
-    return new cxx::Reinterpret_cast_expr(translate(e->type()), access); 
+    return new cxx::Unary_expr(nullptr, cxx::unknown_cat, nullptr, cxx::deref_op, reint);
   }
 };
 

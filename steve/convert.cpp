@@ -252,7 +252,7 @@ perform_conversions(Expr const* e, Type const* dst)
   c = value_transformation(c, c->type(), dst);
   if (c->type() == dst)
     return c;
-
+  
   return nullptr;  
 }
 

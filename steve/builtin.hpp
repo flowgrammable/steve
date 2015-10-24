@@ -15,7 +15,7 @@ namespace steve
 // Builtin header cast expr
 // This expr simulates a function with the signature
 //
-// def header_cast() -> T { return x : T }
+// def header_cast() -> T& { return x : T& }
 //
 struct Header_cast_expr : Expr 
 {

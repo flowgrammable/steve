@@ -163,18 +163,6 @@ lookup_field()
 }
 
 
-// header_cast() is injected at the beginning of every decode function
-// the result is declaring a variable named _header_ 
-// and assigning a reinterpret cast of packet
-// memory from the context as its value
-Function_decl*
-header_cast()
-{
-  String const* n = get_identifier(__header_cast);
-  return make_function_decl(n, {}, get_void_type(), make_empty_block());
-}
-
-
 // An intrinsic function which returns an object of context type
 // In theory this will be part of the lowering process which retrieves
 // the context type which gets passed around 
