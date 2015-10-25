@@ -23,18 +23,19 @@ using Decl_set = std::set<Decl const*>;
 
 struct Extracted : std::vector<Decl const*> 
 {
-  Extracted(int c, Decl const* d)
-    : std::vector<Decl const*>::vector { d }, count(c)
+  Extracted(int c, Decl const* d, String const* n)
+    : std::vector<Decl const*>::vector { d }, count(c), name_(n)
   { }
 
   bool is_singleton() const { return size() == 1; }
-  String const* name() const { return front()->name(); }
+  String const* name() const { return name_; }
   Decl const* latest() const { return back(); }
 
   void pop() { pop_back(); }
   void push(Decl const* d) { push_back(d); }
 
   int count;
+  String const* name_;
 };
 
 

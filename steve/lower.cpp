@@ -150,8 +150,8 @@ lower_rebind_decl(Rebind_decl const* d)
     if (Overload const* oh = lookup(get_identifier(_header_))) {
       Expr_seq args {
         id(oc->front()),
-        make_value_expr(get_uint_type(), lookup_field_binding(f2->name())),
         make_value_expr(get_uint_type(), lookup_field_binding(f1->name())),
+        make_value_expr(get_uint_type(), lookup_field_binding(f2->name())),
         lower(make_offsetof_expr(id(oh->front()), f2->field()->decl())),
         lower(make_lengthof_expr(id(f2->field()->decl())))
       };

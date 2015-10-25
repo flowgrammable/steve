@@ -45,7 +45,9 @@ print(Stage* s)
 // TODO: delete me when done testing
 void
 print(Extracted* e) {
-  print("Extracted: {}. {} size: {} \n", e->count, e->name(), e->size());
+  print("Extracted: {}. {} size: {} straddr: ", e->count, e->name(), e->size());
+  std::cout << e->name();
+  print("\n");
 }
 
 
@@ -123,7 +125,7 @@ Pipeline_environment::push(String const* n, Decl const* d)
     (*search).second->push(d);
   }
   else {
-    Extracted* e = extracted_.make(this->size(), d);
+    Extracted* e = extracted_.make(this->size(), d, n);
     this->insert(std::make_pair(n, e));
   }
 }
@@ -197,11 +199,6 @@ register_rebind(Rebind_decl const* d, Expr_seq& product)
 
   pipeline.env().fields().push(as<Field_expr>(d->field1())->name(), d);
   pipeline.env().fields().push(as<Field_expr>(d->field2())->name(), d);
-
-  print(d->field1());
-  print(d->field2());
-  print(lookup_field_binding(as<Field_expr>(d->field1())->name()));
-  print(lookup_field_binding(as<Field_expr>(d->field2())->name()));
 }
 
 
