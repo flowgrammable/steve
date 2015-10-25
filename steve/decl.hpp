@@ -341,6 +341,8 @@ struct Flow_decl : Decl
   Stmt const*     instructions() const { return third; }
   void accept(Decl_visitor& v) const { v.visit(this); }
 
+  void set_instructions(Stmt const* i) { third = i; }
+
   Value first;
   Expr_seq const second;
   Stmt const* third;

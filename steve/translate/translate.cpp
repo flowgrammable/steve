@@ -79,11 +79,9 @@ void
 Translator::lower_pipeline()
 {
   for (auto pair : locations_) {
-    // now that stuffs been registered we can lower it
-    Stmt_seq lowered;
-
+    // now that stuff's been registered we can lower it
     int loc = pair.second;
-    lower(pair.first, lowered);
+    Stmt_seq lowered = lower(pair.first);
 
     program.erase(program.begin() + loc);
 

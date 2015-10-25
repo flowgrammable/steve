@@ -40,7 +40,8 @@ struct Match_dispatch_fn
     Decl_seq parms =
     {
       make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
-      make_parameter_decl(get_identifier("_table_"), t)
+      make_parameter_decl(get_identifier("_table_"), t),
+      make_parameter_decl(get_identifier("advance"), get_int_type())
     };
 
     return make_function_decl(get_identifier(__match), parms, get_void_type(), make_empty_block());
@@ -48,7 +49,7 @@ struct Match_dispatch_fn
 };
 
 
-// __bind_offset(cxt : ref CXT, env_offset : int, offsetof : int)
+// __bind_offset(cxt : ref CXT, env_offset : int, offsetof : int, len : int)
 // cxt: ref context
 // env_offset: offset of the field within the environment
 //              determined by walking the program and assignin unique values to extracts
@@ -61,7 +62,8 @@ bind_offset()
   {
     make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
     make_parameter_decl(get_identifier("env_offset"), get_uint_type()),
-    make_parameter_decl(get_identifier("offset"), get_uint_type())
+    make_parameter_decl(get_identifier("offset"), get_uint_type()),
+    make_parameter_decl(get_identifier("len"), get_uint_type()),
   };
 
   return make_function_decl(n, parms, get_void_type(), make_empty_block());
@@ -102,9 +104,13 @@ advance()
 }
 
 
-// __decode(cxt : CXT, decode_fn : (*)(cxt CXT)) -> void
+// __decode(cxt : CXT, decode_fn : (*)(cxt CXT), advance : int) -> void
 // the decode dispatching function which dispatches a context
 // off to given decoding function
+// 
+// 1.Takes the context
+// 2.The decoder
+// 3.An integer to advance the current byte offset by before decoding
 Function_decl*
 decode_fn()
 {
@@ -119,7 +125,8 @@ decode_fn()
   Decl_seq parms =
   {
     make_parameter_decl(get_identifier("_cxt_"), get_reference_type(get_context_type())),
-    make_parameter_decl(get_identifier("_decoder_"), d_fn_t)
+    make_parameter_decl(get_identifier("_decoder_"), d_fn_t),
+    make_parameter_decl(get_identifier("advance"), get_int_type())
   };
 
   return make_function_decl(n, parms, get_void_type(), make_empty_block());
@@ -304,7 +311,7 @@ get_match_fn(Type const* t)
   for (auto it = match_fn.first; it != match_fn.second; it++) {
     Function_decl const* fn = it->second;
     // look at the second parameter (or at[1] on the 0 scale)
-    lingo_assert(fn->parms().size() == 2);
+    lingo_assert(fn->parms().size() > 0);
     if (fn->parms().at(1)->type() == t)
       return fn;
   }

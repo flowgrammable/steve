@@ -177,8 +177,9 @@ make_do(Do_kind k, Table_decl const* d)
 void
 lower_decodes(Decode_decl const* d)
 {
-  Stmt_seq stmts;
-  for (auto s : lower(make_decl_stmt(d), stmts)) {
+  Stmt_seq l = lower(make_decl_stmt(d));
+  print(l.size());
+  for (auto s : l) {
     print(s);
   }
 }
@@ -296,9 +297,6 @@ test1()
 
   // check pipeline and push only if check_pipeline succeeds
   if (check_pipeline()) {
-    // lowering has to happen in reverse as well
-    // FIXME: every Decode_decl should cause a forward-decl
-    // for the lowered function first
     lower_decodes(eth_d);
     lower_decodes(ipv4_d);
 
@@ -673,9 +671,9 @@ test4()
 int main()
 {
   Global_scope global;
-  // test1();
+  test1();
   // test_table_types();
   // test2();
   // test3();
-  test4();
+  // test4();
 }

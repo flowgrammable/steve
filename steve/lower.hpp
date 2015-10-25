@@ -13,7 +13,9 @@
 namespace steve
 {
 
-Stmt_seq const& lower(Stmt const*, Stmt_seq&);
+Stmt_seq lower(Stmt const*);
+Expr const* lower(Expr const*);
+Decl const* lower(Decl const*);
 
 } // namespace steve
 
