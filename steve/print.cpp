@@ -845,6 +845,24 @@ print(Printer& p, Variant_decl const* d)
 
 
 void
+print(Printer& p, Extracts_decl const* d)
+{
+  print(p, "extracts ");
+  print(p, d->field());
+}
+
+
+void
+print(Printer& p, Rebind_decl const* d)
+{
+  print(p, "extracts ");
+  print(p, d->field1());
+  print(p, " as ");
+  print(p, d->field2());
+}
+
+
+void
 print(Printer& p, Stmt const* s)
 {
   print_term(p, s);
@@ -920,12 +938,5 @@ print(Printer& p, Match_stmt const* s)
   print_match_body(p, s);
 }
 
-
-void
-print(Printer& p, Extracts_decl const* s)
-{
-  print(p, "extracts ");
-  print(p, s->field());
-}
 
 } // namespace steve

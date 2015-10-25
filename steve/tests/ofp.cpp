@@ -178,7 +178,6 @@ void
 lower_decodes(Decode_decl const* d)
 {
   Stmt_seq l = lower(make_decl_stmt(d));
-  print(l.size());
   for (auto s : l) {
     print(s);
   }
@@ -263,6 +262,7 @@ test1()
   Stmt_seq ipv4_d_body {
     make_decl_stmt(make_extracts_decl(ipv4_src)),
     make_decl_stmt(make_extracts_decl(ipv4_dst)),
+    make_decl_stmt(make_rebind_decl(ipv4_proto, eth_type)),
     make_match_stmt(cond2, 
       Stmt_seq {
         make_case(zero(), make_do(Do_kind::table, t1)),

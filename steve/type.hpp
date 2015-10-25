@@ -744,6 +744,7 @@ Type const* type_tuple_expr(Expr_seq const&);
 Type const* type_index_expr(Expr const*, Expr const*);
 Type const* type_member_expr(Expr const*, Expr const*);
 Type const* type_field_expr(Expr const*, Expr const*);
+Type const* type_rebind_decl(Expr const*, Expr const*);
 
 bool check_initializer(Type const*, Expr const*);
 bool check_function_decl(Type const*, Stmt const*);

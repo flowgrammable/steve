@@ -70,6 +70,30 @@ bind_offset()
 }
 
 
+// We change a rebind decl into a call to the
+// implicit function __double_bind_offset(cxt, true_env_offset, aliased_env_offset, offsetof, lengthof)
+//
+// bind field1 as field2
+// 
+// The aliased env offset is the number it would receive if its name was field2
+// The true_env offset is the number it would receive if its name was field1
+Function_decl*
+double_bind_offset()
+{
+  String const* n = get_identifier(__double_bind_offset);
+  Decl_seq parms =
+  {
+    make_parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    make_parameter_decl(get_identifier("true_env_offset"), get_uint_type()),
+    make_parameter_decl(get_identifier("aliased_env_offset"), get_uint_type()),
+    make_parameter_decl(get_identifier("offsetof"), get_uint_type()),
+    make_parameter_decl(get_identifier("lengthof"), get_uint_type()),
+  };
+
+  return make_function_decl(n, parms, get_void_type(), make_empty_block());
+}
+
+
 // __bind_header(cxt: ref CXT, header_env : int, length : int)
 // cxt: context
 // offset: offset of the header within the buffer
@@ -230,8 +254,9 @@ init_builtins()
   std::unordered_multimap<std::string, Function_decl const*> 
   builtin_func
   {
-    {__bind_offset, bind_offset()},
     {__bind_header, bind_header()},
+    {__bind_offset, bind_offset()},
+    {__double_bind_offset, double_bind_offset()},
     {__advance, advance()},
     {__decode, decode_fn()},
     // {__header_cast, header_cast()},

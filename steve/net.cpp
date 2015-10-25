@@ -197,6 +197,11 @@ register_rebind(Rebind_decl const* d, Expr_seq& product)
 
   pipeline.env().fields().push(as<Field_expr>(d->field1())->name(), d);
   pipeline.env().fields().push(as<Field_expr>(d->field2())->name(), d);
+
+  print(d->field1());
+  print(d->field2());
+  print(lookup_field_binding(as<Field_expr>(d->field1())->name()));
+  print(lookup_field_binding(as<Field_expr>(d->field2())->name()));
 }
 
 
@@ -490,6 +495,8 @@ check_pipeline()
   // components in the pipeline
   if (!pipeline.size() > 0) 
     return false;
+
+  print_field_env();
 
   // we're going to do a depth first traversal
   // until we hit a stage with no branches

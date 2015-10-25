@@ -96,7 +96,7 @@ lower_do_table(Do_expr const* e)
 
 
 // We convert an extracts decl into implicit function
-// calls to __bind_offset(cxt, n, offsetof(field))
+// calls to __bind_offset(cxt, n, offsetof(field), lengthof)
 // where n is a unique number refering to the order
 // in which that extracted field is found when walking
 // the program.
@@ -129,39 +129,41 @@ lower_extracts_decl(Extracts_decl const* d)
 }
 
 // We change a rebind decl into a call to the
-// implicit function __double_bind_offset(cxt, true_env_offset, aliased_env_offset, offset, offsetof, lengthof)
+// implicit function __double_bind_offset(cxt, true_env_offset, aliased_env_offset, offsetof, lengthof)
 //
 // bind field1 as field2
 // 
 // The aliased env offset is the number it would receive if its name was field2
 // The true_env offset is the number it would receive if its name was field1
-// Stmt_seq
-// lower_rebind_decl(Rebind_decl const* d)
-// {
-//   Stmt_seq stmts;
-//   auto bind_offset = builtin_function(__bind_offset);
+Stmt_seq
+lower_rebind_decl(Rebind_decl const* d)
+{
+  Stmt_seq stmts;
+  auto bind_offset = builtin_function(__double_bind_offset);
 
-//   // this should be guarenteed earlier in type checking
-//   Field_expr const* f = as<Field_expr>(d->field());
+  // this should be guarenteed earlier in type checking
+  Field_expr const* f1 = as<Field_expr>(d->field1());
+  Field_expr const* f2 = as<Field_expr>(d->field2());
 
-//   // Create the calls
-//   if (Overload const* oc = lookup(get_identifier(_cxt_))) {
-//     if (Overload const* oh = lookup(get_identifier(_header_))) {
-//       Expr_seq args {
-//         id(oc->front()),
-//         make_value_expr(get_int_type(), lookup_field_binding(f->name())),
-//         lower(make_offsetof_expr(id(oh->front()), f->field()->decl())),
-//         lower(make_lengthof_expr(id(f->field()->decl())))
-//       };
+  // Create the calls
+  if (Overload const* oc = lookup(get_identifier(_cxt_))) {
+    if (Overload const* oh = lookup(get_identifier(_header_))) {
+      Expr_seq args {
+        id(oc->front()),
+        make_value_expr(get_uint_type(), lookup_field_binding(f2->name())),
+        make_value_expr(get_uint_type(), lookup_field_binding(f1->name())),
+        lower(make_offsetof_expr(id(oh->front()), f2->field()->decl())),
+        lower(make_lengthof_expr(id(f2->field()->decl())))
+      };
 
-//       // make call
-//       Call_expr* call = make_call_expr(id(bind_offset), args);
-//       stmts.push_back(make_expr_stmt(call));
-//     }
-//   }
+      // make call
+      Call_expr* call = make_call_expr(id(bind_offset), args);
+      stmts.push_back(make_expr_stmt(call));
+    }
+  }
 
-//   return stmts;
-// }
+  return stmts;
+}
 
 
 // --------------------------------------------------------------- //
@@ -575,17 +577,19 @@ struct Stmt_lower
     // process as they are declarations which
     // lower into call expressions instead of
     // other declarations
-
     if (Extracts_decl const* extract = as<Extracts_decl>(s->decl())) {
       Stmt_seq l = lower_extracts_decl(extract);
       stmts.insert(stmts.end(), l.begin(), l.end());
       return stmts;
     }
 
-    if (is<Rebind_decl>(s->decl())) {
-      // TODO: implement me
+    if (Rebind_decl const* rebind = as<Rebind_decl>(s->decl())) {
+      Stmt_seq l = lower_rebind_decl(rebind);
+      stmts.insert(stmts.end(), l.begin(), l.end());
+      return stmts;
     }
 
+    // Regular lowering process for decl stmts
     if (Decl const* decl = lower(s->decl())) {
       if (decl != s->decl())
         stmts.push_back(make_decl_stmt(decl));

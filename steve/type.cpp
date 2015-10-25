@@ -454,6 +454,30 @@ type_field_expr(Expr const* r, Expr const* f)
 }
 
 
+// Confirms that both fields in an extract-as decl
+// have the same type or can be converted to the same type
+Type const*
+type_rebind_decl(Expr const* e1, Expr const* e2)
+{
+  if (e1->type() == e2->type())
+    return e1->type();
+
+  // Can e1 be widened to e2
+  // This should not produce any issues
+  // However we cannot attempt to convert e2 to e1
+  // since the type of the aliasing field should be set in stone
+  // I think???
+  Expr const* c = convert(e1, e2->type());
+  if (c)
+    return c->type();
+
+  error("Cannot convert field '{}' of type '{}' to second field '{}' of type '{}'.",
+        e1, e1->type(), e2, e2->type());
+
+  return nullptr;
+}
+
+
 // -------------------------------------------------------------------------- //
 //                      Statement Checking 
 

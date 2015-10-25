@@ -606,10 +606,11 @@ make_extracts_decl(Expr const* e)
 }
 
 
+// FIXME: check that the two fields have the same type
 inline Rebind_decl*
 make_rebind_decl(Expr const* e1, Expr const* e2)
 {
-  return make_rebind_decl(Location::none, e1, e1);
+  return make_rebind_decl(Location::none, e1, e2);
 }
 
 

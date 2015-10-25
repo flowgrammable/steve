@@ -34,6 +34,7 @@ struct Header_cast_expr : Expr
 // Define a set of global names for each builtin
 String const __bind_header  = "__bind_header";
 String const __bind_offset  = "__bind_offset";
+String const __double_bind_offset = "__double_bind_offset";
 String const __advance      = "__advance";
 String const __get_context  = "__get_context";
 String const __match        = "__match";

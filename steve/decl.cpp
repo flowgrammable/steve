@@ -263,12 +263,14 @@ Rebind_decl*
 make_rebind_decl(Location loc, Expr const* e1, Expr const* e2)
 {
   lingo_assert(is<Field_expr>(e1));
-  lingo_assert(is<Field_expr>(e2));
-  lingo_assert(e1->type() == e2->type());
+  lingo_assert(is<Field_expr>(e2));  
 
-  Field_expr const* f = as<Field_expr>(e2);
+  if (Type const* t = type_rebind_decl(e1, e2)) {
+    Field_expr const* f = as<Field_expr>(e2);
+    return gc().make<Rebind_decl>(loc, f->name(), t, e1, e2);
+  }
 
-  return gc().make<Rebind_decl>(loc, f->name(), e1->type(), e1, e2);
+  return nullptr;
 }
 
 

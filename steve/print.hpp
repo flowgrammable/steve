@@ -70,6 +70,8 @@ void print(Printer&, Enum_decl const*);
 void print(Printer&, Decode_decl const*);
 void print(Printer&, Table_decl const*);
 void print(Printer&, Flow_decl const*);
+void print(Printer&, Extracts_decl const*);
+void print(Printer&, Rebind_decl const*);
 
 void print(Printer&, Stmt const*);
 void print(Printer&, Empty_stmt const*);
@@ -77,10 +79,8 @@ void print(Printer&, Expr_stmt const*);
 void print(Printer&, Decl_stmt const*);
 void print(Printer&, Block_stmt const*);
 void print(Printer&, Return_stmt const*);
-
 void print(Printer&, Case_stmt const*);
 void print(Printer&, Match_stmt const*);
-void print(Printer&, Extracts_decl const*);
 
 void print(Printer&, Match_term const*);
 
