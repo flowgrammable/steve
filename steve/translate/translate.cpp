@@ -101,7 +101,6 @@ Translator::codegen()
   // inject the include statements
   code += "#include <iostream>\n"
           "#include \"lang/include.hpp\"\n"
-          "using namespace fp;\n"
           "using App_cxt = Application_context<" + std::to_string(get_num_headers()) + ", "
                                                  + std::to_string(get_num_fields()) + ", " 
                                                  + std::to_string(max_extract) +
@@ -118,10 +117,10 @@ Translator::codegen()
     // via pointer but we want to pass it via reference
     // for the duration of the application runtime
     case Entry_kind::decode:
-      entry_code += "__decode(*a, " + entry_.first + ");\n";
+      entry_code += "__decode(*a, " + entry_.first + ", 0);\n";
       break;
     case Entry_kind::match:
-      entry_code += "__match(*a, " + entry_.first + ");\n";
+      entry_code += "__match(*a, " + entry_.first + ", 0);\n";
       break;
   }
 
@@ -133,7 +132,7 @@ Translator::codegen()
           "}\n";
 
   // inject the entry into the pipeline
-  code += "Context* ingress(fp::Context* _cxt_)"
+  code += "fp::Context* ingress(fp::Context* _cxt_)"
           "{\n"
           "   App_cxt* a = new App_cxt(*_cxt_);\n"
           "   delete _cxt_;\n"

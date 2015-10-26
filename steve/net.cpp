@@ -493,8 +493,6 @@ check_pipeline()
   if (!pipeline.size() > 0) 
     return false;
 
-  print_field_env();
-
   // we're going to do a depth first traversal
   // until we hit a stage with no branches
   // then we'll unwind and repeat until all branches
