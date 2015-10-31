@@ -298,7 +298,7 @@ parse_flow_instructions(Parser& p, Token_stream& ts)
 
 // Parse flow declaration
 //    flow-declaration ::=
-//        <dot-expr,+> => instr-block-stmt
+//        {Value,...} => instr-block-stmt
 Decl const*
 parse_flow_decl(Parser& p, Token_stream& ts)
 {
@@ -318,7 +318,7 @@ parse_table_initializer(Parser& p, Token_stream& ts)
 
 // Parse table-key-fields
 //    table-key-fields ::=
-//        '<' dot-expr,+ '>'
+//        '(' dot-expr,+ ')'
 Expr_seq const&
 parse_key_field(Parser& p, Token_stream& ts)
 {

@@ -59,6 +59,7 @@ struct Type_visitor
   virtual void visit(Until_type const* t) { }
   virtual void visit(Table_type const* t) { }  
   virtual void visit(Flow_type const* t) { }
+  virtual void visit(Port_type const* t) { }
 };
 
 
@@ -415,6 +416,16 @@ struct Flow_type : Type
   Type_seq const first;
 };
 
+
+// Port type
+struct Port_type : Type
+{
+  Port_type() { }
+
+  void accept(Type_visitor& v) const { v.visit(this); }
+};
+
+
 // -------------------------------------------------------------------------- //
 //                               Concepts
 
@@ -472,7 +483,8 @@ is_object_type()
       || std::is_base_of<T, Reference_type>::value
       || std::is_base_of<T, Constant_type>::value
       || std::is_base_of<T, Table_type>::value
-      || std::is_base_of<T, Flow_type>::value;
+      || std::is_base_of<T, Flow_type>::value
+      || std::is_base_of<T, Port_type>::value;
 }
 
 
@@ -603,7 +615,8 @@ is_object_type(Type const* t)
       || is<Reference_type>(t)
       || is<Constant_type>(t)
       || is<Table_type>(t)
-      || is<Flow_type>(t);
+      || is<Flow_type>(t)
+      || is<Port_type>(t);
 }
 
 
@@ -684,6 +697,7 @@ Seq_type const*       get_seq_type(Type const*, Expr const*);
 Buffer_type const*    get_buffer_type(Type const*, Expr const*);
 Until_type const*     get_until_type(Expr const*, Type const*);
 Record_type const*    get_context_type();
+Port_type const*      get_port_type();
 
 
 // -------------------------------------------------------------------------- //
@@ -722,6 +736,7 @@ struct Generic_type_visitor : Type_visitor, Generic_visitor<F, T>
   void visit(Until_type const* t)     { this->invoke(t); }
   void visit(Table_type const* t)     { this->invoke(t); }  
   void visit(Flow_type const* t)      { this->invoke(t); }
+  void visit(Port_type const* t)      { this->invoke(t); }
 };
 
 

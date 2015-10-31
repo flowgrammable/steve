@@ -51,6 +51,10 @@ parse_stmt(Parser& p, Token_stream& ts)
     case def_kw:
       return parse_declaration_stmt(p, ts);
 
+    // case match_kw:
+    //   return parse_match_stmt(p, ts);
+    // case case_kw
+
     default:
       break;
   }

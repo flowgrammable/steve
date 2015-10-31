@@ -12,6 +12,7 @@
 #include "steve/op.hpp"
 #include "steve/convert.hpp"
 #include "steve/overload.hpp"
+#include "steve/decl.hpp"
 
 #include "lingo/integer.hpp"
 #include "lingo/node.hpp"
@@ -22,7 +23,7 @@ namespace steve
 
 struct Expr_visitor;
 
-String const* resolve_field_name(Field_expr const*);
+String resolve_field_name(Field_expr const*);
 
 // -------------------------------------------------------------------------- //
 //                                Expressions
@@ -369,7 +370,7 @@ struct Field_expr : Expr
   Expr const* record() const { return first; }
   Id_expr const* field() const { return cast<Id_expr>(second); }
   Type const* field_type() const { return third; }
-  String const* name() const { return name_; }
+  String const* name() const { return get_identifier(name_); }
 
   void accept(Expr_visitor& v) const { v.visit(this); }
 
@@ -377,7 +378,7 @@ struct Field_expr : Expr
   Expr const* second;
   Type const* third;
 
-  String const* name_;
+  String name_;
 };
 
 

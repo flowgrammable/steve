@@ -9,6 +9,7 @@
 
 #include "steve/prelude.hpp"
 #include "steve/value.hpp"
+#include "steve/token.hpp"
 
 #include "lingo/node.hpp"
 
@@ -377,6 +378,14 @@ struct Rebind_decl : Decl
 };
 
 
+struct Port_decl : Decl
+{
+  Port_decl(Location loc, String const* n, Type const* t)
+    : Decl(loc, n, t)
+  { }
+};
+
+
 // True when T is models the Declaration concept. 
 //
 // Note that we assume that a Declaration is already known 
@@ -414,6 +423,7 @@ struct Generic_decl_visitor : Decl_visitor, Generic_visitor<F, T>
   void visit(Flow_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
   void visit(Rebind_decl const* d) { this->invoke(d); }
+  void visit(Port_decl const* d) { this->invoke(d); }
 };
 
 
@@ -460,7 +470,7 @@ member_index(Record_decl const* r, Member_decl const* m)
 // -------------------------------------------------------------------------- //
 //                            Declaration builders
 
-String const* get_identifier(String const&);
+// String const* get_identifier(String const&);
 
 Variable_decl*  make_variable_decl(Location, String const*, Type const*);
 Variable_decl*  make_variable_decl(Location, String const*, Type const*, Expr const*);
@@ -481,6 +491,7 @@ Table_decl*     make_table_decl(Location, String const*, Expr_seq const&, Decl_s
 Flow_decl*      make_flow_decl(Location, Expr_seq const&, Value const, Stmt const*);
 Extracts_decl*  make_extracts_decl(Location, Expr const*);
 Rebind_decl*    make_rebind_decl(Location, Expr const*, Expr const*);
+Port_decl*      make_port_decl(Location, String const*);
 
 Forward_decl*   make_forward_decl(Location, Decl const*, Fwd_kind);
 

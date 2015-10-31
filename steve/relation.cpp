@@ -261,6 +261,12 @@ struct Less_type_fn
     return less(t1, static_cast<Flow_type const*>(t2));
   }
 
+  // All port types are the same
+  bool operator()(Port_type const* t1) const
+  {
+    return true;
+  }
+
   Type const* t2;
 };
 

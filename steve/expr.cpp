@@ -357,7 +357,7 @@ make_field_expr(Location loc, Expr const* r, Expr const* f)
 
     // FIXME: the GC or some container has to ensure the uniqueness of these
     // otherwise name resolution is undefined behavior and I have no idea how or why
-    return gc().make<Field_expr>(loc, get_int_type(), *t, r, f);
+    return new Field_expr(loc, get_int_type(), *t, r, f);
   else
     return make_error_node<Field_expr>();
 }
@@ -430,25 +430,23 @@ make_do_expr(Location loc, Do_kind k, Expr const* e)
 
 // -------------------------------------------------------------------------- //
 //              Resolving field expr names
-String const*
+String
 resolve_field_name(Field_expr const* e)
 {
   if (is<Id_expr>(e->record())) {
-    String name = *(as<Id_expr>(e->record())->name()) + '.' + *(as<Id_expr>(e->field())->name());
-    // std::cout << (void*) as<Id_expr>(e->record())->name() << ' ';
-    // std::cout << (void*) as<Id_expr>(e->field())->name() << ' ';
-    // std::cout << (void*) get_identifier(name) << ' ';
-    // print(name);
-    return get_identifier(name);
+    return *as<Id_expr>(e->record())->name() + *as<Id_expr>(e->field())->name();
+    // // std::cout << (void*) as<Id_expr>(e->record())->name() << ' ';
+    // // std::cout << (void*) as<Id_expr>(e->field())->name() << ' ';
+    // // std::cout << (void*) get_identifier(name) << ' ';
+    // return get_identifier(field_name);
   }
   else if (is<Field_expr>(e->record())) {
-    String name = *resolve_field_name(as<Field_expr>(e->record())) + '.' + *as<Id_expr>(e->field())->name();
-    return get_identifier(name);
+    return resolve_field_name(as<Field_expr>(e->record())) + "." + *as<Id_expr>(e->field())->name();
+    // return get_identifier(name);
   }
-  else
-    error(e->location(), "'{}' is not a valid field.", e);
 
-  return nullptr;
+  error(e->location(), "'{}' is not a valid field.", e);
+  return "";
 }
 
 

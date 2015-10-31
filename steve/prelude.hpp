@@ -75,6 +75,7 @@ struct Buffer_type;
 struct Until_type;
 struct Table_type;
 struct Flow_type;
+struct Port_type;
 
 struct Prop;
 

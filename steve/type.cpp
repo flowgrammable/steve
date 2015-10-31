@@ -45,6 +45,7 @@ struct Type_less
 Kind_type kind_;
 Void_type void_;
 Boolean_type bool_;
+Port_type port_;
 
 Unique_factory<Integer_type, Type_less> int_;
 Unique_factory<Constant_type, Type_less> constant_;
@@ -283,6 +284,15 @@ Record_type const*
 get_context_type()
 {
   return builtin_type(__context_type);
+}
+
+
+
+// Port type
+Port_type const*
+get_port_type()
+{
+  return &port_;
 }
 
 
