@@ -55,7 +55,7 @@ parse_initializer_clause(Parser& p, Token_stream& ts)
       // outright if we can't find it. We can probably parse
       // the next statement without it.
       if (!match_token(ts, semicolon_tok))
-        error("expected ';' after initializer");
+        error(Location::none, "expected ';' after initializer");
       
       return p.on_direct_init(tok, *expr);
     } else {
@@ -63,7 +63,7 @@ parse_initializer_clause(Parser& p, Token_stream& ts)
     }
   }
 
-  error("expected initializer-clause but got '{}'", ts.peek());
+  error(Location::none, "expected initializer-clause but got '{}'", ts.peek());
   return make_error_node<Expr>();
 }
 
@@ -214,7 +214,7 @@ parse_function_def(Parser& p, Token_stream& ts)
     }
 
   }
-  error(ts.location(), "expected function-definition");
+  error(Location::none, "expected function-definition");
   return make_error_node<Stmt>();
 }
 
@@ -292,7 +292,7 @@ parse_decode_decl(Parser& p, Token_stream& ts)
 Stmt const*
 parse_flow_instructions(Parser& p, Token_stream& ts)
 {
-
+  return nullptr;
 }
 
 
@@ -312,7 +312,7 @@ parse_flow_decl(Parser& p, Token_stream& ts)
 Decl_seq const&
 parse_table_initializer(Parser& p, Token_stream& ts)
 {
-  
+  return {};
 }
 
 
@@ -322,7 +322,7 @@ parse_table_initializer(Parser& p, Token_stream& ts)
 Expr_seq const&
 parse_key_field(Parser& p, Token_stream& ts)
 {
-
+  return {};
 }
 
 
@@ -358,10 +358,10 @@ parse_decl(Parser& p, Token_stream& ts)
       return parse_variable_decl(p, ts);
     case def_kw:
       return parse_function_decl(p, ts);
-    case decode_kw:
-      return parse_decode_decl(p, ts);
-    case table_kw:
-      return parse_table_decl(p, ts);
+    // case decode_kw:
+    //   return parse_decode_decl(p, ts);
+    // case table_kw:
+    //   return parse_table_decl(p, ts);
 
     default:
       break;

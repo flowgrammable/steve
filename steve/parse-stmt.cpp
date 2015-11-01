@@ -58,7 +58,7 @@ parse_stmt(Parser& p, Token_stream& ts)
     default:
       break;
   }
-  error(ts.location(), "expected statement but got '{}'", ts.peek());
+  error(Location::none, "expected statement but got '{}'", ts.peek());
   return make_error_node<Stmt>();
 }
 

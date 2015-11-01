@@ -86,7 +86,7 @@ parse_primary_expr(Parser& p, Token_stream& ts)
     default:
       break;
   }
-  error(ts.location(), "invalid primary-expression");
+  error(Location::none, "invalid primary-expression");
   return get_error_expr();
 }
 
@@ -520,7 +520,7 @@ parse_logical_and_expr(Parser& p, Token_stream& ts)
 
 // Match the logical or operator.
 inline Token const*
-parse_lgoical_or_op(Parser& p, Token_stream& ts)
+parse_logical_or_op(Parser& p, Token_stream& ts)
 {
   return match_token(ts, bar_tok);
 }
@@ -530,7 +530,7 @@ parse_lgoical_or_op(Parser& p, Token_stream& ts)
 Expr const*
 parse_logical_or_expr(Parser& p, Token_stream& ts)
 {
-  auto op = parse_lgoical_or_op;
+  auto op = parse_logical_or_op;
   auto sub = parse_logical_and_expr;
   return parse_left_infix_term(p, ts, op, sub, on_binary_expr(p));
 }

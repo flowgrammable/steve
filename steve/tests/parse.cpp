@@ -37,7 +37,7 @@ main(int argc, char **argv)
     return -1;
 
   for (Stmt const* s : stmts)
-    debug(s);
+    print(s);
 
   return 0;
 }
