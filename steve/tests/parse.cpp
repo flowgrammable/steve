@@ -25,7 +25,7 @@ main(int argc, char **argv)
 
   // FIXME: This is terrible. Find a more convenient
   // way of managing inputs (e.g., RAII).
-  // Input_guard input(f);
+  Input_context input(f);
 
   Token_list toks = lex(f);
   if (error_count())

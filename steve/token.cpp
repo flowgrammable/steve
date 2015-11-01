@@ -30,8 +30,8 @@ init_tokens()
   // Punctuators
   install(lbrace_tok,     "{");
   install(rbrace_tok,     "}");
-  install(lparen_tok,     ")");
-  install(rparen_tok,     "(");
+  install(rparen_tok,     ")");
+  install(lparen_tok,     "(");
   install(dot_tok,        ".");
   install(comma_tok,      ",");
   install(colon_tok,      ":");
@@ -60,6 +60,7 @@ init_tokens()
   install(bar_bar_tok,    "||");
   install(bang_tok,       "!");
   // Keywords
+  install(return_kw, "return");
   install(alias_kw, "alias");
   install(bool_kw, "bool");
   install(do_kw, "do");

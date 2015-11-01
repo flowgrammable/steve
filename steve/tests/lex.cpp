@@ -34,6 +34,7 @@ main(int argc, char* argv[])
   Printer p(std::cout);
   for (Token const& tok : toks) {
     print(p, tok);
+    print(p, tok.kind());
     print_space(p);
   }
 

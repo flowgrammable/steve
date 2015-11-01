@@ -36,7 +36,7 @@ Expr const* parse_binary_expr(Parser&, Token_stream&);
 Expr const*
 parse_tuple_expr(Parser& p, Token_stream& ts)
 {
-  lingo_unreachable("not implemented");
+  return nullptr;
 }
 
 
@@ -87,7 +87,7 @@ parse_primary_expr(Parser& p, Token_stream& ts)
     default:
       break;
   }
-  error(Location::none, "invalid primary-expression '{}'", ts.peek());
+  error(ts.location(), "invalid primary-expression '{}'", ts.peek());
   return get_error_expr();
 }
 

@@ -315,6 +315,32 @@ Parser::on_function_def(Decl const* d, Stmt const* s)
 }
 
 
+// Start the function definition by declaring all parameters. 
+Decl const*
+Parser::on_function_start(Decl const* d)
+{
+  Function_decl const* f = cast<Function_decl>(d);
+  for (Decl const* p : f->parms()) {
+    if (!declare(p))
+      d = make_error_node<Decl>();
+  }
+  return d;
+}
+
+
+// Finish the function definitionby assigning the statement.
+Decl const*
+Parser::on_function_finish(Decl const* d, Stmt const* s)
+{
+  Function_decl const* f = cast<Function_decl>(d);
+  if (check_function_decl(f->ret_type(), s)) {
+    modify(f)->set_body(s);
+    return f;
+  }
+  return make_error_node<Decl>();
+}
+
+
 // Create but do not declare parameter declaration.
 Decl const*
 Parser::on_parameter_decl(Token const* n, Type const* t)
@@ -328,6 +354,30 @@ Stmt const*
 Parser::on_declaration_stmt(Decl const* d)
 {
   return make_decl_stmt(d);
+}
+
+
+// Make an empty stmt
+Stmt const*
+Parser::on_empty_stmt(Token const* tok)
+{
+  return make_empty_stmt(tok->location());
+}
+
+
+// Make a block stmt
+Stmt const*
+Parser::on_block_stmt(Token const* l, Token const* r, Stmt_seq const& s)
+{
+  return make_block_stmt(l->location(), r->location(), s);
+}
+
+
+// Create a new expression statement
+Stmt const*
+Parser::on_expr_stmt(Expr const* e)
+{
+  return make_expr_stmt(e);
 }
 
 

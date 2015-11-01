@@ -55,7 +55,7 @@ parse_initializer_clause(Parser& p, Token_stream& ts, Type const* type)
       // outright if we can't find it. We can probably parse
       // the next statement without it.
       if (!match_token(ts, semicolon_tok))
-        error(Location::none, "expected ';' after initializer");
+        error(ts.location(), "expected ';' after initializer");
       
       return p.on_direct_init(tok, *expr);
     } else {
@@ -63,7 +63,7 @@ parse_initializer_clause(Parser& p, Token_stream& ts, Type const* type)
     }
   }
 
-  error(Location::none, "expected initializer-clause but got '{}'", ts.peek());
+  error(ts.location(), "expected initializer-clause but got '{}'", ts.peek());
   return make_error_node<Expr>();
 }
 
@@ -147,46 +147,14 @@ parse_parameter_clause(Parser& p, Token_stream& ts)
 
 // Parse a return clause.
 //
-//    return-clause ::= '-> type'
+//    return-clause ::= '->' type
 Type const*
 parse_return_clause(Parser& p, Token_stream& ts)
 {
   if (expect_token(p, ts, arrow_tok))
-    return parse_type(p, ts);
-  else
-    return make_error_node<Type>();
-}
-
-
-// Represents a parsed function signature.
-struct Signature
-{
-  Signature(Decl_seq const& ps, Type const* t)
-    : first(std::move(ps)), second(t)
-  { }
-
-  char const* node_name() const { return "signature"; }
-
-  Decl_seq const& parms() const { return first; }
-  Type const*     type() const { return second; }
-
-  Decl_seq    first;
-  Type const* second;
-};
-
-
-// Parse a function signature.
-//
-//    function-signature ::= parameter-clause return-clause
-Signature const*
-parse_signature(Parser& p, Token_stream& ts)
-{
-  if (Required<Parm_clause> c = parse_parameter_clause(p, ts))
-    if (Required<Type> t = parse_return_clause(p, ts))  {
-      // This invokes a copy. Moving would require const-casting.
-      return gc().make<Signature>(*c->term(), *t);
-    }
-  return make_error_node<Signature>();
+    if (Required<Type> type = parse_type(p, ts))
+      return *type;
+  return make_error_node<Type>();
 }
 
 
@@ -201,20 +169,16 @@ parse_signature(Parser& p, Token_stream& ts)
 Stmt const*
 parse_function_def(Parser& p, Token_stream& ts)
 {
-  // Match a simple definition. 
-  if (match_token(ts, eq_tok)) {
-    if (Required<Expr> expr = parse_expr(p, ts)) {
-
-      // This is required, but we can probably continue
-      // parsing without it.
-      expect_token(p, ts, semicolon_tok);
-
-      // TODO: Enclose in blocks?
-      return p.on_return_stmt(*expr);
-    }
-
-  }
-  error(Location::none, "expected function-definition");
+  // Match but don't consume the '{'.
+  if (next_token_is(ts, lbrace_tok))
+    return parse_stmt(p, ts);
+  
+  // Match and consume the '=' token, so that we parse
+  // the full expression statement (including the ';').
+  if (match_token(ts, eq_tok))
+    return parse_stmt(p, ts);
+  
+  error(ts.location(), "expected function-definition, but got '{}'", ts.peek());
   return make_error_node<Stmt>();
 }
 
@@ -229,40 +193,44 @@ Decl const*
 parse_function_decl(Parser& p, Token_stream& ts)
 {
   Token const* tok = require_token(ts, def_kw);
-  
-  // Match the function name.
-  // TODO: Support operator overloading.
+
+  // match the identifier.
   Token const* id = expect_token(p, ts, identifier_tok);
   if (!id)
     return make_error_node<Decl>();
 
-  // Match the function signature.
-  Required<Signature> sig = parse_signature(p, ts);
-  if (!sig)
+  // Parse the parameter declaration clause.
+  // Note that the clause may be '()', in which
+  // case the inner term is null. That's not good.
+  Required<Parm_clause> clause = parse_parameter_clause(p, ts);
+  if (!clause)
     return make_error_node<Decl>();
-  
-  // Point of declaration. Declare the function in the
-  // current scope.
-  Decl_seq const& parms = sig->parms();
-  Type const* ret = sig->type();
-  Decl const* fn = p.on_function_decl(tok, id, parms, ret);
+  Decl_seq parms = clause->term() ? Decl_seq(*clause->term()) : Decl_seq();
 
-  // Enter function scope and declare the parameters.
-  Stmt const* def;
-  { 
-    Local_scope scope;
-    if (!declare(parms))
-      return make_error_node<Decl>();
+  // Match the type clause.
+  Required<Type> type = parse_return_clause(p, ts);
+  if (!type)
+    return make_error_node<Decl>();
 
-    // Consume the function definition.
-    Required<Stmt> body = parse_function_def(p, ts);
-    if (!body)
-      return make_error_node<Decl>();
-    def = *body;
-  }
-  
-  // Update the function definition.
-  return p.on_function_def(fn, def);
+  // Point of declaration. Having a name, parameters, and return
+  // type, we can declare the function.
+  Required<Decl> fn = p.on_function_decl(tok, id, parms, *type);
+  if (!fn)
+    return make_error_node<Decl>();
+
+  // Enter the function scope and cause the parameters to be 
+  // declared.
+  Local_scope scope;
+  fn = p.on_function_start(*fn);
+  if (!fn)
+    return make_error_node<Decl>();
+
+  // Parse the function definition.
+  Required<Stmt> body = parse_expected(p, ts, parse_function_def);
+  if (!body)
+    return make_error_node<Decl>();
+
+  return p.on_function_finish(*fn, *body);
 }
 
 

@@ -60,6 +60,7 @@ enum Token_kind
   bar_bar_tok,    // ||
   bang_tok,       // !
   // keywords
+  return_kw,    // return
   alias_kw,     // alias
   bool_kw,      // bool
   buffer_kw,    // buffer
