@@ -431,6 +431,21 @@ print(Printer& p, Value_expr const* e)
 }
 
 
+void
+print(Printer& p, Init_expr const* e)
+{
+  if (e->expr())
+    print(p, e->expr());
+}
+
+
+void
+print(Printer& p, Default_expr const* e)
+{
+  print(p, "default");
+}
+
+
 // Print a subexpression of an outer expression. This will 
 // automatically add parentheses if they are needed.
 inline void

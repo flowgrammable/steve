@@ -43,6 +43,8 @@ void print(Printer&, Expr const*);
 void print(Printer&, Id_expr const*);
 void print(Printer&, Lookup_expr const*);
 void print(Printer&, Value_expr const*);
+void print(Printer&, Init_expr const*);
+void print(Printer&, Default_expr const*);
 void print(Printer&, Unary_expr const*);
 void print(Printer&, Binary_expr const*);
 void print(Printer&, Call_expr const*);

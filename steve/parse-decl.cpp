@@ -41,11 +41,11 @@ parse_type_clause(Parser& p, Token_stream& ts)
 // TODO: Support aggregate initialization, possibly with
 // designated initializers as in C+99.
 Expr const*
-parse_initializer_clause(Parser& p, Token_stream& ts)
+parse_initializer_clause(Parser& p, Token_stream& ts, Type const* type)
 {
   // Match default initialization
   if (Token const* tok = match_token(ts, semicolon_tok))
-    return p.on_default_init(tok);
+    return p.on_default_init(tok, type);
 
   // Match direct initialization
   if (Token const* tok = match_token(ts, eq_tok)) {
@@ -94,7 +94,7 @@ parse_variable_decl(Parser& p, Token_stream& ts)
     return make_error_node<Decl>();
 
   // Match the initialzer.
-  Required<Expr> init = parse_initializer_clause(p, ts);
+  Required<Expr> init = parse_initializer_clause(p, ts, *type);
   if (!init)
     return make_error_node<Decl>();
 

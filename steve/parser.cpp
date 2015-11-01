@@ -230,9 +230,9 @@ Parser::on_binary_expr(Token const* tok, Expr const* e1, Expr const* e2)
 //
 // TODO: This is almost like type deduction in reverse.
 Expr const*
-Parser::on_default_init(Token const* tok)
+Parser::on_default_init(Token const* tok, Type const* t)
 {
-  return make_init_expr(tok->location(), default_init);
+  return make_init_expr(default_init, make_default_expr(tok->location(), t));
 }
 
 

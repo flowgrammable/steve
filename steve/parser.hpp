@@ -47,7 +47,7 @@ struct Parser
   Expr const* on_unary_expr(Token const*, Expr const*);
   Expr const* on_binary_expr(Token const*, Expr const*, Expr const*);
 
-  Expr const* on_default_init(Token const*);
+  Expr const* on_default_init(Token const*, Type const*);
   Expr const* on_direct_init(Token const*, Expr const*);
 
   Decl const* on_variable_decl(Token const*, Token const*, Type const*);

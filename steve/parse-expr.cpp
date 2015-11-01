@@ -68,6 +68,7 @@ parse_primary_expr(Parser& p, Token_stream& ts)
     case boolean_tok:
       return p.on_boolean_expr(get_token(ts));
     
+    case integer_tok:
     case binary_integer_tok:
     case octal_integer_tok:
     case decimal_integer_tok: 
@@ -86,7 +87,7 @@ parse_primary_expr(Parser& p, Token_stream& ts)
     default:
       break;
   }
-  error(Location::none, "invalid primary-expression");
+  error(Location::none, "invalid primary-expression '{}'", ts.peek());
   return get_error_expr();
 }
 
