@@ -125,9 +125,11 @@ parse_stmt(Parser& p, Token_stream& ts)
   switch (next_token_kind(ts)) {
     case var_kw:
     case def_kw:
+    case record_kw:
       return parse_declaration_stmt(p, ts);
     case return_kw:
       return parse_return_stmt(p, ts);
+
     case lbrace_tok:
       return parse_block_stmt(p, ts);
 

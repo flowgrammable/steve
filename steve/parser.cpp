@@ -349,6 +349,20 @@ Parser::on_parameter_decl(Token const* n, Type const* t)
 }
 
 
+Decl const*
+Parser::on_record_decl(Token const* n, Decl_seq const& d)
+{
+  return make_record_decl(n->location(), n->str(), d);
+}
+
+
+Decl const*
+Parser::on_member_decl(Token const* n, Type const* t)
+{
+  return make_member_decl(n->location(), n->str(), t);
+}
+
+
 // Create a new declaration statement.
 Stmt const*
 Parser::on_declaration_stmt(Decl const* d)

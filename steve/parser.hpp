@@ -58,6 +58,8 @@ struct Parser
   Decl const* on_function_def(Decl const*, Stmt const*);
   Decl const* on_function_start(Decl const*);
   Decl const* on_function_finish(Decl const*, Stmt const*);
+  Decl const* on_record_decl(Token const*, Decl_seq const&);
+  Decl const* on_member_decl(Token const*, Type const*);
 
   Stmt const* on_empty_stmt(Token const*);
   Stmt const* on_block_stmt(Token const*, Token const*, Stmt_seq const&);

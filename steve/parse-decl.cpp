@@ -233,6 +233,57 @@ parse_function_decl(Parser& p, Token_stream& ts)
   return p.on_function_finish(*fn, *body);
 }
 
+using Member_clause = Enclosed_term<Sequence_term<Decl>>;
+
+Decl const*
+parse_member_decl(Parser& p, Token_stream& ts)
+{
+  if (Token const* id = expect_token(p, ts, identifier_tok))
+    if (Required<Type> type = parse_type_clause(p, ts))
+      if (expect_token(p, ts, semicolon_tok))
+        return p.on_member_decl(id, *type);
+
+  return make_error_node<Decl>();
+}
+
+
+Sequence_term<Decl> const*
+parse_member_list(Parser& p, Token_stream& ts)
+{
+  using Member_seq = Sequence_term<Decl>;
+  Member_seq mems;
+  while (!ts.eof()) {
+    if (next_token_is(ts, rbrace_tok))
+      break;
+    
+    if (Required<Decl> mem = parse_member_decl(p, ts))
+      mems.push_back(*mem);
+  }
+  return Member_seq::make(std::move(mems));
+}
+
+
+Decl const*
+parse_record_decl(Parser& p, Token_stream& ts)
+{
+  require_token(ts, record_kw);
+
+  Token const* name = expect_token(p, ts, identifier_tok);
+  if(!name)
+    return make_error_node<Decl>();
+
+  using Term = Enclosed_term<Sequence_term<Decl>>;
+
+  // TODO: support forward declaration of records
+  Required<Term> body = parse_brace_enclosed(p, ts, parse_member_list);
+  if (!body)
+    return make_error_node<Decl>();
+
+  Decl_seq members = body->term() ? Decl_seq(*body->term()) : Decl_seq();
+
+  return p.on_record_decl(name, members);
+}
+
 
 // Parse decode body
 //    decode-body ::-
@@ -326,6 +377,8 @@ parse_decl(Parser& p, Token_stream& ts)
       return parse_variable_decl(p, ts);
     case def_kw:
       return parse_function_decl(p, ts);
+    case record_kw:
+      return parse_record_decl(p, ts);
     // case decode_kw:
     //   return parse_decode_decl(p, ts);
     // case table_kw:
