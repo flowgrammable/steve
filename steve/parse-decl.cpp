@@ -233,7 +233,7 @@ parse_function_decl(Parser& p, Token_stream& ts)
   return p.on_function_finish(*fn, *body);
 }
 
-using Member_clause = Enclosed_term<Sequence_term<Decl>>;
+
 
 Decl const*
 parse_member_decl(Parser& p, Token_stream& ts)
@@ -255,9 +255,11 @@ parse_member_list(Parser& p, Token_stream& ts)
   while (!ts.eof()) {
     if (next_token_is(ts, rbrace_tok))
       break;
-    
+
     if (Required<Decl> mem = parse_member_decl(p, ts))
       mems.push_back(*mem);
+    else
+      break;
   }
   return Member_seq::make(std::move(mems));
 }

@@ -77,6 +77,34 @@ parse_until_type(Parser& p, Token_stream& ts)
 }
 
 
+Type const*
+parse_uint_type(Parser& p, Token_stream& ts)
+{
+  Token const* int_kind = get_token(ts);
+
+  // check for the bit length specifier
+  if (next_token_kind(ts) == lparen_tok) {
+    // consume paren
+    get_token(ts);
+    if (next_token_kind(ts) == integer_tok) {
+      Token const* i = get_token(ts);
+      int precision = stoi(*i->str());
+
+      if (next_token_kind(ts) == rparen_tok) {
+        get_token(ts);
+        return p.on_integer_type(int_kind, precision, unsigned_int, native_order);
+      }
+      else
+        return get_error_type();
+    }
+    else
+      error("Expected integer token after '(' in uint length specifier.");
+  }
+  
+  return p.on_integer_type(int_kind, 32, unsigned_int, native_order);
+}
+
+
 } // namesapce
 
 
@@ -106,7 +134,7 @@ parse_type(Parser& p, Token_stream& ts)
     case int_kw:
       return p.on_integer_type(get_token(ts), 32, signed_int, native_order);
     case uint_kw:
-      return p.on_integer_type(get_token(ts), 32, unsigned_int, native_order);
+      return parse_uint_type(p, ts);
     case long_kw:
       return p.on_integer_type(get_token(ts), 64, signed_int, native_order);
     case ulong_kw:

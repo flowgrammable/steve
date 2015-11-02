@@ -145,8 +145,9 @@ parse_stmt(Parser& p, Token_stream& ts)
         return p.on_expr_stmt(e);
       break;
   }
+
   error(ts.location(), "expected statement but got '{}'", *ts.peek().str());
-  return make_error_node<Stmt>();
+  return nullptr;
 }
 
 
