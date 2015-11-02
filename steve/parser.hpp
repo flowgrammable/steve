@@ -60,6 +60,7 @@ struct Parser
   Decl const* on_function_finish(Decl const*, Stmt const*);
   Decl const* on_record_decl(Token const*, Decl_seq const&);
   Decl const* on_member_decl(Token const*, Type const*);
+  Decl const* on_decode_decl(Token const*, Token const*, Type const*, Stmt const*);
 
   Stmt const* on_empty_stmt(Token const*);
   Stmt const* on_block_stmt(Token const*, Token const*, Stmt_seq const&);
@@ -114,16 +115,16 @@ using Parse_fn = Expr const* (*)(Parser&, Token_stream&);
 
 
 // Top-level parser entry points
-Type const* parse_type(Token_stream&);
+// Type const* parse_type(Token_stream&);
 Type const* parse_type(Parser&, Token_stream&);
 
-Expr const* parse_expr(Token_stream&);
+// Expr const* parse_expr(Token_stream&);
 Expr const* parse_expr(Parser&, Token_stream&);
 
-Stmt const* parse_stmt(Token_stream&);
+// Stmt const* parse_stmt(Token_stream&);
 Stmt const* parse_stmt(Parser&, Token_stream&);
 
-Decl const* parse_decl(Token_stream&);
+// Decl const* parse_decl(Token_stream&);
 Decl const* parse_decl(Parser&, Token_stream&);
 
 Stmt_seq    parse_file(Token_stream&);

@@ -54,8 +54,10 @@ Type const*
 Parser::on_id_type(Token const* tok)
 {
   Decl const* decl = lookup_decl(tok->str());
-  if (!decl)
+  if (!decl) {
+    error("Invalid type identifier '{}'", tok->str());
     return get_error_type();
+  }
 
   // TODO: Support type aliases.
   return get_user_defined_type(decl);
@@ -361,6 +363,18 @@ Parser::on_member_decl(Token const* n, Type const* t)
 {
   return make_member_decl(n->location(), n->str(), t);
 }
+
+
+Decl const*
+Parser::on_decode_decl(Token const* kw, Token const* n, Type const* t, Stmt const* s)
+{
+  return make_decode_decl(kw->location(), n->str(), t, s);
+} 
+
+
+
+// ----------------------------------------------------------------- //
+//                Statements
 
 
 // Create a new declaration statement.

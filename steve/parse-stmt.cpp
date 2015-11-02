@@ -126,6 +126,8 @@ parse_stmt(Parser& p, Token_stream& ts)
     case var_kw:
     case def_kw:
     case record_kw:
+    case decode_kw:
+    case table_kw:
       return parse_declaration_stmt(p, ts);
     case return_kw:
       return parse_return_stmt(p, ts);

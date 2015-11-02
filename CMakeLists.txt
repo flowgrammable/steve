@@ -19,7 +19,7 @@ find_package(Boost 1.55.0 REQUIRED COMPONENTS
 
 
 # Compiler configuration.
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "-Wall -std=c++1y")
 include_directories(
   .
   ${CMAKE_SOURCE_DIR}/lingo

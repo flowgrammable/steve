@@ -288,12 +288,30 @@ parse_record_decl(Parser& p, Token_stream& ts)
 
 
 // Parse decode body
-//    decode-body ::-
+//    decode-body ::=
 //      block-stmt
 Stmt const*
 parse_decode_body(Parser& p, Token_stream& ts)
 {
 
+}
+
+
+// Parses a list of comma seperated types
+Sequence_term<Type> const*
+parse_type_seq(Parser& p, Token_stream& ts)
+{
+  return parse_list(p, ts, comma_tok, parse_type);
+}
+
+
+// Parse the headers which the decoder handles
+//    decode-headers ::=
+//      '(' type-seq ')'
+Enclosed_term<Sequence_term<Type>> const*
+parse_decode_headers(Parser& p, Token_stream& ts)
+{
+  return parse_paren_enclosed(p, ts, parse_type_seq);
 }
 
 
@@ -303,7 +321,21 @@ parse_decode_body(Parser& p, Token_stream& ts)
 Decl const*
 parse_decode_decl(Parser& p, Token_stream& ts)
 {
-  return nullptr;
+  // consume the decode keyword
+  Token const* decode = get_token(ts);
+
+  Token const* name = expect_token(p, ts, identifier_tok);
+  if (!name)
+    return make_error_node<Decl>();
+
+  using Header_seq = Enclosed_term<Sequence_term<Type>>;
+
+  Required<Header_seq> headers = parse_decode_headers(p, ts);
+
+  Type_seq hdr_types = headers->term() ? Type_seq(*headers->term()) : Type_seq();
+
+  // FIXME: support multiple decodes
+  return p.on_decode_decl(decode, name, hdr_types.front(), nullptr);
 }
 
 
@@ -381,6 +413,8 @@ parse_decl(Parser& p, Token_stream& ts)
       return parse_function_decl(p, ts);
     case record_kw:
       return parse_record_decl(p, ts);
+    case decode_kw:
+      return parse_decode_decl(p, ts);
     // case decode_kw:
     //   return parse_decode_decl(p, ts);
     // case table_kw:

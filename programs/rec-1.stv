@@ -1,0 +1,10 @@
+record eth 
+{
+	src : uint(48);
+	dst : uint;
+}
+
+record foo
+{
+	a : eth;
+}
