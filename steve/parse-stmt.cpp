@@ -143,8 +143,11 @@ parse_stmt(Parser& p, Token_stream& ts)
       return parse_empty_stmt(p, ts);
 
     default:
-      if (Expr const* e = parse_expr(p, ts))
-        return p.on_expr_stmt(e);
+      if (Expr const* e = parse_expr(p, ts)) {
+        // consume the semicolon
+        if (expect_token(p, ts, semicolon_tok))
+          return p.on_expr_stmt(e);
+      }
       break;
   }
 

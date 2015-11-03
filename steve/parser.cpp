@@ -143,15 +143,112 @@ Parser::on_call_expr(Token const* tok, Expr const* fn, Arg_seq const* args)
 }
 
 
-Expr const*
-Parser::on_member_expr(Token const* tok, Expr const* obj, Expr const* mem)
-{
-  // FIXME: The member could be either an id-expr, a field expr,
-  // or an integer expression. Determine what's actually meant.
 
-  // FIXME: If we use '.' for nested name specifiers, this could also
-  // be part of a nested name specifier.
-  return make_member_expr(tok->location(), obj, mem);
+// Parse a dot expression.
+//
+//    dot-expression ::= postfix-expression '.' postfix-expression
+//
+// A dot expr can either be a member-expr or a field-expr depending
+// on the type if identifier on the left hand side of the '.'
+//
+// Member-expr if: lhs is an identifier to a declaration of object type OR
+//                 lhs is a member-expr
+//
+// Field-expr if: lhs declaration is of kind type (i.e. record) OR
+//                lhs is a field-expr
+//
+//
+//    member-expression ::= obj-id '.' member-id
+//                          member-expression '.' member-id
+//
+//    field-expression ::= record-id '.' member-id
+//                         field-expression '.' member-id
+//
+//    index-expression ::= obj-id '.' integer-literal
+//                         index-expr '.' integer-literal
+//                         member-expr '.' integer-literal
+
+Expr const*
+Parser::on_dot_expr(Token const* tok, Expr const* obj, Expr const* mem)
+{
+  // FIXME: implement index expressions
+
+  // The member expression should be an unresolved
+  // lookup expr. Resolve the lookup expr here.
+  lingo_assert(is<Lookup_expr>(mem));
+  Lookup_expr const* lookup = as<Lookup_expr>(mem);
+
+  // check if the obj is a member-expr
+  if (is<Member_expr>(obj)) {
+
+    // if the obj is a member expr then
+    // it has record type
+    if (Record_type const* rt = as<Record_type>(obj->type())) {
+      // find the member decl
+      if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
+        return make_member_expr(tok->location(), obj, id(member));
+      else
+        error(lookup->location(), "Invalid member specifier '{}'.", mem);
+    }
+    else
+      error(obj->location(), "Expected object of record type. Found object of type '{}'.", obj->type());
+  }
+
+
+  // Check if the obj is a field expr
+  if (is<Field_expr>(obj)) {
+
+    // if the obj is a field expr then
+    // it has record type
+    if (Record_type const* rt = as<Record_type>(obj->type())) {
+      // find the member decl
+      if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
+        return make_field_expr(tok->location(), obj, id(member));
+      else
+        error(mem->location(), "Invalid member specifier '{}'.", mem);
+    }
+    else
+      error(obj->location(), "Expected object of record type. Found object of type '{}'.", obj->type());
+  }
+
+
+  // Check to see if the first element is an identifier
+  if (Id_expr const* ID = as<Id_expr>(obj)) {
+    // if e1 is object type then it is a member-expr
+    if (is_object_type(ID->type())) {
+
+      // resolve the lookup expr now
+      // if the obj is a field expr then
+      // it has record type
+      if (Record_type const* rt = as<Record_type>(ID->type())) {
+        // find the member decl
+        if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
+          return make_member_expr(tok->location(), ID, id(member));
+        else
+          error(mem->location(), "Invalid member specifier '{}'.", mem);
+      }
+      else
+        error(ID->location(), "Expected object of record type. Found object of type '{}'.", ID->type());
+    }
+
+    // if obj is of kind type then it is a field-expr
+    // and obj is an identifier to a record decl
+    if (ID->type() == get_kind_type()) {
+      // resolve the lookup expr now
+      // this is an identifier to a record decl
+      if (Record_decl const* rd = as<Record_decl>(ID->decl())) {
+        if (Member_decl const* member = find_member(rd, lookup->name()))
+          return make_field_expr(tok->location(), ID, id(member));
+        else
+          error(mem->location(), "Invalid member specifier '{}'.", mem);
+      }
+    }
+
+    error(ID->location(), "Failed to parse identifier following '.'");
+  }
+
+  error(obj->location(), "Invalid identifier found in dot expr.");
+  return make_error_node<Expr>();
 }
 
 
@@ -354,7 +451,9 @@ Parser::on_parameter_decl(Token const* n, Type const* t)
 Decl const*
 Parser::on_record_decl(Token const* n, Decl_seq const& d)
 {
-  return make_record_decl(n->location(), n->str(), d);
+  Decl const* decl = make_record_decl(n->location(), n->str(), d);
+  declare(decl);
+  return decl;
 }
 
 
@@ -368,7 +467,9 @@ Parser::on_member_decl(Token const* n, Type const* t)
 Decl const*
 Parser::on_decode_decl(Token const* kw, Token const* n, Type const* t, Stmt const* s)
 {
-  return make_decode_decl(kw->location(), n->str(), t, s);
+  Decl const* decl = make_decode_decl(kw->location(), n->str(), t, s);
+  declare(decl);
+  return decl;
 } 
 
 

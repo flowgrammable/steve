@@ -43,7 +43,7 @@ struct Parser
   Expr const* on_integer_expr(Token const*);
   Expr const* on_tuple_expr(Token const*, Expr_seq const&);
   Expr const* on_call_expr(Token const*, Expr const*, Arg_seq const*);
-  Expr const* on_member_expr(Token const*, Expr const*, Expr const*);
+  Expr const* on_dot_expr(Token const*, Expr const*, Expr const*);
   Expr const* on_unary_expr(Token const*, Expr const*);
   Expr const* on_binary_expr(Token const*, Expr const*, Expr const*);
 

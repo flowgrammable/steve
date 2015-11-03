@@ -456,6 +456,22 @@ has_member(Record_decl const* r, Member_decl const* m)
 }
 
 
+// Returns the member decl with a specific name within a record_decl
+// or nullptr if no member declaration with the given name can
+// be found.
+inline Member_decl const*
+find_member(Record_decl const* r, String const* name)
+{
+  Decl_seq const& mems = r->members();
+  for (auto member : mems) {
+    if (member->name() == name)
+      return as<Member_decl>(member);
+  }
+
+  return nullptr;
+}
+
+
 // Returns the index of the member `m` in the record 
 // declaration `r`.
 inline int

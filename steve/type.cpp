@@ -1,6 +1,8 @@
 // Copyright (c) 2015 Flowgrammable.org
 // All rights reserved
 
+#include <typeinfo>
+
 #include "steve/type.hpp"
 #include "steve/expr.hpp"
 #include "steve/decl.hpp"
@@ -404,7 +406,7 @@ type_member_expr(Expr const* e, Expr const* s)
 
   // The selector must be an id-expression.
   if (!is<Id_expr>(s)) {
-    error(s->location(), "invalid member selector '{}'", s);
+    error(s->location(), "invalid member selector '{}' in member expr", s);
     return nullptr;
   }
   Decl const* mem = cast<Id_expr>(s)->decl();
@@ -448,11 +450,12 @@ type_field_expr(Expr const* r, Expr const* f)
   Record_decl const* rec = cast<Record_decl>(rd);
 
   if (!is<Id_expr>(f)) {
-    error(f->location(), "invalid member selector '{}'", f);
+    error(f->location(), "invalid member selector '{}' in field expr", f);
+    std::cout << typeid(*f).name() << '\n';
     return nullptr;
   }
   
-  Decl const* mem = cast<Id_expr>(f)->decl();
+  Decl const* mem = as<Id_expr>(f)->decl();
   
   // The declaration had better be a member. Otherwise the program
   // is internally inconsistent: lookup of a member name returned a

@@ -293,7 +293,19 @@ parse_record_decl(Parser& p, Token_stream& ts)
 Stmt const*
 parse_decode_body(Parser& p, Token_stream& ts)
 {
+  // check for forward declaration
+  if (next_token_is(ts, semicolon_tok)) {
+    get_token(ts);
+    return nullptr;
+  }
+  // parse the block stmt
+  if (next_token_is(ts, lbrace_tok))
+    if (Stmt const* s = parse_stmt(p, ts))
+      if (is<Block_stmt>(s))
+        return s;
 
+  error(ts.location(), "Expected ';' or body following decode declaration.");
+  return make_error_node<Stmt>();
 }
 
 
@@ -334,8 +346,12 @@ parse_decode_decl(Parser& p, Token_stream& ts)
 
   Type_seq hdr_types = headers->term() ? Type_seq(*headers->term()) : Type_seq();
 
+  // this can either be nullptr for forward declarations
+  // or it can be a block stmt
+  Stmt const* body = parse_decode_body(p, ts);
+
   // FIXME: support multiple decodes
-  return p.on_decode_decl(decode, name, hdr_types.front(), nullptr);
+  return p.on_decode_decl(decode, name, hdr_types.front(), body);
 }
 
 

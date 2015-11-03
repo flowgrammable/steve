@@ -140,12 +140,21 @@ parse_call_expr(Parser& p, Token_stream& ts, Expr const* expr)
 // Parse a dot expression.
 //
 //    dot-expression ::= postfix-expression '.' postfix-expression
+//
+// A dot expr can either be a member-expr or a field-expr depending
+// on the type if identifier on the left hand side of the '.'
+//
+// Member-expr if: lhs is an identifier to a declaration of object type OR
+//                 lhs is a member-expr
+//
+// Field-expr if: lhs declaration is of kind type (i.e. record) OR
+//                lhs is a field-expr
 Expr const*
-parse_member_expr(Parser& p, Token_stream& ts, Expr const* e1) 
+parse_dot_expr(Parser& p, Token_stream& ts, Expr const* e1)
 {
   Token const* tok = require_token(ts, dot_tok);
   if (Required<Expr> e2 = parse_primary_expr(p, ts))
-    return p.on_member_expr(tok, e1, *e2);
+    return p.on_dot_expr(tok, e1, *e2);
   else
     return *e2;
 }
@@ -170,7 +179,7 @@ parse_postfix_expr(Parser& p, Token_stream& ts) {
         break;
 
       case dot_tok:
-        e2 = parse_member_expr(p, ts, e1);
+        e2 = parse_dot_expr(p, ts, e1);
         break;
 
       default:
