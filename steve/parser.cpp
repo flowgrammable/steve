@@ -196,11 +196,11 @@ Parser::on_dot_expr(Token const* tok, Expr const* obj, Expr const* mem)
 
 
   // Check if the obj is a field expr
-  if (is<Field_expr>(obj)) {
+  if (Field_expr const* field = as<Field_expr>(obj)) {
 
     // if the obj is a field expr then
     // it has record type
-    if (Record_type const* rt = as<Record_type>(obj->type())) {
+    if (Record_type const* rt = as<Record_type>(field->field_type())) {
       // find the member decl
       if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
         return make_field_expr(tok->location(), obj, id(member));
@@ -208,7 +208,7 @@ Parser::on_dot_expr(Token const* tok, Expr const* obj, Expr const* mem)
         error(mem->location(), "Invalid member specifier '{}'.", mem);
     }
     else
-      error(obj->location(), "Expected object of record type. Found object of type '{}'.", obj->type());
+      error(obj->location(), "Expected object of record type. Found '{}' object of type '{}'.", obj, obj->type());
   }
 
 
@@ -228,7 +228,7 @@ Parser::on_dot_expr(Token const* tok, Expr const* obj, Expr const* mem)
           error(mem->location(), "Invalid member specifier '{}'.", mem);
       }
       else
-        error(ID->location(), "Expected object of record type. Found object of type '{}'.", ID->type());
+        error(ID->location(), "Expected object of record type. Found object '{}' of type '{}'.", ID, ID->type());
     }
 
     // if obj is of kind type then it is a field-expr

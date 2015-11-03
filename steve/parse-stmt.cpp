@@ -101,6 +101,15 @@ parse_return_stmt(Parser& p, Token_stream& ts)
         return p.on_return_stmt(e);
 }
 
+
+// Parsing a match stmt
+//      match-stmt ::= 'match' '(' expr ')' '{' case-seq '}'
+Stmt const*
+parse_match_stmt(Parser& p, Token_stream& ts)
+{
+  return nullptr;
+}
+
 } // namespace
 
 
@@ -135,9 +144,12 @@ parse_stmt(Parser& p, Token_stream& ts)
     case lbrace_tok:
       return parse_block_stmt(p, ts);
 
-    // case match_kw:
-    //   return parse_match_stmt(p, ts);
-    // case case_kw
+    case match_kw:
+      return parse_match_stmt(p, ts);
+    // we will never find stray case statements
+    // match will call a function to parse case directly
+    // case case_kw:
+    //   error(ts.location(), "stray 'case' statement found outside of match statement.");
 
     case semicolon_tok:
       return parse_empty_stmt(p, ts);
