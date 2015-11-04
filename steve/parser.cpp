@@ -13,6 +13,87 @@ namespace steve
 //                              File parser
 
 
+namespace
+{
+
+
+
+// -------------------------------------------------------------------------- //
+//                             Helper Functions
+
+Expr const*
+on_field_expr_access(Token const* tok, Field_expr const* field, Lookup_expr const* mem)
+{
+  // if the obj is a field expr then
+  // it has record type
+  if (Record_type const* rt = as<Record_type>(field->field_type())) {
+    // find the member decl
+    if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), mem->name()))
+      return make_field_expr(tok->location(), field, id(member));
+    else
+      error(mem->location(), "Invalid member specifier '{}'.", mem);
+  }
+  else
+    error(field->location(), "Expected object of record type. Found '{}' object of type '{}'.", field, field->type());
+}
+
+
+Expr const*
+on_member_expr_access(Token const* tok, Member_expr const* obj, Lookup_expr const* mem)
+{
+  // if the obj is a member expr then
+  // it has record type
+  if (Record_type const* rt = as<Record_type>(obj->type())) {
+    // find the member decl
+    if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), mem->name()))
+      return make_member_expr(tok->location(), obj, id(member));
+    else
+      error(mem->location(), "Invalid member specifier '{}'.", mem);
+  }
+  else
+    error(obj->location(), "Expected object of record type. Found object of type '{}'.", obj->type());
+}
+
+
+Expr const*
+on_identifier_access(Token const* tok, Id_expr const* ID, Lookup_expr const* mem)
+{
+  // if e1 is object type then it is a member-expr
+  if (is_object_type(ID->type())) {
+
+    // resolve the lookup expr now
+    // if the obj is a field expr then
+    // it has record type
+    if (Record_type const* rt = as<Record_type>(ID->type())) {
+      // find the member decl
+      if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), mem->name()))
+        return make_member_expr(tok->location(), ID, id(member));
+      else
+        error(mem->location(), "Invalid member specifier '{}'.", mem);
+    }
+    else
+      error(ID->location(), "Expected object of record type. Found object '{}' of type '{}'.", ID, ID->type());
+  }
+
+  // if obj is of kind type then it is a field-expr
+  // and obj is an identifier to a record decl
+  if (ID->type() == get_kind_type()) {
+    // resolve the lookup expr now
+    // this is an identifier to a record decl
+    if (Record_decl const* rd = as<Record_decl>(ID->decl())) {
+      if (Member_decl const* member = find_member(rd, mem->name()))
+        return make_field_expr(tok->location(), ID, id(member));
+      else
+        error(mem->location(), "Invalid member specifier '{}'.", mem);
+    }
+  }
+
+  error(ID->location(), "Failed to parse identifier following '.'");
+}
+
+} // namespace
+
+
 Stmt_seq
 parse_file(Parser& p, Token_stream& ts)
 {
@@ -179,72 +260,20 @@ Parser::on_dot_expr(Token const* tok, Expr const* obj, Expr const* mem)
   Lookup_expr const* lookup = as<Lookup_expr>(mem);
 
   // check if the obj is a member-expr
-  if (is<Member_expr>(obj)) {
-
-    // if the obj is a member expr then
-    // it has record type
-    if (Record_type const* rt = as<Record_type>(obj->type())) {
-      // find the member decl
-      if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
-        return make_member_expr(tok->location(), obj, id(member));
-      else
-        error(lookup->location(), "Invalid member specifier '{}'.", mem);
-    }
-    else
-      error(obj->location(), "Expected object of record type. Found object of type '{}'.", obj->type());
+  if (Member_expr const* member = as<Member_expr>(obj)) {
+    return on_member_expr_access(tok, member, lookup);
   }
 
 
   // Check if the obj is a field expr
   if (Field_expr const* field = as<Field_expr>(obj)) {
-
-    // if the obj is a field expr then
-    // it has record type
-    if (Record_type const* rt = as<Record_type>(field->field_type())) {
-      // find the member decl
-      if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
-        return make_field_expr(tok->location(), obj, id(member));
-      else
-        error(mem->location(), "Invalid member specifier '{}'.", mem);
-    }
-    else
-      error(obj->location(), "Expected object of record type. Found '{}' object of type '{}'.", obj, obj->type());
+    return on_field_expr_access(tok, field, lookup);
   }
 
 
   // Check to see if the first element is an identifier
   if (Id_expr const* ID = as<Id_expr>(obj)) {
-    // if e1 is object type then it is a member-expr
-    if (is_object_type(ID->type())) {
-
-      // resolve the lookup expr now
-      // if the obj is a field expr then
-      // it has record type
-      if (Record_type const* rt = as<Record_type>(ID->type())) {
-        // find the member decl
-        if (Member_decl const* member = find_member(as<Record_decl>(rt->decl()), lookup->name()))
-          return make_member_expr(tok->location(), ID, id(member));
-        else
-          error(mem->location(), "Invalid member specifier '{}'.", mem);
-      }
-      else
-        error(ID->location(), "Expected object of record type. Found object '{}' of type '{}'.", ID, ID->type());
-    }
-
-    // if obj is of kind type then it is a field-expr
-    // and obj is an identifier to a record decl
-    if (ID->type() == get_kind_type()) {
-      // resolve the lookup expr now
-      // this is an identifier to a record decl
-      if (Record_decl const* rd = as<Record_decl>(ID->decl())) {
-        if (Member_decl const* member = find_member(rd, lookup->name()))
-          return make_field_expr(tok->location(), ID, id(member));
-        else
-          error(mem->location(), "Invalid member specifier '{}'.", mem);
-      }
-    }
-
-    error(ID->location(), "Failed to parse identifier following '.'");
+    return on_identifier_access(tok, ID, lookup);
   }
 
   error(obj->location(), "Invalid identifier found in dot expr.");

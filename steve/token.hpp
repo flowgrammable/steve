@@ -79,6 +79,7 @@ enum Token_kind
   import_kw,    // import
   long_kw,      // long
   match_kw,     // match
+  case_kw,      // case
   ref_kw,       // ref
   record_kw,    // record
   requires_kw,  // requires

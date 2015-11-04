@@ -148,8 +148,8 @@ parse_stmt(Parser& p, Token_stream& ts)
       return parse_match_stmt(p, ts);
     // we will never find stray case statements
     // match will call a function to parse case directly
-    // case case_kw:
-    //   error(ts.location(), "stray 'case' statement found outside of match statement.");
+    case case_kw:
+      error(ts.location(), "stray 'case' statement found outside of match statement.");
 
     case semicolon_tok:
       return parse_empty_stmt(p, ts);

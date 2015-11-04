@@ -75,6 +75,7 @@ init_tokens()
   install(import_kw, "import");
   install(long_kw, "long");
   install(match_kw, "match");
+  install(case_kw, "case");
   install(record_kw, "record");
   install(requires_kw, "requires");
   install(short_kw, "short");
