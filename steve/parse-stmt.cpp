@@ -102,11 +102,46 @@ parse_return_stmt(Parser& p, Token_stream& ts)
 }
 
 
+// Parsing a case stmt
+Stmt const*
+parse_case_stmt(Parser& p, Token_stream& ts)
+{
+  using Expr_list = Enclosed_term<Sequence_term<Expr>> const*;
+
+  Expr_list tuple = parse_brace_enclosed(p, ts, parse_expr);
+
+}
+
+
+// Parse a sequence case stmt
+Sequence_term<Case_stmt> const*
+parse_case_sequence(Parser& p, Token_stream& ts)
+{
+  return parse_list(p, ts, semicolon_tok, parse_case_stmt);
+}
+
+
+Enclosed_term<Sequence_term<Case_stmt>> const*
+parse_match_body(Parser& p, Token_stream& ts)
+{
+  return parse_brace_enclosed(p, ts, parse_case_sequence);
+}
+
+
 // Parsing a match stmt
 //      match-stmt ::= 'match' '(' expr ')' '{' case-seq '}'
 Stmt const*
 parse_match_stmt(Parser& p, Token_stream& ts)
-{
+{ 
+  Token const* match = expect_token(p, ts, match_kw);
+
+  if (expect_token(p, ts, lparen_tok)) 
+    if (Expr const* cond = parse_expr(p, ts))
+      if (expect_token(p, ts, rparen_tok)) {
+
+      }
+
+
   return nullptr;
 }
 
@@ -150,6 +185,7 @@ parse_stmt(Parser& p, Token_stream& ts)
     // match will call a function to parse case directly
     case case_kw:
       error(ts.location(), "stray 'case' statement found outside of match statement.");
+      break;
 
     case semicolon_tok:
       return parse_empty_stmt(p, ts);
