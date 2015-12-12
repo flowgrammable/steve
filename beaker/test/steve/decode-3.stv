@@ -1,0 +1,20 @@
+Port p1;
+Port p2;
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+decoder start eth_d(eth)
+{
+  extract eth::type;
+  goto t1;
+}
+
+exact_table t1(eth::type)
+{
+
+}

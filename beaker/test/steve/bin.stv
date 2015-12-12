@@ -1,0 +1,4 @@
+def main() -> int
+{
+  var x : int = 0b00100000;
+}

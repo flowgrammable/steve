@@ -1,0 +1,14 @@
+struct S
+{
+  def f() -> int { return 0; }
+}
+
+def f() -> int { return 0; }
+
+var s : S;
+
+def main() -> int
+{
+  s.f();
+  return 0;
+}

@@ -1,0 +1,18 @@
+call pipeline, get back goto table as terminator else run actions
+always guarentee to see terminator to output ports
+
+apply action
+write action
+
+actions are data structures that get pushed to the runtime
+
+
+working loop
+
+while(c->table) {
+pipeline(c)
+process table stuff
+}
+
+apply actions
+output to port

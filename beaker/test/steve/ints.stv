@@ -1,0 +1,7 @@
+def main() -> int
+{
+  var a : int(124) = 0;
+  var x : int(24) = 0;
+  var y : int(128) = x;
+  x = y;
+}
