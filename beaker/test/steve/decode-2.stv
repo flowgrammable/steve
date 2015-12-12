@@ -1,0 +1,63 @@
+Port p1;
+Port p2;
+
+layout eth
+{
+	src : int;
+	dst : int;
+	type : int;
+}
+
+
+layout ipv4
+{
+	src : int;
+	dst : int;
+	protocol: int;
+}
+
+
+decoder start eth_d(eth)
+{
+	extract eth::src;
+	extract eth::dst;
+	extract eth::type;
+
+	match (eth::type) {
+		case 800: decode ipv4_d;
+		case 1: decode eth2_d;
+		case 880: goto t1;
+	}
+}
+
+decoder eth2_d(eth)
+{
+	extract eth::src;
+
+	goto t2;
+}
+
+
+decoder ipv4_d(ipv4)
+{
+	extract ipv4::dst;
+	extract ipv4::protocol;
+
+	match (ipv4::protocol) {
+		case 0: goto t1;
+	}
+}
+
+
+exact_table t1(eth::src)
+{
+  {0} -> { };
+	{1} -> { };
+}
+
+
+exact_table t2(ipv4::dst)
+{
+  {0} -> { decode ipv4_d; };
+	{1} -> { decode eth_d; };
+}

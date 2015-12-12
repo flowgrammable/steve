@@ -1,0 +1,34 @@
+layout eth
+{
+	src : int;
+	dst : bool;
+	type : int;
+}
+
+
+decoder eth_d(eth)
+{
+	extract eth::src;
+	extract eth::dst;
+
+	match (eth::src) {
+		case 800: decode ipv4_d;
+		case 880: goto t1;
+	}
+
+	match (eth::dst) {
+		case 800: decode ipv4_d;
+		case 880: goto t1;
+	}
+
+	match (eth::src) {
+		case 800: decode ipv4_d;
+		case 800: goto t1;
+	}
+}
+
+
+decoder ipv4_d(eth)
+{
+
+}

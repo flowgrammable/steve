@@ -1,6 +1,0 @@
-
-var x : int;
-var y : int = 0;
-// var y : int = 1; // error: redefinition
-
-def f(x : int, y : int) -> int = 0;

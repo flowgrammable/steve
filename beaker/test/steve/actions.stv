@@ -1,0 +1,19 @@
+Port p1;
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+decoder start eth_d(eth)
+{
+  extract eth::type;
+  set eth::type = 0x800;
+  // copy eth::type = eth::src;
+  // write drop;
+  // write output p1;
+  // write set eth::type = 0x800;
+  // write copy eth::type = eth::src;
+}

@@ -1,0 +1,5 @@
+def foo() -> int
+{
+	decode ipv4_d;
+	return 0;
+}
