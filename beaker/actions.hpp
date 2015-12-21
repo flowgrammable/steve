@@ -47,6 +47,9 @@ struct Set_field : Action
     : field_(f), value_(v)
   { }
 
+  Expr* field() const { return field_; }
+  Expr* value() const { return value_; }
+
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 

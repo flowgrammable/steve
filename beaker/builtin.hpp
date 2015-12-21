@@ -16,9 +16,10 @@ constexpr char const* __get_table    = "fp_get_table";
 constexpr char const* __add_flow     = "fp_add_flow";
 constexpr char const* __match        = "fp_goto_table";
 constexpr char const* __load_field   = "fp_load_field";
+constexpr char const* __set_field    = "fp_set_field";
 constexpr char const* __get_port     = "fp_get_port";
 constexpr char const* __gather       = "fp_gather";
-constexpr char const* __output       = "fp_output2port";
+constexpr char const* __output       = "fp_output_port";
 constexpr char const* __drop         = "fp_drop";
 constexpr char const* __context      = "__cxt__";
 constexpr char const* __header       = "__header__";
@@ -28,8 +29,8 @@ constexpr char const* __drop_port    = "__drop";
 constexpr char const* __flood_port   = "__flood";
 
 // runtime interface functions
-constexpr char const* __load         = "load";
-constexpr char const* __process      = "process";
+constexpr char const* __load         = "config";
+constexpr char const* __process      = "pipeline";
 constexpr char const* __start        = "start";
 constexpr char const* __stop         = "stop";
 constexpr char const* __port_num     = "port_num";
@@ -109,8 +110,13 @@ struct Bind_header : Call_expr
 {
   using Call_expr::Call_expr;
 
-  Bind_header(Expr* fn, Expr* id, Expr* length)
-    : Call_expr(fn, {id, length})
+  Bind_header(Expr* fn, Expr* cxt, Expr* id, Expr* length)
+    : Call_expr(fn, {cxt, id, length})
+  { }
+
+  // NOTE: Excluding length
+  Bind_header(Expr* fn, Expr* cxt, Expr* id)
+    : Call_expr(fn, {cxt, id})
   { }
 
   Expr* first;
@@ -241,7 +247,7 @@ struct Builtin
   Port_map     get_builtin_ports() const { return builtin_ports; }
 
   Expr* call_bind_field(Expr_seq const& args);
-  Expr* call_bind_header(Expr*, Expr*);
+  Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_field();
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr_seq const& args);
@@ -252,6 +258,7 @@ struct Builtin
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
+  Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -279,6 +286,7 @@ private:
   Function_decl* get_port();
   Function_decl* drop();
   Function_decl* output();
+  Function_decl* set_field();
 
   Port_decl* drop_port();
   Port_decl* flood_port();

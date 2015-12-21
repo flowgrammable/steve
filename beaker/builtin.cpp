@@ -332,6 +332,38 @@ Builtin::output()
 }
 
 
+Function_decl*
+Builtin::set_field()
+{
+  Symbol const* fn_name = get_identifier(__set_field);
+
+  Type const* void_type = get_void_type();
+  Type const* int_type = get_integer_type();
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* buffer = get_block_type(get_character_type());
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref),
+    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("len"), int_type),
+    new Parameter_decl(get_identifier("val"), buffer)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->declare_ = true;
+
+  return fn;
+}
+
+
+// -------------------------------------------------------------------------- //
+// Builtin ports
+
+
 Port_decl*
 Builtin::drop_port()
 {
@@ -365,6 +397,7 @@ Builtin::init_builtins()
     {__get_port, get_port()},
     {__drop, drop()},
     {__output, output()},
+    {__set_field, set_field()},
   };
 
   builtin_ports =
@@ -442,12 +475,16 @@ Builtin::call_bind_field(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_bind_header(Expr* id, Expr* len)
+Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
 {
   Function_decl* fn = builtin_fn.find(__bind_header)->second;
   assert(fn);
 
-  return new Bind_header(decl_id(fn), id, len);
+  // NOTE: we are current excluding len because the runtime
+  // does not handle header length and its unsure if the length of a header
+  // matters.
+
+  return new Bind_header(decl_id(fn), cxt, id);
 }
 
 
@@ -551,4 +588,14 @@ Builtin::call_output(Expr* cxt, Expr* port)
   assert(fn);
 
   return new Output_packet(decl_id(fn), {cxt, port});
+}
+
+
+Expr*
+Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
+{
+  Function_decl* fn = builtin_fn.find(__set_field)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt, id, len, val});
 }

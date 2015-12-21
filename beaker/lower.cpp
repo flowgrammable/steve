@@ -6,6 +6,7 @@
 #include "beaker/error.hpp"
 #include "beaker/mangle.hpp"
 #include "beaker/gather.hpp"
+#include "beaker/evaluator.hpp"
 
 #include <iostream>
 
@@ -166,6 +167,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
 };
 
 
@@ -334,6 +336,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   Scope_sentinel scope(*this, d);
 
   // declare all parameters again
+  // NOTE: this declares the context parameter
   for (auto parm : fn->parameters()) {
     declare(parm);
   }
@@ -343,6 +346,12 @@ Lowerer::lower_global_def(Decode_decl* d)
   // such as when calling advance()
   Parameter_decl* header = new Parameter_decl(get_identifier(__header), d->header());
   declare(header);
+
+  // get the context varaible
+  ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
 
   // Lower the body and change the definition of the function.
   Stmt* body = lower(d->body()).back();
@@ -354,7 +363,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   Layout_decl* ldecl = as<Layout_decl>(ltype->declaration());
   Expr* id = make_int(checker.get_header_mapping(ldecl));
   Expr* len = get_length(ltype);
-  Expr* bind = builtin.call_bind_header(id, len);
+  Expr* bind = builtin.call_bind_header(decl_id(cxt), id, len);
 
   // attach the bind header call to the body
   Block_stmt* block = as<Block_stmt>(body);
@@ -1065,6 +1074,61 @@ Lowerer::lower(Output* s)
   return { new Expression_stmt(drop) };
 }
 
+
+Stmt_seq
+Lowerer::lower(Set_field* s)
+{
+  // get the context varaible
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Set field translates to a function call to
+  // fp_set_field, passing in the context, field id, and value.
+  Field_access_expr* e = as<Field_access_expr>(s->field());
+  assert(e);
+
+  Expr* id = make_int(checker.get_field_mapping(e->name()));
+
+  // convert the integer value into a byte array and pass it as a block
+  // first evaluate it
+  Evaluator ev;
+  Value v = ev.eval(s->value());
+  // get the integer value back
+  // and store it in a buffer
+  std::stringstream ss;
+  ss << v.get_integer().decimal_str();
+  uint512_t buf = 0;
+  ss >> buf;
+
+  // convert to a byte array
+  // get the precision of the value
+  int prec = precision(s->value()->type());
+  char* bytes = new char[prec / 8];
+  char* k = reinterpret_cast<char*>(&buf);
+  std::copy(k, k + (prec / 8), bytes);
+
+  Array_value arr { bytes, (size_t) prec / 8 };
+  Type const* z = get_integer_type();
+  // create the array length literal
+  Expr* n = new Literal_expr(z, arr.len + 1);
+  // Create the array type.
+  Type const* c = get_character_type();
+  Type const* t = get_array_type(c, n);
+
+  // create the array literal
+  Expr* val = new Literal_expr(t, arr);
+
+  // create the call
+  Expr* set_field = builtin.call_set_field(decl_id(cxt),
+                                           id,
+                                           make_int(prec / 8),
+                                           val);
+  elab.elaborate(set_field);
+
+  return { new Expression_stmt(set_field) };
+}
 
 
 // -------------------------------------------------------------------------- //

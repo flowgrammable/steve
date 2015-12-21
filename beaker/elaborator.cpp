@@ -2956,7 +2956,13 @@ Elaborator::elaborate(Set_field* s)
 
   assert(field->type());
   assert(val);
-  Expr* conv = convert(val, field->type());
+  Expr* conv = convert(val, field->type()->nonref());
+  if (!conv) {
+    std::stringstream ss;
+    ss << "Cannot convert " << *val << " of type " << *val->type() << " to "
+       << *field->type();
+    throw Type_error({}, ss.str());
+  }
 
   s->value_ = conv;
   s->field_ = field;
