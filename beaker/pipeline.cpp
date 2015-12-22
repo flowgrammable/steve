@@ -316,11 +316,9 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     // and only if it is an extracts decl or rebind decl
     void operator()(Declaration_stmt const* s)
     {
-      if (Extracts_decl const* ext = as<Extracts_decl>(s->declaration())) {
-        prod.emplace(ext->name(), ext);
-        fld_map.insert(ext);
-      }
-      else if (Rebind_decl const* reb = as<Rebind_decl>(s->declaration())) {
+      // NOTE: Must check for rebind decl first since it is a child of
+      // extracts decl and will be a successful cast.
+      if (Rebind_decl const* reb = as<Rebind_decl>(s->declaration())) {
         // bind both the original name
         // and the aliased name
         prod.emplace(reb->name(), reb);
@@ -328,6 +326,10 @@ Pipeline_checker::get_productions(Decode_decl const* d)
 
         fld_map.insert(reb->name());
         fld_map.insert(reb->original());
+      }
+      else if (Extracts_decl const* ext = as<Extracts_decl>(s->declaration())) {
+        prod.emplace(ext->name(), ext);
+        fld_map.insert(ext);
       }
     }
   };

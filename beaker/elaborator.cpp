@@ -1957,10 +1957,6 @@ Elaborator::elaborate(Extracts_decl* d)
     throw Type_error({}, ss.str());
   }
 
-  // This should be a guarentee from decoder elaboration
-  Layout_type const* header_type = as<Layout_type>(decoder->header());
-  assert(header_type);
-
   Field_name_expr* fld = as<Field_name_expr>(d->field());
 
   if (!fld) {
@@ -1979,6 +1975,10 @@ Elaborator::elaborate(Extracts_decl* d)
   // confirm that the first declaration is
   // the same layout decl that the decoder
   // handles
+  // This should be a guarentee from decoder elaboration
+  Layout_type const* header_type = as<Layout_type>(decoder->header());
+  assert(header_type);
+
   if ((fld = as<Field_name_expr>(e1))) {
     if (fld->declarations().front() != header_type->declaration()) {
       std::stringstream ss;
@@ -2013,7 +2013,7 @@ Elaborator::elaborate(Rebind_decl* d)
        << " found outside of the context of a decoder."
        << "Context is: " << *stack.context()->name();
 
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
 
   // Elaborate the first expression
@@ -2022,14 +2022,37 @@ Elaborator::elaborate(Rebind_decl* d)
   if (!origin) {
     std::stringstream ss;
     ss << "Invalid field name: " << *d->field() << " in rebind decl: " << *d;
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
   d->field_ = e1;
 
-  // The second field name just provides a named
-  // We don't care about any semantics related to it so we do
-  // NOT elaborate the second field.
+  // confirm that the first declaration is
+  // the same layout decl that the decoder
+  // handles
+  // This should be a guarentee from decoder elaboration
+  Layout_type const* header_type = as<Layout_type>(decoder->header());
+  assert(header_type);
+
+  if (origin->declarations().front() != header_type->declaration()) {
+    std::stringstream ss;
+    ss << "Cannot extract from: " << *origin->declarations().front()->name()
+       << " in extracts decl: " << *d
+       << ". Decoder " << *decoder->name() << " decodes layout: "
+       << *header_type;
+    throw Type_error(locate(d), ss.str());
+  }
+
+  // The second field name provides a name
   Field_name_expr* alias = as<Field_name_expr>(d->alias());
+  elaborate(alias);
+  // Confirm the second field name has the same type as the first field name
+  if (alias->type() != origin->type()) {
+    std::stringstream ss;
+    ss << "Mismatched types between fields " << *origin << " and " << *alias
+       << " in extract-as.";
+    throw Type_error(locate(d), ss.str());
+  }
+
   // the name of a rebind declaration is the name of its alias
   d->name_ = alias->name();
   // save its original name as well
@@ -2500,7 +2523,17 @@ Elaborator::elaborate_def(Layout_decl* d)
 Decl*
 Elaborator::elaborate_def(Port_decl* d)
 {
-  return d;
+  d->first = elaborate(d->address());
+
+  // check that the expression following '='
+  // is a string literal
+  if (Array_type const* t = as<Array_type>(d->address()->type()))
+    if (is<Character_type>(t->type()))
+      return d;
+
+  std::stringstream ss;
+  ss << "Invalid port address " << d->address() << ". Expected string literal.";
+  throw Type_error(locate(d), ss.str());
 }
 
 

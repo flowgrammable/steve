@@ -844,7 +844,7 @@ Parser::decode_decl()
 
   Stmt* body = block_stmt();
 
-  return on_decode_decl(n, t, body, is_start);
+  return on_decoder(n, t, body, is_start);
 }
 
 
@@ -933,9 +933,14 @@ Parser::port_decl()
 
   Token tok = match(identifier_tok);
 
+  match(equal_tok);
+
+  // expect a string literal
+  Expr* address = expr();
+
   match(semicolon_tok);
 
-  return on_port(tok);
+  return on_port(tok, address);
 }
 
 
@@ -950,21 +955,13 @@ Parser::extract_decl()
   }
 
   if (match_if(as_kw)) {
-    Expr* alias = expr();
+    Expr* alias = field_name_expr();
     match(semicolon_tok);
-    return on_rebind_decl(e, alias);
+    return on_rebind(e, alias);
   }
 
   match(semicolon_tok);
-  return on_extract_decl(e);
-}
-
-
-Decl*
-Parser::rebind_decl()
-{
-  error("not implemented rebind");
-  return nullptr;
+  return on_extract(e);
 }
 
 
@@ -1912,7 +1909,7 @@ Parser::on_layout(Token n, Decl_seq const& fs)
 
 
 Decl*
-Parser::on_decode_decl(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
+Parser::on_decoder(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
 {
   // The actual type of a decode decl is
   // (ref Cxt) -> void
@@ -1926,14 +1923,14 @@ Parser::on_decode_decl(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
 
 
 Decl*
-Parser::on_extract_decl(Expr* e)
+Parser::on_extract(Expr* e)
 {
   return new Extracts_decl(e);
 }
 
 
 Decl*
-Parser::on_rebind_decl(Expr* field, Expr* alias)
+Parser::on_rebind(Expr* field, Expr* alias)
 {
   return new Rebind_decl(field, alias);
 }
@@ -1959,9 +1956,9 @@ Parser::on_flow(Expr_seq& keys, Stmt* body)
 
 
 Decl*
-Parser::on_port(Token tok)
+Parser::on_port(Token tok, Expr* e)
 {
-  return new Port_decl(tok.symbol(), get_port_type());
+  return new Port_decl(tok.symbol(), get_port_type(), e);
 }
 
 

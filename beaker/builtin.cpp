@@ -40,7 +40,7 @@ Builtin::bind_header()
 
 
 //
-// void __bind_offset(Context*, id, offset, length);
+// Byte* __bind_offset(Context*, id, offset, length);
 //
 Function_decl*
 Builtin::bind_field()
@@ -67,12 +67,12 @@ Builtin::bind_field()
 
 
 //
-// void __alias_bind(Context*, int id1, int id2, int offset, int length);
+// Byte* __alias_bind(Context*, int id1, int id2, int offset, int length);
 //
 Function_decl*
 Builtin::alias_bind()
 {
-  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__alias_bind);
 
   Decl_seq parms =
@@ -84,7 +84,7 @@ Builtin::alias_bind()
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, void_type);
+  Type const* fn_type = get_function_type(parms, buffer_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -424,6 +424,20 @@ Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
   // matters.
 
   return new Bind_header(decl_id(fn), cxt, id);
+}
+
+
+Expr*
+Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
+{
+  Function_decl* fn = builtin_fn.find(__alias_bind)->second;
+  assert(fn);
+
+  // NOTE: we are current excluding len because the runtime
+  // does not handle header length and its unsure if the length of a header
+  // matters.
+
+  return new Bind_header(decl_id(fn), {cxt, id1, id2, off, len});
 }
 
 

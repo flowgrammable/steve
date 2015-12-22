@@ -516,11 +516,8 @@ Lowerer::lower_global_def(Port_decl* d)
   Decl* var = ovl->back();
   assert(var);
 
-  // get the c string name
-  Expr* cstr = make_cstr(d->name()->spelling().c_str());
-
   // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var, { cstr });
+  Expr* get_port = builtin.call_get_port(var, { d->address() });
   elab.elaborate(get_port);
   load_body.push_back(new Expression_stmt(get_port));
 
@@ -790,7 +787,44 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
 Stmt_seq
 Lowerer::lower_rebind_decl(Rebind_decl* d)
 {
-  Stmt_seq stmts;
+  // get the context from the decoder functionl
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  Decl* cxt = ovl->back();
+
+  // get the id from the pipeline checker
+  int mapping1 = checker.get_field_mapping(d->name());
+  int mapping2 = checker.get_field_mapping(d->original());
+
+  Field_name_expr* field = as<Field_name_expr>(d->field());
+  assert(field);
+
+  // get the offset into the layout of the field
+  Expr* offset = get_offset(field);
+
+  // get the length of the field
+  Expr* length = get_length(field);
+
+  // create the binding call
+  Expr* bind_field = builtin.call_alias_bind( id(cxt),
+                                              make_int(mapping1),
+                                              make_int(mapping2),
+                                              offset,
+                                              length);
+  bind_field = elab.elaborate(bind_field);
+  Expr* cast = new Reinterpret_cast(bind_field, field->type());
+
+  // Mangle the name of the variable from the name of the
+  // extracted field. Declare it as a new variable.
+  Symbol const* field_name = get_identifier(mangle(d));
+  Variable_decl* load_var = new Variable_decl(field_name,
+                                              cast->type(),
+                                              cast);
+
+  declare(load_var);
+
+  Stmt_seq stmts {
+    new Declaration_stmt(load_var)
+  };
 
   return stmts;
 }
@@ -805,14 +839,17 @@ Lowerer::lower(Declaration_stmt* s)
   // process as they are declarations which
   // lower into call expressions instead of
   // other declarations
-  if (Extracts_decl* extract = as<Extracts_decl>(s->declaration())) {
-    Stmt_seq l = lower_extracts_decl(extract);
+
+  // NOTE: We have to check rebind decl first since it inherits from
+  // extracts decl and thus the cast to extracts decl would still succeed.
+  if (Rebind_decl* rebind = as<Rebind_decl>(s->declaration())) {
+    Stmt_seq l = lower_rebind_decl(rebind);
     stmts.insert(stmts.end(), l.begin(), l.end());
     return stmts;
   }
 
-  if (Rebind_decl* rebind = as<Rebind_decl>(s->declaration())) {
-    Stmt_seq l = lower_rebind_decl(rebind);
+  if (Extracts_decl* extract = as<Extracts_decl>(s->declaration())) {
+    Stmt_seq l = lower_extracts_decl(extract);
     stmts.insert(stmts.end(), l.begin(), l.end());
     return stmts;
   }

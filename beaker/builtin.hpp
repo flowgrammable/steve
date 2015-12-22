@@ -238,7 +238,7 @@ struct Builtin
 
   Expr* call_bind_field(Expr_seq const& args);
   Expr* call_bind_header(Expr*, Expr*, Expr*);
-  Expr* call_alias_field();
+  Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr_seq const& args);
   Expr* call_add_flow(Expr_seq const& args);
@@ -275,7 +275,7 @@ private:
   Function_decl* drop();
   Function_decl* output();
   Function_decl* set_field();
-  
+
   Symbol const* get_identifier(std::string);
 
   Symbol_table& syms;

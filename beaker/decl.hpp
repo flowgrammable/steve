@@ -452,15 +452,18 @@ struct Rebind_decl : Extracts_decl
 // Declares the name of a port
 struct Port_decl : Decl
 {
-  Port_decl(Symbol const* n, Type const* t)
-    : Decl(n, t)
+  Port_decl(Symbol const* n, Type const* t, Expr* e)
+    : Decl(n, t), first(e)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
 
+  Expr* address() const { return first; }
+
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
+  Expr* first;
 };
 
 

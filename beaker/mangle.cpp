@@ -310,14 +310,15 @@ void mangle(std::ostream& os, Port_decl const* d)
 
 void mangle(std::ostream& os, Extracts_decl const* d)
 {
-  os << "_Ex";
+  os << "_F";
   os << boost::replace_all_copy(d->name()->spelling(), "::", "_");
 }
 
 
 void mangle(std::ostream& os, Rebind_decl const* d)
 {
-  mangle(os, d->name());
+  os << "_F";
+  os << boost::replace_all_copy(d->name()->spelling(), "::", "_");
 }
 
 

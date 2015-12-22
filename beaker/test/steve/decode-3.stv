@@ -1,17 +1,25 @@
-Port p1;
-Port p2;
+Port p1 = ":5000";
+Port p2 = ":5001";
 
 layout eth
 {
 	src : uint(48);
 	dst : uint(48);
 	type : uint(16);
+	alias : uint(48);
 }
 
 decoder start eth_d(eth)
 {
   extract eth::dst;
-  goto t1;
+	extract eth::src as eth::alias;
+  decode eth_d2;
+}
+
+decoder eth_d2(eth)
+{
+	extract eth::type;
+	goto t1;
 }
 
 exact_table t1(eth::dst)
