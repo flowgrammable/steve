@@ -547,25 +547,10 @@ Lowerer::add_builtin_functions()
 
 
 void
-Lowerer::add_builtin_ports()
-{
-  // lower the builtin ports
-  for (auto pair : builtin.get_builtin_ports()) {
-    lower_global_decl(pair.second);
-    Decl* d = lower_global_def(pair.second);
-    prelude.push_back(d);
-  }
-}
-
-
-void
 Lowerer::add_prelude()
 {
   // declare all builtin functions
   add_builtin_functions();
-
-  // declare all builtin ports
-  add_builtin_ports();
 }
 
 
@@ -776,16 +761,7 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   };
   Expr* bind_field = builtin.call_bind_field(args);
   bind_field = elab.elaborate(bind_field);
-
-  // create the loading call
-  args =
-  {
-    id(cxt),
-    make_int(mapping)
-  };
-  Expr* load_fld = builtin.call_load_field(args);
-  load_fld = elab.elaborate(load_fld);
-  Expr* cast = new Reinterpret_cast(load_fld, field->type());
+  Expr* cast = new Reinterpret_cast(bind_field, field->type());
 
   // Mangle the name of the variable from the name of the
   // extracted field. Declare it as a new variable.
@@ -797,7 +773,6 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   declare(load_var);
 
   Stmt_seq stmts {
-    new Expression_stmt(bind_field),
     new Declaration_stmt(load_var)
   };
 
@@ -1031,14 +1006,6 @@ Lowerer::lower(Drop* s)
   assert(ovl);
   Decl* cxt = ovl->back();
   assert(cxt);
-
-  // acquire the drop port
-  // TODO: we;re not relly using this right now since we assume
-  // drop is an intrinsic
-  ovl = unqualified_lookup(get_identifier(__drop_port));
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
 
   // make a call to the drop function
   Expr* drop = builtin.call_drop(decl_id(cxt));

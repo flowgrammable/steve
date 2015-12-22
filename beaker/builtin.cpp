@@ -45,7 +45,7 @@ Builtin::bind_header()
 Function_decl*
 Builtin::bind_field()
 {
-  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__bind_field);
 
   Decl_seq parms =
@@ -56,7 +56,7 @@ Builtin::bind_field()
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, void_type);
+  Type const* fn_type = get_function_type(parms, buffer_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -110,39 +110,6 @@ Builtin::advance()
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, parms, block({}));
-
-  fn->declare_ = true;
-  return fn;
-}
-
-
-//
-// Load_field loads a field into memory
-// from a context.
-//
-// uint64_t load(Context*, int id)
-//
-// There may need to be an implicit truncation
-// from 64 bits to the size of the field
-Function_decl*
-Builtin::load_field()
-{
-  // FIXME: once precision integers are added
-  // make this a uint64_t instead (or the widest possible)
-  // integer for the sake of safety.
-  Type const* ret_type = get_block_type(get_character_type());
-  Symbol const* fn_name = get_identifier(__load_field);
-
-  Decl_seq parms =
-  {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-    new Parameter_decl(get_identifier("id"), get_integer_type()),
-  };
-
-  Type const* fn_type = get_function_type(parms, ret_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -359,27 +326,6 @@ Builtin::set_field()
   return fn;
 }
 
-
-// -------------------------------------------------------------------------- //
-// Builtin ports
-
-
-Port_decl*
-Builtin::drop_port()
-{
-  Symbol const* port_name = get_identifier(__drop_port);
-  return new Port_decl(port_name, get_port_type());
-}
-
-
-Port_decl*
-Builtin::flood_port()
-{
-  Symbol const* port_name = get_identifier(__flood_port);
-  return new Port_decl(port_name, get_port_type());
-}
-
-
 void
 Builtin::init_builtins()
 {
@@ -393,17 +339,10 @@ Builtin::init_builtins()
     {__add_flow, add_flow()},
     {__match, match()},
     {__gather, gather()},
-    {__load_field, load_field()},
     {__get_port, get_port()},
     {__drop, drop()},
     {__output, output()},
     {__set_field, set_field()},
-  };
-
-  builtin_ports =
-  {
-    {__drop_port, drop_port()},
-    {__flood_port, flood_port()}
   };
 }
 
@@ -485,16 +424,6 @@ Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
   // matters.
 
   return new Bind_header(decl_id(fn), cxt, id);
-}
-
-
-Expr*
-Builtin::call_load_field(Expr_seq const& args)
-{
-  Function_decl* fn = builtin_fn.find(__load_field)->second;
-  assert(fn);
-
-  return new Load_field(decl_id(fn), args);
 }
 
 

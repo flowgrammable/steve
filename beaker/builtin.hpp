@@ -15,7 +15,6 @@ constexpr char const* __advance      = "fp_advance";
 constexpr char const* __get_table    = "fp_get_table";
 constexpr char const* __add_flow     = "fp_add_flow";
 constexpr char const* __match        = "fp_goto_table";
-constexpr char const* __load_field   = "fp_load_field";
 constexpr char const* __set_field    = "fp_set_field";
 constexpr char const* __get_port     = "fp_get_port";
 constexpr char const* __gather       = "fp_gather";
@@ -120,15 +119,6 @@ struct Bind_header : Call_expr
   { }
 
   Expr* first;
-};
-
-
-// Loads the value of a field into memory
-struct Load_field : Call_expr
-{
-  Load_field(Expr* fn, Expr_seq const& args)
-    : Call_expr(fn, args)
-  { }
 };
 
 
@@ -253,7 +243,6 @@ struct Builtin
   Expr* call_create_table(Decl*, Expr_seq const& args);
   Expr* call_add_flow(Expr_seq const& args);
   Expr* call_match(Expr_seq const& args);
-  Expr* call_load_field(Expr_seq const& args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
@@ -282,15 +271,11 @@ private:
   Function_decl* add_flow();
   Function_decl* gather();
   Function_decl* match();
-  Function_decl* load_field();
   Function_decl* get_port();
   Function_decl* drop();
   Function_decl* output();
   Function_decl* set_field();
-
-  Port_decl* drop_port();
-  Port_decl* flood_port();
-
+  
   Symbol const* get_identifier(std::string);
 
   Symbol_table& syms;
