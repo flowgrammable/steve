@@ -888,14 +888,22 @@ Parser::exact_table_decl()
 
   match(lbrace_tok);
   Decl_seq flows;
+  Decl* miss;
   while (lookahead() != rbrace_tok) {
     Decl* d = flow_decl();
-    if (d)
-      flows.push_back(d);
+    Flow_decl* flow = as<Flow_decl>(d);
+    if (flow) {
+      // handle the miss case
+      // there should only ever be one miss case
+      if (flow->miss_case() && !miss)
+        miss = flow;
+      else
+        flows.push_back(flow);
+    }
   }
   match(rbrace_tok);
 
-  return on_exact_table(name, key, flows);
+  return on_exact_table(name, key, flows, miss);
 }
 
 
@@ -903,6 +911,13 @@ Parser::exact_table_decl()
 Decl*
 Parser::flow_decl()
 {
+  if (match_if(miss_kw)) {
+    match(arrow_tok);
+    Stmt* body = block_stmt();
+    match(semicolon_tok);
+    return on_flow_miss(body);
+  }
+
   match(lbrace_tok);
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
@@ -1938,12 +1953,12 @@ Parser::on_rebind(Expr* field, Expr* alias)
 
 
 Decl*
-Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows)
+Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
 {
   // maintain a count of tables
   static int count = 0;
 
-  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows);
+  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
 }
 
 
@@ -1952,6 +1967,14 @@ Parser::on_flow(Expr_seq& keys, Stmt* body)
 {
   // TODO: handle priorities
   return new Flow_decl(keys, 0, body);
+}
+
+
+Decl*
+Parser::on_flow_miss(Stmt* body)
+{
+  // No key given
+  return new Flow_decl(0, body, true);
 }
 
 

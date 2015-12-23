@@ -153,9 +153,10 @@ private:
   Decl* on_decoder(Token, Type const*, Stmt*, bool);
   Decl* on_extract(Expr*);
   Decl* on_rebind(Expr*, Expr*);
-  Decl* on_exact_table(Token, Decl_seq&, Decl_seq&);
+  Decl* on_exact_table(Token, Decl_seq&, Decl_seq&, Decl*);
   Decl* on_key(Expr_seq const&);
   Decl* on_flow(Expr_seq&, Stmt*);
+  Decl* on_flow_miss(Stmt*);
   Decl* on_port(Token, Expr*);
 
 

@@ -330,33 +330,36 @@ struct Table_decl : Decl
 
   // Default exact table
   Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init)
-    : Decl(n, t), num(num), keys_(conds), body_(init), start_(false), kind_(exact_table)
+             Decl_seq& init, Decl* miss)
+    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+      start_(false), kind_(exact_table)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
 
   Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init, Table_kind k)
-    : Decl(n, t), num(num), keys_(conds), body_(init), start_(false), kind_(k)
+             Decl_seq& init, Decl* miss, Table_kind k)
+    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+      start_(false), kind_(k)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
 
 
-  int             number() const     { return num; }
-  Decl_seq const& keys() const { return keys_; }
-  Decl_seq const& body() const { return body_; }
-  Table_kind      kind() const { return kind_; }
-  bool is_start() const { return start_; }
+  int             number()    const { return num; }
+  Decl_seq const& keys()      const { return keys_; }
+  Decl_seq const& body()      const { return body_; }
+  Decl*           miss_case() const { return miss_; }
+  Table_kind      kind()      const { return kind_; }
+  bool            is_start()  const { return start_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
-
   int      num;
   Decl_seq keys_;
   Decl_seq body_;
+  Decl* miss_;
   bool start_;
   Table_kind kind_;
 };
@@ -394,12 +397,19 @@ struct Key_decl : Decl
 struct Flow_decl : Decl
 {
   Flow_decl(Expr_seq& conds, int prio, Stmt* i)
-    : Decl(nullptr, nullptr), prio_(prio), keys_(conds), instructions_(i)
+    : Decl(nullptr, nullptr), prio_(prio), keys_(conds), instructions_(i),
+      miss_(false)
+  { }
+
+  Flow_decl(int prio, Stmt* i, bool miss = true)
+    : Decl(nullptr, nullptr), prio_(prio), keys_{}, instructions_(i),
+      miss_(miss)
   { }
 
   int             priority() const { return prio_; }
   Expr_seq const& keys() const { return keys_; }
   Stmt*           instructions() const { return instructions_; }
+  bool            miss_case() const { return miss_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -409,6 +419,7 @@ struct Flow_decl : Decl
   int prio_;
   Expr_seq keys_;
   Stmt* instructions_;
+  bool miss_;
 };
 
 
