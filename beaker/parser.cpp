@@ -890,7 +890,7 @@ Parser::exact_table_decl()
   Decl_seq flows;
   Decl* miss;
   while (lookahead() != rbrace_tok) {
-    Decl* d = flow_decl();
+    Decl* d = flow_decl(name);
     Flow_decl* flow = as<Flow_decl>(d);
     if (flow) {
       // handle the miss case
@@ -909,13 +909,13 @@ Parser::exact_table_decl()
 
 // Parse a flow decl
 Decl*
-Parser::flow_decl()
+Parser::flow_decl(Token tok)
 {
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
     match(semicolon_tok);
-    return on_flow_miss(body);
+    return on_flow_miss(tok, body);
   }
 
   match(lbrace_tok);
@@ -936,7 +936,7 @@ Parser::flow_decl()
 
   match(semicolon_tok);
 
-  return on_flow(keys, body);
+  return on_flow(tok, keys, body);
 }
 
 
@@ -1961,20 +1961,32 @@ Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
   return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
 }
 
-
+// TODO: handle priorities
 Decl*
-Parser::on_flow(Expr_seq& keys, Stmt* body)
+Parser::on_flow(Token tok, Expr_seq& keys, Stmt* body)
 {
-  // TODO: handle priorities
-  return new Flow_decl(keys, 0, body);
+  static int count = 0;
+
+  // form a name for the flow
+  std::stringstream ss;
+  ss << "_FLOW_" << tok.spelling() << "_flow_" << ++count;
+
+  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
+
+  return new Flow_decl(name, keys, 0, body);
 }
 
 
 Decl*
-Parser::on_flow_miss(Stmt* body)
+Parser::on_flow_miss(Token tok, Stmt* body)
 {
+  std::stringstream ss;
+  ss << "_FLOW_" << tok.spelling() << "_flow_miss";
+
+  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
+
   // No key given
-  return new Flow_decl(0, body, true);
+  return new Flow_decl(name, 0, body, true);
 }
 
 

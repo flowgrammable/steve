@@ -388,7 +388,7 @@ Lowerer::lower_table_flows(Table_decl* d)
 
   for (auto f : d->body()) {
     Flow_decl* flow = as<Flow_decl>(f);
-    Symbol const* flow_name = get_identifier(mangle(d, flow));
+    Symbol const* flow_name = f->name();
 
     Scope_sentinel scope(*this, flow);
 

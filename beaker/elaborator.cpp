@@ -1918,6 +1918,16 @@ Elaborator::elaborate(Key_decl* d)
 Decl*
 Elaborator::elaborate(Flow_decl* d)
 {
+  Table_decl* table = as<Table_decl>(stack.context());
+  // guarantee this occurs within the context of a table
+  if (!table) {
+    std::stringstream ss;
+    ss << *d
+       << " found outside of the context of a table.";
+
+    throw Type_error(locate(d), ss.str());
+  }
+
   Scope_sentinel scope(*this, d);
 
   Type_seq types;
@@ -2575,12 +2585,18 @@ Elaborator::elaborate_def(Method_decl* d)
 Decl*
 Elaborator::elaborate_def(Table_decl* d)
 {
+  Scope_sentinel scope(*this, d);
+
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
     ss << "Invalid entry in table: " << *d->name();
     throw Type_error({}, ss.str());
   }
+
+  // check the miss case
+  if (d->miss_)
+    d->miss_ = elaborate(d->miss_);
 
   return d;
 }

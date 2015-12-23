@@ -396,13 +396,13 @@ struct Key_decl : Decl
 // size of the table.
 struct Flow_decl : Decl
 {
-  Flow_decl(Expr_seq& conds, int prio, Stmt* i)
-    : Decl(nullptr, nullptr), prio_(prio), keys_(conds), instructions_(i),
+  Flow_decl(Symbol const* n, Expr_seq& conds, int prio, Stmt* i)
+    : Decl(n, nullptr), prio_(prio), keys_(conds), instructions_(i),
       miss_(false)
   { }
 
-  Flow_decl(int prio, Stmt* i, bool miss = true)
-    : Decl(nullptr, nullptr), prio_(prio), keys_{}, instructions_(i),
+  Flow_decl(Symbol const* n, int prio, Stmt* i, bool miss = true)
+    : Decl(n, nullptr), prio_(prio), keys_{}, instructions_(i),
       miss_(miss)
   { }
 
