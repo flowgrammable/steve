@@ -116,6 +116,9 @@ struct Lower_expr_fn
   Expr* operator()(T* e) const { return e; }
 
   Expr* operator()(Value_conv* e) { return lower.lower(e); }
+  Expr* operator()(Promotion_conv* e) { return lower.lower(e); }
+  Expr* operator()(Demotion_conv* e) { return lower.lower(e); }
+  Expr* operator()(Sign_conv* e) { return lower.lower(e); }
 
   // Field access expr
   // becomes an id_expr whose declaration is
@@ -217,6 +220,33 @@ Lowerer::lower(Expr* e)
 
 Expr*
 Lowerer::lower(Value_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Promotion_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Demotion_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Sign_conv* e)
 {
   Expr* val = lower(e->source());
   e->first = val;

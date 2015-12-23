@@ -101,6 +101,7 @@ struct Generator
   llvm::Value* gen(Block_conv const*);
   llvm::Value* gen(Promotion_conv const*);
   llvm::Value* gen(Demotion_conv const*);
+  llvm::Value* gen(Sign_conv const*);
   llvm::Value* gen(Default_init const*);
   llvm::Value* gen(Copy_init const*);
   llvm::Value* gen(Reference_init const*);

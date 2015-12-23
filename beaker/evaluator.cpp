@@ -46,6 +46,7 @@ Evaluator::eval(Expr const* e)
     Value operator()(Block_conv const* e) { return ev.eval(e); }
     Value operator()(Promotion_conv const* e) { return ev.eval(e); }
     Value operator()(Demotion_conv const* e) { return ev.eval(e); }
+    Value operator()(Sign_conv const* e) { return ev.eval(e); }
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
@@ -373,6 +374,18 @@ Evaluator::eval(Promotion_conv const* e)
 // Return the evaluation of the integer
 Value
 Evaluator::eval(Demotion_conv const* e)
+{
+  Value v = eval(e->source());
+  return v.get_integer();
+}
+
+
+// Return the evaluation of the integer
+// FIXME: It should be the signed/unsigned evaluation of the integer.
+// FIXME: This isn't right. There should be some explicit chage 
+// of the underlying integer.
+Value
+Evaluator::eval(Sign_conv const* e)
 {
   Value v = eval(e->source());
   return v.get_integer();

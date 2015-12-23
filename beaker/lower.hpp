@@ -19,6 +19,9 @@ struct Lowerer
 
   Expr* lower(Expr*);
   Expr* lower(Value_conv* e);
+  Expr* lower(Promotion_conv* e);
+  Expr* lower(Demotion_conv* e);
+  Expr* lower(Sign_conv* e);
   Expr* lower(Field_access_expr* e);
 
   Decl* lower_global_decl(Decl*);

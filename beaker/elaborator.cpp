@@ -404,6 +404,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Block_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Promotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -1292,6 +1293,13 @@ Elaborator::elaborate(Promotion_conv* e)
 
 Expr*
 Elaborator::elaborate(Demotion_conv* e)
+{
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Sign_conv* e)
 {
   return e;
 }
@@ -2767,7 +2775,7 @@ Elaborator::elaborate(Match_stmt* s)
   if (!cond) {
     std::stringstream ss;
     ss << "Could not convert " << *s->condition_ << " to integer type.";
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(s), ss.str());
   }
 
   s->condition_ = cond;
@@ -2790,13 +2798,13 @@ Elaborator::elaborate(Match_stmt* s)
         std::stringstream ss;
         ss << "Duplicate label value " << *case_->label()
            << " found in case statement " << *case_;
-        throw Type_error({}, ss.str());
+        throw Type_error(locate(s), ss.str());
       }
     }
     else {
       std::stringstream ss;
       ss << "Non-case stmt " << *case_ << " found in match statement.";
-      throw Type_error({}, ss.str());
+      throw Type_error(locate(s1), ss.str());
     }
   }
 
