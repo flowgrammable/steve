@@ -246,19 +246,6 @@ Pipeline_checker::register_stage(Table_decl const* d)
   // keys in the table.
   Sym_set requirements = get_requirements(d);
 
-  // check that the table had a default initialization
-  if (d->body().size() > 0) {
-    // find branches inside flow decl
-    for (auto f : d->body()) {
-      // check for flow decl
-      if (is<Flow_decl>(f))
-        continue;
-      // TODO: check for branches through flow instructions
-      // Flow_decl const* flow = as<Flow_decl>(f);
-      // find_branch(flow->instructions());
-    }
-  }
-
   Stage* stage = new Stage(d, Stage_set(), product, requirements);
 
   if (d->is_start()) {
