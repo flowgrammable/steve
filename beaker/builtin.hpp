@@ -14,6 +14,7 @@ constexpr char const* __alias_bind   = "fp_alias_bind";
 constexpr char const* __advance      = "fp_advance";
 constexpr char const* __get_table    = "fp_get_table";
 constexpr char const* __add_flow     = "fp_add_flow";
+constexpr char const* __add_miss     = "fp_add_miss";
 constexpr char const* __match        = "fp_goto_table";
 constexpr char const* __set_field    = "fp_set_field";
 constexpr char const* __get_port     = "fp_get_port";
@@ -153,6 +154,12 @@ struct Add_flow : Call_expr
 };
 
 
+struct Add_miss : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 // Perform a gather operation on a list of
 // fields.
 //
@@ -242,6 +249,7 @@ struct Builtin
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr_seq const& args);
   Expr* call_add_flow(Expr_seq const& args);
+  Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr_seq const& args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
@@ -269,6 +277,7 @@ private:
   Function_decl* advance();
   Function_decl* get_table();
   Function_decl* add_flow();
+  Function_decl* add_miss();
   Function_decl* gather();
   Function_decl* match();
   Function_decl* get_port();

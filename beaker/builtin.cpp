@@ -155,6 +155,8 @@ Builtin::add_flow()
   Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
   Type const* cxt_ref = get_reference_type(get_context_type());
   Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
+
   // Flows actually become free functions so they have function
   // type when lowered.
   Type_seq types {tbl_ref, cxt_ref};
@@ -162,6 +164,40 @@ Builtin::add_flow()
   Type const* flow_ref = get_reference_type(flow_fn_type);
 
   Symbol const* fn_name = get_identifier(__add_flow);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref),
+    new Parameter_decl(get_identifier("flow"), flow_ref),
+    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->declare_ = true;
+  return fn;
+}
+
+
+Function_decl*
+Builtin::add_miss()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
+  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* void_type = get_void_type();
+  // Flows actually become free functions so they have function
+  // type when lowered.
+  Type_seq types {tbl_ref, cxt_ref};
+  Type const* flow_fn_type = get_function_type(types, void_type);
+  Type const* flow_ref = get_reference_type(flow_fn_type);
+
+  Symbol const* fn_name = get_identifier(__add_miss);
 
   Decl_seq parms =
   {
@@ -337,6 +373,7 @@ Builtin::init_builtins()
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
+    {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
@@ -471,6 +508,16 @@ Builtin::call_add_flow(Expr_seq const& args)
   assert(fn);
 
   return new Add_flow(decl_id(fn), args);
+}
+
+
+Expr*
+Builtin::call_add_miss(Expr* tbl, Expr* flow)
+{
+  Function_decl* fn = builtin_fn.find(__add_miss)->second;
+  assert(fn);
+
+  return new Add_miss(decl_id(fn), {tbl, flow});
 }
 
 

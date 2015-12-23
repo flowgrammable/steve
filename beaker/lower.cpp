@@ -443,12 +443,47 @@ Lowerer::lower_table_flows(Table_decl* d)
 }
 
 
-void
-Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Expr_seq const& keys)
+Decl*
+Lowerer::lower_miss_case(Table_decl* d)
 {
-  for (auto k : keys) {
-    load_body.push_back(new Expression_stmt(k));
+  // Lower the miss case if there is one
+  if (d->miss_case()) {
+    Type const* cxt_ref = get_reference_type(get_context_type());
+    Type const* tbl_ref = get_reference_type(opaque_table);
+    Type const* void_type = get_void_type();
+
+    Flow_decl* flow = as<Flow_decl>(d->miss_case());
+    Symbol const* flow_name = flow->name();
+
+    Scope_sentinel scope(*this, flow);
+
+    // declare an implicit context variable
+    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+    declare(cxt);
+    declare(tbl);
+    Decl_seq parms { tbl, cxt };
+
+    Stmt* flow_body = lower(flow->instructions()).back();
+    elab.elaborate(flow_body);
+
+    // The type of all flows is fn(Context&) -> void
+    Type const* type = get_function_type(parms, void_type);
+    Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
+    fn->spec_ |= foreign_spec;
+
+    return fn;
   }
+
+  // If no miss case exists.
+  return nullptr;
+}
+
+
+void
+Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq const& keys)
+{
+  auto key_it = keys.begin();
 
   for (auto flow : flow_fns) {
     // create a call to add_flow() and pass the flow
@@ -457,9 +492,20 @@ Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Expr_seq const& keys)
     // FIXME: there's something wrong with the elaboration of
     // function pointers so we don't elaborate this for now.
     // However, it should be guaranteed to work.
-    Expr* add_flow = builtin.call_add_flow({ decl_id(table), decl_id(flow) });
+    Type const* buffer_t = get_block_type(get_character_type());
+    Expr* add_flow = builtin.call_add_flow({ decl_id(table),
+                                             decl_id(flow),
+                                             new Block_conv(buffer_t, *key_it) });
     // elab.elaborate(add_flow);
     load_body.push_back(new Expression_stmt(add_flow));
+
+    ++key_it;
+  }
+
+  // Handle the miss case
+  if (miss) {
+    Expr* add_miss = builtin.call_add_miss(decl_id(table), decl_id(miss));
+    load_body.push_back(new Expression_stmt(add_miss));
   }
 }
 
@@ -530,8 +576,15 @@ Lowerer::lower_global_def(Table_decl* d)
     declare(flow);
   }
 
+  // handle the miss case
+  Decl* miss = lower_miss_case(d);
+  if (miss) {
+    declare(miss);
+    module_decls.push_back(miss);
+  }
+
   // add the flows to the load body
-  add_flows(tbl, flows, keys);
+  add_flows(tbl, flows, miss, keys);
 
   return tbl;
 }
