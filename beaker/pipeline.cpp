@@ -258,15 +258,24 @@ Pipeline_checker::register_stage(Table_decl const* d)
   }
 
   pipeline.push_back(stage);
+
+  // create a stage for all the flows within the pipeline
+  for (auto f : d->body()) {
+    Flow_decl* flow = as<Flow_decl>(f);
+    register_stage(flow, d);
+  }
 }
 
 
 // Register flows as seperate stages in the pipeline.
 // All tables branch to their flows.
 void
-Pipeline_checker::register_stage(Flow_decl const* f, Table_decl const* t)
+Pipeline_checker::register_stage(Flow_decl const* flow, Table_decl const* table)
 {
-
+  Field_env product = get_productions(flow, table);
+  Sym_set requirements = get_requirements(flow, table);
+  Stage* s = new Stage(flow, Stage_set(), product, requirements);
+  pipeline.push_back(s);
 }
 
 
@@ -349,6 +358,17 @@ Pipeline_checker::get_productions(Table_decl const* d)
 }
 
 
+// Flows could potentially have productions if they choose to push/pop
+// headers and fields from the packet.
+//
+// However, right now those actions are not supported.
+Field_env
+Pipeline_checker::get_productions(Flow_decl const* flow, Table_decl const* table)
+{
+  return Field_env();
+}
+
+
 Sym_set
 Pipeline_checker::get_requirements(Table_decl const* d)
 {
@@ -361,6 +381,14 @@ Pipeline_checker::get_requirements(Table_decl const* d)
   }
 
   return requirements;
+}
+
+
+// A flow's requirements are the same as its containing table.
+Sym_set
+Pipeline_checker::get_requirements(Flow_decl const* flow, Table_decl const* table)
+{
+  return get_requirements(table);
 }
 
 
@@ -379,7 +407,25 @@ Pipeline_checker::get_requirements(Decode_decl const* d)
 Stage_set
 Pipeline_checker::find_branches(Table_decl const* d)
 {
+  // Tables branch to all of their containing flows
   Stage_set branches;
+  for (auto flow : d->body()) {
+    Stage* s = pipeline.find(flow);
+    assert(s);
+    branches.insert(s);
+  }
+
+  return branches;
+}
+
+
+// Flows can cause branches through a number of actions similar to a
+// decoder.
+Stage_set
+Pipeline_checker::find_branches(Flow_decl const* d)
+{
+  Stage_set branches;
+
   struct Find_branches
   {
     Stage_set& br;
@@ -453,21 +499,7 @@ Pipeline_checker::find_branches(Table_decl const* d)
     }
   };
 
-  for (auto f : d->body()) {
-    // Flow_decl
-    Flow_decl* flow = as<Flow_decl>(f);
-    apply(flow->instructions(), Find_branches{branches, pipeline});
-
-    // or an identifier to a special action set
-    // TODO: implement
-  }
-
-  // handle the miss case
-  if (d->miss_case()) {
-    Flow_decl* miss = as<Flow_decl>(d->miss_case());
-    apply(miss->instructions(), Find_branches{branches, pipeline});
-  }
-
+  apply(d->instructions(), Find_branches{branches, pipeline});
 
   return branches;
 }
@@ -569,8 +601,8 @@ Pipeline_checker::discover_branches()
       stage->branches_ = find_branches(decoder);
     else if (Table_decl const* table = as<Table_decl>(stage->decl()))
       stage->branches_ = find_branches(table);
-    // else if (Flow_decl const* flow = as<Flow_decl>(stage->decl()))
-    //   stage->branches_ = find_branches(flow);
+    else if (Flow_decl const* flow = as<Flow_decl>(stage->decl()))
+      stage->branches_ = find_branches(flow);
     else
       throw std::runtime_error("Invalid decl found in pipeline.");
   }
