@@ -1,11 +1,11 @@
-Port p1;
-Port p2;
+Port p1 = ":5000";
+Port p2 = ":5001";
 
 layout eth
 {
 	src : int;
 	dst : int;
-	type : int;
+	type : uint;
 }
 
 
@@ -53,8 +53,12 @@ exact_table t2(ipv4::dst)
 		decode ipv4_d;
 	};
 
-	
+
 	{32} -> {
+		decode eth_d;
+	};
+
+	miss -> {
 		decode eth_d;
 	};
 }

@@ -404,6 +404,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Block_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Promotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -1297,6 +1298,13 @@ Elaborator::elaborate(Demotion_conv* e)
 }
 
 
+Expr*
+Elaborator::elaborate(Sign_conv* e)
+{
+  return e;
+}
+
+
 // TODO: I probably need to elaborate the type.
 Expr*
 Elaborator::elaborate(Default_init* e)
@@ -1918,6 +1926,16 @@ Elaborator::elaborate(Key_decl* d)
 Decl*
 Elaborator::elaborate(Flow_decl* d)
 {
+  Table_decl* table = as<Table_decl>(stack.context());
+  // guarantee this occurs within the context of a table
+  if (!table) {
+    std::stringstream ss;
+    ss << *d
+       << " found outside of the context of a table.";
+
+    throw Type_error(locate(d), ss.str());
+  }
+
   Scope_sentinel scope(*this, d);
 
   Type_seq types;
@@ -1957,10 +1975,6 @@ Elaborator::elaborate(Extracts_decl* d)
     throw Type_error({}, ss.str());
   }
 
-  // This should be a guarentee from decoder elaboration
-  Layout_type const* header_type = as<Layout_type>(decoder->header());
-  assert(header_type);
-
   Field_name_expr* fld = as<Field_name_expr>(d->field());
 
   if (!fld) {
@@ -1979,6 +1993,10 @@ Elaborator::elaborate(Extracts_decl* d)
   // confirm that the first declaration is
   // the same layout decl that the decoder
   // handles
+  // This should be a guarentee from decoder elaboration
+  Layout_type const* header_type = as<Layout_type>(decoder->header());
+  assert(header_type);
+
   if ((fld = as<Field_name_expr>(e1))) {
     if (fld->declarations().front() != header_type->declaration()) {
       std::stringstream ss;
@@ -2013,7 +2031,7 @@ Elaborator::elaborate(Rebind_decl* d)
        << " found outside of the context of a decoder."
        << "Context is: " << *stack.context()->name();
 
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
 
   // Elaborate the first expression
@@ -2022,14 +2040,37 @@ Elaborator::elaborate(Rebind_decl* d)
   if (!origin) {
     std::stringstream ss;
     ss << "Invalid field name: " << *d->field() << " in rebind decl: " << *d;
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
   d->field_ = e1;
 
-  // The second field name just provides a named
-  // We don't care about any semantics related to it so we do
-  // NOT elaborate the second field.
+  // confirm that the first declaration is
+  // the same layout decl that the decoder
+  // handles
+  // This should be a guarentee from decoder elaboration
+  Layout_type const* header_type = as<Layout_type>(decoder->header());
+  assert(header_type);
+
+  if (origin->declarations().front() != header_type->declaration()) {
+    std::stringstream ss;
+    ss << "Cannot extract from: " << *origin->declarations().front()->name()
+       << " in extracts decl: " << *d
+       << ". Decoder " << *decoder->name() << " decodes layout: "
+       << *header_type;
+    throw Type_error(locate(d), ss.str());
+  }
+
+  // The second field name provides a name
   Field_name_expr* alias = as<Field_name_expr>(d->alias());
+  elaborate(alias);
+  // Confirm the second field name has the same type as the first field name
+  if (alias->type() != origin->type()) {
+    std::stringstream ss;
+    ss << "Mismatched types between fields " << *origin << " and " << *alias
+       << " in extract-as.";
+    throw Type_error(locate(d), ss.str());
+  }
+
   // the name of a rebind declaration is the name of its alias
   d->name_ = alias->name();
   // save its original name as well
@@ -2500,7 +2541,17 @@ Elaborator::elaborate_def(Layout_decl* d)
 Decl*
 Elaborator::elaborate_def(Port_decl* d)
 {
-  return d;
+  d->first = elaborate(d->address());
+
+  // check that the expression following '='
+  // is a string literal
+  if (Array_type const* t = as<Array_type>(d->address()->type()))
+    if (is<Character_type>(t->type()))
+      return d;
+
+  std::stringstream ss;
+  ss << "Invalid port address " << d->address() << ". Expected string literal.";
+  throw Type_error(locate(d), ss.str());
 }
 
 
@@ -2542,12 +2593,18 @@ Elaborator::elaborate_def(Method_decl* d)
 Decl*
 Elaborator::elaborate_def(Table_decl* d)
 {
+  Scope_sentinel scope(*this, d);
+
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
     ss << "Invalid entry in table: " << *d->name();
     throw Type_error({}, ss.str());
   }
+
+  // check the miss case
+  if (d->miss_)
+    d->miss_ = elaborate(d->miss_);
 
   return d;
 }
@@ -2718,7 +2775,7 @@ Elaborator::elaborate(Match_stmt* s)
   if (!cond) {
     std::stringstream ss;
     ss << "Could not convert " << *s->condition_ << " to integer type.";
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(s), ss.str());
   }
 
   s->condition_ = cond;
@@ -2741,13 +2798,13 @@ Elaborator::elaborate(Match_stmt* s)
         std::stringstream ss;
         ss << "Duplicate label value " << *case_->label()
            << " found in case statement " << *case_;
-        throw Type_error({}, ss.str());
+        throw Type_error(locate(s), ss.str());
       }
     }
     else {
       std::stringstream ss;
       ss << "Non-case stmt " << *case_ << " found in match statement.";
-      throw Type_error({}, ss.str());
+      throw Type_error(locate(s1), ss.str());
     }
   }
 
@@ -2956,7 +3013,13 @@ Elaborator::elaborate(Set_field* s)
 
   assert(field->type());
   assert(val);
-  Expr* conv = convert(val, field->type());
+  Expr* conv = convert(val, field->type()->nonref());
+  if (!conv) {
+    std::stringstream ss;
+    ss << "Cannot convert " << *val << " of type " << *val->type() << " to "
+       << *field->type();
+    throw Type_error({}, ss.str());
+  }
 
   s->value_ = conv;
   s->field_ = field;

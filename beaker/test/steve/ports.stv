@@ -1,3 +1,2 @@
-Port udp1;
-Port udp2;
-Port http;
+Port p1 = ":5000";
+Port p2 = ":5001";

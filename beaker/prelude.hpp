@@ -62,6 +62,7 @@ struct Value_conv;
 struct Block_conv;
 struct Promotion_conv;
 struct Demotion_conv;
+struct Sign_conv;
 struct Init;
 struct Default_init;
 struct Copy_init;

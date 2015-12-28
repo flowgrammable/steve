@@ -6,6 +6,7 @@
 #include "beaker/error.hpp"
 #include "beaker/mangle.hpp"
 #include "beaker/gather.hpp"
+#include "beaker/evaluator.hpp"
 
 #include <iostream>
 
@@ -115,6 +116,9 @@ struct Lower_expr_fn
   Expr* operator()(T* e) const { return e; }
 
   Expr* operator()(Value_conv* e) { return lower.lower(e); }
+  Expr* operator()(Promotion_conv* e) { return lower.lower(e); }
+  Expr* operator()(Demotion_conv* e) { return lower.lower(e); }
+  Expr* operator()(Sign_conv* e) { return lower.lower(e); }
 
   // Field access expr
   // becomes an id_expr whose declaration is
@@ -166,6 +170,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
 };
 
 
@@ -215,6 +220,33 @@ Lowerer::lower(Expr* e)
 
 Expr*
 Lowerer::lower(Value_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Promotion_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Demotion_conv* e)
+{
+  Expr* val = lower(e->source());
+  e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Sign_conv* e)
 {
   Expr* val = lower(e->source());
   e->first = val;
@@ -334,6 +366,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   Scope_sentinel scope(*this, d);
 
   // declare all parameters again
+  // NOTE: this declares the context parameter
   for (auto parm : fn->parameters()) {
     declare(parm);
   }
@@ -343,6 +376,12 @@ Lowerer::lower_global_def(Decode_decl* d)
   // such as when calling advance()
   Parameter_decl* header = new Parameter_decl(get_identifier(__header), d->header());
   declare(header);
+
+  // get the context varaible
+  ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
 
   // Lower the body and change the definition of the function.
   Stmt* body = lower(d->body()).back();
@@ -354,7 +393,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   Layout_decl* ldecl = as<Layout_decl>(ltype->declaration());
   Expr* id = make_int(checker.get_header_mapping(ldecl));
   Expr* len = get_length(ltype);
-  Expr* bind = builtin.call_bind_header(id, len);
+  Expr* bind = builtin.call_bind_header(decl_id(cxt), id, len);
 
   // attach the bind header call to the body
   Block_stmt* block = as<Block_stmt>(body);
@@ -379,7 +418,7 @@ Lowerer::lower_table_flows(Table_decl* d)
 
   for (auto f : d->body()) {
     Flow_decl* flow = as<Flow_decl>(f);
-    Symbol const* flow_name = get_identifier(mangle(d, flow));
+    Symbol const* flow_name = f->name();
 
     Scope_sentinel scope(*this, flow);
 
@@ -404,12 +443,47 @@ Lowerer::lower_table_flows(Table_decl* d)
 }
 
 
-void
-Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Expr_seq const& keys)
+Decl*
+Lowerer::lower_miss_case(Table_decl* d)
 {
-  for (auto k : keys) {
-    load_body.push_back(new Expression_stmt(k));
+  // Lower the miss case if there is one
+  if (d->miss_case()) {
+    Type const* cxt_ref = get_reference_type(get_context_type());
+    Type const* tbl_ref = get_reference_type(opaque_table);
+    Type const* void_type = get_void_type();
+
+    Flow_decl* flow = as<Flow_decl>(d->miss_case());
+    Symbol const* flow_name = flow->name();
+
+    Scope_sentinel scope(*this, flow);
+
+    // declare an implicit context variable
+    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+    declare(cxt);
+    declare(tbl);
+    Decl_seq parms { tbl, cxt };
+
+    Stmt* flow_body = lower(flow->instructions()).back();
+    elab.elaborate(flow_body);
+
+    // The type of all flows is fn(Context&) -> void
+    Type const* type = get_function_type(parms, void_type);
+    Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
+    fn->spec_ |= foreign_spec;
+
+    return fn;
   }
+
+  // If no miss case exists.
+  return nullptr;
+}
+
+
+void
+Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq const& keys)
+{
+  auto key_it = keys.begin();
 
   for (auto flow : flow_fns) {
     // create a call to add_flow() and pass the flow
@@ -418,9 +492,20 @@ Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Expr_seq const& keys)
     // FIXME: there's something wrong with the elaboration of
     // function pointers so we don't elaborate this for now.
     // However, it should be guaranteed to work.
-    Expr* add_flow = builtin.call_add_flow({ decl_id(table), decl_id(flow) });
+    Type const* buffer_t = get_block_type(get_character_type());
+    Expr* add_flow = builtin.call_add_flow({ decl_id(table),
+                                             decl_id(flow),
+                                             new Block_conv(buffer_t, *key_it) });
     // elab.elaborate(add_flow);
     load_body.push_back(new Expression_stmt(add_flow));
+
+    ++key_it;
+  }
+
+  // Handle the miss case
+  if (miss) {
+    Expr* add_miss = builtin.call_add_miss(decl_id(table), decl_id(miss));
+    load_body.push_back(new Expression_stmt(add_miss));
   }
 }
 
@@ -491,8 +576,15 @@ Lowerer::lower_global_def(Table_decl* d)
     declare(flow);
   }
 
+  // handle the miss case
+  Decl* miss = lower_miss_case(d);
+  if (miss) {
+    declare(miss);
+    module_decls.push_back(miss);
+  }
+
   // add the flows to the load body
-  add_flows(tbl, flows, keys);
+  add_flows(tbl, flows, miss, keys);
 
   return tbl;
 }
@@ -507,11 +599,8 @@ Lowerer::lower_global_def(Port_decl* d)
   Decl* var = ovl->back();
   assert(var);
 
-  // get the c string name
-  Expr* cstr = make_cstr(d->name()->spelling().c_str());
-
   // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var, { cstr });
+  Expr* get_port = builtin.call_get_port(var, { d->address() });
   elab.elaborate(get_port);
   load_body.push_back(new Expression_stmt(get_port));
 
@@ -538,25 +627,10 @@ Lowerer::add_builtin_functions()
 
 
 void
-Lowerer::add_builtin_ports()
-{
-  // lower the builtin ports
-  for (auto pair : builtin.get_builtin_ports()) {
-    lower_global_decl(pair.second);
-    Decl* d = lower_global_def(pair.second);
-    prelude.push_back(d);
-  }
-}
-
-
-void
 Lowerer::add_prelude()
 {
   // declare all builtin functions
   add_builtin_functions();
-
-  // declare all builtin ports
-  add_builtin_ports();
 }
 
 
@@ -767,16 +841,7 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   };
   Expr* bind_field = builtin.call_bind_field(args);
   bind_field = elab.elaborate(bind_field);
-
-  // create the loading call
-  args =
-  {
-    id(cxt),
-    make_int(mapping)
-  };
-  Expr* load_fld = builtin.call_load_field(args);
-  load_fld = elab.elaborate(load_fld);
-  Expr* cast = new Reinterpret_cast(load_fld, field->type());
+  Expr* cast = new Reinterpret_cast(bind_field, field->type());
 
   // Mangle the name of the variable from the name of the
   // extracted field. Declare it as a new variable.
@@ -788,7 +853,6 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   declare(load_var);
 
   Stmt_seq stmts {
-    new Expression_stmt(bind_field),
     new Declaration_stmt(load_var)
   };
 
@@ -806,7 +870,44 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
 Stmt_seq
 Lowerer::lower_rebind_decl(Rebind_decl* d)
 {
-  Stmt_seq stmts;
+  // get the context from the decoder functionl
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  Decl* cxt = ovl->back();
+
+  // get the id from the pipeline checker
+  int mapping1 = checker.get_field_mapping(d->name());
+  int mapping2 = checker.get_field_mapping(d->original());
+
+  Field_name_expr* field = as<Field_name_expr>(d->field());
+  assert(field);
+
+  // get the offset into the layout of the field
+  Expr* offset = get_offset(field);
+
+  // get the length of the field
+  Expr* length = get_length(field);
+
+  // create the binding call
+  Expr* bind_field = builtin.call_alias_bind( id(cxt),
+                                              make_int(mapping1),
+                                              make_int(mapping2),
+                                              offset,
+                                              length);
+  bind_field = elab.elaborate(bind_field);
+  Expr* cast = new Reinterpret_cast(bind_field, field->type());
+
+  // Mangle the name of the variable from the name of the
+  // extracted field. Declare it as a new variable.
+  Symbol const* field_name = get_identifier(mangle(d));
+  Variable_decl* load_var = new Variable_decl(field_name,
+                                              cast->type(),
+                                              cast);
+
+  declare(load_var);
+
+  Stmt_seq stmts {
+    new Declaration_stmt(load_var)
+  };
 
   return stmts;
 }
@@ -821,14 +922,17 @@ Lowerer::lower(Declaration_stmt* s)
   // process as they are declarations which
   // lower into call expressions instead of
   // other declarations
-  if (Extracts_decl* extract = as<Extracts_decl>(s->declaration())) {
-    Stmt_seq l = lower_extracts_decl(extract);
+
+  // NOTE: We have to check rebind decl first since it inherits from
+  // extracts decl and thus the cast to extracts decl would still succeed.
+  if (Rebind_decl* rebind = as<Rebind_decl>(s->declaration())) {
+    Stmt_seq l = lower_rebind_decl(rebind);
     stmts.insert(stmts.end(), l.begin(), l.end());
     return stmts;
   }
 
-  if (Rebind_decl* rebind = as<Rebind_decl>(s->declaration())) {
-    Stmt_seq l = lower_rebind_decl(rebind);
+  if (Extracts_decl* extract = as<Extracts_decl>(s->declaration())) {
+    Stmt_seq l = lower_extracts_decl(extract);
     stmts.insert(stmts.end(), l.begin(), l.end());
     return stmts;
   }
@@ -1023,14 +1127,6 @@ Lowerer::lower(Drop* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // acquire the drop port
-  // TODO: we;re not relly using this right now since we assume
-  // drop is an intrinsic
-  ovl = unqualified_lookup(get_identifier(__drop_port));
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
-
   // make a call to the drop function
   Expr* drop = builtin.call_drop(decl_id(cxt));
   elab.elaborate(drop);
@@ -1065,6 +1161,61 @@ Lowerer::lower(Output* s)
   return { new Expression_stmt(drop) };
 }
 
+
+Stmt_seq
+Lowerer::lower(Set_field* s)
+{
+  // get the context varaible
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Set field translates to a function call to
+  // fp_set_field, passing in the context, field id, and value.
+  Field_access_expr* e = as<Field_access_expr>(s->field());
+  assert(e);
+
+  Expr* id = make_int(checker.get_field_mapping(e->name()));
+
+  // convert the integer value into a byte array and pass it as a block
+  // first evaluate it
+  Evaluator ev;
+  Value v = ev.eval(s->value());
+  // get the integer value back
+  // and store it in a buffer
+  std::stringstream ss;
+  ss << v.get_integer().decimal_str();
+  uint512_t buf = 0;
+  ss >> buf;
+
+  // convert to a byte array
+  // get the precision of the value
+  int prec = precision(s->value()->type());
+  char* bytes = new char[prec / 8];
+  char* k = reinterpret_cast<char*>(&buf);
+  std::copy(k, k + (prec / 8), bytes);
+
+  Array_value arr { bytes, (size_t) prec / 8 };
+  Type const* z = get_integer_type();
+  // create the array length literal
+  Expr* n = new Literal_expr(z, arr.len + 1);
+  // Create the array type.
+  Type const* c = get_character_type();
+  Type const* t = get_array_type(c, n);
+
+  // create the array literal
+  Expr* val = new Literal_expr(t, arr);
+
+  // create the call
+  Expr* set_field = builtin.call_set_field(decl_id(cxt),
+                                           id,
+                                           make_int(prec / 8),
+                                           val);
+  elab.elaborate(set_field);
+
+  return { new Expression_stmt(set_field) };
+}
 
 
 // -------------------------------------------------------------------------- //

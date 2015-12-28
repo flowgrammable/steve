@@ -72,6 +72,7 @@ public:
   Value eval(Block_conv const*);
   Value eval(Promotion_conv const*);
   Value eval(Demotion_conv const*);
+  Value eval(Sign_conv const*);
   Value eval(Default_init const*);
   Value eval(Copy_init const*);
   Value eval(Reference_init const*);

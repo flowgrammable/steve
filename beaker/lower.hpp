@@ -19,6 +19,9 @@ struct Lowerer
 
   Expr* lower(Expr*);
   Expr* lower(Value_conv* e);
+  Expr* lower(Promotion_conv* e);
+  Expr* lower(Demotion_conv* e);
+  Expr* lower(Sign_conv* e);
   Expr* lower(Field_access_expr* e);
 
   Decl* lower_global_decl(Decl*);
@@ -42,9 +45,10 @@ struct Lowerer
   Decl* lower(Flow_decl*);
   Decl* lower(Port_decl*);
 
-  void add_flows(Decl*, Decl_seq const&, Expr_seq const&);
+  void add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
   Expr_seq lower_flow_keys(Decl_seq const&);
   Decl_seq lower_table_flows(Table_decl*);
+  Decl*    lower_miss_case(Table_decl*);
   Stmt_seq lower_extracts_decl(Extracts_decl*);
   Stmt_seq lower_rebind_decl(Rebind_decl*);
 
@@ -58,6 +62,7 @@ struct Lowerer
   Stmt_seq lower(Expression_stmt*);
   Stmt_seq lower(Declaration_stmt*);
   Stmt_seq lower(Decode_stmt*);
+  Stmt_seq lower(Set_field*);
 
   // helper functions for handling
   // table gotos.

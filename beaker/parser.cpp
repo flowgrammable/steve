@@ -844,7 +844,7 @@ Parser::decode_decl()
 
   Stmt* body = block_stmt();
 
-  return on_decode_decl(n, t, body, is_start);
+  return on_decoder(n, t, body, is_start);
 }
 
 
@@ -888,21 +888,36 @@ Parser::exact_table_decl()
 
   match(lbrace_tok);
   Decl_seq flows;
+  Decl* miss;
   while (lookahead() != rbrace_tok) {
-    Decl* d = flow_decl();
-    if (d)
-      flows.push_back(d);
+    Decl* d = flow_decl(name);
+    Flow_decl* flow = as<Flow_decl>(d);
+    if (flow) {
+      // handle the miss case
+      // there should only ever be one miss case
+      if (flow->miss_case() && !miss)
+        miss = flow;
+      else
+        flows.push_back(flow);
+    }
   }
   match(rbrace_tok);
 
-  return on_exact_table(name, key, flows);
+  return on_exact_table(name, key, flows, miss);
 }
 
 
 // Parse a flow decl
 Decl*
-Parser::flow_decl()
+Parser::flow_decl(Token tok)
 {
+  if (match_if(miss_kw)) {
+    match(arrow_tok);
+    Stmt* body = block_stmt();
+    match(semicolon_tok);
+    return on_flow_miss(tok, body);
+  }
+
   match(lbrace_tok);
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
@@ -921,7 +936,7 @@ Parser::flow_decl()
 
   match(semicolon_tok);
 
-  return on_flow(keys, body);
+  return on_flow(tok, keys, body);
 }
 
 
@@ -933,9 +948,14 @@ Parser::port_decl()
 
   Token tok = match(identifier_tok);
 
+  match(equal_tok);
+
+  // expect a string literal
+  Expr* address = expr();
+
   match(semicolon_tok);
 
-  return on_port(tok);
+  return on_port(tok, address);
 }
 
 
@@ -950,21 +970,13 @@ Parser::extract_decl()
   }
 
   if (match_if(as_kw)) {
-    Expr* alias = expr();
+    Expr* alias = field_name_expr();
     match(semicolon_tok);
-    return on_rebind_decl(e, alias);
+    return on_rebind(e, alias);
   }
 
   match(semicolon_tok);
-  return on_extract_decl(e);
-}
-
-
-Decl*
-Parser::rebind_decl()
-{
-  error("not implemented rebind");
-  return nullptr;
+  return on_extract(e);
 }
 
 
@@ -1912,7 +1924,7 @@ Parser::on_layout(Token n, Decl_seq const& fs)
 
 
 Decl*
-Parser::on_decode_decl(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
+Parser::on_decoder(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
 {
   // The actual type of a decode decl is
   // (ref Cxt) -> void
@@ -1926,14 +1938,14 @@ Parser::on_decode_decl(Token tok, Type const* hdr_type, Stmt* b, bool is_start)
 
 
 Decl*
-Parser::on_extract_decl(Expr* e)
+Parser::on_extract(Expr* e)
 {
   return new Extracts_decl(e);
 }
 
 
 Decl*
-Parser::on_rebind_decl(Expr* field, Expr* alias)
+Parser::on_rebind(Expr* field, Expr* alias)
 {
   return new Rebind_decl(field, alias);
 }
@@ -1941,27 +1953,47 @@ Parser::on_rebind_decl(Expr* field, Expr* alias)
 
 
 Decl*
-Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows)
+Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
 {
   // maintain a count of tables
   static int count = 0;
 
-  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows);
+  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
+}
+
+// TODO: handle priorities
+Decl*
+Parser::on_flow(Token tok, Expr_seq& keys, Stmt* body)
+{
+  static int count = 0;
+
+  // form a name for the flow
+  std::stringstream ss;
+  ss << "_FLOW_" << tok.spelling() << "_flow_" << ++count;
+
+  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
+
+  return new Flow_decl(name, keys, 0, body);
 }
 
 
 Decl*
-Parser::on_flow(Expr_seq& keys, Stmt* body)
+Parser::on_flow_miss(Token tok, Stmt* body)
 {
-  // TODO: handle priorities
-  return new Flow_decl(keys, 0, body);
+  std::stringstream ss;
+  ss << "_FLOW_" << tok.spelling() << "_flow_miss";
+
+  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
+
+  // No key given
+  return new Flow_decl(name, 0, body, true);
 }
 
 
 Decl*
-Parser::on_port(Token tok)
+Parser::on_port(Token tok, Expr* e)
 {
-  return new Port_decl(tok.symbol(), get_port_type());
+  return new Port_decl(tok.symbol(), get_port_type(), e);
 }
 
 

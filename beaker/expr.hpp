@@ -72,6 +72,7 @@ struct Expr::Visitor
   virtual void visit(Block_conv const*) = 0;
   virtual void visit(Promotion_conv const*) = 0;
   virtual void visit(Demotion_conv const*) = 0;
+  virtual void visit(Sign_conv const*) = 0;
   virtual void visit(Default_init const*) = 0;
   virtual void visit(Copy_init const*) = 0;
   virtual void visit(Reference_init const*) = 0;
@@ -117,6 +118,7 @@ struct Expr::Mutator
   virtual void visit(Block_conv*) = 0;
   virtual void visit(Promotion_conv*) = 0;
   virtual void visit(Demotion_conv*) = 0;
+  virtual void visit(Sign_conv*) = 0;
   virtual void visit(Default_init*) = 0;
   virtual void visit(Copy_init*) = 0;
   virtual void visit(Reference_init*) = 0;
@@ -650,6 +652,20 @@ struct Demotion_conv : Conv
 };
 
 
+// Represents a transition of signed to unsigned or vice-versa.
+// FIXME: This doesn't actually do anything right now. This just allows certain
+// signed and unsigned integers to slide past type checks. LLVM doesn't
+// distinguish between signed or unsigned integers. Only operations (add/sub/etc)
+// distinguish between signed and unsigned integers.
+struct Sign_conv : Conv
+{
+  using Conv::Conv;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
 // Represents the conversion of an array to a block.
 struct Block_conv : Conv
 {
@@ -794,6 +810,7 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Block_conv const* e) { this->invoke(e); }
   void visit(Promotion_conv const* e) { this->invoke(e); }
   void visit(Demotion_conv const* e) { this->invoke(e); }
+  void visit(Sign_conv const* e) { this->invoke(e); }
   void visit(Default_init const* e) { this->invoke(e); }
   void visit(Copy_init const* e) { this->invoke(e); }
   void visit(Reference_init const* e) { this->invoke(e); }
@@ -855,6 +872,7 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Block_conv* e) { this->invoke(e); }
   void visit(Promotion_conv* e) { this->invoke(e); }
   void visit(Demotion_conv* e) { this->invoke(e); }
+  void visit(Sign_conv* e) { this->invoke(e); }
   void visit(Default_init* e) { this->invoke(e); }
   void visit(Copy_init* e) { this->invoke(e); }
   void visit(Reference_init* e) { this->invoke(e); }

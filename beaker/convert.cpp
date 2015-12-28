@@ -36,6 +36,9 @@ convert_to_block(Expr* e)
 
 // Perform integer conversion
 //
+// FIXME: All conversions are brute force conversions from one integer type to
+//        another. Loss of precision is unhandled.
+//
 // TODO: see if truncation of integers does not result in loss of precision.
 //       Is this even possible on non-constant integers? Seems unlikely.
 //
@@ -69,6 +72,12 @@ convert_integer_type(Expr* e, Integer_type const* dst)
     return new Promotion_conv(dst, e);
   }
 
+  // Sign conversions
+  // FIXME: Should there be a seperate signed and unsigned conversion?
+  if (src->sign() != dst->sign()) {
+    return new Sign_conv(dst, e);
+  }
+
   return e;
 }
 
@@ -86,7 +95,7 @@ convert(Expr* e, Type const* t)
 
   // Ojbect/value transformations
 
-  // If t is a non-reference type, try an 
+  // If t is a non-reference type, try an
   // object-to-value conversion:
   //
   //    A& -> B
@@ -102,7 +111,7 @@ convert(Expr* e, Type const* t)
   // Integer conversions
   if (is<Integer_type>(c->type()) && is<Integer_type>(t)) {
     c = convert_integer_type(c, as<Integer_type>(t));
-    
+
     if (c->type() == t)
       return c;
   }

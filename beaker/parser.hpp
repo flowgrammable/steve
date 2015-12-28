@@ -62,7 +62,7 @@ public:
   Decl* decode_decl();
   Decl* exact_table_decl();
   Decl* key_decl();
-  Decl* flow_decl();
+  Decl* flow_decl(Token);
   Decl* port_decl();
   Decl* extract_decl();
   Decl* rebind_decl();
@@ -150,13 +150,14 @@ private:
   Decl* on_module(Module_decl*, Decl_seq const&);
 
   Decl* on_layout(Token, Decl_seq const&);
-  Decl* on_decode_decl(Token, Type const*, Stmt*, bool);
-  Decl* on_extract_decl(Expr*);
-  Decl* on_rebind_decl(Expr*, Expr*);
-  Decl* on_exact_table(Token, Decl_seq&, Decl_seq&);
+  Decl* on_decoder(Token, Type const*, Stmt*, bool);
+  Decl* on_extract(Expr*);
+  Decl* on_rebind(Expr*, Expr*);
+  Decl* on_exact_table(Token, Decl_seq&, Decl_seq&, Decl*);
   Decl* on_key(Expr_seq const&);
-  Decl* on_flow(Expr_seq&, Stmt*);
-  Decl* on_port(Token);
+  Decl* on_flow(Token, Expr_seq&, Stmt*);
+  Decl* on_flow_miss(Token, Stmt*);
+  Decl* on_port(Token, Expr*);
 
 
   // FIXME: Remove _stmt from handlers.

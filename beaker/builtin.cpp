@@ -40,12 +40,12 @@ Builtin::bind_header()
 
 
 //
-// void __bind_offset(Context*, id, offset, length);
+// Byte* __bind_offset(Context*, id, offset, length);
 //
 Function_decl*
 Builtin::bind_field()
 {
-  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__bind_field);
 
   Decl_seq parms =
@@ -56,7 +56,7 @@ Builtin::bind_field()
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, void_type);
+  Type const* fn_type = get_function_type(parms, buffer_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -67,12 +67,12 @@ Builtin::bind_field()
 
 
 //
-// void __alias_bind(Context*, int id1, int id2, int offset, int length);
+// Byte* __alias_bind(Context*, int id1, int id2, int offset, int length);
 //
 Function_decl*
 Builtin::alias_bind()
 {
-  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__alias_bind);
 
   Decl_seq parms =
@@ -84,7 +84,7 @@ Builtin::alias_bind()
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, void_type);
+  Type const* fn_type = get_function_type(parms, buffer_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -110,39 +110,6 @@ Builtin::advance()
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, parms, block({}));
-
-  fn->declare_ = true;
-  return fn;
-}
-
-
-//
-// Load_field loads a field into memory
-// from a context.
-//
-// uint64_t load(Context*, int id)
-//
-// There may need to be an implicit truncation
-// from 64 bits to the size of the field
-Function_decl*
-Builtin::load_field()
-{
-  // FIXME: once precision integers are added
-  // make this a uint64_t instead (or the widest possible)
-  // integer for the sake of safety.
-  Type const* ret_type = get_block_type(get_character_type());
-  Symbol const* fn_name = get_identifier(__load_field);
-
-  Decl_seq parms =
-  {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
-    new Parameter_decl(get_identifier("id"), get_integer_type()),
-  };
-
-  Type const* fn_type = get_function_type(parms, ret_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -188,6 +155,8 @@ Builtin::add_flow()
   Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
   Type const* cxt_ref = get_reference_type(get_context_type());
   Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
+
   // Flows actually become free functions so they have function
   // type when lowered.
   Type_seq types {tbl_ref, cxt_ref};
@@ -195,6 +164,40 @@ Builtin::add_flow()
   Type const* flow_ref = get_reference_type(flow_fn_type);
 
   Symbol const* fn_name = get_identifier(__add_flow);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref),
+    new Parameter_decl(get_identifier("flow"), flow_ref),
+    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->declare_ = true;
+  return fn;
+}
+
+
+Function_decl*
+Builtin::add_miss()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
+  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* void_type = get_void_type();
+  // Flows actually become free functions so they have function
+  // type when lowered.
+  Type_seq types {tbl_ref, cxt_ref};
+  Type const* flow_fn_type = get_function_type(types, void_type);
+  Type const* flow_ref = get_reference_type(flow_fn_type);
+
+  Symbol const* fn_name = get_identifier(__add_miss);
 
   Decl_seq parms =
   {
@@ -332,21 +335,32 @@ Builtin::output()
 }
 
 
-Port_decl*
-Builtin::drop_port()
+Function_decl*
+Builtin::set_field()
 {
-  Symbol const* port_name = get_identifier(__drop_port);
-  return new Port_decl(port_name, get_port_type());
+  Symbol const* fn_name = get_identifier(__set_field);
+
+  Type const* void_type = get_void_type();
+  Type const* int_type = get_integer_type();
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* buffer = get_block_type(get_character_type());
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref),
+    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("len"), int_type),
+    new Parameter_decl(get_identifier("val"), buffer)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->declare_ = true;
+
+  return fn;
 }
-
-
-Port_decl*
-Builtin::flood_port()
-{
-  Symbol const* port_name = get_identifier(__flood_port);
-  return new Port_decl(port_name, get_port_type());
-}
-
 
 void
 Builtin::init_builtins()
@@ -359,18 +373,13 @@ Builtin::init_builtins()
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
+    {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
-    {__load_field, load_field()},
     {__get_port, get_port()},
     {__drop, drop()},
     {__output, output()},
-  };
-
-  builtin_ports =
-  {
-    {__drop_port, drop_port()},
-    {__flood_port, flood_port()}
+    {__set_field, set_field()},
   };
 }
 
@@ -442,22 +451,30 @@ Builtin::call_bind_field(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_bind_header(Expr* id, Expr* len)
+Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
 {
   Function_decl* fn = builtin_fn.find(__bind_header)->second;
   assert(fn);
 
-  return new Bind_header(decl_id(fn), id, len);
+  // NOTE: we are current excluding len because the runtime
+  // does not handle header length and its unsure if the length of a header
+  // matters.
+
+  return new Bind_header(decl_id(fn), cxt, id);
 }
 
 
 Expr*
-Builtin::call_load_field(Expr_seq const& args)
+Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 {
-  Function_decl* fn = builtin_fn.find(__load_field)->second;
+  Function_decl* fn = builtin_fn.find(__alias_bind)->second;
   assert(fn);
 
-  return new Load_field(decl_id(fn), args);
+  // NOTE: we are current excluding len because the runtime
+  // does not handle header length and its unsure if the length of a header
+  // matters.
+
+  return new Bind_header(decl_id(fn), {cxt, id1, id2, off, len});
 }
 
 
@@ -491,6 +508,16 @@ Builtin::call_add_flow(Expr_seq const& args)
   assert(fn);
 
   return new Add_flow(decl_id(fn), args);
+}
+
+
+Expr*
+Builtin::call_add_miss(Expr* tbl, Expr* flow)
+{
+  Function_decl* fn = builtin_fn.find(__add_miss)->second;
+  assert(fn);
+
+  return new Add_miss(decl_id(fn), {tbl, flow});
 }
 
 
@@ -551,4 +578,14 @@ Builtin::call_output(Expr* cxt, Expr* port)
   assert(fn);
 
   return new Output_packet(decl_id(fn), {cxt, port});
+}
+
+
+Expr*
+Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
+{
+  Function_decl* fn = builtin_fn.find(__set_field)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt, id, len, val});
 }

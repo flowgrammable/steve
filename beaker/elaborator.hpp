@@ -110,6 +110,7 @@ public:
   Expr* elaborate(Block_conv* e);
   Expr* elaborate(Promotion_conv* e);
   Expr* elaborate(Demotion_conv* e);
+  Expr* elaborate(Sign_conv* e);
   Expr* elaborate(Default_init* e);
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);
