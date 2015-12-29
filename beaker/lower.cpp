@@ -22,17 +22,34 @@ Lowerer::get_identifier(std::string s)
 // -------------------------------------------------------------------------- //
 // Application interface
 
+// This is the function called when the dataplane wants configuration information
+// upon loading the application.
 Function_decl*
 Lowerer::load_function()
 {
   Type const* void_type = get_void_type();
+  auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
   Decl_seq parms {
-    new Parameter_decl(get_identifier(__dataplane), get_opaque_type()->ref())
+    p1
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
   Symbol const* fn_name = get_identifier(__load);
 
+  // The Load function should save a pointer to the dataplane that is loading it.
+  // Construct a global variable of opaque dataplane type.
+  Overload* ovl = unqualified_lookup(get_identifier(__dataplane));
+  assert(ovl);
+  Decl* dp = ovl->back();
+  assert(dp);
+
+  // In the load body, set the dp global variable to be equal to the pointer
+  // passed in the parameter.
+  Assign_stmt* set_dp = new Assign_stmt(decl_id(dp), decl_id(p1));
+  elab.elaborate(set_dp);
+  load_body.insert(load_body.begin(), set_dp);
+
+  // Construct the load function with the accumulated load_body.
   Function_decl* load = new Function_decl(fn_name, fn_type,
                                           parms, block(load_body));
 
@@ -101,6 +118,17 @@ Lowerer::port_number_function()
   fn->spec_ |= extern_spec;
 
   return fn;
+}
+
+
+Variable_decl*
+Lowerer::dataplane_pointer()
+{
+  static Variable_decl dp(get_identifier(__dataplane),
+                          get_opaque_type()->ref(),
+                          new Default_init(get_opaque_type()->ref()));
+  declare(&dp);
+  return &dp;
 }
 
 
@@ -547,6 +575,11 @@ Lowerer::lower_global_def(Table_decl* d)
   Decl* tbl = ovl->back();
   assert(tbl);
 
+  ovl = unqualified_lookup(get_identifier(__dataplane));
+  assert(ovl);
+  Expr* dp = decl_id(ovl->back());
+  assert(ovl->back());
+
   // We need the global variable storing the dataplane pointer which is
   // set when the config() function is called.
 
@@ -559,8 +592,8 @@ Lowerer::lower_global_def(Table_decl* d)
   // flows are allowed in a table. Do this right!
   Expr* num_flows = make_int(1000);
   Expr* table_kind = make_int(d->kind());
-  Expr* get_table = builtin.call_create_table(tbl, { id_no, key_len,
-                                             num_flows, table_kind });
+  Expr* get_table = builtin.call_create_table(tbl, dp, id_no, key_len,
+                                             num_flows, table_kind );
 
   // We do special generation for calls to create table
   // because regular assignment does not work with opaque types
@@ -634,10 +667,18 @@ Lowerer::add_builtin_functions()
 
 
 void
+Lowerer::add_builtin_variables()
+{
+  prelude.push_back(dataplane_pointer());
+}
+
+
+void
 Lowerer::add_prelude()
 {
   // declare all builtin functions
   add_builtin_functions();
+  add_builtin_variables();
 }
 
 

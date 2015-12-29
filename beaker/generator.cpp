@@ -191,7 +191,7 @@ Generator::get_type(Void_type const* t)
 llvm::Type*
 Generator::get_type(Opaque_type const* t)
 {
-  static llvm::Type* opaque_type = llvm::StructType::create(cxt);
+  static llvm::Type* opaque_type = llvm::StructType::create(cxt, "Opaque");
   return opaque_type;
 }
 

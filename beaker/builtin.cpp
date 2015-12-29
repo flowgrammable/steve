@@ -130,6 +130,7 @@ Builtin::get_table()
 
   Decl_seq parms =
   {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     new Parameter_decl(get_identifier("key_size"), get_integer_type()),
     new Parameter_decl(get_identifier("size"), get_integer_type()),
@@ -482,12 +483,12 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 
 
 Expr*
-Builtin::call_create_table(Decl* d, Expr_seq const& args)
+Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* entry_size, Expr* kind)
 {
   Function_decl* fn = builtin_fn.find(__get_table)->second;
   assert(fn);
 
-  Create_table* e = new Create_table(decl_id(fn), args);
+  Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
   e->table_ = d;
 
   return e;

@@ -12,7 +12,7 @@ constexpr char const* __bind_header  = "fp_bind_header";
 constexpr char const* __bind_field   = "fp_bind_field";
 constexpr char const* __alias_bind   = "fp_alias_bind";
 constexpr char const* __advance      = "fp_advance";
-constexpr char const* __get_table    = "fp_get_table";
+constexpr char const* __get_table    = "fp_create_table";
 constexpr char const* __add_flow     = "fp_add_flow";
 constexpr char const* __add_miss     = "fp_add_miss";
 constexpr char const* __match        = "fp_goto_table";
@@ -248,7 +248,7 @@ struct Builtin
   Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
-  Expr* call_create_table(Decl*, Expr_seq const& args);
+  Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_flow(Expr_seq const& args);
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);

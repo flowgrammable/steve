@@ -121,7 +121,7 @@ mangle(std::ostream& os, Void_type const* t)
 void
 mangle(std::ostream& os, Opaque_type const* t)
 {
-  return;
+  os << "opq";
 }
 
 
