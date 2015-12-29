@@ -36,7 +36,7 @@ Lowerer::load_function()
   Function_decl* load = new Function_decl(fn_name, fn_type,
                                           parms, block(load_body));
 
-  load->spec_ |= foreign_spec;
+  load->spec_ |= extern_spec;
   declare(load);
 
   return load;
@@ -74,7 +74,7 @@ Lowerer::process_function()
   Stmt_seq process_body;
   process_body.push_back(new Expression_stmt(call));
 
-  process->spec_ |= foreign_spec;
+  process->spec_ |= extern_spec;
 
   process->body_ = block(process_body);
 
@@ -98,7 +98,7 @@ Lowerer::port_number_function()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block(body));
 
-  fn->spec_ |= foreign_spec;
+  fn->spec_ |= extern_spec;
 
   return fn;
 }
@@ -388,7 +388,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   // Lower the body and change the definition of the function.
   Stmt* body = lower(d->body()).back();
   fn->body_ = body;
-  fn->spec_ |= foreign_spec;
+  fn->spec_ |= extern_spec;
 
   // bind the header into the context with its id
   Layout_type const* ltype = as<Layout_type>(d->header());
@@ -437,7 +437,7 @@ Lowerer::lower_table_flows(Table_decl* d)
     // The type of all flows is fn(Context&) -> void
     Type const* type = get_function_type(parms, void_type);
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
-    fn->spec_ |= foreign_spec;
+    fn->spec_ |= extern_spec;
     flow_fns.push_back(fn);
   }
 
@@ -472,7 +472,7 @@ Lowerer::lower_miss_case(Table_decl* d)
     // The type of all flows is fn(Context&) -> void
     Type const* type = get_function_type(parms, void_type);
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
-    fn->spec_ |= foreign_spec;
+    fn->spec_ |= extern_spec;
 
     return fn;
   }

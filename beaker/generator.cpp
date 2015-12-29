@@ -1178,7 +1178,14 @@ Generator::gen(Function_decl const* d)
   if (d->is_foreign())
     return;
 
-  String name = get_name(d);
+  // If the function has external linkage, do not mangle the name.
+  String name;
+  if (d->is_extern())
+    name = d->name()->spelling();
+  else
+    name = get_name(d);
+
+
   llvm::Type* type = get_type(d->type());
 
   // Build the function.
