@@ -56,6 +56,7 @@ struct Type::Visitor
   virtual void visit(Reference_type const*) = 0;
   virtual void visit(Record_type const*) = 0;
   virtual void visit(Void_type const*) = 0;
+  virtual void visit(Opaque_type const*) = 0;
 
   // network specific types
   virtual void visit(Layout_type const*) = 0;
@@ -98,6 +99,17 @@ struct Void_type : Type
 
 // The type char.
 struct Character_type : Type
+{
+  void accept(Visitor& v) const { v.visit(this); };
+};
+
+
+// The opaque type. Objects of this type have unknown structure
+// and only pointers of opaque type are valid.
+//
+// NOTE: There is currently no surface level syntax for this type. This is a
+// purely compiler generated type to handle certain situations.
+struct Opaque_type : Type
 {
   void accept(Visitor& v) const { v.visit(this); };
 };
@@ -340,7 +352,7 @@ Type const* get_block_type(Type const*);
 Type const* get_reference_type(Type const*);
 Type const* get_record_type(Record_decl*);
 Type const* get_void_type();
-
+Type const* get_opaque_type();
 
 // network specific types
 Type const* get_layout_type(Layout_decl*);
@@ -412,9 +424,10 @@ struct Generic_type_visitor : Type::Visitor, lingo::Generic_visitor<F, T>
   void visit(Reference_type const* t) { this->invoke(t); }
   void visit(Record_type const* t) { this->invoke(t); }
   void visit(Void_type const* t) { this->invoke(t); }
-  void visit(Context_type const* t) { this->invoke(t); }
+  void visit(Opaque_type const* t) { this->invoke(t); }
 
   // network specific types
+  void visit(Context_type const* t) { this->invoke(t); }
   void visit(Layout_type const* t) { this->invoke(t); }
   void visit(Table_type const* t) { this->invoke(t); }
   void visit(Flow_type const* t) { this->invoke(t); }
@@ -433,90 +446,7 @@ apply(Type const* t, F fn)
 
 
 // -------------------------------------------------------------------------- //
-//                               Concepts
-
-// Returns true if T is a scalar type. The scalar
-// types are the `bool` type and the integer types.
-template<typename T>
-constexpr bool
-is_scalar_type()
-{
-  return std::is_base_of<T, Boolean_type>::value
-      || std::is_base_of<T, Integer_type>::value;
-}
-
-
-// Returns true if T aggregates subobjects of a
-// different type. This includes arrays, tuples,
-// records, variants, and match types.
-template<typename T>
-constexpr bool
-is_aggregate_type()
-{
-  return std::is_base_of<T, Record_type>::value;
-}
-
-
-// Returns true if T is a user-defined type.
-template<typename T>
-constexpr bool
-is_user_defined_type()
-{
-  return std::is_base_of<T, Record_type>::value;
-}
-
-
-// Returns true if the type T can define an object. The
-// object types are the scalars, aggregates, and user
-// defined types.
-template<typename T>
-constexpr bool
-is_object_type()
-{
-  return is_scalar_type<T>()
-      || is_aggregate_type<T>()
-      || is_user_defined_type<T>()
-      // FIXME: is a reference really an object tpye
-      || std::is_base_of<T, Reference_type>::value
-      || std::is_base_of<T, Table_type>::value
-      || std::is_base_of<T, Flow_type>::value
-      || std::is_base_of<T, Port_type>::value;
-}
-
-
-template<typename T>
-constexpr bool
-has_length()
-{
-  return is_scalar_type<T>()
-      || is_aggregate_type<T>()
-      || is_user_defined_type<T>()
-      // FIXME: is a reference really an object tpye
-      || std::is_base_of<T, Reference_type>::value
-      || std::is_base_of<T, Table_type>::value
-      || std::is_base_of<T, Flow_type>::value
-      || std::is_base_of<T, Port_type>::value
-      || std::is_base_of<T, Layout_type>::value;
-}
-
-
-// -------------------------------------------------------------------------- //
 //                               Queries
-//
-// TODO: Unify these definitions with the concept definitions
-// above. Not quite sure if there's an elegant way of doing this.
-
-// True when T is models the Type concept.
-//
-// Note that we assume that a Type is already known
-// to be Node, so we skip the explicit check.
-template<typename T>
-constexpr bool
-is_type()
-{
-  return std::is_base_of<Type, T>::value;
-}
-
 
 // Returns ture if `t` is the boolean type.
 inline bool

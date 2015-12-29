@@ -42,6 +42,7 @@ enum Specifier
   //
   // TODO: Support foreign language linkage for other
   // other languages?
+  extern_spec = 1 << 9,
   foreign_spec = 1 << 10,
   meta_spec = 1 << 11,
 };

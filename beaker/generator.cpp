@@ -68,6 +68,7 @@ Generator::get_type(Type const* t)
     llvm::Type* operator()(Record_type const* t) const { return g.get_type(t); }
     llvm::Type* operator()(Void_type const* t) { return g.get_type(t); }
     llvm::Type* operator()(Context_type const* t) { return g.get_type(t); }
+    llvm::Type* operator()(Opaque_type const* t) { return g.get_type(t); }
 
     // network specific types
     llvm::Type* operator()(Layout_type const* t) const { return g.get_type(t); }
@@ -184,6 +185,14 @@ llvm::Type*
 Generator::get_type(Void_type const* t)
 {
   return build.getVoidTy();
+}
+
+
+llvm::Type*
+Generator::get_type(Opaque_type const* t)
+{
+  static llvm::Type* opaque_type = llvm::StructType::create(cxt);
+  return opaque_type;
 }
 
 
@@ -1166,13 +1175,8 @@ Generator::gen(Function_decl const* d)
   // If it was a declaration only it should
   // have been captured by the first pass and no further
   // generation is necessary.
-  //
-  // NOTE: Confirm that this is right if we can make local
-  // foreign function declarations which I don't think we
-  // can.
-  if (d->is_declare()) {
+  if (d->is_foreign())
     return;
-  }
 
   String name = get_name(d);
   llvm::Type* type = get_type(d->type());
@@ -1356,7 +1360,6 @@ Generator::gen(Module_decl const* d)
 
   // Generate all top-level declarations.
   for (Decl const* d1 : d->declarations()) {
-    // std::cout << *d1 << '\n';
     gen(d1);
   }
 
@@ -1543,8 +1546,8 @@ void
 Generator::declare_global(Function_decl const* d)
 {
   // only emit a declaration of the function is marked
-  // is_declare only.
-  if (d->is_declare()) {
+  // is_foreign only.
+  if (d->is_foreign()) {
     // no mangling
     String name = d->name()->spelling();
     llvm::Type* type = get_type(d->type());

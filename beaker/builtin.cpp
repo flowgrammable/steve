@@ -34,7 +34,7 @@ Builtin::bind_header()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -61,7 +61,7 @@ Builtin::bind_field()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -89,7 +89,7 @@ Builtin::alias_bind()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -114,7 +114,7 @@ Builtin::advance()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -141,7 +141,7 @@ Builtin::get_table()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -177,7 +177,7 @@ Builtin::add_flow()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -210,7 +210,7 @@ Builtin::add_miss()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -236,7 +236,7 @@ Builtin::gather()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -267,7 +267,7 @@ Builtin::match()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -287,7 +287,7 @@ Builtin::get_port()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -308,7 +308,7 @@ Builtin::drop()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }
@@ -332,7 +332,7 @@ Builtin::output()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }
@@ -360,7 +360,7 @@ Builtin::set_field()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }

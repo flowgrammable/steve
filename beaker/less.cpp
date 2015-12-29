@@ -160,6 +160,7 @@ is_less(Type const* a, Type const* b)
     bool operator()(Reference_type const* a) { return is_less(a, cast<Reference_type>(b)); }
     bool operator()(Record_type const* a) { return is_less(a, cast<Record_type>(b)); }
     bool operator()(Void_type const* a) { return false; }
+    bool operator()(Opaque_type const* a) { return false; }
 
     // network specific types
     bool operator()(Layout_type const* a) { return is_less(a, cast<Layout_type>(b)); }

@@ -25,6 +25,7 @@ void mangle(std::ostream&, Block_type const*);
 void mangle(std::ostream&, Reference_type const*);
 void mangle(std::ostream&, Record_type const*);
 void mangle(std::ostream&, Void_type const*);
+void mangle(std::ostream&, Opaque_type const*);
 
 // network specific types
 void mangle(std::ostream&, Layout_type const*);

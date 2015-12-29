@@ -20,6 +20,7 @@ constexpr char const* __set_field    = "fp_set_field";
 constexpr char const* __get_port     = "fp_get_port";
 constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
+constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";

@@ -34,10 +34,8 @@ bool has_constant_length(Type const* t)
       return true;
     }
 
-    bool operator()(Void_type const* t)
-    {
-      return false;
-    }
+    bool operator()(Void_type const* t) { return false; }
+    bool operator()(Opaque_type const* t) { return false; }
 
     // network specific types
     bool operator()(Layout_type const* t)
@@ -86,6 +84,7 @@ int precision(Type const* t)
     int operator()(Flow_type const* t) { throw std::runtime_error("unsupported length"); }
     int operator()(Port_type const* t) { throw std::runtime_error("unsupported length"); }
     int operator()(Key_type const* t) { throw std::runtime_error("unsupported length"); }
+    int operator()(Opaque_type const* t) { throw std::runtime_error("unsupported length"); }
 
     // dynamic type
     // FIXME: do this right
@@ -135,6 +134,7 @@ Expr* length(Type const* t)
     Expr* operator()(Id_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Function_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Void_type const* t) { throw std::runtime_error("no length type"); }
+    Expr* operator()(Opaque_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Context_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Table_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Flow_type const* t) { throw std::runtime_error("no length type"); }

@@ -26,7 +26,9 @@ Function_decl*
 Lowerer::load_function()
 {
   Type const* void_type = get_void_type();
-  Decl_seq parms {  };
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__dataplane), get_opaque_type()->ref())
+  };
 
   Type const* fn_type = get_function_type(parms, void_type);
   Symbol const* fn_name = get_identifier(__load);
@@ -544,6 +546,9 @@ Lowerer::lower_global_def(Table_decl* d)
   assert(ovl);
   Decl* tbl = ovl->back();
   assert(tbl);
+
+  // We need the global variable storing the dataplane pointer which is
+  // set when the config() function is called.
 
   Scope_sentinel scope(*this, d);
 

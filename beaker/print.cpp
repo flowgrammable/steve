@@ -390,6 +390,7 @@ operator<<(std::ostream& os, Type const& t)
     void operator()(Reference_type const* t) { os << *t; }
     void operator()(Record_type const* t) { os << *t; }
     void operator()(Void_type const* t) { os << *t; }
+    void operator()(Opaque_type const* t) { os << *t; }
 
     // network specific types
     void operator()(Layout_type const* t) { os << *t; }
@@ -485,6 +486,13 @@ std::ostream&
 operator<<(std::ostream& os, Void_type const&)
 {
   return os << "void";
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Opaque_type const&)
+{
+  return os << "opaque";
 }
 
 

@@ -196,6 +196,15 @@ get_void_type()
   return &t;
 }
 
+
+Type const*
+get_opaque_type()
+{
+  static Opaque_type t;
+  return &t; 
+}
+
+
 // ------------------------------------------------------------ //
 //        Network specific types
 
