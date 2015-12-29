@@ -533,6 +533,9 @@ is_pipeline_decl(Decl const* d)
 // Returns true if the declaration is a reference.
 bool is_reference(Decl const*);
 
+// Returns true if it is a reference to an opaque object.
+bool is_opaque_reference(Decl const*);
+
 
 // -------------------------------------------------------------------------- //
 //                              Generic visitors

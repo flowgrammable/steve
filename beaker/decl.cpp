@@ -62,7 +62,7 @@ Record_decl::is_empty() const
   if (Record_decl const* b = base_declaration())
     if (b->is_empty())
       return false;
-  
+
   // An empty base class has no fields.
   return fields_.empty();
 }
@@ -74,4 +74,13 @@ bool
 is_reference(Decl const* d)
 {
   return is<Reference_type>(d->type());
+}
+
+
+// Returns true when the declaration is declared as a reference to an opaque
+// object.
+bool
+is_opaque_reference(Decl const* d)
+{
+  return is<Reference_type>(d->type()) && is<Opaque_type>(d->type()->nonref());
 }

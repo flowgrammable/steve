@@ -374,7 +374,7 @@ Generator::gen(Decl_expr const* e)
   // Fetch the value from a reference declaration.
   Decl const* decl = bind->first;
 
-  if (is_reference(decl))
+  if (is_reference(decl) && !is_opaque_reference(decl))
     return build.CreateLoad(result);
 
   return result;
