@@ -22,19 +22,38 @@ Lowerer::get_identifier(std::string s)
 // -------------------------------------------------------------------------- //
 // Application interface
 
+// This is the function called when the dataplane wants configuration information
+// upon loading the application.
 Function_decl*
 Lowerer::load_function()
 {
   Type const* void_type = get_void_type();
-  Decl_seq parms {  };
+  auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
+  Decl_seq parms {
+    p1
+  };
 
   Type const* fn_type = get_function_type(parms, void_type);
   Symbol const* fn_name = get_identifier(__load);
 
+  // The Load function should save a pointer to the dataplane that is loading it.
+  // Construct a global variable of opaque dataplane type.
+  Overload* ovl = unqualified_lookup(get_identifier(__dataplane));
+  assert(ovl);
+  Decl* dp = ovl->back();
+  assert(dp);
+
+  // In the load body, set the dp global variable to be equal to the pointer
+  // passed in the parameter.
+  Assign_stmt* set_dp = new Assign_stmt(decl_id(dp), decl_id(p1));
+  elab.elaborate(set_dp);
+  load_body.insert(load_body.begin(), set_dp);
+
+  // Construct the load function with the accumulated load_body.
   Function_decl* load = new Function_decl(fn_name, fn_type,
                                           parms, block(load_body));
 
-  load->spec_ |= foreign_spec;
+  load->spec_ |= extern_spec;
   declare(load);
 
   return load;
@@ -72,7 +91,7 @@ Lowerer::process_function()
   Stmt_seq process_body;
   process_body.push_back(new Expression_stmt(call));
 
-  process->spec_ |= foreign_spec;
+  process->spec_ |= extern_spec;
 
   process->body_ = block(process_body);
 
@@ -96,9 +115,20 @@ Lowerer::port_number_function()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block(body));
 
-  fn->spec_ |= foreign_spec;
+  fn->spec_ |= extern_spec;
 
   return fn;
+}
+
+
+Variable_decl*
+Lowerer::dataplane_pointer()
+{
+  static Variable_decl dp(get_identifier(__dataplane),
+                          get_opaque_type()->ref(),
+                          new Default_init(get_opaque_type()->ref()));
+  declare(&dp);
+  return &dp;
 }
 
 
@@ -386,7 +416,7 @@ Lowerer::lower_global_def(Decode_decl* d)
   // Lower the body and change the definition of the function.
   Stmt* body = lower(d->body()).back();
   fn->body_ = body;
-  fn->spec_ |= foreign_spec;
+  fn->spec_ |= extern_spec;
 
   // bind the header into the context with its id
   Layout_type const* ltype = as<Layout_type>(d->header());
@@ -435,7 +465,7 @@ Lowerer::lower_table_flows(Table_decl* d)
     // The type of all flows is fn(Context&) -> void
     Type const* type = get_function_type(parms, void_type);
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
-    fn->spec_ |= foreign_spec;
+    fn->spec_ |= extern_spec;
     flow_fns.push_back(fn);
   }
 
@@ -470,7 +500,7 @@ Lowerer::lower_miss_case(Table_decl* d)
     // The type of all flows is fn(Context&) -> void
     Type const* type = get_function_type(parms, void_type);
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
-    fn->spec_ |= foreign_spec;
+    fn->spec_ |= extern_spec;
 
     return fn;
   }
@@ -545,6 +575,14 @@ Lowerer::lower_global_def(Table_decl* d)
   Decl* tbl = ovl->back();
   assert(tbl);
 
+  ovl = unqualified_lookup(get_identifier(__dataplane));
+  assert(ovl);
+  Expr* dp = decl_id(ovl->back());
+  assert(ovl->back());
+
+  // We need the global variable storing the dataplane pointer which is
+  // set when the config() function is called.
+
   Scope_sentinel scope(*this, d);
 
   // generate the call to get_table
@@ -554,8 +592,8 @@ Lowerer::lower_global_def(Table_decl* d)
   // flows are allowed in a table. Do this right!
   Expr* num_flows = make_int(1000);
   Expr* table_kind = make_int(d->kind());
-  Expr* get_table = builtin.call_create_table(tbl, { id_no, key_len,
-                                             num_flows, table_kind });
+  Expr* get_table = builtin.call_create_table(tbl, dp, id_no, key_len,
+                                             num_flows, table_kind );
 
   // We do special generation for calls to create table
   // because regular assignment does not work with opaque types
@@ -600,7 +638,9 @@ Lowerer::lower_global_def(Port_decl* d)
   assert(var);
 
   // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var, { d->address() });
+  Expr* get_port = builtin.call_get_port(var,
+    { make_cstr(d->name()->spelling().c_str()) });
+
   elab.elaborate(get_port);
   load_body.push_back(new Expression_stmt(get_port));
 
@@ -627,10 +667,18 @@ Lowerer::add_builtin_functions()
 
 
 void
+Lowerer::add_builtin_variables()
+{
+  prelude.push_back(dataplane_pointer());
+}
+
+
+void
 Lowerer::add_prelude()
 {
   // declare all builtin functions
   add_builtin_functions();
+  add_builtin_variables();
 }
 
 
@@ -1021,36 +1069,39 @@ Lowerer::goto_advance(Decl const* decoder)
 }
 
 
-Stmt*
-Lowerer::goto_get_key(Decl const* table)
-{
-  Table_decl const* t = as<Table_decl>(table);
-  Expr_seq key_mappings;
+// Stmt*
+// Lowerer::goto_get_key(Decl const* table)
+// {
+//   Table_decl const* t = as<Table_decl>(table);
+//   Expr_seq key_mappings;
+//
+//   for (auto subkey : t->keys()) {
+//     int mapping = checker.get_field_mapping(subkey->name());
+//     key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
+//   }
+//
+//   // get the context variable which should Always
+//   // be within the scope of a decoder body
+//   Overload* ovl = unqualified_lookup(get_identifier(__context));
+//   assert(ovl);
+//   Decl* cxt = ovl->back();
+//   assert(cxt);
+//
+//   // TODO: fully support variable arguments to functions so that
+//   // we can actually elaborate this without it failing.
+//   Expr* gather = builtin.call_gather(decl_id(cxt), key_mappings);
+//   Variable_decl* key = new Variable_decl(get_identifier("key"),
+//                                          get_reference_type(get_key_type()),
+//                                          gather);
+//
+//   declare(key);
+//   return new Declaration_stmt(key);
+// }
 
-  for (auto subkey : t->keys()) {
-    int mapping = checker.get_field_mapping(subkey->name());
-    key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
-  }
 
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // TODO: fully support variable arguments to functions so that
-  // we can actually elaborate this without it failing.
-  Expr* gather = builtin.call_gather(decl_id(cxt), key_mappings);
-  Variable_decl* key = new Variable_decl(get_identifier("key"),
-                                         get_reference_type(get_key_type()),
-                                         gather);
-
-  declare(key);
-  return new Declaration_stmt(key);
-}
-
-
+// NOTE: It is the current expectation that when the runtime
+// goes to match the context against the table that it implicitly goes to
+// compose the key from the fields provided as arguments in this function.
 Stmt*
 Lowerer::goto_match(Goto_stmt* s)
 {
@@ -1068,13 +1119,27 @@ Lowerer::goto_match(Goto_stmt* s)
   assert(cxt);
 
   // get the key variable
-  ovl = unqualified_lookup(get_identifier("key"));
-  assert(ovl);
-  Decl* key = ovl->back();
-  assert(key);
+  // ovl = unqualified_lookup(get_identifier("key"));
+  // assert(ovl);
+  // Decl* key = ovl->back();
+  // assert(key);
 
-  Expr* match = builtin.call_match({decl_id(cxt), decl_id(key), decl_id(tbl)});
-  elab.elaborate(match);
+  // produce the set of fields needed by the table.
+  Table_decl const* t = as<Table_decl>(s->table());
+  assert(t);
+  Expr_seq key_mappings;
+  for (auto subkey : t->keys()) {
+    int mapping = checker.get_field_mapping(subkey->name());
+    key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
+  }
+
+  // number of fields
+  Expr* n = make_int(key_mappings.size());
+
+  // produce the call
+  Expr* match = builtin.call_match(decl_id(cxt), decl_id(tbl), n, key_mappings);
+  // NOTE: Avoid elaboration again since we don't fully support variable args.
+  // elab.elaborate(match);
 
   return new Expression_stmt(match);
 }
@@ -1100,7 +1165,7 @@ Lowerer::lower(Goto_stmt* s)
   }
 
   // produce the call to get the key
-  stmts.push_back(goto_get_key(s->table()));
+  // stmts.push_back(goto_get_key(s->table()));
 
   // produce the call to match
   // pass the table and the key

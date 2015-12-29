@@ -1,6 +1,7 @@
 #include "beaker/expr.hpp"
 #include "beaker/type.hpp"
 #include "beaker/length.hpp"
+#include "beaker/evaluator.hpp"
 
 
 Expr*
@@ -9,14 +10,14 @@ gather(Expr_seq const& subkeys)
   // maintain the largest allowable key buffer
   uint512_t buf = 0;
 
+  Evaluator ev;
+
   // maintain the position to start writing
   int pos = 0;
   for (auto subkey : subkeys) {
     // get the precision of the subkey
     int prec = precision(subkey->type());
-    // get the literal expression
-    Literal_expr* e = as<Literal_expr>(subkey);
-    Value const& val = e->value();
+    Value const& val = ev.eval(subkey);
     // FIXME: for now we're only dealing with unsigned integer values
     assert(val.is_integer());
     std::stringstream ss;

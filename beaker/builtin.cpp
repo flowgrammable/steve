@@ -34,7 +34,7 @@ Builtin::bind_header()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -61,7 +61,7 @@ Builtin::bind_field()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -89,7 +89,7 @@ Builtin::alias_bind()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -114,7 +114,7 @@ Builtin::advance()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -130,6 +130,7 @@ Builtin::get_table()
 
   Decl_seq parms =
   {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     new Parameter_decl(get_identifier("key_size"), get_integer_type()),
     new Parameter_decl(get_identifier("size"), get_integer_type()),
@@ -141,7 +142,7 @@ Builtin::get_table()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -177,7 +178,7 @@ Builtin::add_flow()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -210,7 +211,7 @@ Builtin::add_miss()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -220,9 +221,9 @@ Function_decl*
 Builtin::gather()
 {
   Symbol const* fn_name = get_identifier(__gather);
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* cxt_ref = get_context_type()->ref();
   Type const* int_type = get_integer_type();
-  Type const* key_type = get_reference_type(get_key_type());
+  Type const* key_type = get_key_type()->ref();
 
   Decl_seq parms =
   {
@@ -236,7 +237,7 @@ Builtin::gather()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -248,23 +249,26 @@ Builtin::match()
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
   Type const* ret_type = get_void_type();
-  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
   Symbol const* fn_name = get_identifier(__match);
 
   Decl_seq parms =
   {
     new Parameter_decl(get_identifier(__context), cxt_ref),
-    new Parameter_decl(get_identifier(__key), get_reference_type(get_key_type())),
     new Parameter_decl(get_identifier(__table), tbl_ref),
+    new Parameter_decl(get_identifier("n"), get_integer_type()) // number of fields
   };
 
-  Type const* fn_type = get_function_type(parms, ret_type);
+  Type_seq parm_t = { cxt_ref, tbl_ref };
+
+  // C Variadic Function
+  Type const* fn_type = get_function_type(parm_t, ret_type, true);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -284,7 +288,7 @@ Builtin::get_port()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
   return fn;
 }
 
@@ -297,7 +301,7 @@ Builtin::drop()
   Type const* void_type = get_void_type();
 
   Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type()))
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -305,7 +309,7 @@ Builtin::drop()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }
@@ -317,10 +321,10 @@ Builtin::output()
   Symbol const* fn_name = get_identifier(__output);
 
   Type const* void_type = get_void_type();
-  Type const* port_type = get_reference_type(get_port_type());
+  Type const* port_type = get_port_type()->ref();
 
   Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("port"), port_type)
   };
 
@@ -329,7 +333,7 @@ Builtin::output()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }
@@ -357,7 +361,7 @@ Builtin::set_field()
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
 
-  fn->declare_ = true;
+  fn->spec_ |= foreign_spec;
 
   return fn;
 }
@@ -479,12 +483,12 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 
 
 Expr*
-Builtin::call_create_table(Decl* d, Expr_seq const& args)
+Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* entry_size, Expr* kind)
 {
   Function_decl* fn = builtin_fn.find(__get_table)->second;
   assert(fn);
 
-  Create_table* e = new Create_table(decl_id(fn), args);
+  Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
   e->table_ = d;
 
   return e;
@@ -552,10 +556,13 @@ Builtin::call_gather(Expr* cxt, Expr_seq const& var_args)
 
 
 Expr*
-Builtin::call_match(Expr_seq const& args)
+Builtin::call_match(Expr* cxt, Expr* tbl, Expr* n, Expr_seq const& var_args)
 {
   Function_decl* fn = builtin_fn.find(__match)->second;
   assert(fn);
+
+  Expr_seq args { cxt, tbl, n };
+  args.insert(args.end(), var_args.begin(), var_args.end());
 
   return new Match(decl_id(fn), args);
 }

@@ -193,6 +193,7 @@ Elaborator::elaborate(Type const* t)
     Type const* operator()(Reference_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Record_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Void_type const* t) { return elab.elaborate(t); }
+    Type const* operator()(Opaque_type const* t) { return elab.elaborate(t); }
 
     Type const* operator()(Layout_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Context_type const* t) { return elab.elaborate(t); }
@@ -312,6 +313,15 @@ Elaborator::elaborate(Record_type const* t)
 
 Type const*
 Elaborator::elaborate(Void_type const* t)
+{
+  return t;
+}
+
+
+// TODO: Make sure there are no objects of opaque type. There can only
+// be references of opaque type.
+Type const*
+Elaborator::elaborate(Opaque_type const* t)
 {
   return t;
 }

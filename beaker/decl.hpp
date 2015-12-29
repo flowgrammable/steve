@@ -21,11 +21,11 @@ struct Decl
   struct Mutator;
 
   Decl(Symbol const* s, Type const* t)
-    : spec_(no_spec), name_(s), type_(t), cxt_(nullptr), declare_(false)
+    : spec_(no_spec), name_(s), type_(t), cxt_(nullptr)
   { }
 
   Decl(Specifier spec, Symbol const* s, Type const* t)
-    : spec_(spec), name_(s), type_(t), cxt_(nullptr), declare_(false)
+    : spec_(spec), name_(s), type_(t), cxt_(nullptr)
   { }
 
   virtual ~Decl() { }
@@ -36,7 +36,7 @@ struct Decl
   // Declaration specifiers
   Specifier specifiers() const { return spec_; }
   bool      is_foreign() const { return spec_ & foreign_spec; }
-  bool      is_declare() const { return declare_; }
+  bool      is_extern() const { return spec_ & extern_spec; }
 
   Symbol const* name() const { return name_; }
   Type const*   type() const { return type_; }
@@ -47,7 +47,6 @@ struct Decl
   Symbol const* name_;
   Type const*   type_;
   Decl const*   cxt_;
-  bool          declare_;
 };
 
 
@@ -533,6 +532,9 @@ is_pipeline_decl(Decl const* d)
 
 // Returns true if the declaration is a reference.
 bool is_reference(Decl const*);
+
+// Returns true if it is a reference to an opaque object.
+bool is_opaque_reference(Decl const*);
 
 
 // -------------------------------------------------------------------------- //

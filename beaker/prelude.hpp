@@ -93,6 +93,7 @@ struct Port_type;
 struct Void_type;
 struct Context_type;
 struct Key_type;
+struct Opaque_type;
 
 struct Decl;
 struct Record_decl;

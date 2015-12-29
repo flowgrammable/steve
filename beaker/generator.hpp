@@ -60,6 +60,7 @@ struct Generator
   llvm::Type* get_type(Reference_type const*);
   llvm::Type* get_type(Record_type const*);
   llvm::Type* get_type(Void_type const*);
+  llvm::Type* get_type(Opaque_type const*);
 
   // network specific types
   llvm::Type* get_type(Layout_type const*);

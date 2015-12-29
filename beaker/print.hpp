@@ -59,6 +59,8 @@ std::ostream& operator<<(std::ostream&, Array_type const&);
 std::ostream& operator<<(std::ostream&, Reference_type const&);
 std::ostream& operator<<(std::ostream&, Record_type const&);
 std::ostream& operator<<(std::ostream&, Void_type const&);
+std::ostream& operator<<(std::ostream&, Opaque_type const&);
+
 
 // network specific types
 std::ostream& operator<<(std::ostream&, Layout_type const&);

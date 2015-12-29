@@ -5,6 +5,12 @@ layout eth
 	type : int;
 }
 
+decoder start eth_d(eth)
+{
+	extract eth::src;
+	extract eth::dst;
+	goto t1;
+}
 
 exact_table t1(eth::src, eth::dst)
 {

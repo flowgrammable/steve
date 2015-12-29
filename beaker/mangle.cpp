@@ -117,6 +117,13 @@ mangle(std::ostream& os, Void_type const* t)
 }
 
 
+// This shouldn't be necessary.
+void
+mangle(std::ostream& os, Opaque_type const* t)
+{
+  os << "opq";
+}
+
 
 // network specific types
 void
@@ -181,6 +188,7 @@ mangle(std::ostream& os, Type const* t)
     void operator()(Reference_type const* t) { return mangle(os, t); }
     void operator()(Record_type const* t) { return mangle(os, t); }
     void operator()(Void_type const* t) { return mangle(os, t); }
+    void operator()(Opaque_type const* t) { return mangle(os, t); }
 
     // network specific types
     void operator()(Layout_type const* t) { return mangle(os, t); }
