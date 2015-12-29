@@ -134,6 +134,19 @@ struct Return_stmt : Stmt
 };
 
 
+// An explicit return 'void' statement.
+//
+// NOTE: This node is currently not supported or
+// exposed as surface level syntax but can be generated internally by the
+// compiler. This translates to an immediate return from the function and
+// can only occur in functions that return void.
+struct Return_void_stmt : Stmt
+{
+  // void accept(Visitor& v) const { return v.visit(this); }
+  // void accept(Mutator& v)       { return v.visit(this); }
+};
+
+
 // A statement of the form:
 //
 //    if (e) s

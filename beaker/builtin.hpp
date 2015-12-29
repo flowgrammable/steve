@@ -21,12 +21,12 @@ constexpr char const* __get_port     = "fp_get_port";
 constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
 constexpr char const* __drop         = "fp_drop";
-constexpr char const* __context      = "__cxt__";
-constexpr char const* __header       = "__header__";
-constexpr char const* __table        = "__table__";
-constexpr char const* __key          = "__key__";
-constexpr char const* __drop_port    = "__drop";
-constexpr char const* __flood_port   = "__flood";
+constexpr char const* __context      = "_cxt_";
+constexpr char const* __header       = "_header_";
+constexpr char const* __table        = "_table_";
+constexpr char const* __key          = "_key_";
+constexpr char const* __drop_port    = "_drop_";
+constexpr char const* __flood_port   = "_flood_";
 
 // runtime interface functions
 constexpr char const* __load         = "config";
@@ -250,7 +250,7 @@ struct Builtin
   Expr* call_create_table(Decl*, Expr_seq const& args);
   Expr* call_add_flow(Expr_seq const& args);
   Expr* call_add_miss(Expr*, Expr*);
-  Expr* call_match(Expr_seq const& args);
+  Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);

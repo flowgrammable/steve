@@ -600,7 +600,9 @@ Lowerer::lower_global_def(Port_decl* d)
   assert(var);
 
   // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var, { d->address() });
+  Expr* get_port = builtin.call_get_port(var,
+    { make_cstr(d->name()->spelling().c_str()) });
+
   elab.elaborate(get_port);
   load_body.push_back(new Expression_stmt(get_port));
 
@@ -1021,36 +1023,39 @@ Lowerer::goto_advance(Decl const* decoder)
 }
 
 
-Stmt*
-Lowerer::goto_get_key(Decl const* table)
-{
-  Table_decl const* t = as<Table_decl>(table);
-  Expr_seq key_mappings;
+// Stmt*
+// Lowerer::goto_get_key(Decl const* table)
+// {
+//   Table_decl const* t = as<Table_decl>(table);
+//   Expr_seq key_mappings;
+//
+//   for (auto subkey : t->keys()) {
+//     int mapping = checker.get_field_mapping(subkey->name());
+//     key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
+//   }
+//
+//   // get the context variable which should Always
+//   // be within the scope of a decoder body
+//   Overload* ovl = unqualified_lookup(get_identifier(__context));
+//   assert(ovl);
+//   Decl* cxt = ovl->back();
+//   assert(cxt);
+//
+//   // TODO: fully support variable arguments to functions so that
+//   // we can actually elaborate this without it failing.
+//   Expr* gather = builtin.call_gather(decl_id(cxt), key_mappings);
+//   Variable_decl* key = new Variable_decl(get_identifier("key"),
+//                                          get_reference_type(get_key_type()),
+//                                          gather);
+//
+//   declare(key);
+//   return new Declaration_stmt(key);
+// }
 
-  for (auto subkey : t->keys()) {
-    int mapping = checker.get_field_mapping(subkey->name());
-    key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
-  }
 
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // TODO: fully support variable arguments to functions so that
-  // we can actually elaborate this without it failing.
-  Expr* gather = builtin.call_gather(decl_id(cxt), key_mappings);
-  Variable_decl* key = new Variable_decl(get_identifier("key"),
-                                         get_reference_type(get_key_type()),
-                                         gather);
-
-  declare(key);
-  return new Declaration_stmt(key);
-}
-
-
+// NOTE: It is the current expectation that when the runtime
+// goes to match the context against the table that it implicitly goes to
+// compose the key from the fields provided as arguments in this function.
 Stmt*
 Lowerer::goto_match(Goto_stmt* s)
 {
@@ -1068,13 +1073,27 @@ Lowerer::goto_match(Goto_stmt* s)
   assert(cxt);
 
   // get the key variable
-  ovl = unqualified_lookup(get_identifier("key"));
-  assert(ovl);
-  Decl* key = ovl->back();
-  assert(key);
+  // ovl = unqualified_lookup(get_identifier("key"));
+  // assert(ovl);
+  // Decl* key = ovl->back();
+  // assert(key);
 
-  Expr* match = builtin.call_match({decl_id(cxt), decl_id(key), decl_id(tbl)});
-  elab.elaborate(match);
+  // produce the set of fields needed by the table.
+  Table_decl const* t = as<Table_decl>(s->table());
+  assert(t);
+  Expr_seq key_mappings;
+  for (auto subkey : t->keys()) {
+    int mapping = checker.get_field_mapping(subkey->name());
+    key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
+  }
+
+  // number of fields
+  Expr* n = make_int(key_mappings.size());
+
+  // produce the call
+  Expr* match = builtin.call_match(decl_id(cxt), decl_id(tbl), n, key_mappings);
+  // NOTE: Avoid elaboration again since we don't fully support variable args.
+  // elab.elaborate(match);
 
   return new Expression_stmt(match);
 }
@@ -1100,7 +1119,7 @@ Lowerer::lower(Goto_stmt* s)
   }
 
   // produce the call to get the key
-  stmts.push_back(goto_get_key(s->table()));
+  // stmts.push_back(goto_get_key(s->table()));
 
   // produce the call to match
   // pass the table and the key

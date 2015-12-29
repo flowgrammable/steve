@@ -922,6 +922,7 @@ Parser::flow_decl(Token tok)
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
     Expr* k = expr();
+    std::cout << "KEY EXPR: " << *k << '\n';
     if (k)
       keys.push_back(k);
 

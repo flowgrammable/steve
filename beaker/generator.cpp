@@ -213,7 +213,7 @@ Generator::get_type(Context_type const* t)
 llvm::Type*
 Generator::get_type(Table_type const*)
 {
-  static llvm::Type* table_type = llvm::StructType::create(cxt, "__Table__");
+  static llvm::Type* table_type = llvm::StructType::create(cxt, "Table");
   return table_type;
 }
 
@@ -230,7 +230,7 @@ Generator::get_type(Flow_type const*)
 llvm::Type*
 Generator::get_type(Port_type const* t)
 {
-  static llvm::Type* port_type = llvm::StructType::create(cxt, "__Port__");
+  static llvm::Type* port_type = llvm::StructType::create(cxt, "Port");
   return port_type;
 }
 
@@ -239,7 +239,7 @@ Generator::get_type(Port_type const* t)
 llvm::Type*
 Generator::get_type(Key_type const* t)
 {
-  static llvm::Type* key_type = llvm::StructType::create(cxt, "__Key__");
+  static llvm::Type* key_type = llvm::StructType::create(cxt, "Key");
   return key_type;
 }
 
