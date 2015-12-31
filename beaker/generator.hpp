@@ -118,6 +118,7 @@ struct Generator
   void gen(Block_stmt const*);
   void gen(Assign_stmt const*);
   void gen(Return_stmt const*);
+  void gen(Return_void_stmt const*);
   void gen(If_then_stmt const*);
   void gen(If_else_stmt const*);
   void gen(While_stmt const*);

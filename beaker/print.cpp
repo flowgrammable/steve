@@ -26,6 +26,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Block_stmt const* s) { os << *s; };
     void operator()(Assign_stmt const* s) { os << *s; };
     void operator()(Return_stmt const* s) { os << *s; };
+    void operator()(Return_void_stmt const* s) { os << *s; };
     void operator()(If_then_stmt const* s) { os << *s; };
     void operator()(If_else_stmt const* s) { os << *s; };
     void operator()(Match_stmt const* s) { os << *s; };
@@ -75,6 +76,12 @@ std::ostream& operator<<(std::ostream& os, Assign_stmt const& s)
 std::ostream& operator<<(std::ostream& os, Return_stmt const& s)
 {
   return os << "return " << *s.value();
+}
+
+
+std::ostream& operator<<(std::ostream& os, Return_void_stmt const& s)
+{
+  return os << "return void";
 }
 
 

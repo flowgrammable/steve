@@ -795,6 +795,7 @@ Generator::gen(Stmt const* s)
     void operator()(Block_stmt const* s) { g.gen(s); }
     void operator()(Assign_stmt const* s) { g.gen(s); }
     void operator()(Return_stmt const* s) { g.gen(s); }
+    void operator()(Return_void_stmt const* s) { g.gen(s); }
     void operator()(If_then_stmt const* s) { g.gen(s); }
     void operator()(If_else_stmt const* s) { g.gen(s); }
     void operator()(Match_stmt const* s) { g.gen(s); }
@@ -856,6 +857,16 @@ Generator::gen(Return_stmt const* s)
 {
   llvm::Value* v = gen(s->value());
   build.CreateStore(v, ret);
+  build.CreateBr(exit);
+}
+
+
+// The exit block will have the ret void statement made
+// if the function returns void so we shouldn't have to deal
+// with that here. We should only need to branch to exit block.
+void
+Generator::gen(Return_void_stmt const* s)
+{
   build.CreateBr(exit);
 }
 

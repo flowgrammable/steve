@@ -174,6 +174,7 @@ public:
   Stmt* elaborate(Block_stmt*);
   Stmt* elaborate(Assign_stmt*);
   Stmt* elaborate(Return_stmt*);
+  Stmt* elaborate(Return_void_stmt*);
   Stmt* elaborate(If_then_stmt*);
   Stmt* elaborate(If_else_stmt*);
   Stmt* elaborate(Match_stmt*);

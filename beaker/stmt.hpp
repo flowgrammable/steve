@@ -30,6 +30,7 @@ struct Stmt::Visitor
   virtual void visit(Block_stmt const*) = 0;
   virtual void visit(Assign_stmt const*) = 0;
   virtual void visit(Return_stmt const*) = 0;
+  virtual void visit(Return_void_stmt const*) = 0;
   virtual void visit(If_then_stmt const*) = 0;
   virtual void visit(If_else_stmt const*) = 0;
   virtual void visit(Match_stmt const*) = 0;
@@ -55,6 +56,7 @@ struct Stmt::Mutator
   virtual void visit(Block_stmt*) = 0;
   virtual void visit(Assign_stmt*) = 0;
   virtual void visit(Return_stmt*) = 0;
+  virtual void visit(Return_void_stmt*) = 0;
   virtual void visit(If_then_stmt*) = 0;
   virtual void visit(If_else_stmt*) = 0;
   virtual void visit(Match_stmt*) = 0;
@@ -142,8 +144,8 @@ struct Return_stmt : Stmt
 // can only occur in functions that return void.
 struct Return_void_stmt : Stmt
 {
-  // void accept(Visitor& v) const { return v.visit(this); }
-  // void accept(Mutator& v)       { return v.visit(this); }
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
 };
 
 
@@ -359,6 +361,7 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Block_stmt const* d) { this->invoke(d); };
   void visit(Assign_stmt const* d) { this->invoke(d); };
   void visit(Return_stmt const* d) { this->invoke(d); };
+  void visit(Return_void_stmt const* d) { this->invoke(d); };
   void visit(If_then_stmt const* d) { this->invoke(d); };
   void visit(If_else_stmt const* d) { this->invoke(d); };
   void visit(Match_stmt const* d) { this->invoke(d); };
@@ -401,6 +404,7 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Block_stmt* d) { this->invoke(d); };
   void visit(Assign_stmt* d) { this->invoke(d); };
   void visit(Return_stmt* d) { this->invoke(d); };
+  void visit(Return_void_stmt* d) { this->invoke(d); };
   void visit(If_then_stmt* d) { this->invoke(d); };
   void visit(If_else_stmt* d) { this->invoke(d); };
   void visit(Match_stmt* d) { this->invoke(d); };

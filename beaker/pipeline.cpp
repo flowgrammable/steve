@@ -305,6 +305,7 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Continue_stmt const* s) { }
     void operator()(Expression_stmt const* s) { }
     void operator()(Return_stmt const* s) { throw Type_error({}, "return found in decoder body"); }
+    void operator()(Return_void_stmt const* s) { }
     void operator()(If_then_stmt const* s) { }
     void operator()(If_else_stmt const* s) { }
     void operator()(Match_stmt const* s) { }
@@ -442,6 +443,7 @@ Pipeline_checker::find_branches(Flow_decl const* d)
     {
       throw Type_error({}, "return found in decoder body");
     }
+    void operator()(Return_void_stmt const* s) { }
 
     void operator()(Action const* s) { }
     void operator()(Drop const* s) { }
@@ -528,6 +530,8 @@ Pipeline_checker::find_branches(Decode_decl const* d)
     {
       throw Type_error({}, "return found in decoder body");
     }
+
+    void operator()(Return_void_stmt const* s) { }
 
     void operator()(Action const* s) { }
     void operator()(Drop const* s) { }

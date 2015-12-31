@@ -102,6 +102,7 @@ public:
   Control eval(Block_stmt const*, Value&);
   Control eval(Assign_stmt const*, Value&);
   Control eval(Return_stmt const*, Value&);
+  Control eval(Return_void_stmt const*, Value&);
   Control eval(If_then_stmt const*, Value&);
   Control eval(If_else_stmt const*, Value&);
   Control eval(Match_stmt const*, Value&);

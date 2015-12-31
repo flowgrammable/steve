@@ -2161,7 +2161,7 @@ Elaborator::elaborate_decl(Function_decl* d)
     main = d;
 
     // Ensure that main has foreign linkage.
-    d->spec_ |= foreign_spec;
+    d->spec_ |= extern_spec;
 
     // TODO: Check that main conforms to the
     // expected return type and arguments.
@@ -2644,6 +2644,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Block_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Assign_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Return_stmt* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Return_void_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(If_then_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(If_else_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Match_stmt* d) const { return elab.elaborate(d); };
@@ -2741,6 +2742,19 @@ Elaborator::elaborate(Return_stmt* s)
   }
 
   s->first = c;
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Return_void_stmt* s)
+{
+  Function_decl* fn = stack.function();
+  Type const* t = fn->return_type();
+  if (!is<Void_type>(t))
+    throw Type_error(locate(s), "return void found in function whose return type"
+                                " is not void.");
+
   return s;
 }
 

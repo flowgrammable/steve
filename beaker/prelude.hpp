@@ -119,6 +119,7 @@ struct Empty_stmt;
 struct Block_stmt;
 struct Assign_stmt;
 struct Return_stmt;
+struct Return_void_stmt;
 struct If_then_stmt;
 struct If_else_stmt;
 struct Match_stmt;
@@ -128,6 +129,8 @@ struct Break_stmt;
 struct Continue_stmt;
 struct Expression_stmt;
 struct Declaration_stmt;
+
+// Network specific
 struct Decode_stmt;
 struct Goto_stmt;
 

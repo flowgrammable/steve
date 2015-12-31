@@ -695,6 +695,7 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Block_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Assign_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Return_stmt const* s) { return ev.eval(s, r); }
+    Control operator()(Return_void_stmt const* s) { return ev.eval(s, r); }
     Control operator()(If_then_stmt const* s) { return ev.eval(s, r); }
     Control operator()(If_else_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Match_stmt const* s) { return ev.eval(s, r); }
@@ -758,6 +759,13 @@ Control
 Evaluator::eval(Return_stmt const* s, Value& r)
 {
   r = eval(s->value());
+  return return_ctl;
+}
+
+
+Control
+Evaluator::eval(Return_void_stmt const* s, Value& r)
+{
   return return_ctl;
 }
 

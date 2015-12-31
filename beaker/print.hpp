@@ -13,6 +13,7 @@ std::ostream& operator<<(std::ostream&, Empty_stmt const&);
 std::ostream& operator<<(std::ostream&, Block_stmt const&);
 std::ostream& operator<<(std::ostream&, Assign_stmt const&);
 std::ostream& operator<<(std::ostream&, Return_stmt const&);
+std::ostream& operator<<(std::ostream&, Return_void_stmt const&);
 std::ostream& operator<<(std::ostream&, If_then_stmt const&);
 std::ostream& operator<<(std::ostream&, If_else_stmt const&);
 std::ostream& operator<<(std::ostream&, Match_stmt const&);
