@@ -447,24 +447,33 @@ Lowerer::lower_table_flows(Table_decl* d)
   Type const* void_type = get_void_type();
 
   for (auto f : d->body()) {
+    // Create parameters common to all
+    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+    Decl_seq parms { tbl, cxt };
+
+    // The type of all flows is fn(Table&, Context&) -> void
+    Type const* type = get_function_type(parms, void_type);
+
     Flow_decl* flow = as<Flow_decl>(f);
     Symbol const* flow_name = f->name();
 
+    // Enter flow function scope.
     Scope_sentinel scope(*this, flow);
 
-    // declare an implicit context variable
-    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
-    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+    // declare an implicit context and table variable
     declare(cxt);
     declare(tbl);
-    Decl_seq parms { tbl, cxt };
 
+    // Contruct the body from the instructions.
+    // Trust that the lowering process correctly elaborates the body so
+    // its not necessary to do so again.
     Stmt* flow_body = lower(flow->instructions()).back();
-    elab.elaborate(flow_body);
 
-    // The type of all flows is fn(Context&) -> void
-    Type const* type = get_function_type(parms, void_type);
+    // Produce the flow function.
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
+
+    // Make sure it has external linkage.
     fn->spec_ |= extern_spec;
     flow_fns.push_back(fn);
   }
@@ -482,23 +491,26 @@ Lowerer::lower_miss_case(Table_decl* d)
     Type const* tbl_ref = get_reference_type(opaque_table);
     Type const* void_type = get_void_type();
 
+    // declare an implicit context variable
+    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+    Decl_seq parms { tbl, cxt };
+
+    // The type of all flows is fn(Context&) -> void
+    Type const* type = get_function_type(parms, void_type);
+
     Flow_decl* flow = as<Flow_decl>(d->miss_case());
     Symbol const* flow_name = flow->name();
 
     Scope_sentinel scope(*this, flow);
 
-    // declare an implicit context variable
-    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
-    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
     declare(cxt);
     declare(tbl);
-    Decl_seq parms { tbl, cxt };
 
+    // Trust that the lowering process correctly elaborates all the statements
+    // so we don't have to elaborate again.
     Stmt* flow_body = lower(flow->instructions()).back();
-    elab.elaborate(flow_body);
 
-    // The type of all flows is fn(Context&) -> void
-    Type const* type = get_function_type(parms, void_type);
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
     fn->spec_ |= extern_spec;
 
@@ -1035,6 +1047,12 @@ Lowerer::lower(Decode_stmt* s)
 
   // return the call
   stmts.push_back(new Expression_stmt(call));
+
+  // Decodes should cause implicit returns. Once control of the packet
+  // is transfered to a decode stage, its impossible to guarantee that any
+  // statements occuring after it in the function are safe.
+  stmts.push_back(return_void());
+
   return stmts;
 }
 
@@ -1171,6 +1189,12 @@ Lowerer::lower(Goto_stmt* s)
   // pass the table and the key
   stmts.push_back(goto_match(s));
 
+  // Gotos should cause a return. We don't know what
+  // can happen to a packet after its been dispatched to
+  // another function so any statements that occur after a goto
+  // could cause undefined behavior.
+  stmts.push_back(return_void());
+
   return stmts;
 }
 
@@ -1196,7 +1220,14 @@ Lowerer::lower(Drop* s)
   Expr* drop = builtin.call_drop(decl_id(cxt));
   elab.elaborate(drop);
 
-  return { new Expression_stmt(drop) };
+  // Drops should cause an implicit return void. After a drop, any statements
+  // after can not be guaranteed to be safe since the context has likely been
+  // deleted by then.
+  return
+  {
+    new Expression_stmt(drop),
+    return_void()
+  };
 }
 
 
@@ -1223,7 +1254,14 @@ Lowerer::lower(Output* s)
   Expr* drop = builtin.call_output(decl_id(cxt), decl_id(port));
   elab.elaborate(drop);
 
-  return { new Expression_stmt(drop) };
+  // Outputs should cause an implicit return void for the same reason as drops.
+  // No safety guarantees exist after a packet has been outputted.
+
+  return
+  {
+    new Expression_stmt(drop),
+    return_void()
+  };
 }
 
 
