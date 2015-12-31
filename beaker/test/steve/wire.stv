@@ -1,0 +1,16 @@
+foreign def puts(char[]) -> int;
+
+layout eth
+{
+  src : uint(48);
+  dst : uint(48);
+  type : uint(16);
+}
+
+Port p1 = ":5000";
+
+decoder start eth_d(eth)
+{
+  puts("Performing decode and routing.");
+  output p1;
+}
