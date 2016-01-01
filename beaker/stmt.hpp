@@ -298,7 +298,7 @@ struct Case_stmt : Stmt
     : label_(e), stmt_(s)
   { }
 
-  Literal_expr* label() const { return cast<Literal_expr>(label_); }
+  Expr* label() const { return label_; }
   Stmt* stmt() const  { return stmt_; }
 
   void accept(Visitor& v) const { return v.visit(this); }

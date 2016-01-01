@@ -2794,15 +2794,14 @@ Elaborator::elaborate(If_else_stmt* s)
 Stmt*
 Elaborator::elaborate(Match_stmt* s)
 {
-  Expr* cond = require_converted(*this, s->condition_, get_integer_type());
+  s->condition_ = require_value(*this, s->condition_);
 
-  if (!cond) {
+  Type const* t = as<Integer_type>(s->condition_->type());
+  if (!t) {
     std::stringstream ss;
     ss << "Could not convert " << *s->condition_ << " to integer type.";
     throw Type_error(locate(s), ss.str());
   }
-
-  s->condition_ = cond;
 
   // TODO: check for same integer type
   // between condition and cases?
@@ -2818,12 +2817,18 @@ Elaborator::elaborate(Match_stmt* s)
     if (Case_stmt* case_ = as<Case_stmt>(c)) {
       // the case label should be guarenteed to be an integer
       // by elaboration of the case stmt
-      if (!vals.insert(case_->label()->value().get_integer()).second) {
+      // Assume that the case label is a literal.
+      Literal_expr* l = as<Literal_expr>(case_->label());
+      assert(l);
+      if (!vals.insert(l->value().get_integer()).second) {
         std::stringstream ss;
         ss << "Duplicate label value " << *case_->label()
            << " found in case statement " << *case_;
         throw Type_error(locate(s), ss.str());
       }
+
+      // Convert the label to the integer type of the condition.
+      case_->label_ = require_converted(*this, case_->label_, s->condition_->type());
     }
     else {
       std::stringstream ss;
