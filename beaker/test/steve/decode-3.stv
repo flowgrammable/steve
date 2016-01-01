@@ -27,7 +27,6 @@ exact_table t1(eth::dst, eth::type)
 	// flow 1
 	{ 0x12_34_56_78_90_ab, 800 } ->
 	{
-		eth::dst;
 		output p1;
 	};
 

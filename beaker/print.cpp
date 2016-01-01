@@ -894,7 +894,7 @@ std::ostream& operator<<(std::ostream& os, Field_access_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Reinterpret_cast const& e)
 {
-  os << "case" << *e.expression() << " to " << e.cast_type();
+  os << "cast " << *e.expression() << " to " << *e.cast_type();
   return os;
 }
 

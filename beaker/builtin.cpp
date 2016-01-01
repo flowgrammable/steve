@@ -23,7 +23,7 @@ Builtin::bind_header()
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     // NOTE: headers might have variable length, we might not want to do this
     // new Parameter_decl(get_identifier("length"), get_integer_type()),
@@ -40,23 +40,23 @@ Builtin::bind_header()
 
 
 //
-// Byte* __bind_offset(Context*, id, offset, length);
+// void __bind_offset(Context*, id, offset, length);
 //
 Function_decl*
 Builtin::bind_field()
 {
-  Type const* buffer_type = get_block_type(get_character_type());
+  Type const* void_type = get_void_type();
   Symbol const* fn_name = get_identifier(__bind_field);
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     new Parameter_decl(get_identifier("offset"), get_integer_type()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, buffer_type);
+  Type const* fn_type = get_function_type(parms, void_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -72,19 +72,41 @@ Builtin::bind_field()
 Function_decl*
 Builtin::alias_bind()
 {
-  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__alias_bind);
 
-  Decl_seq parms =
+  Decl_seq parms
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id1"), get_integer_type()),
     new Parameter_decl(get_identifier("id2"), get_integer_type()),
     new Parameter_decl(get_identifier("offset"), get_integer_type()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, buffer_type);
+  Type const* fn_type = get_function_type(parms, get_void_type());
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+Function_decl*
+Builtin::read_field()
+{
+  Symbol const* fn_name = get_identifier(__read_field);
+
+  Type const* ret_type = get_block_type(get_character_type());
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
+    new Parameter_decl(get_identifier("field"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, ret_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -105,7 +127,7 @@ Builtin::advance()
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
@@ -374,6 +396,7 @@ Builtin::init_builtins()
     {__bind_header, bind_header()},
     {__bind_field, bind_field()},
     {__alias_bind, alias_bind()},
+    {__read_field, read_field()},
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
@@ -479,6 +502,16 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
   // matters.
 
   return new Bind_header(decl_id(fn), {cxt, id1, id2, off, len});
+}
+
+
+Expr*
+Builtin::call_read_field(Expr* cxt, Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__read_field)->second;
+  assert(fn);
+
+  return new Read_field(decl_id(fn), {cxt, id});
 }
 
 

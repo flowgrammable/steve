@@ -287,17 +287,44 @@ Lowerer::lower(Sign_conv* e)
 Expr*
 Lowerer::lower(Field_access_expr* e)
 {
-  // search for the mangled variable name
+  // create the mangled variable name
   Symbol const* name = get_identifier(mangle(e));
 
+  // Look for the local variable created with the extracts declaration.
+  // If it has a non-default initializer (i.e. its been set with the result)
+  // of lowering a Field access expr already, then simply return it.
+  //
+  // Otherwise, if its a default initializer, replace the default initializer
+  // with the call to __set_field(cxt, mapping).
   Overload* ovl = unqualified_lookup(name);
   assert(ovl);
-  Decl* var = ovl->back();
+  // This variable should be guaranteed to exist since the elaboration phase
+  // prevents the use of field access expressions without extracts decls or key
+  // decls.
+  Variable_decl* var = as<Variable_decl>(ovl->back());
   assert(var);
 
-  Decl_expr* ref = new Decl_expr(var->type(), var);
+  if (is<Default_init>(var->init())) {
+    // This should always be valid since flows and decoders have an implicit
+    // context parameter.
+    ovl = unqualified_lookup(get_identifier(__context));
+    assert(ovl);
+    Decl* cxt = ovl->back();
+    assert(cxt);
 
-  return ref;
+    // get the integer mapping for the field
+    int mapping = checker.get_field_mapping(e->name());
+
+    // produce the call
+    Expr* read_field = builtin.call_read_field(decl_id(cxt), make_int(mapping));
+
+    // cast the return type into the correct type
+    Expr* cast = new Reinterpret_cast(read_field, e->type()->nonref());
+
+    var->init_ = cast;
+  }
+
+  return decl_id(var);
 }
 
 
@@ -901,22 +928,19 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   };
   Expr* bind_field = builtin.call_bind_field(args);
   bind_field = elab.elaborate(bind_field);
-  Expr* cast = new Reinterpret_cast(bind_field, field->type());
 
-  // Mangle the name of the variable from the name of the
-  // extracted field. Declare it as a new variable.
-  Symbol const* field_name = get_identifier(mangle(d));
-  Variable_decl* load_var = new Variable_decl(field_name,
-                                              cast->type(),
-                                              cast);
-
+  // emit a local variable
+  Symbol const* name = get_identifier(mangle(d));
+  Variable_decl* load_var = new Variable_decl(name,
+                                              d->type(),
+                                              new Default_init(d->type()));
   declare(load_var);
 
-  Stmt_seq stmts {
+  return
+  {
+    new Expression_stmt(bind_field),
     new Declaration_stmt(load_var)
   };
-
-  return stmts;
 }
 
 

@@ -27,6 +27,11 @@ decoder start eth_d(eth)
 		case 0: decode ipv4_d;
 		case 1: decode ipv4_d;
 	}
+
+	match (eth::type) {
+		case 0: decode ipv4_d;
+		case 1: decode ipv4_d;
+	}
 }
 
 decoder ipv4_d(ipv4)

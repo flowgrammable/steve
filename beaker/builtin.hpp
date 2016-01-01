@@ -11,6 +11,7 @@
 constexpr char const* __bind_header  = "fp_bind_header";
 constexpr char const* __bind_field   = "fp_bind_field";
 constexpr char const* __alias_bind   = "fp_alias_bind";
+constexpr char const* __read_field   = "fp_read_field";
 constexpr char const* __advance      = "fp_advance_header";
 constexpr char const* __get_table    = "fp_create_table";
 constexpr char const* __add_flow     = "fp_add_flow";
@@ -121,6 +122,12 @@ struct Bind_header : Call_expr
   { }
 
   Expr* first;
+};
+
+
+struct Read_field : Call_expr
+{
+  using Call_expr::Call_expr;
 };
 
 
@@ -247,6 +254,7 @@ struct Builtin
   Expr* call_bind_field(Expr_seq const& args);
   Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
+  Expr* call_read_field(Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_flow(Expr_seq const& args);
@@ -275,6 +283,7 @@ private:
   Function_decl* bind_header();
   Function_decl* bind_field();
   Function_decl* alias_bind();
+  Function_decl* read_field();
   Function_decl* advance();
   Function_decl* get_table();
   Function_decl* add_flow();
