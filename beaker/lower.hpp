@@ -47,6 +47,7 @@ struct Lowerer
 
   void add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
   Expr_seq lower_flow_keys(Decl_seq const&);
+  Stmt*    lower_flow_body(Table_decl*, Stmt*);
   Decl_seq lower_table_flows(Table_decl*);
   Decl*    lower_miss_case(Table_decl*);
   Stmt_seq lower_extracts_decl(Extracts_decl*);

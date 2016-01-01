@@ -464,6 +464,14 @@ Lowerer::lower_global_def(Decode_decl* d)
 }
 
 
+Stmt*
+Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
+{
+  Block_stmt* flow_body = as<Block_stmt>(s);
+
+}
+
+
 Decl_seq
 Lowerer::lower_table_flows(Table_decl* d)
 {
@@ -496,6 +504,10 @@ Lowerer::lower_table_flows(Table_decl* d)
     // Trust that the lowering process correctly elaborates the body so
     // its not necessary to do so again.
     Stmt* flow_body = lower(flow->instructions()).back();
+
+    // Each flow body should allocate space for every local variable.
+    // Handle any additional modifications to the flow body.
+    flow_body = lower_flow_body(d, flow_body);
 
     // Produce the flow function.
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
@@ -978,18 +990,18 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
                                               offset,
                                               length);
   bind_field = elab.elaborate(bind_field);
-  Expr* cast = new Reinterpret_cast(bind_field, field->type());
 
   // Mangle the name of the variable from the name of the
   // extracted field. Declare it as a new variable.
   Symbol const* field_name = get_identifier(mangle(d));
   Variable_decl* load_var = new Variable_decl(field_name,
-                                              cast->type(),
-                                              cast);
+                                              d->type(),
+                                              new Default_init(d->type()));
 
   declare(load_var);
 
   Stmt_seq stmts {
+    new Expression_stmt(bind_field),
     new Declaration_stmt(load_var)
   };
 
@@ -1288,6 +1300,19 @@ Lowerer::lower(Output* s)
   };
 }
 
+namespace
+{
+
+Expr*
+expr_to_byte_array(Expr* v)
+{
+  // Reinterpret cast the expression to a byte pointer
+  return nullptr;
+}
+
+
+} // namespace
+
 
 Stmt_seq
 Lowerer::lower(Set_field* s)
@@ -1305,34 +1330,12 @@ Lowerer::lower(Set_field* s)
 
   Expr* id = make_int(checker.get_field_mapping(e->name()));
 
+  // Lower the value first to ensure it can be evaluated.
+  s->value_ = lower(s->value_);
+
   // convert the integer value into a byte array and pass it as a block
-  // first evaluate it
-  Evaluator ev;
-  Value v = ev.eval(s->value());
-  // get the integer value back
-  // and store it in a buffer
-  std::stringstream ss;
-  ss << v.get_integer().decimal_str();
-  uint512_t buf = 0;
-  ss >> buf;
-
-  // convert to a byte array
-  // get the precision of the value
-  int prec = precision(s->value()->type());
-  char* bytes = new char[prec / 8];
-  char* k = reinterpret_cast<char*>(&buf);
-  std::copy(k, k + (prec / 8), bytes);
-
-  Array_value arr { bytes, (size_t) prec / 8 };
-  Type const* z = get_integer_type();
-  // create the array length literal
-  Expr* n = new Literal_expr(z, arr.len + 1);
-  // Create the array type.
-  Type const* c = get_character_type();
-  Type const* t = get_array_type(c, n);
-
-  // create the array literal
-  Expr* val = new Literal_expr(t, arr);
+  int prec = precision(e->type());
+  Expr* val = zero();
 
   // create the call
   Expr* set_field = builtin.call_set_field(decl_id(cxt),
@@ -1340,6 +1343,12 @@ Lowerer::lower(Set_field* s)
                                            make_int(prec / 8),
                                            val);
   elab.elaborate(set_field);
+
+  // NOTE: Set field should update the local variable that can be accessed
+  // using field access expressions.
+  ovl = unqualified_lookup(get_identifier(mangle(e)));
+  assert(ovl);
+  Decl* fld_var = ovl->back();
 
   return { new Expression_stmt(set_field) };
 }

@@ -13,6 +13,9 @@ decoder start eth_d(eth)
 {
   extract eth::dst;
 	extract eth::src as eth::alias;
+	match (eth::alias) {
+	}
+
   decode eth_d2;
 }
 

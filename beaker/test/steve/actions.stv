@@ -1,4 +1,4 @@
-Port p1;
+Port p1 = ":5000";
 
 layout eth
 {
