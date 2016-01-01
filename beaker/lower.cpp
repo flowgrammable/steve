@@ -468,7 +468,18 @@ Stmt*
 Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 {
   Block_stmt* flow_body = as<Block_stmt>(s);
+  Stmt_seq& body = flow_body->first;
+  // Allocate variables corresponding to every key so that their value
+  // can be recovered in the flow function.
+  for (auto decl : d->keys()) {
+    Symbol const* name = get_identifier(mangle(decl));
+    Variable_decl* load_var =
+      new Variable_decl(name, decl->type(), new Default_init(decl->type()));
 
+    body.insert(body.begin(), new Declaration_stmt(load_var));
+  }
+
+  return flow_body;
 }
 
 
@@ -1304,16 +1315,25 @@ namespace
 {
 
 Expr*
-expr_to_byte_array(Expr* v)
+expr_to_byte_block(Expr* v)
 {
   // Reinterpret cast the expression to a byte pointer
-  return nullptr;
+  Type const* block_type = get_character_type()->ref();
+
+  Expr* cast = new Reinterpret_cast(v, block_type);
+
+  return cast;
 }
 
 
 } // namespace
 
 
+
+// FIXME: This is extremely broken right now.
+// FIXME: The process of converting any expression value to i8* is not obvious.
+// TODO:  There should be an explicit instruction in steve to do this since it
+//        seems like a common occurence.
 Stmt_seq
 Lowerer::lower(Set_field* s)
 {
@@ -1333,24 +1353,31 @@ Lowerer::lower(Set_field* s)
   // Lower the value first to ensure it can be evaluated.
   s->value_ = lower(s->value_);
 
+  // Store the value into the local variable used to save values for extracted
+  // fields.
+  //
+  // NOTE: Set field should update the local variable that can be accessed
+  // using field access expressions.
+  ovl = unqualified_lookup(get_identifier(mangle(e)));
+  assert(ovl);
+  Decl* fld_var = ovl->back();
+  Assign_stmt* assign = new Assign_stmt(decl_id(fld_var), s->value());
+
   // convert the integer value into a byte array and pass it as a block
-  int prec = precision(e->type());
-  Expr* val = zero();
+  int prec = precision(s->value()->type());
+  auto val = expr_to_byte_block(decl_id(fld_var));
 
   // create the call
   Expr* set_field = builtin.call_set_field(decl_id(cxt),
                                            id,
                                            make_int(prec / 8),
                                            val);
-  elab.elaborate(set_field);
+  // elab.elaborate(set_field);
 
-  // NOTE: Set field should update the local variable that can be accessed
-  // using field access expressions.
-  ovl = unqualified_lookup(get_identifier(mangle(e)));
-  assert(ovl);
-  Decl* fld_var = ovl->back();
-
-  return { new Expression_stmt(set_field) };
+  return {
+    assign,
+    new Expression_stmt(set_field)
+  };
 }
 
 

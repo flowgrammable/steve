@@ -300,7 +300,8 @@ void mangle(std::ostream& os, Table_decl const* d)
 
 void mangle(std::ostream& os, Key_decl const* d)
 {
-  // never get here
+  os << "_F";
+  os << boost::replace_all_copy(d->name()->spelling(), "::", "_");
 }
 
 
