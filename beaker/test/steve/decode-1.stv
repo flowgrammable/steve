@@ -47,8 +47,17 @@ decoder ipv4_d(ipv4)
 
 exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
 {
-  {0, 1, 2, 3} -> { };
-	{1, 2, 3, 40000} -> { };
+  {0, 1, 2, 3} ->
+	{
+		match (eth::src) {
+		
+		}
+	};
+
+
+	{1, 2, 3, 40000} ->
+	{
+	};
 }
 
 

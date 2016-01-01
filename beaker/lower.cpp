@@ -467,8 +467,7 @@ Lowerer::lower_global_def(Decode_decl* d)
 Stmt*
 Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 {
-  Block_stmt* flow_body = as<Block_stmt>(s);
-  Stmt_seq& body = flow_body->first;
+  Stmt_seq body;
   // Allocate variables corresponding to every key so that their value
   // can be recovered in the flow function.
   for (auto decl : d->keys()) {
@@ -476,10 +475,18 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
     Variable_decl* load_var =
       new Variable_decl(name, decl->type(), new Default_init(decl->type()));
 
-    body.insert(body.begin(), new Declaration_stmt(load_var));
+    declare(load_var);
+
+    body.push_back(new Declaration_stmt(load_var));
   }
 
-  return flow_body;
+  Stmt* l = lower(s).back();
+  Block_stmt* flow_body = as<Block_stmt>(l);
+  assert(flow_body);
+  body.insert(body.end(), flow_body->statements().begin(), flow_body->statements().end());
+  l = block(body);
+
+  return l;
 }
 
 
@@ -514,11 +521,10 @@ Lowerer::lower_table_flows(Table_decl* d)
     // Contruct the body from the instructions.
     // Trust that the lowering process correctly elaborates the body so
     // its not necessary to do so again.
-    Stmt* flow_body = lower(flow->instructions()).back();
-
+    //
     // Each flow body should allocate space for every local variable.
     // Handle any additional modifications to the flow body.
-    flow_body = lower_flow_body(d, flow_body);
+    Stmt* flow_body = lower_flow_body(d, flow->instructions());
 
     // Produce the flow function.
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
