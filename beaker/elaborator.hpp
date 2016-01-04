@@ -118,8 +118,10 @@ public:
   Expr* elaborate(Reinterpret_cast* e);
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
+  
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
+  Expr* elaborate(Get_dataplane* e);
 
   Decl* elaborate(Decl*);
   Decl* elaborate(Variable_decl*);

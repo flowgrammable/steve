@@ -131,23 +131,6 @@ struct Read_field : Call_expr
 };
 
 
-// Tell the dataplane to create a table
-// The create_table function from the runtime has
-// the form:
-//
-// void get_table(int id, int key_size, int flow_max, ...)
-//
-struct Create_table : Call_expr
-{
-  using Call_expr::Call_expr;
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* table_;
-};
-
-
 // Remove a table
 // Why do we need this per se?
 struct Delete_table : Call_expr
@@ -208,6 +191,19 @@ struct Advance : Call_expr
 };
 
 
+struct Drop_packet : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Output_packet : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+
 struct Get_port : Call_expr
 {
   Get_port(Expr* fn, Expr_seq const& args)
@@ -222,15 +218,38 @@ struct Get_port : Call_expr
 };
 
 
-struct Drop_packet : Call_expr
+// Tell the dataplane to create a table
+// The create_table function from the runtime has
+// the form:
+//
+// void get_table(int id, int key_size, int flow_max, ...)
+//
+struct Create_table : Call_expr
 {
   using Call_expr::Call_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Decl* table_;
 };
 
 
-struct Output_packet : Call_expr
+// Retrieve a pointer to the dataplane and store it in a variable.
+struct Get_dataplane : Expr
 {
-  using Call_expr::Call_expr;
+  Get_dataplane(Decl* dp_src, Decl* dp_dst)
+    : dp_(dp_src), target_(dp_dst)
+  { }
+
+  Decl* dataplane() const { return dp_; }
+  Decl* target()    const { return target_; }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Decl* dp_;
+  Decl* target_;
 };
 
 
@@ -261,6 +280,7 @@ struct Builtin
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
+  Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);

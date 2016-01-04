@@ -571,6 +571,20 @@ Builtin::call_get_port(Decl* d, Expr_seq const& args)
 }
 
 
+// NOTE: This is a little special since we don't explicitly need a
+// function to get the dataplane right now.
+//
+// This is only a placeholder for special code generation since steve
+// currently does not have correct code generation for opaque types.
+Expr*
+Builtin::call_get_dataplane(Decl* dp, Decl* target)
+{
+  Get_dataplane* e = new Get_dataplane(dp, target);
+
+  return e;
+}
+
+
 Expr*
 Builtin::call_gather(Expr* cxt, Expr_seq const& var_args)
 {

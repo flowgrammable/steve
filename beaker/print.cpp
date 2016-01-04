@@ -602,6 +602,7 @@ operator<<(std::ostream& os, Expr const& e)
 
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
+    void operator()(Get_dataplane const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -911,5 +912,12 @@ operator<<(std::ostream& os, Get_port const& e)
 std::ostream& operator<<(std::ostream& os, Create_table const&)
 {
   os << "create_table";
+  return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
+{
+  os << "get_dp";
   return os;
 }

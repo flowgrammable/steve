@@ -304,6 +304,7 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
     llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
   };
 
   return apply(e, Fn{*this});
@@ -780,6 +781,26 @@ Generator::gen(Create_table const* e)
   return build.CreateStore(res, table);
 }
 
+
+llvm::Value*
+Generator::gen(Get_dataplane const* e)
+{
+  assert(e->dataplane());
+  auto const* bind = stack.lookup(e->dataplane());
+  assert(bind);
+  // We have to load the pointer from the parameter variable.
+  // There's no way around this.
+  llvm::Value* dataplane = build.CreateLoad(bind->second);
+  assert(dataplane);
+
+  assert(e->target());
+  bind = stack.lookup(e->target());
+  assert(bind);
+  llvm::Value* target = bind->second;
+  assert(target);
+
+  return build.CreateStore(dataplane, target);
+}
 
 // -------------------------------------------------------------------------- //
 // Code generation for statements

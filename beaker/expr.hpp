@@ -82,6 +82,7 @@ struct Expr::Visitor
 
   virtual void visit(Get_port const*) = 0;
   virtual void visit(Create_table const*) = 0;
+  virtual void visit(Get_dataplane const*) = 0;
 };
 
 
@@ -128,7 +129,7 @@ struct Expr::Mutator
 
   virtual void visit(Get_port*) = 0;
   virtual void visit(Create_table*) = 0;
-
+  virtual void visit(Get_dataplane*) = 0;
 };
 
 
@@ -820,6 +821,7 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
 
   void visit(Get_port const* e) { this->invoke(e); }
   void visit(Create_table const* e) { this->invoke(e); }
+  void visit(Get_dataplane const* e) { this->invoke(e); }
 };
 
 
@@ -882,6 +884,7 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
 
   void visit(Get_port* e) { this->invoke(e); }
   void visit(Create_table* e) { this->invoke(e); }
+  void visit(Get_dataplane* e) { this->invoke(e); }
 };
 
 

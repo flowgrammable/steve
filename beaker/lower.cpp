@@ -45,9 +45,10 @@ Lowerer::load_function()
 
   // In the load body, set the dp global variable to be equal to the pointer
   // passed in the parameter.
-  Assign_stmt* set_dp = new Assign_stmt(decl_id(dp), decl_id(p1));
-  elab.elaborate(set_dp);
-  load_body.insert(load_body.begin(), set_dp);
+  //
+  // The parameter should be directly stored into the global variable.
+  Expr* set_dp = builtin.call_get_dataplane(p1, dp);
+  load_body.insert(load_body.begin(), new Expression_stmt(set_dp));
 
   // Construct the load function with the accumulated load_body.
   Function_decl* load = new Function_decl(fn_name, fn_type,

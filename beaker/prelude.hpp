@@ -70,11 +70,6 @@ struct Reference_init;
 struct Field_name_expr;
 struct Field_access_expr;
 
-// builtin expressions
-struct Get_port;
-struct Create_table;
-
-
 struct Type;
 struct Id_type;
 struct Boolean_type;
@@ -143,6 +138,11 @@ struct Create_table;
 struct Delete_table;
 struct Lookup;
 struct Advance;
+
+// Builtin expressions that need special code gen
+struct Get_port;
+struct Create_table;
+struct Get_dataplane;
 
 // Actions
 struct Goto_stmt;

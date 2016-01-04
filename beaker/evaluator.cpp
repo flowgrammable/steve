@@ -53,6 +53,8 @@ Evaluator::eval(Expr const* e)
     Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
     Value operator()(Field_name_expr const* e) { return ev.eval(e); }
     Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
+
+    Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
 
   return apply(e, Fn {*this});
