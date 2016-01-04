@@ -35,7 +35,7 @@ constexpr char const* __load         = "config";
 constexpr char const* __process      = "pipeline";
 constexpr char const* __start        = "start";
 constexpr char const* __stop         = "stop";
-constexpr char const* __port_num     = "port_num";
+constexpr char const* __port_num     = "ports";
 constexpr char const* __unload       = "unload";
 
 

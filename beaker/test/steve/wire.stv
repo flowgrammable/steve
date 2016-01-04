@@ -11,6 +11,7 @@ Port p1 = ":5000";
 
 decoder start eth_d(eth)
 {
+  extract eth::src;
   puts("Performing decode and routing.");
   output p1;
 }
