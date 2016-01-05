@@ -226,22 +226,18 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
 // Creates a new table in the given data plane with the given size,
 // key width, and table type.
 fp::Table*
-fp_create_table(fp::Dataplane* dp, int id, int size, int key_width, fp::Table::Type type)
+fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::Type type)
 {
   fp::Table* tbl = nullptr;
   std::cout << "Create table\n";
-  std::cout << "DP: " << dp << '\n';
-  assert(dp);
+
   switch (type)
   {
     case fp::Table::Type::EXACT:
-    std::cout << "Exact table\n";
     // Make a new hash table.
     tbl = new fp::Hash_table(id, size, key_width);
-    std::cout << "Made table\n";
     assert(tbl);
     dp->tables_.push_back(tbl);
-    std::cout << "Storing table\n";
     break;
     case fp::Table::Type::PREFIX:
     // Make a new prefix match table.
@@ -252,6 +248,8 @@ fp_create_table(fp::Dataplane* dp, int id, int size, int key_width, fp::Table::T
     default:
     throw std::string("Unknown table type given");
   }
+
+  std::cout << "Returning table\n";
   return tbl;
 }
 
@@ -261,12 +259,18 @@ fp_create_table(fp::Dataplane* dp, int id, int size, int key_width, fp::Table::T
 void
 fp_add_flow(fp::Table* tbl, void* key, void* fn)
 {
+  std::cout << "Adding flow\n";
+
   // get the length of the table's expected key
   int key_size = tbl->key_size();
+  std::cout << "Key size: " << key_size << '\n';
+  std::cout << "Before cast\n";
   // cast the key to Byte*
   fp::Byte* buf = reinterpret_cast<fp::Byte*>(key);
+  std::cout << "After cast\n";
   // construct a key object
   fp::Key k(buf, key_size);
+  std::cout << "Key made\n";
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
   fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);

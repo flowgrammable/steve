@@ -79,8 +79,7 @@ Dataplane::configure()
 
   if (app_->state() == Application::State::NEW) {
     std::cout << "RUNNING CONFIG\n";
-    std::cout << "DP: " << this << '\n';
-
+    
     app_->lib().exec("config", this);
     app_->state_ = Application::State::READY;
   }
