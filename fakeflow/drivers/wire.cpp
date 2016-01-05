@@ -9,6 +9,8 @@ using namespace fp;
 int main(int argc, char* argv[])
 {
   try {
+    long long pkt_no = atoll(argv[2]);
+
     // Goes somewhere, IDC where.
     fp::Port* p1 = fp::create_port(fp::Port::Type::tcp, ":5000", "p1");
     std::cerr << "Created port 'p1' with id '" << p1->id() << "'\n";
@@ -35,9 +37,11 @@ int main(int argc, char* argv[])
     dp->up();
     std::cerr << "Data plane is up\n";
 
-    { // block
+    std::cout << "Sending " << pkt_no << " packets.\n";
 
-      unsigned long long i = 0;
+    { // block
+      
+      long long i = 0;
       Byte* data = new Byte[1500]{
         // src bytes
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -48,7 +52,7 @@ int main(int argc, char* argv[])
       };
       Timer t;
 
-      while(i < 1) {
+      while(i < pkt_no) {
         Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
         dp->process(p1, pkt);
         ++i;
