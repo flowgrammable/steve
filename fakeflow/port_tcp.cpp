@@ -135,7 +135,7 @@ Port_tcp::send()
     throw("port down");
   int bytes = 0;
 
-  std::cout << "Port tcp sending\n";
+  // std::cout << "Port tcp sending\n";
 
   // Return number of bytes sent.
   return bytes;

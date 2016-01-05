@@ -11,7 +11,11 @@ Port p1 = ":5000";
 
 decoder start eth_d(eth)
 {
-  extract eth::src;
-  puts("Performing decode and routing.");
+  // extract eth::type;
+  // match(eth::type) {
+    // case 800: puts("Got ipv4");
+    // case 880: puts("Got ipv6");
+  // }
+  // puts("Performing decode and routing.");
   output p1;
 }

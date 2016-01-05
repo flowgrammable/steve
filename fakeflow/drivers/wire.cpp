@@ -2,13 +2,12 @@
 #include "buffer.hpp"
 #include "port_table.hpp"
 #include "system.hpp"
+#include "timer.hpp"
 
 using namespace fp;
 
 int main(int argc, char* argv[])
 {
-  int i = 0;
-
   try {
     // Goes somewhere, IDC where.
     fp::Port* p1 = fp::create_port(fp::Port::Type::tcp, ":5000", "p1");
@@ -36,18 +35,38 @@ int main(int argc, char* argv[])
     dp->up();
     std::cerr << "Data plane is up\n";
 
-    unsigned char* data = new unsigned char[1500];
-    Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
-    dp->process(p1, pkt);
 
-    while(i < 100) {
-      ++i;
+    // uint16_t type = *reinterpret_cast<uint16_t*>(&data[12]);
+    // std::cout << "TYPE: " << type << '\n';
+
+    // Wire case
+    {
+      unsigned long long i = 0;
+      Byte* data = new Byte[1500]{
+        // src bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // dst bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // type bytes
+        ' ', '\03', 0, 0, 0
+      };
+      Timer t;
+
+      while(i < 1000000) {
+        Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
+        dp->process(p1, pkt);
+        ++i;
+        packet_destroy(pkt);
+      }
+      // timer dtor should print time here
     }
   }
   catch(std::string s)
   {
     std::cout << s;
   }
+
+  std::cout << "Done\n";
 
   return 0;
 }

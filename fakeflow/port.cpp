@@ -87,7 +87,7 @@ Port::down()
 void
 Port::send(Context* cxt)
 {
-  std::cout << "Sending packet on " << name_ << '\n';
+  // std::cout << "Sending packet on " << name_ << '\n';
 }
 
 

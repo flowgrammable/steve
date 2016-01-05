@@ -2,6 +2,7 @@
 
 #include "dataplane.hpp"
 #include "context.hpp"
+#include "timer.hpp"
 
 #include <iostream>
 #include <cassert>
@@ -55,10 +56,10 @@ Dataplane::up()
 void
 Dataplane::process(Port* port, Packet* pkt)
 {
-  std::cout << "PROCESSING\n";
+  // std::cout << "PROCESSING\n";
   Context* c = new Context(pkt, port->id_, port->id_, 0);
   app_->lib().exec("pipeline", c);
-  std::cout << "DONE PROCESSING\n";
+  // std::cout << "DONE PROCESSING\n";
 }
 
 

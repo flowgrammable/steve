@@ -43,6 +43,7 @@ void           fp_remove_flow(fp::Table*, void*);
 void           fp_advance_header(fp::Context*, std::uint16_t);
 void           fp_bind_header(fp::Context*, int);
 fp::Byte*      fp_bind_field(fp::Context*, int, std::uint16_t, std::uint16_t);
+fp::Byte*      fp_read_field(fp::Context*, int);
 
 
 } // extern "C"

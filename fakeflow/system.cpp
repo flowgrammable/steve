@@ -181,9 +181,9 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 fp::Port*
 fp_get_port(char const* name)
 {
-  std::cout << "GETTING PORT\n";
+  // std::cout << "GETTING PORT\n";
   fp::Port* p = fp::port_table.find(name);
-  std::cout << "FOUND PORT\n";
+  // std::cout << "FOUND PORT\n";
   assert(p);
   return p;
 }
@@ -322,6 +322,7 @@ fp_bind_header(fp::Context* cxt, int id)
 fp::Byte*
 fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 {
+  // std::cout << "BINDING FIELD\n";
   // Get field requires an absolute offset which is the context's current offset
   // plus the relative offset passed to this function.
   int abs_off = cxt->offset() + off;
@@ -335,5 +336,13 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 }
 
 
+fp::Byte* fp_read_field(fp::Context* cxt, int fld)
+{
+  // std::cout << "READING FIELD";
+  // Lookup the field in the context.
+  fp::Binding b = cxt->get_field_binding(fld);
+  fp::Byte* p = cxt->get_field(b.offset);
+  return p;
+}
 
 } // extern "C"

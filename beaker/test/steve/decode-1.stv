@@ -50,7 +50,7 @@ exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
   {0, 1, 2, 3} ->
 	{
 		match (eth::src) {
-		
+
 		}
 	};
 
@@ -63,7 +63,7 @@ exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
 
 exact_table t2(ipv4::dst)
 {
-  {0} -> {
+  {800} -> {
 		decode ipv4_d;
 	};
 
