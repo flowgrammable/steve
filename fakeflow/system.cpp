@@ -229,12 +229,19 @@ fp::Table*
 fp_create_table(fp::Dataplane* dp, int id, int size, int key_width, fp::Table::Type type)
 {
   fp::Table* tbl = nullptr;
+  std::cout << "Create table\n";
+  std::cout << "DP: " << dp << '\n';
+  assert(dp);
   switch (type)
   {
     case fp::Table::Type::EXACT:
+    std::cout << "Exact table\n";
     // Make a new hash table.
     tbl = new fp::Hash_table(id, size, key_width);
-    dp->tables().push_back(tbl);
+    std::cout << "Made table\n";
+    assert(tbl);
+    dp->tables_.push_back(tbl);
+    std::cout << "Storing table\n";
     break;
     case fp::Table::Type::PREFIX:
     // Make a new prefix match table.

@@ -35,12 +35,8 @@ int main(int argc, char* argv[])
     dp->up();
     std::cerr << "Data plane is up\n";
 
+    { // block
 
-    // uint16_t type = *reinterpret_cast<uint16_t*>(&data[12]);
-    // std::cout << "TYPE: " << type << '\n';
-
-    // Wire case
-    {
       unsigned long long i = 0;
       Byte* data = new Byte[1500]{
         // src bytes
@@ -52,14 +48,16 @@ int main(int argc, char* argv[])
       };
       Timer t;
 
-      while(i < 1000000) {
+      while(i < 1) {
         Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
         dp->process(p1, pkt);
         ++i;
         packet_destroy(pkt);
       }
       // timer dtor should print time here
-    }
+
+    } // block
+
   }
   catch(std::string s)
   {

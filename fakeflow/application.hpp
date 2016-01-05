@@ -14,6 +14,7 @@ namespace fp
 class Port;
 struct Context;
 struct Thread;
+struct Dataplane;
 
 // The Library class represents a dynamically loaded application
 // library that contains user provided definitions for application
@@ -22,7 +23,7 @@ struct Library
 {
   using App_handle =  void*;
   using Pipeline_fn = void (*)(Context*);
-  using Config_fn =   void (*)(void);
+  using Config_fn =   void (*)(Dataplane*);
   using Port_fn =     void (*)(void*);
 
   // The user defined application functions.

@@ -115,7 +115,7 @@ Library::Library(App_handle app)
 {
   app_ = app;
   pipeline_ = (void (*)(Context*))get_sym_handle(app, "pipeline");
-  config_ = (void (*)(void))get_sym_handle(app, "config");
+  config_ = (void (*)(Dataplane*))get_sym_handle(app, "config");
   port_ = (void (*)(void*))get_sym_handle(app, "ports");
 }
 
@@ -132,7 +132,7 @@ Library::exec(std::string const& cmd, void* arg)
   if (cmd == "pipeline")
     pipeline_((Context*)arg);
   else if (cmd == "config")
-    config_();
+    config_((Dataplane*)arg);
   else if (cmd == "ports")
     port_(arg);
   else
