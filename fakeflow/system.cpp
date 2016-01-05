@@ -217,6 +217,7 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
     // Copy the field into the buffer.
     std::copy(p, p + b.length, &buf[j]);
     j += b.length;
+    ++i;
   }
 
   return fp::Key(buf, key_width);
