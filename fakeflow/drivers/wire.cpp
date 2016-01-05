@@ -40,20 +40,22 @@ int main(int argc, char* argv[])
     std::cout << "Sending " << pkt_no << " packets.\n";
 
     { // block
-      
+
       long long i = 0;
-      Byte* data = new Byte[1500]{
-        // src bytes
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        // dst bytes
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        // type bytes
-        ' ', '\03', 0, 0, 0
-      };
       Timer t;
 
       while(i < pkt_no) {
+        Byte* data = new Byte[1500]{
+          // src bytes
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // dst bytes
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // type bytes
+          ' ', '\03', 0, 0, 0
+        };
+
         Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
+
         dp->process(p1, pkt);
         ++i;
         packet_destroy(pkt);
