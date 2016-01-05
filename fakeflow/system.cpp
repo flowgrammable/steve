@@ -258,7 +258,7 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 // Creates a new flow rule from the given key and function pointer
 // and adds it to the given table.
 void
-fp_add_flow(fp::Table* tbl, void* key, void* fn)
+fp_add_flow(fp::Table* tbl, void* fn, void* key)
 {
   std::cout << "Adding flow\n";
 
