@@ -118,8 +118,7 @@ extern "C"
 void
 fp_drop(fp::Context* cxt)
 {
-  // Cache the drop port so the lookup doesn't happen every time.
-  static fp::Port* drop = fp::port_table.drop_port();
+  fp::Port* drop = fp::port_table.drop_port();
   drop->send(cxt);
 }
 
@@ -128,7 +127,7 @@ void
 fp_flood(fp::Context* cxt)
 {
   // Cache the drop port so the lookup doesn't happen every time.
-  static fp::Port* flood = fp::port_table.flood_port();
+  fp::Port* flood = fp::port_table.flood_port();
   flood->send(cxt);
 }
 
