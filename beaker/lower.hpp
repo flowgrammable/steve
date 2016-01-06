@@ -22,6 +22,7 @@ struct Lowerer
   Expr* lower(Promotion_conv* e);
   Expr* lower(Demotion_conv* e);
   Expr* lower(Sign_conv* e);
+  Expr* lower(Call_expr* e);
   Expr* lower(Field_access_expr* e);
 
   template <typename T>

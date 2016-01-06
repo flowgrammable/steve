@@ -280,13 +280,38 @@ Parser::additive_expr()
 }
 
 
+// Parse a bitwise shift expression.
+//
+//    bitwise-shift -> bitwise-shift '<<' additive-expr
+//                   | bitwise-shift '>>' additive-expr
+//                   | additive-expr
+Expr*
+Parser::bitshift_expr()
+{
+  Expr* e1 = additive_expr();
+  while (true) {
+    if (match_if(lshift_tok)) {
+      Expr* e2 = additive_expr();
+      lingo_unreachable();
+    } else if (match_if(rshift_tok)) {
+      Expr* e2 = additive_expr();
+      lingo_unreachable();
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
+
+
 // Parse an additive expression.
 //
-//    ordering-expr -> ordering-expr '<' additive-expr
-//                   | ordering-expr '>' additive-expr
-//                   | ordering-expr '<=' additive-expr
-//                   | ordering-expr '>=' additive-expr
-//                   | additive-expr
+//    ordering-expr -> ordering-expr '<' bitwise-shift-expr
+//                   | ordering-expr '>' bitwise-shift-expr
+//                   | ordering-expr '<=' bitwise-shift-expr
+//                   | ordering-expr '>=' bitwise-shift-expr
+//                   | bitwise-shift-expr
 Expr*
 Parser::ordering_expr()
 {
@@ -336,6 +361,21 @@ Parser::equality_expr()
   }
   return e1;
 }
+
+
+// Parse a bitwise and expression.
+//    bitwise-and-expr -> bitwise-and-expr '&' equality-expr
+//                      | equality-expr
+
+
+// Parse a bitwise xor expression.
+//    bitwise-xor-expr -> bitwise-xor-expr '^' bitwise-and-expr
+//                      | bitwise-and-expr
+
+
+// Parse a bitwise (inclusive) or expression.
+//    bitwise-or-expr -> bitwise-or-expr '|' bitwise-xor-expr
+//                      | bitwise-xor-expr
 
 
 // Parse a logical and expression.

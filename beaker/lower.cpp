@@ -167,7 +167,7 @@ struct Lower_expr_fn
   Expr* operator()(Ge_expr* e) const { return lower.lower_binary_expr(e); }
 
   // Lower a call
-  // Expr* operator()(Call_expr* e) const { return lower.lower(e); }
+  Expr* operator()(Call_expr* e) const { return lower.lower(e); }
 
   // We should lower initializers so you can write something like:
   //    var x : int = eth::type;
@@ -337,6 +337,21 @@ Lowerer::lower(Sign_conv* e)
 {
   Expr* val = lower(e->source());
   e->first = val;
+  return e;
+}
+
+
+Expr*
+Lowerer::lower(Call_expr* e)
+{
+  Expr_seq args;
+  // Lower all of the arguments.
+  for (auto a1 : e->arguments()) {
+    Expr* a = lower(a1);
+    args.push_back(a);
+  }
+
+  e->second = args;
   return e;
 }
 

@@ -28,6 +28,7 @@ public:
   Expr* unary_expr();
   Expr* multiplicative_expr();
   Expr* additive_expr();
+  Expr* bitshift_expr();
   Expr* ordering_expr();
   Expr* equality_expr();
   Expr* logical_and_expr();
