@@ -52,11 +52,11 @@ struct Expr::Visitor
   virtual void visit(Mul_expr const*) = 0;
   virtual void visit(Div_expr const*) = 0;
   virtual void visit(Rem_expr const*) = 0;
-  // virtual void visit(Lshift_expr const*) = 0;
-  // virtual void visit(Rshift_expr const*) = 0;
-  // virtual void visit(Logical_and_expr const*) = 0;
-  // virtual void visit(Logical_or_expr const*) = 0;
-  // virtual void visit(Xor_expr const*) = 0;
+  virtual void visit(Lshift_expr const*) = 0;
+  virtual void visit(Rshift_expr const*) = 0;
+  virtual void visit(Bitwise_or_expr const*) = 0;
+  virtual void visit(Bitwise_and_expr const*) = 0;
+  virtual void visit(Xor_expr const*) = 0;
   virtual void visit(Neg_expr const*) = 0;
   virtual void visit(Pos_expr const*) = 0;
   virtual void visit(Eq_expr const*) = 0;
@@ -104,11 +104,11 @@ struct Expr::Mutator
   virtual void visit(Mul_expr*) = 0;
   virtual void visit(Div_expr*) = 0;
   virtual void visit(Rem_expr*) = 0;
-  // virtual void visit(Lshift_expr*) = 0;
-  // virtual void visit(Rshift_expr*) = 0;
-  // virtual void visit(Logical_and_expr*) = 0;
-  // virtual void visit(Logical_or_expr*) = 0;
-  // virtual void visit(Xor_expr*) = 0;
+  virtual void visit(Lshift_expr*) = 0;
+  virtual void visit(Rshift_expr*) = 0;
+  virtual void visit(Bitwise_or_expr*) = 0;
+  virtual void visit(Bitwise_and_expr*) = 0;
+  virtual void visit(Xor_expr*) = 0;
   virtual void visit(Neg_expr*) = 0;
   virtual void visit(Pos_expr*) = 0;
   virtual void visit(Eq_expr*) = 0;
@@ -297,54 +297,54 @@ struct Rem_expr : Binary_expr
 };
 
 
-// // The expression e1 << e2.
-// struct Lshift_expr : Binary_expr
-// {
-//   using Binary_expr::Binary_expr;
-//
-//   void accept(Visitor& v) const { v.visit(this); }
-//   void accept(Mutator& v)       { v.visit(this); }
-// };
-//
-//
-// // The expression e1 >> e2.
-// struct Rshift_expr : Binary_expr
-// {
-//   using Binary_expr::Binary_expr;
-//
-//   void accept(Visitor& v) const { v.visit(this); }
-//   void accept(Mutator& v)       { v.visit(this); }
-// };
-//
-//
-// // The expression e1 & e2.
-// struct Bitwise_and_expr : Binary_expr
-// {
-//   using Binary_expr::Binary_expr;
-//
-//   void accept(Visitor& v) const { v.visit(this); }
-//   void accept(Mutator& v)       { v.visit(this); }
-// };
-//
-//
-// // The expression e1 | e2.
-// struct Bitwise_or_expr : Binary_expr
-// {
-//   using Binary_expr::Binary_expr;
-//
-//   void accept(Visitor& v) const { v.visit(this); }
-//   void accept(Mutator& v)       { v.visit(this); }
-// };
-//
-//
-// // The expression e1 ^ e2.
-// struct Xor_expr : Binary_expr
-// {
-//   using Binary_expr::Binary_expr;
-//
-//   void accept(Visitor& v) const { v.visit(this); }
-//   void accept(Mutator& v)       { v.visit(this); }
-// };
+// The expression e1 << e2.
+struct Lshift_expr : Binary_expr
+{
+  using Binary_expr::Binary_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// The expression e1 >> e2.
+struct Rshift_expr : Binary_expr
+{
+  using Binary_expr::Binary_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// The expression e1 & e2.
+struct Bitwise_and_expr : Binary_expr
+{
+  using Binary_expr::Binary_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// The expression e1 | e2.
+struct Bitwise_or_expr : Binary_expr
+{
+  using Binary_expr::Binary_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// The expression e1 ^ e2.
+struct Xor_expr : Binary_expr
+{
+  using Binary_expr::Binary_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
 
 
 // The expression -e.
@@ -851,6 +851,11 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Mul_expr const* e) { this->invoke(e); }
   void visit(Div_expr const* e) { this->invoke(e); }
   void visit(Rem_expr const* e) { this->invoke(e); }
+  void visit(Lshift_expr const* e) { this->invoke(e); }
+  void visit(Rshift_expr const* e) { this->invoke(e); }
+  void visit(Bitwise_or_expr const* e) { this->invoke(e); }
+  void visit(Bitwise_and_expr const* e) { this->invoke(e); }
+  void visit(Xor_expr const* e) { this->invoke(e); }
   void visit(Neg_expr const* e) { this->invoke(e); }
   void visit(Pos_expr const* e) { this->invoke(e); }
   void visit(Eq_expr const* e) { this->invoke(e); }
@@ -914,6 +919,11 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Mul_expr* e) { this->invoke(e); }
   void visit(Div_expr* e) { this->invoke(e); }
   void visit(Rem_expr* e) { this->invoke(e); }
+  void visit(Lshift_expr* e) { this->invoke(e); }
+  void visit(Rshift_expr* e) { this->invoke(e); }
+  void visit(Bitwise_or_expr* e) { this->invoke(e); }
+  void visit(Bitwise_and_expr* e) { this->invoke(e); }
+  void visit(Xor_expr* e) { this->invoke(e); }
   void visit(Neg_expr* e) { this->invoke(e); }
   void visit(Pos_expr* e) { this->invoke(e); }
   void visit(Eq_expr* e) { this->invoke(e); }

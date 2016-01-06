@@ -82,6 +82,11 @@ struct Generator
   llvm::Value* gen(Mul_expr const*);
   llvm::Value* gen(Div_expr const*);
   llvm::Value* gen(Rem_expr const*);
+  llvm::Value* gen(Lshift_expr const*);
+  llvm::Value* gen(Rshift_expr const*);
+  llvm::Value* gen(Bitwise_and_expr const*);
+  llvm::Value* gen(Bitwise_or_expr const*);
+  llvm::Value* gen(Xor_expr const*);
   llvm::Value* gen(Neg_expr const*);
   llvm::Value* gen(Pos_expr const*);
   llvm::Value* gen(Eq_expr const*);

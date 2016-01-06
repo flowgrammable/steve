@@ -91,6 +91,11 @@ public:
   Expr* elaborate(Mul_expr* e);
   Expr* elaborate(Div_expr* e);
   Expr* elaborate(Rem_expr* e);
+  Expr* elaborate(Lshift_expr* e);
+  Expr* elaborate(Rshift_expr* e);
+  Expr* elaborate(Bitwise_and_expr* e);
+  Expr* elaborate(Bitwise_or_expr* e);
+  Expr* elaborate(Xor_expr* e);
   Expr* elaborate(Neg_expr* e);
   Expr* elaborate(Pos_expr* e);
   Expr* elaborate(Eq_expr* e);

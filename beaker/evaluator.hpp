@@ -52,6 +52,11 @@ public:
   Value eval(Mul_expr const*);
   Value eval(Div_expr const*);
   Value eval(Rem_expr const*);
+  Value eval(Lshift_expr const*);
+  Value eval(Rshift_expr const*);
+  Value eval(Bitwise_and_expr const*);
+  Value eval(Bitwise_or_expr const*);
+  Value eval(Xor_expr const*);
   Value eval(Neg_expr const*);
   Value eval(Pos_expr const*);
   Value eval(Eq_expr const*);

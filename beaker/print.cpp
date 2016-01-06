@@ -574,6 +574,11 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Rem_expr const* e) { os << *e; }
     void operator()(Neg_expr const* e) { os << *e; }
     void operator()(Pos_expr const* e) { os << *e; }
+    void operator()(Lshift_expr const* e) { os << *e; }
+    void operator()(Rshift_expr const* e) { os << *e; }
+    void operator()(Bitwise_and_expr const* e) { os << *e; }
+    void operator()(Bitwise_or_expr const* e) { os << *e; }
+    void operator()(Xor_expr const* e) { os << *e; }
     void operator()(Eq_expr const* e) { os << *e; }
     void operator()(Ne_expr const* e) { os << *e; }
     void operator()(Lt_expr const* e) { os << *e; }
@@ -666,6 +671,46 @@ operator<<(std::ostream& os, Div_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Rem_expr const&)
 {
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Lshift_expr const& e)
+{
+  os << *e.left() << " << " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Rshift_expr const& e)
+{
+  os << *e.left() << " >> " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Bitwise_and_expr const& e)
+{
+  os << *e.left() << " & " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Bitwise_or_expr const& e)
+{
+  os << *e.left() << " | " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Xor_expr const& e)
+{
+  os << *e.left() << " ^ " << *e.right();
   return os;
 }
 

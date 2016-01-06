@@ -275,6 +275,11 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Mul_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Div_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Rem_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Lshift_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Rshift_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Bitwise_and_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Bitwise_or_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Xor_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Neg_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Pos_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Eq_expr const* e) const { return g.gen(e); }
@@ -428,6 +433,50 @@ Generator::gen(Rem_expr const* e)
   llvm::Value* l = gen(e->left());
   llvm::Value* r = gen(e->right());
   return build.CreateURem(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Lshift_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateShl(l, r);
+}
+
+llvm::Value*
+Generator::gen(Rshift_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateLShr(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Bitwise_and_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateAnd(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Bitwise_or_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateOr(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Xor_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateXor(l, r);
 }
 
 

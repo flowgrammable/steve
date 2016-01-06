@@ -256,6 +256,11 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Mul_expr const* a) { lingo_unreachable(); }
     bool operator()(Div_expr const* a) { lingo_unreachable(); }
     bool operator()(Rem_expr const* a) { lingo_unreachable(); }
+    bool operator()(Lshift_expr const* a) { lingo_unreachable(); }
+    bool operator()(Rshift_expr const* a) { lingo_unreachable(); }
+    bool operator()(Bitwise_and_expr const* a) { lingo_unreachable(); }
+    bool operator()(Bitwise_or_expr const* a) { lingo_unreachable(); }
+    bool operator()(Xor_expr const* a) { lingo_unreachable(); }
     bool operator()(Neg_expr const* a) { lingo_unreachable(); }
     bool operator()(Pos_expr const* a) { lingo_unreachable(); }
     bool operator()(Eq_expr const* a) { lingo_unreachable(); }

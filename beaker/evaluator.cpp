@@ -26,6 +26,11 @@ Evaluator::eval(Expr const* e)
     Value operator()(Mul_expr const* e) { return ev.eval(e); }
     Value operator()(Div_expr const* e) { return ev.eval(e); }
     Value operator()(Rem_expr const* e) { return ev.eval(e); }
+    Value operator()(Lshift_expr const* e) { return ev.eval(e); }
+    Value operator()(Rshift_expr const* e) { return ev.eval(e); }
+    Value operator()(Bitwise_and_expr const* e) { return ev.eval(e); }
+    Value operator()(Bitwise_or_expr const* e) { return ev.eval(e); }
+    Value operator()(Xor_expr const* e) { return ev.eval(e); }
     Value operator()(Neg_expr const* e) { return ev.eval(e); }
     Value operator()(Pos_expr const* e) { return ev.eval(e); }
     Value operator()(Eq_expr const* e) { return ev.eval(e); }
@@ -131,6 +136,55 @@ Evaluator::eval(Rem_expr const* e)
   if (v2.get_integer() == 0)
     throw std::runtime_error("division by 0");
   return v1.get_integer() / v2.get_integer();
+}
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Lshift_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() << v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Rshift_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() >> v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Bitwise_and_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() & v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Bitwise_or_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() | v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Xor_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() >> v2.get_integer();
 }
 
 

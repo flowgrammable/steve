@@ -394,6 +394,11 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Mul_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Div_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Rem_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Lshift_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Rshift_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Bitwise_and_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Bitwise_or_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Xor_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Neg_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Pos_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Eq_expr* e) const { return elab.elaborate(e); }
@@ -668,6 +673,51 @@ Elaborator::elaborate(Div_expr* e)
 Expr*
 Elaborator::elaborate(Rem_expr* e)
 {
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Lshift_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since shifting bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Rshift_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since shifting bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Bitwise_and_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Bitwise_or_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Xor_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
   return check_binary_arithmetic_expr(*this, e);
 }
 
