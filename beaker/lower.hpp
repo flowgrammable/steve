@@ -26,7 +26,7 @@ struct Lowerer
 
   template <typename T>
   Expr* lower_unary_expr(T*);
-  
+
   template <typename T>
   Expr* lower_binary_expr(T*);
 
@@ -42,6 +42,7 @@ struct Lowerer
 
   Decl* lower(Decl*);
   Decl* lower(Module_decl*);
+  Decl* lower(Variable_decl*);
 
   // network declarations
   Decl* lower(Layout_decl*);

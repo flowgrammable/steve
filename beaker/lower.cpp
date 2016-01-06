@@ -201,6 +201,9 @@ struct Lower_decl_fn
 
   // network declarations
   Decl* operator()(Flow_decl* d) const { return lower.lower(d); }
+
+  // Local Variables.
+  Decl* operator()(Variable_decl* d) const { return lower.lower(d); }
 };
 
 
@@ -275,7 +278,6 @@ struct Lower_global_def
 template <typename T>
 Expr* Lowerer::lower_unary_expr(T* e)
 {
-  std::cout << "UNARY: " << *e << '\n';
   Expr* first = lower(e->first);
   e->first = first;
   return e;
@@ -286,8 +288,6 @@ template <typename T>
 Expr*
 Lowerer::lower_binary_expr(T* e)
 {
-  std::cout << "Binary: " << *e << '\n';
-
   Expr* first = lower(e->first);
   assert(first);
   Expr* second = lower(e->second);
@@ -865,6 +865,16 @@ Decl*
 Lowerer::lower(Flow_decl* d)
 {
   lingo_unreachable();
+}
+
+
+Decl*
+Lowerer::lower(Variable_decl* d)
+{
+  declare(d);
+  Expr* init = lower(d->init());
+  d->init_ = init;
+  return d;
 }
 
 
