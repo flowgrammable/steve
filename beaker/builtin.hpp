@@ -23,6 +23,7 @@ constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
 constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
+constexpr char const* __clear        = "fp_clear";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
 constexpr char const* __table        = "_table_";
@@ -203,6 +204,12 @@ struct Output_packet : Call_expr
 };
 
 
+struct Clear_actions : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 
 struct Get_port : Call_expr
 {
@@ -284,6 +291,7 @@ struct Builtin
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
+  Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
 
   // exposed interface
@@ -313,6 +321,7 @@ private:
   Function_decl* get_port();
   Function_decl* drop();
   Function_decl* output();
+  Function_decl* clear();
   Function_decl* set_field();
 
   Symbol const* get_identifier(std::string);

@@ -94,6 +94,7 @@ enum Token_kind
   output_kw,
   write_kw,
   drop_kw,
+  clear_kw,
   set_kw,
   copy_kw,
   get_kw,

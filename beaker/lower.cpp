@@ -144,12 +144,41 @@ struct Lower_expr_fn
   // simply return the original
   // expression without lowering it
   template<typename T>
-  Expr* operator()(T* e) const { return e; }
+  Expr* operator()(T* e) const { std::cout << "GENERIC\n"; return e; }
 
-  Expr* operator()(Value_conv* e) { return lower.lower(e); }
-  Expr* operator()(Promotion_conv* e) { return lower.lower(e); }
-  Expr* operator()(Demotion_conv* e) { return lower.lower(e); }
-  Expr* operator()(Sign_conv* e) { return lower.lower(e); }
+  // Unary expressions
+  Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Pos_expr* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(And_expr* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Or_expr* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Not_expr* e) const { return lower.lower_unary_expr(e); }
+
+  // Binary Expressions
+  Expr* operator()(Add_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Sub_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Mul_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Div_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Rem_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Eq_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Ne_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Lt_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Gt_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Le_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Ge_expr* e) const { return lower.lower_binary_expr(e); }
+
+  // Lower a call
+  // Expr* operator()(Call_expr* e) const { return lower.lower(e); }
+
+  // We should lower initializers so you can write something like:
+  //    var x : int = eth::type;
+  Expr* operator()(Copy_init* e) const { std::cout << "COPYINIT\n"; return lower.lower_unary_expr(e); }
+  Expr* operator()(Reference_init* e) const { return lower.lower_unary_expr(e); }
+
+  // Value conversions.
+  Expr* operator()(Value_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Promotion_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Demotion_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Sign_conv* e) const { return lower.lower_unary_expr(e); }
 
   // Field access expr
   // becomes an id_expr whose declaration is
@@ -201,6 +230,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
 };
 
@@ -240,6 +270,32 @@ struct Lower_global_def
 
 // ------------------------------------------------------------------------- //
 //                    Lower Expressions
+
+
+template <typename T>
+Expr* Lowerer::lower_unary_expr(T* e)
+{
+  std::cout << "UNARY: " << *e << '\n';
+  Expr* first = lower(e->first);
+  e->first = first;
+  return e;
+}
+
+
+template <typename T>
+Expr*
+Lowerer::lower_binary_expr(T* e)
+{
+  std::cout << "Binary: " << *e << '\n';
+
+  Expr* first = lower(e->first);
+  assert(first);
+  Expr* second = lower(e->second);
+  assert(second);
+  e->first = first;
+  e->second = second;
+  return e;
+}
 
 
 Expr*
@@ -305,6 +361,19 @@ Lowerer::lower(Field_access_expr* e)
   Variable_decl* var = as<Variable_decl>(ovl->back());
   assert(var);
 
+  // If the variable has not been initialized with a call to read_field()
+  // then replace its initializer.
+  //
+  // This is an optimization to prevent a call to read_field() every time
+  // a field access expression is needed.
+  //
+  // Instead we just read from the local variable which should contain an
+  // update value from that field.
+  //
+  // Set_field() and Copy_field() are expected to update that local variable as
+  // well, so any changes to that field in the context cause updates to the local
+  // variable instead of creating a new call to read_field() from the runtime.
+  // This should reduce the number of crosses between the runtime barrier.
   if (is<Default_init>(var->init())) {
     // This should always be valid since flows and decoders have an implicit
     // context parameter.
@@ -325,6 +394,8 @@ Lowerer::lower(Field_access_expr* e)
     var->init_ = cast;
   }
 
+  // If the variable has already been initialized with a call to read field
+  // then just return an identifier to the variable.
   return decl_id(var);
 }
 
@@ -1317,6 +1388,28 @@ Lowerer::lower(Output* s)
     return_void()
   };
 }
+
+
+Stmt_seq
+Lowerer::lower(Clear* s)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // make a call to the clear function
+  Expr* clear = builtin.call_clear(decl_id(cxt));
+  elab.elaborate(clear);
+
+  return
+  {
+    new Expression_stmt(clear),
+  };
+}
+
 
 namespace
 {

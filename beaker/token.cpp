@@ -79,6 +79,7 @@ spelling(Token_kind k)
     case output_kw: return "output";
     case write_kw: return "write";
     case drop_kw: return "drop";
+    case clear_kw: return "clear";
     case set_kw: return "set";
     case copy_kw: return "copy";
 
@@ -163,6 +164,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("output", output_kw);
   syms.put<Symbol>("write", write_kw);
   syms.put<Symbol>("drop", drop_kw);
+  syms.put<Symbol>("clear", clear_kw);
   syms.put<Symbol>("set", set_kw);
   syms.put<Symbol>("copy", copy_kw);
 

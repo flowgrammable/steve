@@ -41,6 +41,14 @@ struct Output : Action
 };
 
 
+// Clear the set of actions stored within the packet.
+struct Clear : Action
+{
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+};
+
+
 struct Set_field : Action
 {
   Set_field(Expr* f, Expr* v)

@@ -1274,6 +1274,19 @@ Parser::output_stmt()
 }
 
 
+// Pares a clear stmt.
+//
+//    clear-stmt -> 'clear;'
+Stmt*
+Parser::clear_stmt()
+{
+  match(clear_kw);
+  match(semicolon_tok);
+
+  return on_clear();
+}
+
+
 // Set a field to a given value
 //
 //  set-stmt -> 'set' field-name-expr '=' expr ';'
@@ -1327,6 +1340,9 @@ Parser::write_stmt()
       break;
     case set_kw:
       s = set_stmt();
+      break;
+    case clear_kw:
+      s = clear_stmt();
       break;
     case copy_kw:
       s = copy_stmt();
@@ -1389,6 +1405,9 @@ Parser::stmt()
 
     case output_kw:
       return output_stmt();
+
+    case clear_kw:
+      return clear_stmt();
 
     case set_kw:
       return set_stmt();
@@ -2105,6 +2124,13 @@ Stmt*
 Parser::on_drop()
 {
   return new Drop();
+}
+
+
+Stmt*
+Parser::on_clear()
+{
+  return new Clear();
 }
 
 

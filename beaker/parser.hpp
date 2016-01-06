@@ -83,6 +83,7 @@ public:
   Stmt* decode_stmt();
   Stmt* goto_stmt();
   Stmt* drop_stmt();
+  Stmt* clear_stmt();
   Stmt* output_stmt();
   Stmt* set_stmt();
   Stmt* copy_stmt();
@@ -178,6 +179,7 @@ private:
   Stmt* on_decode(Expr*);
   Stmt* on_goto(Expr*);
   Stmt* on_drop();
+  Stmt* on_clear();
   Stmt* on_output(Expr*);
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);

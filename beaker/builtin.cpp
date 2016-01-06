@@ -362,6 +362,28 @@ Builtin::output()
 
 
 Function_decl*
+Builtin::clear()
+{
+  Symbol const* fn_name = get_identifier(__clear);
+
+  Type const* void_type = get_void_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+Function_decl*
 Builtin::set_field()
 {
   Symbol const* fn_name = get_identifier(__set_field);
@@ -406,6 +428,7 @@ Builtin::init_builtins()
     {__get_port, get_port()},
     {__drop, drop()},
     {__output, output()},
+    {__clear, clear()},
     {__set_field, set_field()},
   };
 }
@@ -632,6 +655,16 @@ Builtin::call_output(Expr* cxt, Expr* port)
   assert(fn);
 
   return new Output_packet(decl_id(fn), {cxt, port});
+}
+
+
+Expr*
+Builtin::call_clear(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__clear)->second;
+  assert(fn);
+
+  return new Drop_packet(decl_id(fn), {cxt});
 }
 
 

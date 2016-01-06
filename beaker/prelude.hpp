@@ -149,6 +149,7 @@ struct Goto_stmt;
 struct Action;
 struct Drop;
 struct Output;
+struct Clear;
 struct Group;
 struct Set_field;
 struct Copy_field;

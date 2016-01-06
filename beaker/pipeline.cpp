@@ -7,6 +7,86 @@
 
 #include <iostream>
 
+namespace
+{
+
+struct Find_branches
+{
+  Stage_set& br;
+  Pipeline& p;
+
+  // these do not cause branches
+  void operator()(Empty_stmt const* s) {  }
+  void operator()(Assign_stmt const* s) {  }
+  void operator()(Break_stmt const* s) {  }
+  void operator()(Continue_stmt const* s) {  }
+  void operator()(Expression_stmt const* s) {  }
+  void operator()(Declaration_stmt const* s) {  }
+  void operator()(Return_stmt const* s)
+  {
+    throw Type_error({}, "return found in processing stage.");
+  }
+
+  void operator()(Return_void_stmt const* s) { }
+
+  void operator()(Action const* s) { }
+  void operator()(Drop const* s) { }
+  void operator()(Output const* s) { }
+  void operator()(Clear const* s) { }
+  void operator()(Set_field const* s) { }
+
+
+  // these can cause branches
+  void operator()(Block_stmt const* s)
+  {
+    for (auto stmt : s->statements()) {
+      apply(stmt, *this);
+    }
+  }
+
+  void operator()(If_then_stmt const* s)
+  {
+    apply(s->body(), *this);
+  }
+
+  void operator()(If_else_stmt const* s)
+  {
+    apply(s->true_branch(), *this);
+  }
+
+  void operator()(Match_stmt const* s)
+  {
+    for (auto c : s->cases()) {
+      apply(c, *this);
+    }
+  }
+
+  void operator()(Case_stmt const* s)
+  {
+    apply(s->stmt(), *this);
+  }
+
+  void operator()(While_stmt const* s)
+  {
+    apply(s->body(), *this);
+  }
+
+  void operator()(Decode_stmt const* s)
+  {
+    Stage* b = p.find(s->decoder());
+    assert(b);
+    br.insert(b);
+  }
+
+  void operator()(Goto_stmt const* s)
+  {
+    Stage* b = p.find(s->table());
+    assert(b);
+    br.insert(b);
+  }
+};
+
+} // namespace
 
 void
 Pipeline_checker::check_stage(Decl const* d, Sym_set const& reqs)
@@ -316,6 +396,7 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Action const* s) { }
     void operator()(Drop const* s) { }
     void operator()(Output const* s) { }
+    void operator()(Clear const* s) { }
     void operator()(Set_field const* s) { }
 
     // the only productions (for now) come out of decl statements
@@ -427,80 +508,6 @@ Pipeline_checker::find_branches(Flow_decl const* d)
 {
   Stage_set branches;
 
-  struct Find_branches
-  {
-    Stage_set& br;
-    Pipeline& p;
-
-    // these do not cause branches
-    void operator()(Empty_stmt const* s) {  }
-    void operator()(Assign_stmt const* s) {  }
-    void operator()(Break_stmt const* s) {  }
-    void operator()(Continue_stmt const* s) {  }
-    void operator()(Expression_stmt const* s) {  }
-    void operator()(Declaration_stmt const* s) {  }
-    void operator()(Return_stmt const* s)
-    {
-      throw Type_error({}, "return found in decoder body");
-    }
-    void operator()(Return_void_stmt const* s) { }
-
-    void operator()(Action const* s) { }
-    void operator()(Drop const* s) { }
-    void operator()(Output const* s) { }
-    void operator()(Set_field const* s) { }
-
-
-    // these can cause branches
-    void operator()(Block_stmt const* s)
-    {
-      for (auto stmt : s->statements()) {
-        apply(stmt, *this);
-      }
-    }
-
-    void operator()(If_then_stmt const* s)
-    {
-      apply(s->body(), *this);
-    }
-
-    void operator()(If_else_stmt const* s)
-    {
-      apply(s->true_branch(), *this);
-    }
-
-    void operator()(Match_stmt const* s)
-    {
-      for (auto c : s->cases()) {
-        apply(c, *this);
-      }
-    }
-
-    void operator()(Case_stmt const* s)
-    {
-      apply(s->stmt(), *this);
-    }
-
-    void operator()(While_stmt const* s)
-    {
-      apply(s->body(), *this);
-    }
-
-    void operator()(Decode_stmt const* s)
-    {
-      Stage* b = p.find(s->decoder());
-      assert(b);
-      br.insert(b);
-    }
-
-    void operator()(Goto_stmt const* s)
-    {
-      Stage* b = p.find(s->table());
-      assert(b);
-      br.insert(b);
-    }
-  };
-
   apply(d->instructions(), Find_branches{branches, pipeline});
 
   return branches;
@@ -513,81 +520,6 @@ Stage_set
 Pipeline_checker::find_branches(Decode_decl const* d)
 {
   Stage_set branches;
-
-  struct Find_branches
-  {
-    Stage_set& br;
-    Pipeline& p;
-
-    // these do not cause branches
-    void operator()(Empty_stmt const* s) {  }
-    void operator()(Assign_stmt const* s) {  }
-    void operator()(Break_stmt const* s) {  }
-    void operator()(Continue_stmt const* s) {  }
-    void operator()(Expression_stmt const* s) {  }
-    void operator()(Declaration_stmt const* s) {  }
-    void operator()(Return_stmt const* s)
-    {
-      throw Type_error({}, "return found in decoder body");
-    }
-
-    void operator()(Return_void_stmt const* s) { }
-
-    void operator()(Action const* s) { }
-    void operator()(Drop const* s) { }
-    void operator()(Output const* s) { }
-    void operator()(Set_field const* s) { }
-
-
-    // these can cause branches
-    void operator()(Block_stmt const* s)
-    {
-      for (auto stmt : s->statements()) {
-        apply(stmt, *this);
-      }
-    }
-
-    void operator()(If_then_stmt const* s)
-    {
-      apply(s->body(), *this);
-    }
-
-    void operator()(If_else_stmt const* s)
-    {
-      apply(s->true_branch(), *this);
-    }
-
-    void operator()(Match_stmt const* s)
-    {
-      for (auto c : s->cases()) {
-        apply(c, *this);
-      }
-    }
-
-    void operator()(Case_stmt const* s)
-    {
-      apply(s->stmt(), *this);
-    }
-
-    void operator()(While_stmt const* s)
-    {
-      apply(s->body(), *this);
-    }
-
-    void operator()(Decode_stmt const* s)
-    {
-      Stage* b = p.find(s->decoder());
-      assert(b);
-      br.insert(b);
-    }
-
-    void operator()(Goto_stmt const* s)
-    {
-      Stage* b = p.find(s->table());
-      assert(b);
-      br.insert(b);
-    }
-  };
 
   apply(d->body(), Find_branches{branches, pipeline});
 

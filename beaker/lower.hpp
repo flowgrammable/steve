@@ -24,6 +24,12 @@ struct Lowerer
   Expr* lower(Sign_conv* e);
   Expr* lower(Field_access_expr* e);
 
+  template <typename T>
+  Expr* lower_unary_expr(T*);
+  
+  template <typename T>
+  Expr* lower_binary_expr(T*);
+
   Decl* lower_global_decl(Decl*);
   Decl* lower_global_decl(Decode_decl*);
   Decl* lower_global_decl(Table_decl*);
@@ -75,6 +81,7 @@ struct Lowerer
   Stmt_seq lower(Action*);
   Stmt_seq lower(Drop*);
   Stmt_seq lower(Output*);
+  Stmt_seq lower(Clear*);
 
   // application interface
   Function_decl* load_function();
