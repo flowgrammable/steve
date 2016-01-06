@@ -184,7 +184,7 @@ Evaluator::eval(Xor_expr const* e)
 {
   Value v1 = eval(e->left());
   Value v2 = eval(e->right());
-  return v1.get_integer() >> v2.get_integer();
+  return v1.get_integer() ^ v2.get_integer();
 }
 
 
