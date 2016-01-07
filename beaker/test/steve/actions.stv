@@ -9,9 +9,12 @@ layout eth
 
 decoder start eth_d(eth)
 {
+	extract eth::dst;
+	extract eth::src;
   extract eth::type;
-	clear;
+	set eth::src = eth::dst;
   // set eth::type = 800;
+	// clear;
   // copy eth::type = eth::src;
   // write drop;
   // write output p1;

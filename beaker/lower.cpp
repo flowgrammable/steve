@@ -144,7 +144,7 @@ struct Lower_expr_fn
   // simply return the original
   // expression without lowering it
   template<typename T>
-  Expr* operator()(T* e) const { std::cout << "GENERIC\n"; return e; }
+  Expr* operator()(T* e) const { return e; }
 
   // Unary expressions
   Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
@@ -367,7 +367,7 @@ Lowerer::lower(Field_access_expr* e)
   // of lowering a Field access expr already, then simply return it.
   //
   // Otherwise, if its a default initializer, replace the default initializer
-  // with the call to __set_field(cxt, mapping).
+  // with the call to fp_read_field(cxt, mapping).
   Overload* ovl = unqualified_lookup(name);
   assert(ovl);
   // This variable should be guaranteed to exist since the elaboration phase
@@ -1440,13 +1440,11 @@ namespace
 {
 
 Expr*
-expr_to_byte_block(Expr* v)
+expr_to_void_block(Expr* v)
 {
-  // Reinterpret cast the expression to a byte pointer
-  Type const* block_type = get_character_type()->ref();
 
-  Expr* cast = new Reinterpret_cast(v, block_type);
-
+  Expr* cast = new Void_cast(v);
+  cast->type_ = get_character_type()->ref();
   return cast;
 }
 
@@ -1488,16 +1486,16 @@ Lowerer::lower(Set_field* s)
   Decl* fld_var = ovl->back();
   Assign_stmt* assign = new Assign_stmt(decl_id(fld_var), s->value());
 
-  // convert the integer value into a byte array and pass it as a block
+  // Convert the integer value into a byte array and pass it as an i8*.
   int prec = precision(s->value()->type());
-  auto val = expr_to_byte_block(decl_id(fld_var));
+  auto val = expr_to_void_block(decl_id(fld_var));
 
-  // create the call
+  // Create the call, passing in the value as an i8* to the runtime.
   Expr* set_field = builtin.call_set_field(decl_id(cxt),
                                            id,
                                            make_int(prec / 8),
                                            val);
-  // elab.elaborate(set_field);
+  elab.elaborate(set_field);
 
   return {
     assign,

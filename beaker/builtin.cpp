@@ -391,7 +391,7 @@ Builtin::set_field()
   Type const* void_type = get_void_type();
   Type const* int_type = get_integer_type();
   Type const* cxt_ref = get_context_type()->ref();
-  Type const* buffer = get_block_type(get_character_type());
+  Type const* buffer = get_character_type()->ref();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), cxt_ref),
