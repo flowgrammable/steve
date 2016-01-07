@@ -12,11 +12,11 @@ decoder start eth_d(eth)
 	extract eth::dst;
 	extract eth::src;
   extract eth::type;
-	set eth::src = eth::dst;
+	set eth::src = eth::dst + 100;
   // set eth::type = 800;
 	// clear;
   // copy eth::type = eth::src;
-  // write drop;
+  write drop;
   // write output p1;
   // write set eth::type = 0x800;
   // write copy eth::type = eth::src;

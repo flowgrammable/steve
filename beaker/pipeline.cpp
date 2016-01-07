@@ -34,6 +34,7 @@ struct Find_branches
   void operator()(Output const* s) { }
   void operator()(Clear const* s) { }
   void operator()(Set_field const* s) { }
+  void operator()(Write_drop const* s) { }
 
 
   // these can cause branches
@@ -398,6 +399,7 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Output const* s) { }
     void operator()(Clear const* s) { }
     void operator()(Set_field const* s) { }
+    void operator()(Write_drop const* s) { }
 
     // the only productions (for now) come out of decl statements
     // and only if it is an extracts decl or rebind decl

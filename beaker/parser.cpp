@@ -2276,5 +2276,12 @@ Parser::on_copy(Expr* field, Expr* val)
 Stmt*
 Parser::on_write(Stmt* s)
 {
+  if (is<Drop>(s))
+    return new Write_drop(s);
+  else if (is<Output>(s))
+    return new Write_output(s);
+  else if (is<Set_field>(s))
+    return new Write_set_field(s);
+
   lingo_unimplemented();
 }

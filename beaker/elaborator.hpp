@@ -194,11 +194,13 @@ public:
   Stmt* elaborate(Declaration_stmt*);
   Stmt* elaborate(Decode_stmt*);
   Stmt* elaborate(Goto_stmt*);
+
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
+  Stmt* elaborate(Write_drop*);
 
   void declare(Decl*);
   void redeclare(Decl*);

@@ -42,6 +42,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Action const* s) { os << *s; }
     void operator()(Drop const* s) { os << *s; }
     void operator()(Output const* s) { os << *s; }
+    void operator()(Write_drop const* s) { os << *s; }
   };
 
   apply(&s, Fn{os});
@@ -174,6 +175,12 @@ std::ostream& operator<<(std::ostream& os, Drop const& s)
 std::ostream& operator<<(std::ostream& os, Output const& s)
 {
   return os << "output " << s.port() << ';';
+}
+
+
+std::ostream& operator<<(std::ostream& os, Write_drop const& s)
+{
+  return os << "write " << *s.drop();
 }
 
 

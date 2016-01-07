@@ -24,6 +24,9 @@ constexpr char const* __output       = "fp_output_port";
 constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
 constexpr char const* __clear        = "fp_clear";
+constexpr char const* __write_drop   = "fp_write_drop";
+constexpr char const* __write_output = "fp_write_output";
+constexpr char const* __write_set    = "fp_write_set_field";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
 constexpr char const* __table        = "_table_";
@@ -211,6 +214,14 @@ struct Clear_actions : Call_expr
 
 
 
+
+struct Write_drop_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+
 struct Get_port : Call_expr
 {
   Get_port(Expr* fn, Expr_seq const& args)
@@ -260,6 +271,7 @@ struct Get_dataplane : Expr
 };
 
 
+
 // Build all builtin functions
 struct Builtin
 {
@@ -293,6 +305,7 @@ struct Builtin
   Expr* call_output(Expr* cxt, Expr* port);
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
+  Expr* call_write_drop(Expr*);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -323,6 +336,7 @@ private:
   Function_decl* output();
   Function_decl* clear();
   Function_decl* set_field();
+  Function_decl* write_drop();
 
   Symbol const* get_identifier(std::string);
 

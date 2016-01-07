@@ -769,6 +769,7 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Output const* s) { lingo_unreachable(); }
     Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
+    Control operator()(Write_drop const* s) { lingo_unreachable(); }
   };
 
   return apply(s, Fn{*this, r});

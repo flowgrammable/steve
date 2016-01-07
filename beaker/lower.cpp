@@ -171,7 +171,7 @@ struct Lower_expr_fn
 
   // We should lower initializers so you can write something like:
   //    var x : int = eth::type;
-  Expr* operator()(Copy_init* e) const { std::cout << "COPYINIT\n"; return lower.lower_unary_expr(e); }
+  Expr* operator()(Copy_init* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Reference_init* e) const { return lower.lower_unary_expr(e); }
 
   // Value conversions.
@@ -235,6 +235,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
 };
 
 
@@ -1486,7 +1487,8 @@ Lowerer::lower(Set_field* s)
   Decl* fld_var = ovl->back();
   Assign_stmt* assign = new Assign_stmt(decl_id(fld_var), s->value());
 
-  // Convert the integer value into a byte array and pass it as an i8*.
+
+  // Convert the value into a byte array and pass it as an i8*.
   int prec = precision(s->value()->type());
   auto val = expr_to_void_block(decl_id(fld_var));
 
@@ -1500,6 +1502,27 @@ Lowerer::lower(Set_field* s)
   return {
     assign,
     new Expression_stmt(set_field)
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Write_drop* s)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // make a call to the drop function
+  Expr* write = builtin.call_write_drop(decl_id(cxt));
+  elab.elaborate(write);
+
+  return
+  {
+    new Expression_stmt(write)
   };
 }
 

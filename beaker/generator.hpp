@@ -143,6 +143,7 @@ struct Generator
   void gen(Output const*);
   void gen(Clear const*);
   void gen(Set_field const*);
+  void gen(Write_drop const*);
 
   void gen(Decl const*);
   void gen(Variable_decl const*);

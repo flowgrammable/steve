@@ -159,8 +159,8 @@ struct Clear;
 struct Group;
 struct Set_field;
 struct Copy_field;
-struct Write_drop_stmt;
-struct Write_output_stmt;
+struct Write_drop;
+struct Write_output;
 struct Write_set_field;
 struct Write_copy_field;
 
