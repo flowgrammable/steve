@@ -292,10 +292,10 @@ Parser::bitshift_expr()
   while (true) {
     if (match_if(lshift_tok)) {
       Expr* e2 = additive_expr();
-      lingo_unreachable();
+      e1 = on_lshift(e1, e2);
     } else if (match_if(rshift_tok)) {
       Expr* e2 = additive_expr();
-      lingo_unreachable();
+      e1 = on_rshift(e1, e2);
     } else {
       break;
     }
@@ -315,19 +315,19 @@ Parser::bitshift_expr()
 Expr*
 Parser::ordering_expr()
 {
-  Expr* e1 = additive_expr();
+  Expr* e1 = bitshift_expr();
   while (true) {
     if (match_if(lt_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_lt(e1, e2);
     } else if (match_if(gt_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_gt(e1, e2);
     } else if (match_if(le_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_le(e1, e2);
     } else if (match_if(ge_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_ge(e1, e2);
     } else {
       break;
@@ -1750,6 +1750,20 @@ Expr*
 Parser::on_rem(Expr* e1, Expr* e2)
 {
   return new Rem_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_lshift(Expr* e1, Expr* e2)
+{
+  return new Lshift_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_rshift(Expr* e1, Expr* e2)
+{
+  return new Rshift_expr(e1, e2);
 }
 
 

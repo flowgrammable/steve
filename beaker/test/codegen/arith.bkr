@@ -1,4 +1,6 @@
-def main() -> int 
+foreign def puts(char[]) -> int;
+
+def main() -> int
 {
 	var a : int = 1;
 	var b : int = 2;
@@ -8,6 +10,15 @@ def main() -> int
 	var e : int = a * b;
 	var f : int = a / b;
 	var g : int = a % b;
+	var h : int = a << b;
+	var i : int = a >> b;
 
-	return 0;	
+	var x : int = a << b + 1;
+	if (x == 8)
+		puts("Correct");
+
+	if ( a << b == a << b)
+		puts("true");
+
+	return i;
 }

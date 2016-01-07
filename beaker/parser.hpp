@@ -123,6 +123,11 @@ private:
   Expr* on_mul(Expr*, Expr*);
   Expr* on_div(Expr*, Expr*);
   Expr* on_rem(Expr*, Expr*);
+  Expr* on_lshift(Expr*, Expr*);
+  Expr* on_rshift(Expr*, Expr*);
+  Expr* on_bitwise_and(Expr*, Expr*);
+  Expr* on_bitwise_or(Expr*, Expr*);
+  Expr* on_xor(Expr*, Expr*);
   Expr* on_neg(Expr*);
   Expr* on_pos(Expr*);
   Expr* on_eq(Expr*, Expr*);
