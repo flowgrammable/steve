@@ -159,6 +159,11 @@ struct Lower_expr_fn
   Expr* operator()(Mul_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Div_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Rem_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Lshift_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Rshift_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Bitwise_or_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Bitwise_and_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Xor_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Eq_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Ne_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Lt_expr* e) const { return lower.lower_binary_expr(e); }
