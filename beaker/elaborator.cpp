@@ -424,6 +424,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reinterpret_cast* e) const { return elab.elaborate(e); }
+    Expr* operator()(Void_cast* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_name_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_access_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
@@ -1466,6 +1467,23 @@ Elaborator::elaborate(Reinterpret_cast* e)
     throw Type_error({}, ss.str());
   }
 
+  return e;
+}
+
+
+// Void cast converts an memory into a char* (ie and i8*)
+Expr*
+Elaborator::elaborate(Void_cast* e)
+{
+  e->first = elaborate(e->first);
+  Expr* target = e->expression();
+  if (is<Reference_type>(target->type()) || is<Block_type>(target->type())) {
+    std::stringstream ss;
+    ss << *e << " is not of ref or block type.";
+    throw Type_error({}, ss.str());
+  }
+
+  e->type_ = get_character_type()->ref();
   return e;
 }
 

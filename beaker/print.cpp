@@ -604,6 +604,7 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Field_name_expr const* e) { os << *e; }
     void operator()(Field_access_expr const* e) { os << *e; }
     void operator()(Reinterpret_cast const* e) { os << *e; }
+    void operator()(Void_cast const* e) { os << *e; }
 
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
@@ -941,6 +942,14 @@ std::ostream&
 operator<<(std::ostream& os, Reinterpret_cast const& e)
 {
   os << "cast " << *e.expression() << " to " << *e.cast_type();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Void_cast const& e)
+{
+  os << "void_cast " << *e.expression();
   return os;
 }
 

@@ -305,6 +305,7 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reinterpret_cast const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_name_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
@@ -789,6 +790,16 @@ Generator::gen(Reinterpret_cast const* e)
   return build.CreateLoad(bc);
 }
 
+
+// Void cast causes an value to be bitcast into i8*.
+llvm::Value*
+Generator::gen(Void_cast const* e)
+{
+  llvm::Value* val = gen(e->expression());
+  // Create a bit cast from whatever to i8*.
+  llvm::Type* t = get_type(get_character_type()->ref());
+  return build.CreateBitCast(val, t);
+}
 
 
 llvm::Value*

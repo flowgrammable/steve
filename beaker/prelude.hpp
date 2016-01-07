@@ -62,6 +62,7 @@ struct Field_expr;
 struct Method_expr;
 struct Index_expr;
 struct Reinterpret_cast;
+struct Void_cast;
 struct Conv;
 struct Value_conv;
 struct Block_conv;

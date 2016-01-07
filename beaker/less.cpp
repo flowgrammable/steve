@@ -288,6 +288,7 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Field_name_expr const* a) { lingo_unreachable(); }
     bool operator()(Field_access_expr const* a) { lingo_unreachable(); }
     bool operator()(Reinterpret_cast const* a) { lingo_unreachable(); }
+    bool operator()(Void_cast const* a) { lingo_unreachable(); }
 
     bool operator()(Get_dataplane const* a) { lingo_unreachable(); }
   };

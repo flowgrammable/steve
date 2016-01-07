@@ -114,6 +114,7 @@ std::ostream& operator<<(std::ostream&, Reference_init const&);
 std::ostream& operator<<(std::ostream&, Field_name_expr const&);
 std::ostream& operator<<(std::ostream&, Field_access_expr const&);
 std::ostream& operator<<(std::ostream&, Reinterpret_cast const&);
+std::ostream& operator<<(std::ostream&, Void_cast const&);
 
 std::ostream& operator<<(std::ostream&, Get_port const&);
 std::ostream& operator<<(std::ostream&, Create_table const&);

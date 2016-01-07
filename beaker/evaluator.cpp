@@ -56,6 +56,7 @@ Evaluator::eval(Expr const* e)
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
     Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
+    Value operator()(Void_cast const* e) { lingo_unimplemented(); }
     Value operator()(Field_name_expr const* e) { return ev.eval(e); }
     Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
 
