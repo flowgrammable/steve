@@ -12,6 +12,7 @@
 #include "beaker/error.hpp"
 #include "beaker/builtin.hpp"
 #include "beaker/actions.hpp"
+#include "beaker/length.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -543,7 +544,24 @@ template<typename T>
 Expr*
 check_binary_arithmetic_expr(Elaborator& elab, T* e)
 {
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  e->first = elab.elaborate(e->first);
+  e->second = elab.elaborate(e->second);
+  Type const* t1 = e->first->type();
+  Type const* t2 = e->second->type();
+  assert(t1);
+  assert(t2);
+  int p1 = precision(t1);
+  int p2 = precision(t2);
+
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = nullptr;
+  if (p1 > p2)
+    z = get_integer_type(p1, signed_int, native_order);
+  else
+    z = get_integer_type(p2, signed_int, native_order);
+
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
