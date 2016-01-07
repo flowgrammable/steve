@@ -366,29 +366,72 @@ Parser::equality_expr()
 // Parse a bitwise and expression.
 //    bitwise-and-expr -> bitwise-and-expr '&' equality-expr
 //                      | equality-expr
+Expr*
+Parser::bitwise_and_expr()
+{
+  Expr* e1 = equality_expr();
+  while (true) {
+    if (match_if(amp_tok)) {
+      Expr* e2 = equality_expr();
+      e1 = on_bitwise_and(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
 
 
 // Parse a bitwise xor expression.
 //    bitwise-xor-expr -> bitwise-xor-expr '^' bitwise-and-expr
 //                      | bitwise-and-expr
+Expr*
+Parser::bitwise_xor_expr()
+{
+  Expr* e1 = bitwise_and_expr();
+  while (true) {
+    if (match_if(bxor_tok)) {
+      Expr* e2 = bitwise_and_expr();
+      e1 = on_xor(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
 
 
 // Parse a bitwise (inclusive) or expression.
 //    bitwise-or-expr -> bitwise-or-expr '|' bitwise-xor-expr
 //                      | bitwise-xor-expr
+Expr*
+Parser::bitwise_or_expr()
+{
+  Expr* e1 = bitwise_xor_expr();
+  while (true) {
+    if (match_if(bor_tok)) {
+      Expr* e2 = bitwise_xor_expr();
+      e1 = on_bitwise_or(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
 
 
 // Parse a logical and expression.
 //
-//    logical-and-expr -> logical-and-expr '&&' equality-expr
-//                      | equality-expr
+//    logical-and-expr -> logical-and-expr '&&' bitwise-or-expr
+//                      | bitwise-or-expr
 Expr*
 Parser::logical_and_expr()
 {
-  Expr* e1 = equality_expr();
+  Expr* e1 = bitwise_or_expr();
   while (true) {
     if (match_if(and_tok)) {
-      Expr* e2 = equality_expr();
+      Expr* e2 = bitwise_or_expr();
       e1 = on_and(e1, e2);
     } else {
       break;
@@ -1764,6 +1807,27 @@ Expr*
 Parser::on_rshift(Expr* e1, Expr* e2)
 {
   return new Rshift_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_bitwise_and(Expr* e1, Expr* e2)
+{
+  return new Bitwise_and_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_xor(Expr* e1, Expr* e2)
+{
+  return new Xor_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_bitwise_or(Expr* e1, Expr* e2)
+{
+  return new Bitwise_or_expr(e1, e2);
 }
 
 

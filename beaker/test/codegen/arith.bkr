@@ -12,6 +12,11 @@ def main() -> int
 	var g : int = a % b;
 	var h : int = a << b;
 	var i : int = a >> b;
+	var j : int = a & b;
+	var k : int = a ^ b;
+	var l : int = a | b;
+
+	var m : int = a & b ^ a | b;
 
 	var x : int = a << b + 1;
 	if (x == 8)

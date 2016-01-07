@@ -31,6 +31,9 @@ public:
   Expr* bitshift_expr();
   Expr* ordering_expr();
   Expr* equality_expr();
+  Expr* bitwise_and_expr();
+  Expr* bitwise_xor_expr();
+  Expr* bitwise_or_expr();
   Expr* logical_and_expr();
   Expr* logical_or_expr();
   Expr* field_name_expr();
