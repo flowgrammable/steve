@@ -22,7 +22,14 @@ struct Lowerer
   Expr* lower(Promotion_conv* e);
   Expr* lower(Demotion_conv* e);
   Expr* lower(Sign_conv* e);
+  Expr* lower(Call_expr* e);
   Expr* lower(Field_access_expr* e);
+
+  template <typename T>
+  Expr* lower_unary_expr(T*);
+
+  template <typename T>
+  Expr* lower_binary_expr(T*);
 
   Decl* lower_global_decl(Decl*);
   Decl* lower_global_decl(Decode_decl*);
@@ -36,6 +43,7 @@ struct Lowerer
 
   Decl* lower(Decl*);
   Decl* lower(Module_decl*);
+  Decl* lower(Variable_decl*);
 
   // network declarations
   Decl* lower(Layout_decl*);
@@ -47,6 +55,7 @@ struct Lowerer
 
   void add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
   Expr_seq lower_flow_keys(Decl_seq const&);
+  Stmt*    lower_flow_body(Table_decl*, Stmt*);
   Decl_seq lower_table_flows(Table_decl*);
   Decl*    lower_miss_case(Table_decl*);
   Stmt_seq lower_extracts_decl(Extracts_decl*);
@@ -62,7 +71,6 @@ struct Lowerer
   Stmt_seq lower(Expression_stmt*);
   Stmt_seq lower(Declaration_stmt*);
   Stmt_seq lower(Decode_stmt*);
-  Stmt_seq lower(Set_field*);
 
   // helper functions for handling
   // table gotos.
@@ -74,6 +82,9 @@ struct Lowerer
   Stmt_seq lower(Action*);
   Stmt_seq lower(Drop*);
   Stmt_seq lower(Output*);
+  Stmt_seq lower(Clear*);
+  Stmt_seq lower(Set_field*);
+  Stmt_seq lower(Write_drop*);
 
   // application interface
   Function_decl* load_function();

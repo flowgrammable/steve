@@ -91,6 +91,11 @@ public:
   Expr* elaborate(Mul_expr* e);
   Expr* elaborate(Div_expr* e);
   Expr* elaborate(Rem_expr* e);
+  Expr* elaborate(Lshift_expr* e);
+  Expr* elaborate(Rshift_expr* e);
+  Expr* elaborate(Bitwise_and_expr* e);
+  Expr* elaborate(Bitwise_or_expr* e);
+  Expr* elaborate(Xor_expr* e);
   Expr* elaborate(Neg_expr* e);
   Expr* elaborate(Pos_expr* e);
   Expr* elaborate(Eq_expr* e);
@@ -116,10 +121,13 @@ public:
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);
   Expr* elaborate(Reinterpret_cast* e);
+  Expr* elaborate(Void_cast* e);
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
+
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
+  Expr* elaborate(Get_dataplane* e);
 
   Decl* elaborate(Decl*);
   Decl* elaborate(Variable_decl*);
@@ -174,6 +182,7 @@ public:
   Stmt* elaborate(Block_stmt*);
   Stmt* elaborate(Assign_stmt*);
   Stmt* elaborate(Return_stmt*);
+  Stmt* elaborate(Return_void_stmt*);
   Stmt* elaborate(If_then_stmt*);
   Stmt* elaborate(If_else_stmt*);
   Stmt* elaborate(Match_stmt*);
@@ -185,10 +194,13 @@ public:
   Stmt* elaborate(Declaration_stmt*);
   Stmt* elaborate(Decode_stmt*);
   Stmt* elaborate(Goto_stmt*);
+
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
+  Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
+  Stmt* elaborate(Write_drop*);
 
   void declare(Decl*);
   void redeclare(Decl*);

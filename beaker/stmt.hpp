@@ -30,6 +30,7 @@ struct Stmt::Visitor
   virtual void visit(Block_stmt const*) = 0;
   virtual void visit(Assign_stmt const*) = 0;
   virtual void visit(Return_stmt const*) = 0;
+  virtual void visit(Return_void_stmt const*) = 0;
   virtual void visit(If_then_stmt const*) = 0;
   virtual void visit(If_else_stmt const*) = 0;
   virtual void visit(Match_stmt const*) = 0;
@@ -44,7 +45,9 @@ struct Stmt::Visitor
   virtual void visit(Action const*) = 0;
   virtual void visit(Drop const*) = 0;
   virtual void visit(Output const*) = 0;
+  virtual void visit(Clear const*) = 0;
   virtual void visit(Set_field const*) = 0;
+  virtual void visit(Write_drop const*) = 0;
 };
 
 
@@ -55,6 +58,7 @@ struct Stmt::Mutator
   virtual void visit(Block_stmt*) = 0;
   virtual void visit(Assign_stmt*) = 0;
   virtual void visit(Return_stmt*) = 0;
+  virtual void visit(Return_void_stmt*) = 0;
   virtual void visit(If_then_stmt*) = 0;
   virtual void visit(If_else_stmt*) = 0;
   virtual void visit(Match_stmt*) = 0;
@@ -69,7 +73,9 @@ struct Stmt::Mutator
   virtual void visit(Action*) = 0;
   virtual void visit(Drop*) = 0;
   virtual void visit(Output*) = 0;
+  virtual void visit(Clear*) = 0;
   virtual void visit(Set_field*) = 0;
+  virtual void visit(Write_drop*) = 0;
 };
 
 
@@ -142,8 +148,8 @@ struct Return_stmt : Stmt
 // can only occur in functions that return void.
 struct Return_void_stmt : Stmt
 {
-  // void accept(Visitor& v) const { return v.visit(this); }
-  // void accept(Mutator& v)       { return v.visit(this); }
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
 };
 
 
@@ -296,7 +302,7 @@ struct Case_stmt : Stmt
     : label_(e), stmt_(s)
   { }
 
-  Literal_expr* label() const { return cast<Literal_expr>(label_); }
+  Expr* label() const { return label_; }
   Stmt* stmt() const  { return stmt_; }
 
   void accept(Visitor& v) const { return v.visit(this); }
@@ -359,6 +365,7 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Block_stmt const* d) { this->invoke(d); };
   void visit(Assign_stmt const* d) { this->invoke(d); };
   void visit(Return_stmt const* d) { this->invoke(d); };
+  void visit(Return_void_stmt const* d) { this->invoke(d); };
   void visit(If_then_stmt const* d) { this->invoke(d); };
   void visit(If_else_stmt const* d) { this->invoke(d); };
   void visit(Match_stmt const* d) { this->invoke(d); };
@@ -373,7 +380,9 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Action const* d) { this->invoke(d); };
   void visit(Drop const* d) { this->invoke(d); };
   void visit(Output const* d) { this->invoke(d); };
+  void visit(Clear const* d) { this->invoke(d); };
   void visit(Set_field const* d) { this->invoke(d); };
+  void visit(Write_drop const* d) { this->invoke(d); };
 };
 
 
@@ -401,6 +410,7 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Block_stmt* d) { this->invoke(d); };
   void visit(Assign_stmt* d) { this->invoke(d); };
   void visit(Return_stmt* d) { this->invoke(d); };
+  void visit(Return_void_stmt* d) { this->invoke(d); };
   void visit(If_then_stmt* d) { this->invoke(d); };
   void visit(If_else_stmt* d) { this->invoke(d); };
   void visit(Match_stmt* d) { this->invoke(d); };
@@ -415,7 +425,9 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Action* d) { this->invoke(d); };
   void visit(Drop* d) { this->invoke(d); };
   void visit(Output* d) { this->invoke(d); };
+  void visit(Clear* d) { this->invoke(d); };
   void visit(Set_field* d) { this->invoke(d); };
+  void visit(Write_drop* d) { this->invoke(d); };
 };
 
 

@@ -32,12 +32,20 @@ struct Output : Action
     : port_(e)
   { }
 
-  Expr* port() const { return port_; }
-
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 
+  Expr* port() const { return port_; }
+
   Expr* port_;
+};
+
+
+// Clear the set of actions stored within the packet.
+struct Clear : Action
+{
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
 };
 
 
@@ -93,16 +101,46 @@ struct Group : Action
 };
 
 
+// Write a drop for later.
+struct Write_drop : Action
+{
+  Write_drop(Stmt* a)
+    : first(a)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Drop* drop() const { return cast<Drop>(first); }
+
+  Stmt* first;
+};
+
+
 // Write an output to port acttion
 // to the context
 struct Write_output : Action
 {
+  Write_output(Stmt* a)
+    : first(a)
+  { }
+
+  Output* output() const { return cast<Output>(first); }
+
+  Stmt* first;
 };
 
 
 // Write set field
 struct Write_set_field : Action
 {
+  Write_set_field(Stmt* a)
+  : first(a)
+{ }
+
+  Set_field* output() const { return cast<Set_field>(first); }
+
+  Stmt* first;
 };
 
 

@@ -11,7 +11,8 @@
 constexpr char const* __bind_header  = "fp_bind_header";
 constexpr char const* __bind_field   = "fp_bind_field";
 constexpr char const* __alias_bind   = "fp_alias_bind";
-constexpr char const* __advance      = "fp_advance";
+constexpr char const* __read_field   = "fp_read_field";
+constexpr char const* __advance      = "fp_advance_header";
 constexpr char const* __get_table    = "fp_create_table";
 constexpr char const* __add_flow     = "fp_add_flow";
 constexpr char const* __add_miss     = "fp_add_miss";
@@ -22,6 +23,10 @@ constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
 constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
+constexpr char const* __clear        = "fp_clear";
+constexpr char const* __write_drop   = "fp_write_drop";
+constexpr char const* __write_output = "fp_write_output";
+constexpr char const* __write_set    = "fp_write_set_field";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
 constexpr char const* __table        = "_table_";
@@ -34,7 +39,7 @@ constexpr char const* __load         = "config";
 constexpr char const* __process      = "pipeline";
 constexpr char const* __start        = "start";
 constexpr char const* __stop         = "stop";
-constexpr char const* __port_num     = "port_num";
+constexpr char const* __port_num     = "ports";
 constexpr char const* __unload       = "unload";
 
 
@@ -124,20 +129,9 @@ struct Bind_header : Call_expr
 };
 
 
-// Tell the dataplane to create a table
-// The create_table function from the runtime has
-// the form:
-//
-// void get_table(int id, int key_size, int flow_max, ...)
-//
-struct Create_table : Call_expr
+struct Read_field : Call_expr
 {
   using Call_expr::Call_expr;
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* table_;
 };
 
 
@@ -201,6 +195,33 @@ struct Advance : Call_expr
 };
 
 
+struct Drop_packet : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Output_packet : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Clear_actions : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+
+
+struct Write_drop_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+
 struct Get_port : Call_expr
 {
   Get_port(Expr* fn, Expr_seq const& args)
@@ -215,16 +236,40 @@ struct Get_port : Call_expr
 };
 
 
-struct Drop_packet : Call_expr
+// Tell the dataplane to create a table
+// The create_table function from the runtime has
+// the form:
+//
+// void get_table(int id, int key_size, int flow_max, ...)
+//
+struct Create_table : Call_expr
 {
   using Call_expr::Call_expr;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Decl* table_;
 };
 
 
-struct Output_packet : Call_expr
+// Retrieve a pointer to the dataplane and store it in a variable.
+struct Get_dataplane : Expr
 {
-  using Call_expr::Call_expr;
+  Get_dataplane(Decl* dp_src, Decl* dp_dst)
+    : dp_(dp_src), target_(dp_dst)
+  { }
+
+  Decl* dataplane() const { return dp_; }
+  Decl* target()    const { return target_; }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Decl* dp_;
+  Decl* target_;
 };
+
 
 
 // Build all builtin functions
@@ -247,16 +292,20 @@ struct Builtin
   Expr* call_bind_field(Expr_seq const& args);
   Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
+  Expr* call_read_field(Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_flow(Expr_seq const& args);
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
+  Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
+  Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
+  Expr* call_write_drop(Expr*);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -275,6 +324,7 @@ private:
   Function_decl* bind_header();
   Function_decl* bind_field();
   Function_decl* alias_bind();
+  Function_decl* read_field();
   Function_decl* advance();
   Function_decl* get_table();
   Function_decl* add_flow();
@@ -284,7 +334,9 @@ private:
   Function_decl* get_port();
   Function_decl* drop();
   Function_decl* output();
+  Function_decl* clear();
   Function_decl* set_field();
+  Function_decl* write_drop();
 
   Symbol const* get_identifier(std::string);
 

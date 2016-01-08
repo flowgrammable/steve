@@ -38,6 +38,10 @@ spelling(Token_kind k)
     case or_tok: return "||";
     case not_tok: return "!";
     case amp_tok: return "&";
+    case bor_tok: return "|";
+    case bxor_tok: return "^";
+    case lshift_tok: return "<<";
+    case rshift_tok: return ">>";
     case arrow_tok: return "->";
     case scope_tok: return "::";
 
@@ -79,6 +83,7 @@ spelling(Token_kind k)
     case output_kw: return "output";
     case write_kw: return "write";
     case drop_kw: return "drop";
+    case clear_kw: return "clear";
     case set_kw: return "set";
     case copy_kw: return "copy";
 
@@ -120,6 +125,10 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("||", or_tok);
   syms.put<Symbol>("!", not_tok);
   syms.put<Symbol>("&", amp_tok);
+  syms.put<Symbol>("|", bor_tok);
+  syms.put<Symbol>("^", bxor_tok);
+  syms.put<Symbol>("<<", lshift_tok);
+  syms.put<Symbol>(">>", rshift_tok);
   syms.put<Symbol>("->", arrow_tok);
   syms.put<Symbol>("::", scope_tok);
 
@@ -163,6 +172,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("output", output_kw);
   syms.put<Symbol>("write", write_kw);
   syms.put<Symbol>("drop", drop_kw);
+  syms.put<Symbol>("clear", clear_kw);
   syms.put<Symbol>("set", set_kw);
   syms.put<Symbol>("copy", copy_kw);
 

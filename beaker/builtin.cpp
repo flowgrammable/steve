@@ -23,7 +23,7 @@ Builtin::bind_header()
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     // NOTE: headers might have variable length, we might not want to do this
     // new Parameter_decl(get_identifier("length"), get_integer_type()),
@@ -40,23 +40,23 @@ Builtin::bind_header()
 
 
 //
-// Byte* __bind_offset(Context*, id, offset, length);
+// void __bind_offset(Context*, id, offset, length);
 //
 Function_decl*
 Builtin::bind_field()
 {
-  Type const* buffer_type = get_block_type(get_character_type());
+  Type const* void_type = get_void_type();
   Symbol const* fn_name = get_identifier(__bind_field);
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type()),
     new Parameter_decl(get_identifier("offset"), get_integer_type()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, buffer_type);
+  Type const* fn_type = get_function_type(parms, void_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -72,19 +72,41 @@ Builtin::bind_field()
 Function_decl*
 Builtin::alias_bind()
 {
-  Type const* buffer_type = get_block_type(get_character_type());
   Symbol const* fn_name = get_identifier(__alias_bind);
 
-  Decl_seq parms =
+  Decl_seq parms
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("id1"), get_integer_type()),
     new Parameter_decl(get_identifier("id2"), get_integer_type()),
     new Parameter_decl(get_identifier("offset"), get_integer_type()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
-  Type const* fn_type = get_function_type(parms, buffer_type);
+  Type const* fn_type = get_function_type(parms, get_void_type());
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+Function_decl*
+Builtin::read_field()
+{
+  Symbol const* fn_name = get_identifier(__read_field);
+
+  Type const* ret_type = get_block_type(get_character_type());
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
+    new Parameter_decl(get_identifier("field"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, ret_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -105,7 +127,7 @@ Builtin::advance()
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier("cxt"), get_reference_type(get_context_type())),
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };
 
@@ -340,6 +362,28 @@ Builtin::output()
 
 
 Function_decl*
+Builtin::clear()
+{
+  Symbol const* fn_name = get_identifier(__clear);
+
+  Type const* void_type = get_void_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+Function_decl*
 Builtin::set_field()
 {
   Symbol const* fn_name = get_identifier(__set_field);
@@ -347,7 +391,7 @@ Builtin::set_field()
   Type const* void_type = get_void_type();
   Type const* int_type = get_integer_type();
   Type const* cxt_ref = get_context_type()->ref();
-  Type const* buffer = get_block_type(get_character_type());
+  Type const* buffer = get_character_type()->ref();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), cxt_ref),
@@ -366,6 +410,30 @@ Builtin::set_field()
   return fn;
 }
 
+
+Function_decl*
+Builtin::write_drop()
+{
+  Symbol const* fn_name = get_identifier(__write_drop);
+
+  Type const* void_type = get_void_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
 void
 Builtin::init_builtins()
 {
@@ -374,6 +442,7 @@ Builtin::init_builtins()
     {__bind_header, bind_header()},
     {__bind_field, bind_field()},
     {__alias_bind, alias_bind()},
+    {__read_field, read_field()},
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
@@ -383,7 +452,9 @@ Builtin::init_builtins()
     {__get_port, get_port()},
     {__drop, drop()},
     {__output, output()},
+    {__clear, clear()},
     {__set_field, set_field()},
+    {__write_drop, write_drop()},
   };
 }
 
@@ -483,6 +554,16 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 
 
 Expr*
+Builtin::call_read_field(Expr* cxt, Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__read_field)->second;
+  assert(fn);
+
+  return new Read_field(decl_id(fn), {cxt, id});
+}
+
+
+Expr*
 Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* entry_size, Expr* kind)
 {
   Function_decl* fn = builtin_fn.find(__get_table)->second;
@@ -533,6 +614,20 @@ Builtin::call_get_port(Decl* d, Expr_seq const& args)
 
   Get_port* e = new Get_port(decl_id(fn), args);
   e->port_ = d;
+
+  return e;
+}
+
+
+// NOTE: This is a little special since we don't explicitly need a
+// function to get the dataplane right now.
+//
+// This is only a placeholder for special code generation since steve
+// currently does not have correct code generation for opaque types.
+Expr*
+Builtin::call_get_dataplane(Decl* dp, Decl* target)
+{
+  Get_dataplane* e = new Get_dataplane(dp, target);
 
   return e;
 }
@@ -589,10 +684,30 @@ Builtin::call_output(Expr* cxt, Expr* port)
 
 
 Expr*
+Builtin::call_clear(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__clear)->second;
+  assert(fn);
+
+  return new Drop_packet(decl_id(fn), {cxt});
+}
+
+
+Expr*
 Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 {
   Function_decl* fn = builtin_fn.find(__set_field)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt, id, len, val});
+}
+
+
+Expr*
+Builtin::call_write_drop(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__write_drop)->second;
+  assert(fn);
+
+  return new Drop_packet(decl_id(fn), {cxt});
 }

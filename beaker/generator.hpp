@@ -82,6 +82,11 @@ struct Generator
   llvm::Value* gen(Mul_expr const*);
   llvm::Value* gen(Div_expr const*);
   llvm::Value* gen(Rem_expr const*);
+  llvm::Value* gen(Lshift_expr const*);
+  llvm::Value* gen(Rshift_expr const*);
+  llvm::Value* gen(Bitwise_and_expr const*);
+  llvm::Value* gen(Bitwise_or_expr const*);
+  llvm::Value* gen(Xor_expr const*);
   llvm::Value* gen(Neg_expr const*);
   llvm::Value* gen(Pos_expr const*);
   llvm::Value* gen(Eq_expr const*);
@@ -107,17 +112,20 @@ struct Generator
   llvm::Value* gen(Copy_init const*);
   llvm::Value* gen(Reference_init const*);
   llvm::Value* gen(Reinterpret_cast const*);
+  llvm::Value* gen(Void_cast const*);
   llvm::Value* gen(Field_name_expr const*);
 
   // builtin special generation
   llvm::Value* gen(Get_port const*);
   llvm::Value* gen(Create_table const*);
+  llvm::Value* gen(Get_dataplane const*);
 
   void gen(Stmt const*);
   void gen(Empty_stmt const*);
   void gen(Block_stmt const*);
   void gen(Assign_stmt const*);
   void gen(Return_stmt const*);
+  void gen(Return_void_stmt const*);
   void gen(If_then_stmt const*);
   void gen(If_else_stmt const*);
   void gen(While_stmt const*);
@@ -133,7 +141,9 @@ struct Generator
   void gen(Action const*);
   void gen(Drop const*);
   void gen(Output const*);
+  void gen(Clear const*);
   void gen(Set_field const*);
+  void gen(Write_drop const*);
 
   void gen(Decl const*);
   void gen(Variable_decl const*);

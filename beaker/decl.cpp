@@ -84,3 +84,10 @@ is_opaque_reference(Decl const* d)
 {
   return is<Reference_type>(d->type()) && is<Opaque_type>(d->type()->nonref());
 }
+
+
+bool
+is_opaque(Decl const* d)
+{
+  return is<Opaque_type>(d->type());
+}

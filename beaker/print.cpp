@@ -26,6 +26,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Block_stmt const* s) { os << *s; };
     void operator()(Assign_stmt const* s) { os << *s; };
     void operator()(Return_stmt const* s) { os << *s; };
+    void operator()(Return_void_stmt const* s) { os << *s; };
     void operator()(If_then_stmt const* s) { os << *s; };
     void operator()(If_else_stmt const* s) { os << *s; };
     void operator()(Match_stmt const* s) { os << *s; };
@@ -41,6 +42,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Action const* s) { os << *s; }
     void operator()(Drop const* s) { os << *s; }
     void operator()(Output const* s) { os << *s; }
+    void operator()(Write_drop const* s) { os << *s; }
   };
 
   apply(&s, Fn{os});
@@ -75,6 +77,12 @@ std::ostream& operator<<(std::ostream& os, Assign_stmt const& s)
 std::ostream& operator<<(std::ostream& os, Return_stmt const& s)
 {
   return os << "return " << *s.value();
+}
+
+
+std::ostream& operator<<(std::ostream& os, Return_void_stmt const& s)
+{
+  return os << "return void";
 }
 
 
@@ -167,6 +175,12 @@ std::ostream& operator<<(std::ostream& os, Drop const& s)
 std::ostream& operator<<(std::ostream& os, Output const& s)
 {
   return os << "output " << s.port() << ';';
+}
+
+
+std::ostream& operator<<(std::ostream& os, Write_drop const& s)
+{
+  return os << "write " << *s.drop();
 }
 
 
@@ -567,6 +581,11 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Rem_expr const* e) { os << *e; }
     void operator()(Neg_expr const* e) { os << *e; }
     void operator()(Pos_expr const* e) { os << *e; }
+    void operator()(Lshift_expr const* e) { os << *e; }
+    void operator()(Rshift_expr const* e) { os << *e; }
+    void operator()(Bitwise_and_expr const* e) { os << *e; }
+    void operator()(Bitwise_or_expr const* e) { os << *e; }
+    void operator()(Xor_expr const* e) { os << *e; }
     void operator()(Eq_expr const* e) { os << *e; }
     void operator()(Ne_expr const* e) { os << *e; }
     void operator()(Lt_expr const* e) { os << *e; }
@@ -592,9 +611,11 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Field_name_expr const* e) { os << *e; }
     void operator()(Field_access_expr const* e) { os << *e; }
     void operator()(Reinterpret_cast const* e) { os << *e; }
+    void operator()(Void_cast const* e) { os << *e; }
 
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
+    void operator()(Get_dataplane const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -658,6 +679,46 @@ operator<<(std::ostream& os, Div_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Rem_expr const&)
 {
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Lshift_expr const& e)
+{
+  os << *e.left() << " << " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Rshift_expr const& e)
+{
+  os << *e.left() << " >> " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Bitwise_and_expr const& e)
+{
+  os << *e.left() << " & " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Bitwise_or_expr const& e)
+{
+  os << *e.left() << " | " << *e.right();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Xor_expr const& e)
+{
+  os << *e.left() << " ^ " << *e.right();
   return os;
 }
 
@@ -887,7 +948,15 @@ std::ostream& operator<<(std::ostream& os, Field_access_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Reinterpret_cast const& e)
 {
-  os << "case" << *e.expression() << " to " << e.cast_type();
+  os << "cast " << *e.expression() << " to " << *e.cast_type();
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Void_cast const& e)
+{
+  os << "void_cast " << *e.expression();
   return os;
 }
 
@@ -904,5 +973,12 @@ operator<<(std::ostream& os, Get_port const& e)
 std::ostream& operator<<(std::ostream& os, Create_table const&)
 {
   os << "create_table";
+  return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
+{
+  os << "get_dp";
   return os;
 }

@@ -536,6 +536,9 @@ bool is_reference(Decl const*);
 // Returns true if it is a reference to an opaque object.
 bool is_opaque_reference(Decl const*);
 
+// Returns true if the declaration is to an object of opaque type.
+bool is_opaque(Decl const*);
+
 
 // -------------------------------------------------------------------------- //
 //                              Generic visitors

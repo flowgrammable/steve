@@ -76,15 +76,15 @@ int precision(Type const* t)
   {
     // should never be called
     // FIXME: throw exceptions
-    int operator()(Id_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Function_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Void_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Context_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Table_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Flow_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Port_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Key_type const* t) { throw std::runtime_error("unsupported length"); }
-    int operator()(Opaque_type const* t) { throw std::runtime_error("unsupported length"); }
+    int operator()(Id_type const* t) { return 0; }
+    int operator()(Function_type const* t) { return 0; }
+    int operator()(Void_type const* t) { return 0; }
+    int operator()(Context_type const* t) { return 0; }
+    int operator()(Table_type const* t) { return 0; }
+    int operator()(Flow_type const* t) { return 0; }
+    int operator()(Port_type const* t) { return 0; }
+    int operator()(Key_type const* t) { return 0; }
+    int operator()(Opaque_type const* t) { return 0; }
 
     // dynamic type
     // FIXME: do this right
@@ -95,7 +95,7 @@ int precision(Type const* t)
     int operator()(Character_type const* t) { return 8; }
     int operator()(Integer_type const* t) { return t->precision(); }
     int operator()(Array_type const* t) { return t->size(); }
-    int operator()(Reference_type const* t) { return precision(t->ref()); }
+    int operator()(Reference_type const* t) { return precision(t->nonref()); }
 
     int operator()(Record_type const* t)
     {

@@ -26,6 +26,11 @@ Evaluator::eval(Expr const* e)
     Value operator()(Mul_expr const* e) { return ev.eval(e); }
     Value operator()(Div_expr const* e) { return ev.eval(e); }
     Value operator()(Rem_expr const* e) { return ev.eval(e); }
+    Value operator()(Lshift_expr const* e) { return ev.eval(e); }
+    Value operator()(Rshift_expr const* e) { return ev.eval(e); }
+    Value operator()(Bitwise_and_expr const* e) { return ev.eval(e); }
+    Value operator()(Bitwise_or_expr const* e) { return ev.eval(e); }
+    Value operator()(Xor_expr const* e) { return ev.eval(e); }
     Value operator()(Neg_expr const* e) { return ev.eval(e); }
     Value operator()(Pos_expr const* e) { return ev.eval(e); }
     Value operator()(Eq_expr const* e) { return ev.eval(e); }
@@ -51,8 +56,11 @@ Evaluator::eval(Expr const* e)
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
     Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
+    Value operator()(Void_cast const* e) { lingo_unimplemented(); }
     Value operator()(Field_name_expr const* e) { return ev.eval(e); }
     Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
+
+    Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
 
   return apply(e, Fn {*this});
@@ -129,6 +137,55 @@ Evaluator::eval(Rem_expr const* e)
   if (v2.get_integer() == 0)
     throw std::runtime_error("division by 0");
   return v1.get_integer() / v2.get_integer();
+}
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Lshift_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() << v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Rshift_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() >> v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Bitwise_and_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() & v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Bitwise_or_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() | v2.get_integer();
+}
+
+
+// TODO: Detect overflow.
+Value
+Evaluator::eval(Xor_expr const* e)
+{
+  Value v1 = eval(e->left());
+  Value v2 = eval(e->right());
+  return v1.get_integer() ^ v2.get_integer();
 }
 
 
@@ -695,6 +752,7 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Block_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Assign_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Return_stmt const* s) { return ev.eval(s, r); }
+    Control operator()(Return_void_stmt const* s) { return ev.eval(s, r); }
     Control operator()(If_then_stmt const* s) { return ev.eval(s, r); }
     Control operator()(If_else_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Match_stmt const* s) { return ev.eval(s, r); }
@@ -709,7 +767,9 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Action const* s) { lingo_unreachable(); }
     Control operator()(Drop const* s) { lingo_unreachable(); }
     Control operator()(Output const* s) { lingo_unreachable(); }
+    Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
+    Control operator()(Write_drop const* s) { lingo_unreachable(); }
   };
 
   return apply(s, Fn{*this, r});
@@ -758,6 +818,13 @@ Control
 Evaluator::eval(Return_stmt const* s, Value& r)
 {
   r = eval(s->value());
+  return return_ctl;
+}
+
+
+Control
+Evaluator::eval(Return_void_stmt const* s, Value& r)
+{
   return return_ctl;
 }
 

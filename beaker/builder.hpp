@@ -23,6 +23,14 @@ decl_id(Decl* d)
 }
 
 
+inline Return_void_stmt*
+return_void()
+{
+  static Return_void_stmt s;
+  return &s;
+}
+
+
 // block statements
 inline Block_stmt*
 block(Stmt_seq const& s)

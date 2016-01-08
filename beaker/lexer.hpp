@@ -201,6 +201,7 @@ public:
   Token rangle();
   Token ampersand();
   Token bar();
+  Token hat();
   Token scope();
 
   Token binary_integer();
@@ -468,6 +469,8 @@ Lexer::langle()
   get();
   if (peek() == '=')
     return symbol1();
+  else if (peek() == '<')
+    return symbol1();
   else
     return symbol0();
 }
@@ -479,6 +482,8 @@ Lexer::rangle()
   assert(peek() == '>');
   get();
   if (peek() == '=')
+    return symbol1();
+  else if (peek() == '>')
     return symbol1();
   else
     return symbol0();
@@ -505,7 +510,16 @@ Lexer::bar()
   if (peek() == '|')
     return symbol1();
   else
-    return error();
+    return symbol0();
+}
+
+
+inline Token
+Lexer::hat()
+{
+  assert(peek() == '^');
+  get();
+  return symbol0();
 }
 
 

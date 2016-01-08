@@ -12,6 +12,7 @@
 #include "beaker/error.hpp"
 #include "beaker/builtin.hpp"
 #include "beaker/actions.hpp"
+#include "beaker/length.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -394,6 +395,11 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Mul_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Div_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Rem_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Lshift_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Rshift_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Bitwise_and_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Bitwise_or_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Xor_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Neg_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Pos_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Eq_expr* e) const { return elab.elaborate(e); }
@@ -419,10 +425,12 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reinterpret_cast* e) const { return elab.elaborate(e); }
+    Expr* operator()(Void_cast* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_name_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_access_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Create_table* e) const { return elab.elaborate(e); }
+    Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -536,7 +544,24 @@ template<typename T>
 Expr*
 check_binary_arithmetic_expr(Elaborator& elab, T* e)
 {
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  e->first = elab.elaborate(e->first);
+  e->second = elab.elaborate(e->second);
+  Type const* t1 = e->first->type();
+  Type const* t2 = e->second->type();
+  assert(t1);
+  assert(t2);
+  int p1 = precision(t1);
+  int p2 = precision(t2);
+
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = nullptr;
+  if (p1 > p2)
+    z = get_integer_type(p1, signed_int, native_order);
+  else
+    z = get_integer_type(p2, signed_int, native_order);
+
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
@@ -667,6 +692,51 @@ Elaborator::elaborate(Div_expr* e)
 Expr*
 Elaborator::elaborate(Rem_expr* e)
 {
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Lshift_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since shifting bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Rshift_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since shifting bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Bitwise_and_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Bitwise_or_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
+  return check_binary_arithmetic_expr(*this, e);
+}
+
+
+Expr*
+Elaborator::elaborate(Xor_expr* e)
+{
+  // FIXME: Using arithemetic check instead of bitwise check
+  // since bitwise on bools is not currently supported.
   return check_binary_arithmetic_expr(*this, e);
 }
 
@@ -1419,6 +1489,23 @@ Elaborator::elaborate(Reinterpret_cast* e)
 }
 
 
+// Void cast converts an memory into a char* (ie and i8*)
+Expr*
+Elaborator::elaborate(Void_cast* e)
+{
+  e->first = elaborate(e->first);
+  Expr* target = e->expression();
+  if (is<Reference_type>(target->type()) || is<Block_type>(target->type())) {
+    std::stringstream ss;
+    ss << *e << " is not of ref or block type.";
+    throw Type_error({}, ss.str());
+  }
+
+  e->type_ = get_character_type()->ref();
+  return e;
+}
+
+
 // Names a field within a layout to be extracted
 Expr*
 Elaborator::elaborate(Field_name_expr* e)
@@ -1656,6 +1743,14 @@ Elaborator::elaborate(Create_table* e)
   // elaborate it as a call expr
   Call_expr* call = as<Call_expr>(e);
   return elaborate(call);
+}
+
+
+// No further elaboration required.
+Expr*
+Elaborator::elaborate(Get_dataplane* e)
+{
+  return e;
 }
 
 
@@ -2161,7 +2256,7 @@ Elaborator::elaborate_decl(Function_decl* d)
     main = d;
 
     // Ensure that main has foreign linkage.
-    d->spec_ |= foreign_spec;
+    d->spec_ |= extern_spec;
 
     // TODO: Check that main conforms to the
     // expected return type and arguments.
@@ -2644,6 +2739,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Block_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Assign_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Return_stmt* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Return_void_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(If_then_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(If_else_stmt* d) const { return elab.elaborate(d); }
     Stmt* operator()(Match_stmt* d) const { return elab.elaborate(d); };
@@ -2659,7 +2755,9 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
   };
 
   Stmt* stmt = apply(s, Fn{*this});
@@ -2745,6 +2843,19 @@ Elaborator::elaborate(Return_stmt* s)
 }
 
 
+Stmt*
+Elaborator::elaborate(Return_void_stmt* s)
+{
+  Function_decl* fn = stack.function();
+  Type const* t = fn->return_type();
+  if (!is<Void_type>(t))
+    throw Type_error(locate(s), "return void found in function whose return type"
+                                " is not void.");
+
+  return s;
+}
+
+
 // The condition must must be a boolean expression.
 Stmt*
 Elaborator::elaborate(If_then_stmt* s)
@@ -2780,15 +2891,14 @@ Elaborator::elaborate(If_else_stmt* s)
 Stmt*
 Elaborator::elaborate(Match_stmt* s)
 {
-  Expr* cond = require_converted(*this, s->condition_, get_integer_type());
+  s->condition_ = require_value(*this, s->condition_);
 
-  if (!cond) {
+  Type const* t = as<Integer_type>(s->condition_->type());
+  if (!t) {
     std::stringstream ss;
     ss << "Could not convert " << *s->condition_ << " to integer type.";
     throw Type_error(locate(s), ss.str());
   }
-
-  s->condition_ = cond;
 
   // TODO: check for same integer type
   // between condition and cases?
@@ -2804,12 +2914,18 @@ Elaborator::elaborate(Match_stmt* s)
     if (Case_stmt* case_ = as<Case_stmt>(c)) {
       // the case label should be guarenteed to be an integer
       // by elaboration of the case stmt
-      if (!vals.insert(case_->label()->value().get_integer()).second) {
+      // Assume that the case label is a literal.
+      Literal_expr* l = as<Literal_expr>(case_->label());
+      assert(l);
+      if (!vals.insert(l->value().get_integer()).second) {
         std::stringstream ss;
         ss << "Duplicate label value " << *case_->label()
            << " found in case statement " << *case_;
         throw Type_error(locate(s), ss.str());
       }
+
+      // Convert the label to the integer type of the condition.
+      case_->label_ = require_converted(*this, case_->label_, s->condition_->type());
     }
     else {
       std::stringstream ss;
@@ -3007,6 +3123,14 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
+Elaborator::elaborate(Clear* s)
+{
+  // No further elaboration required
+  return s;
+}
+
+
+Stmt*
 Elaborator::elaborate(Set_field* s)
 {
   if (!is<Flow_decl>(stack.context())
@@ -3034,5 +3158,15 @@ Elaborator::elaborate(Set_field* s)
   s->value_ = conv;
   s->field_ = field;
 
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_drop* s)
+{
+  assert(s->drop());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
   return s;
 }

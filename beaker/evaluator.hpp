@@ -52,6 +52,11 @@ public:
   Value eval(Mul_expr const*);
   Value eval(Div_expr const*);
   Value eval(Rem_expr const*);
+  Value eval(Lshift_expr const*);
+  Value eval(Rshift_expr const*);
+  Value eval(Bitwise_and_expr const*);
+  Value eval(Bitwise_or_expr const*);
+  Value eval(Xor_expr const*);
   Value eval(Neg_expr const*);
   Value eval(Pos_expr const*);
   Value eval(Eq_expr const*);
@@ -102,6 +107,7 @@ public:
   Control eval(Block_stmt const*, Value&);
   Control eval(Assign_stmt const*, Value&);
   Control eval(Return_stmt const*, Value&);
+  Control eval(Return_void_stmt const*, Value&);
   Control eval(If_then_stmt const*, Value&);
   Control eval(If_else_stmt const*, Value&);
   Control eval(Match_stmt const*, Value&);

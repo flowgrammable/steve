@@ -39,6 +39,8 @@ Generator::get_name(Decl const* d)
 {
   if (d->is_foreign())
     return d->name()->spelling();
+  else if (d->is_extern())
+    return d->name()->spelling();
   else
     return mangle(d);
 }
@@ -273,6 +275,11 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Mul_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Div_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Rem_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Lshift_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Rshift_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Bitwise_and_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Bitwise_or_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Xor_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Neg_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Pos_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Eq_expr const* e) const { return g.gen(e); }
@@ -298,10 +305,12 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reinterpret_cast const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_name_expr const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
     llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
   };
 
   return apply(e, Fn{*this});
@@ -374,7 +383,7 @@ Generator::gen(Decl_expr const* e)
   // Fetch the value from a reference declaration.
   Decl const* decl = bind->first;
 
-  if (is_reference(decl) && !is_opaque_reference(decl))
+  if (is_reference(decl))
     return build.CreateLoad(result);
 
   return result;
@@ -425,6 +434,50 @@ Generator::gen(Rem_expr const* e)
   llvm::Value* l = gen(e->left());
   llvm::Value* r = gen(e->right());
   return build.CreateURem(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Lshift_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateShl(l, r);
+}
+
+llvm::Value*
+Generator::gen(Rshift_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateLShr(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Bitwise_and_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateAnd(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Bitwise_or_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateOr(l, r);
+}
+
+
+llvm::Value*
+Generator::gen(Xor_expr const* e)
+{
+  llvm::Value* l = gen(e->left());
+  llvm::Value* r = gen(e->right());
+  return build.CreateXor(l, r);
 }
 
 
@@ -738,6 +791,16 @@ Generator::gen(Reinterpret_cast const* e)
 }
 
 
+// Void cast causes an value to be bitcast into i8*.
+llvm::Value*
+Generator::gen(Void_cast const* e)
+{
+  llvm::Value* val = gen(e->expression());
+  // Create a bit cast from whatever to i8*.
+  llvm::Type* t = get_type(get_character_type()->ref());
+  return build.CreateBitCast(val, t);
+}
+
 
 llvm::Value*
 Generator::gen(Get_port const* e)
@@ -779,6 +842,26 @@ Generator::gen(Create_table const* e)
 }
 
 
+llvm::Value*
+Generator::gen(Get_dataplane const* e)
+{
+  assert(e->dataplane());
+  auto const* bind = stack.lookup(e->dataplane());
+  assert(bind);
+  // We have to load the pointer from the parameter variable.
+  // There's no way around this.
+  llvm::Value* dataplane = build.CreateLoad(bind->second);
+  assert(dataplane);
+
+  assert(e->target());
+  bind = stack.lookup(e->target());
+  assert(bind);
+  llvm::Value* target = bind->second;
+  assert(target);
+
+  return build.CreateStore(dataplane, target);
+}
+
 // -------------------------------------------------------------------------- //
 // Code generation for statements
 //
@@ -795,6 +878,7 @@ Generator::gen(Stmt const* s)
     void operator()(Block_stmt const* s) { g.gen(s); }
     void operator()(Assign_stmt const* s) { g.gen(s); }
     void operator()(Return_stmt const* s) { g.gen(s); }
+    void operator()(Return_void_stmt const* s) { g.gen(s); }
     void operator()(If_then_stmt const* s) { g.gen(s); }
     void operator()(If_else_stmt const* s) { g.gen(s); }
     void operator()(Match_stmt const* s) { g.gen(s); }
@@ -810,7 +894,9 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { g.gen(s); }
     void operator()(Drop const* s) { g.gen(s); }
     void operator()(Output const* s) { g.gen(s); }
+    void operator()(Clear const* s) { g.gen(s); }
     void operator()(Set_field const* s) { g.gen(s); }
+    void operator()(Write_drop const* s) { g.gen(s); }
   };
   apply(s, Fn{*this});
 }
@@ -856,6 +942,16 @@ Generator::gen(Return_stmt const* s)
 {
   llvm::Value* v = gen(s->value());
   build.CreateStore(v, ret);
+  build.CreateBr(exit);
+}
+
+
+// The exit block will have the ret void statement made
+// if the function returns void so we shouldn't have to deal
+// with that here. We should only need to branch to exit block.
+void
+Generator::gen(Return_void_stmt const* s)
+{
   build.CreateBr(exit);
 }
 
@@ -996,8 +1092,9 @@ Generator::gen(Match_stmt const* s)
   llvm::BasicBlock* done = llvm::BasicBlock::Create(cxt, "switch.done", fn);
   llvm::SwitchInst* switch_ = build.CreateSwitch(cond, done);
 
-  for (auto stmt : s->cases()) { assert(is<Case_stmt>(stmt)); Case_stmt* c =
-  as<Case_stmt>(stmt);
+  for (auto stmt : s->cases()) {
+    assert(is<Case_stmt>(stmt));
+    Case_stmt* c = as<Case_stmt>(stmt);
 
     llvm::BasicBlock* c1 = llvm::BasicBlock::Create(cxt, "switch.c", fn);
     build.SetInsertPoint(c1);
@@ -1045,10 +1142,25 @@ Generator::gen(Output const* s)
 
 
 void
+Generator::gen(Clear const* s)
+{
+  lingo_unreachable("unimplemented instruction gen");
+}
+
+
+void
 Generator::gen(Set_field const* s)
 {
   lingo_unreachable();
 }
+
+
+void
+Generator::gen(Write_drop const* s)
+{
+  lingo_unreachable();
+}
+
 
 // -------------------------------------------------------------------------- //
 // Code generation for declarations

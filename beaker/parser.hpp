@@ -28,8 +28,12 @@ public:
   Expr* unary_expr();
   Expr* multiplicative_expr();
   Expr* additive_expr();
+  Expr* bitshift_expr();
   Expr* ordering_expr();
   Expr* equality_expr();
+  Expr* bitwise_and_expr();
+  Expr* bitwise_xor_expr();
+  Expr* bitwise_or_expr();
   Expr* logical_and_expr();
   Expr* logical_or_expr();
   Expr* field_name_expr();
@@ -83,6 +87,7 @@ public:
   Stmt* decode_stmt();
   Stmt* goto_stmt();
   Stmt* drop_stmt();
+  Stmt* clear_stmt();
   Stmt* output_stmt();
   Stmt* set_stmt();
   Stmt* copy_stmt();
@@ -121,6 +126,11 @@ private:
   Expr* on_mul(Expr*, Expr*);
   Expr* on_div(Expr*, Expr*);
   Expr* on_rem(Expr*, Expr*);
+  Expr* on_lshift(Expr*, Expr*);
+  Expr* on_rshift(Expr*, Expr*);
+  Expr* on_bitwise_and(Expr*, Expr*);
+  Expr* on_bitwise_or(Expr*, Expr*);
+  Expr* on_xor(Expr*, Expr*);
   Expr* on_neg(Expr*);
   Expr* on_pos(Expr*);
   Expr* on_eq(Expr*, Expr*);
@@ -178,6 +188,7 @@ private:
   Stmt* on_decode(Expr*);
   Stmt* on_goto(Expr*);
   Stmt* on_drop();
+  Stmt* on_clear();
   Stmt* on_output(Expr*);
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);

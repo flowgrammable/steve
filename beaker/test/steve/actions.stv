@@ -1,4 +1,4 @@
-Port p1;
+Port p1 = ":5000";
 
 layout eth
 {
@@ -9,8 +9,12 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::type;
-  set eth::type = 800;
+	extract eth::dst;
+	extract eth::src;
+  // extract eth::type;
+	set eth::src = eth::dst & 0xff_ff_ff_ff_ff_00;
+  // set eth::type = 800;
+	// clear;
   // copy eth::type = eth::src;
   // write drop;
   // write output p1;

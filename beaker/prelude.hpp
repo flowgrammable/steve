@@ -40,6 +40,11 @@ struct Sub_expr;
 struct Mul_expr;
 struct Div_expr;
 struct Rem_expr;
+struct Lshift_expr;
+struct Rshift_expr;
+struct Bitwise_and_expr;
+struct Bitwise_or_expr;
+struct Xor_expr;
 struct Neg_expr;
 struct Pos_expr;
 struct Eq_expr;
@@ -57,6 +62,7 @@ struct Field_expr;
 struct Method_expr;
 struct Index_expr;
 struct Reinterpret_cast;
+struct Void_cast;
 struct Conv;
 struct Value_conv;
 struct Block_conv;
@@ -69,11 +75,6 @@ struct Copy_init;
 struct Reference_init;
 struct Field_name_expr;
 struct Field_access_expr;
-
-// builtin expressions
-struct Get_port;
-struct Create_table;
-
 
 struct Type;
 struct Id_type;
@@ -119,6 +120,7 @@ struct Empty_stmt;
 struct Block_stmt;
 struct Assign_stmt;
 struct Return_stmt;
+struct Return_void_stmt;
 struct If_then_stmt;
 struct If_else_stmt;
 struct Match_stmt;
@@ -128,6 +130,8 @@ struct Break_stmt;
 struct Continue_stmt;
 struct Expression_stmt;
 struct Declaration_stmt;
+
+// Network specific
 struct Decode_stmt;
 struct Goto_stmt;
 
@@ -141,16 +145,22 @@ struct Delete_table;
 struct Lookup;
 struct Advance;
 
+// Builtin expressions that need special code gen
+struct Get_port;
+struct Create_table;
+struct Get_dataplane;
+
 // Actions
 struct Goto_stmt;
 struct Action;
 struct Drop;
 struct Output;
+struct Clear;
 struct Group;
 struct Set_field;
 struct Copy_field;
-struct Write_drop_stmt;
-struct Write_output_stmt;
+struct Write_drop;
+struct Write_output;
 struct Write_set_field;
 struct Write_copy_field;
 

@@ -90,6 +90,7 @@ Lexer::scan()
       case '>': return rangle();
       case '&': return ampersand();
       case '|': return bar();
+      case '^': return hat();
 
       case '0':
         // if the next character is a 'b' then this

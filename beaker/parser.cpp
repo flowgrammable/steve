@@ -280,29 +280,54 @@ Parser::additive_expr()
 }
 
 
-// Parse an additive expression.
+// Parse a bitwise shift expression.
 //
-//    ordering-expr -> ordering-expr '<' additive-expr
-//                   | ordering-expr '>' additive-expr
-//                   | ordering-expr '<=' additive-expr
-//                   | ordering-expr '>=' additive-expr
+//    bitwise-shift -> bitwise-shift '<<' additive-expr
+//                   | bitwise-shift '>>' additive-expr
 //                   | additive-expr
 Expr*
-Parser::ordering_expr()
+Parser::bitshift_expr()
 {
   Expr* e1 = additive_expr();
   while (true) {
-    if (match_if(lt_tok)) {
+    if (match_if(lshift_tok)) {
       Expr* e2 = additive_expr();
+      e1 = on_lshift(e1, e2);
+    } else if (match_if(rshift_tok)) {
+      Expr* e2 = additive_expr();
+      e1 = on_rshift(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
+
+
+// Parse an additive expression.
+//
+//    ordering-expr -> ordering-expr '<' bitwise-shift-expr
+//                   | ordering-expr '>' bitwise-shift-expr
+//                   | ordering-expr '<=' bitwise-shift-expr
+//                   | ordering-expr '>=' bitwise-shift-expr
+//                   | bitwise-shift-expr
+Expr*
+Parser::ordering_expr()
+{
+  Expr* e1 = bitshift_expr();
+  while (true) {
+    if (match_if(lt_tok)) {
+      Expr* e2 = bitshift_expr();
       e1 = on_lt(e1, e2);
     } else if (match_if(gt_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_gt(e1, e2);
     } else if (match_if(le_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_le(e1, e2);
     } else if (match_if(ge_tok)) {
-      Expr* e2 = additive_expr();
+      Expr* e2 = bitshift_expr();
       e1 = on_ge(e1, e2);
     } else {
       break;
@@ -338,17 +363,75 @@ Parser::equality_expr()
 }
 
 
-// Parse a logical and expression.
-//
-//    logical-and-expr -> logical-and-expr '&&' equality-expr
+// Parse a bitwise and expression.
+//    bitwise-and-expr -> bitwise-and-expr '&' equality-expr
 //                      | equality-expr
 Expr*
-Parser::logical_and_expr()
+Parser::bitwise_and_expr()
 {
   Expr* e1 = equality_expr();
   while (true) {
-    if (match_if(and_tok)) {
+    if (match_if(amp_tok)) {
       Expr* e2 = equality_expr();
+      e1 = on_bitwise_and(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
+
+
+// Parse a bitwise xor expression.
+//    bitwise-xor-expr -> bitwise-xor-expr '^' bitwise-and-expr
+//                      | bitwise-and-expr
+Expr*
+Parser::bitwise_xor_expr()
+{
+  Expr* e1 = bitwise_and_expr();
+  while (true) {
+    if (match_if(bxor_tok)) {
+      Expr* e2 = bitwise_and_expr();
+      e1 = on_xor(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
+
+// Parse a bitwise (inclusive) or expression.
+//    bitwise-or-expr -> bitwise-or-expr '|' bitwise-xor-expr
+//                      | bitwise-xor-expr
+Expr*
+Parser::bitwise_or_expr()
+{
+  Expr* e1 = bitwise_xor_expr();
+  while (true) {
+    if (match_if(bor_tok)) {
+      Expr* e2 = bitwise_xor_expr();
+      e1 = on_bitwise_or(e1, e2);
+    } else {
+      break;
+    }
+  }
+  return e1;
+}
+
+
+// Parse a logical and expression.
+//
+//    logical-and-expr -> logical-and-expr '&&' bitwise-or-expr
+//                      | bitwise-or-expr
+Expr*
+Parser::logical_and_expr()
+{
+  Expr* e1 = bitwise_or_expr();
+  while (true) {
+    if (match_if(and_tok)) {
+      Expr* e2 = bitwise_or_expr();
       e1 = on_and(e1, e2);
     } else {
       break;
@@ -1274,6 +1357,19 @@ Parser::output_stmt()
 }
 
 
+// Pares a clear stmt.
+//
+//    clear-stmt -> 'clear;'
+Stmt*
+Parser::clear_stmt()
+{
+  match(clear_kw);
+  match(semicolon_tok);
+
+  return on_clear();
+}
+
+
 // Set a field to a given value
 //
 //  set-stmt -> 'set' field-name-expr '=' expr ';'
@@ -1327,6 +1423,9 @@ Parser::write_stmt()
       break;
     case set_kw:
       s = set_stmt();
+      break;
+    case clear_kw:
+      s = clear_stmt();
       break;
     case copy_kw:
       s = copy_stmt();
@@ -1389,6 +1488,9 @@ Parser::stmt()
 
     case output_kw:
       return output_stmt();
+
+    case clear_kw:
+      return clear_stmt();
 
     case set_kw:
       return set_stmt();
@@ -1695,6 +1797,41 @@ Parser::on_rem(Expr* e1, Expr* e2)
 
 
 Expr*
+Parser::on_lshift(Expr* e1, Expr* e2)
+{
+  return new Lshift_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_rshift(Expr* e1, Expr* e2)
+{
+  return new Rshift_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_bitwise_and(Expr* e1, Expr* e2)
+{
+  return new Bitwise_and_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_xor(Expr* e1, Expr* e2)
+{
+  return new Xor_expr(e1, e2);
+}
+
+
+Expr*
+Parser::on_bitwise_or(Expr* e1, Expr* e2)
+{
+  return new Bitwise_or_expr(e1, e2);
+}
+
+
+Expr*
 Parser::on_neg(Expr* e)
 {
   return new Neg_expr(e);
@@ -1863,7 +2000,7 @@ Decl*
 Parser::on_function(Specifier spec, Token tok, Decl_seq const& p, Type const* t)
 {
   Type const* f = get_function_type(p, t);
-  return new Function_decl(tok.symbol(), f, p, nullptr);
+  return new Function_decl(spec, tok.symbol(), f, p, nullptr);
 }
 
 
@@ -1871,7 +2008,7 @@ Decl*
 Parser::on_function(Specifier spec, Token tok, Decl_seq const& p, Type const* t, Stmt* b)
 {
   Type const* f = get_function_type(p, t);
-  Decl* decl = new Function_decl(tok.symbol(), f, p, b);
+  Decl* decl = new Function_decl(spec, tok.symbol(), f, p, b);
   locate(decl, tok.location());
   return decl;
 }
@@ -2109,6 +2246,13 @@ Parser::on_drop()
 
 
 Stmt*
+Parser::on_clear()
+{
+  return new Clear();
+}
+
+
+Stmt*
 Parser::on_output(Expr* e)
 {
   return new Output(e);
@@ -2132,5 +2276,12 @@ Parser::on_copy(Expr* field, Expr* val)
 Stmt*
 Parser::on_write(Stmt* s)
 {
+  if (is<Drop>(s))
+    return new Write_drop(s);
+  else if (is<Output>(s))
+    return new Write_output(s);
+  else if (is<Set_field>(s))
+    return new Write_set_field(s);
+
   lingo_unimplemented();
 }
