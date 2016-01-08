@@ -344,13 +344,28 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 }
 
 
-fp::Byte* fp_read_field(fp::Context* cxt, int fld)
+fp::Byte*
+fp_read_field(fp::Context* cxt, int fld)
 {
   // std::cout << "READING FIELD";
   // Lookup the field in the context.
   fp::Binding b = cxt->get_field_binding(fld);
   fp::Byte* p = cxt->get_field(b.offset);
   return p;
+}
+
+
+void
+fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
+{
+  fp::Binding& b = cxt->get_field_binding(fld);
+
+  // Copy the new data into the packet at the appropriate location.
+  fp::Byte* p = cxt->get_field(b.offset);
+  std::copy(val, val + len, p);
+
+  // Update the length if it changed (which it shouldn't).
+  b.length = len;
 }
 
 } // extern "C"

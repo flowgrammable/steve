@@ -11,7 +11,7 @@ extern "C"
 // Apply actions.
 void           fp_drop(fp::Context*);
 void           fp_flood(fp::Context*);
-void           fp_set_field(fp::Context*, int, void*);
+void           fp_set_field(fp::Context*, int, int, fp::Byte*);
 void           fp_clear(fp::Context*);
 void           fp_goto_table(fp::Context*, fp::Table*, int, ...);
 void           fp_output_port(fp::Context*, fp::Port*);
@@ -19,7 +19,7 @@ void           fp_output_port(fp::Context*, fp::Port*);
 // Write actions.
 void           fp_write_drop(fp::Context*);
 void           fp_write_flood(fp::Context*);
-void           fp_write_set_field(fp::Context*, int, void*);
+void           fp_write_set_field(fp::Context*, int, int, void*);
 void           fp_write_clear(fp::Context*);
 void           fp_write_goto(fp::Context*, fp::Table*);
 void           fp_write_output_port(fp::Context*, fp::Port*);
