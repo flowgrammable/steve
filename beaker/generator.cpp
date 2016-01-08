@@ -897,6 +897,7 @@ Generator::gen(Stmt const* s)
     void operator()(Clear const* s) { g.gen(s); }
     void operator()(Set_field const* s) { g.gen(s); }
     void operator()(Write_drop const* s) { g.gen(s); }
+    void operator()(Write_set_field const* s) { g.gen(s); }
   };
   apply(s, Fn{*this});
 }
@@ -1157,6 +1158,13 @@ Generator::gen(Set_field const* s)
 
 void
 Generator::gen(Write_drop const* s)
+{
+  lingo_unreachable();
+}
+
+
+void
+Generator::gen(Write_set_field const* s)
 {
   lingo_unreachable();
 }

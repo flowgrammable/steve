@@ -434,6 +434,34 @@ Builtin::write_drop()
 }
 
 
+Function_decl*
+Builtin::write_set_field()
+{
+  Symbol const* fn_name = get_identifier(__write_set);
+
+  Type const* void_type = get_void_type();
+  Type const* int_type = get_integer_type();
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* buffer = get_character_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref),
+    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("len"), int_type),
+    new Parameter_decl(get_identifier("val"), buffer)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
 void
 Builtin::init_builtins()
 {
@@ -455,6 +483,7 @@ Builtin::init_builtins()
     {__clear, clear()},
     {__set_field, set_field()},
     {__write_drop, write_drop()},
+    {__write_set, write_set_field()},
   };
 }
 
@@ -710,4 +739,14 @@ Builtin::call_write_drop(Expr* cxt)
   assert(fn);
 
   return new Drop_packet(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
+{
+  Function_decl* fn = builtin_fn.find(__write_set)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt, id, len, val});
 }

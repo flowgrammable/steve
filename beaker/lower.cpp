@@ -241,6 +241,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
 };
 
 
@@ -1442,22 +1443,6 @@ Lowerer::lower(Clear* s)
 }
 
 
-namespace
-{
-
-Expr*
-expr_to_void_block(Expr* v)
-{
-
-  Expr* cast = new Void_cast(v);
-  cast->type_ = get_character_type()->ref();
-  return cast;
-}
-
-
-} // namespace
-
-
 
 // FIXME: This is extremely broken right now.
 // FIXME: The process of converting any expression value to i8* is not obvious.
@@ -1512,7 +1497,7 @@ Lowerer::lower(Set_field* s)
 
 
 Stmt_seq
-Lowerer::lower(Write_drop* s)
+Lowerer::lower(Write_drop* w)
 {
   // get the context variable which should Always
   // be within the scope of a decoder body
@@ -1527,6 +1512,48 @@ Lowerer::lower(Write_drop* s)
 
   return
   {
+    new Expression_stmt(write)
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Write_set_field* w)
+{
+  Set_field* s = w->set_field();
+  assert(s);
+
+  // get the context varaible
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Write Set field translates to a function call to
+  // fp_write_set_field, passing in the context, field id, and value.
+  Field_access_expr* e = as<Field_access_expr>(s->field());
+  assert(e);
+
+  Expr* id = make_int(checker.get_field_mapping(e->name()));
+
+  // Lower the value first to ensure it can be evaluated.
+  s->value_ = lower(s->value_);
+
+  // Initialize a temp variable with the value used to set the field.
+  Variable_decl* var = temp_var(elab.syms, s->value()->type(), s->value());
+  declare(var);
+
+  // Convert the value into a byte array and pass it as an i8*.
+  int prec = precision(s->value()->type());
+  auto val = expr_to_void_block(decl_id(var));
+
+  // Create the call, passing in the value as an i8* to the runtime.
+  Expr* write =
+    builtin.call_write_set_field(decl_id(cxt), id, make_int(prec / 8), val);
+  elab.elaborate(write);
+
+  return {
+    new Declaration_stmt(var),
     new Expression_stmt(write)
   };
 }

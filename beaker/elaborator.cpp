@@ -2758,6 +2758,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
   Stmt* stmt = apply(s, Fn{*this});
@@ -3166,6 +3167,16 @@ Stmt*
 Elaborator::elaborate(Write_drop* s)
 {
   assert(s->drop());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_set_field* s)
+{
+  assert(s->set_field());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
   return s;

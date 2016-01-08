@@ -138,7 +138,10 @@ struct Write_set_field : Action
   : first(a)
 { }
 
-  Set_field* output() const { return cast<Set_field>(first); }
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Set_field* set_field() const { return cast<Set_field>(first); }
 
   Stmt* first;
 };

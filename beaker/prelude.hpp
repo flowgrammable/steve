@@ -151,7 +151,6 @@ struct Create_table;
 struct Get_dataplane;
 
 // Actions
-struct Goto_stmt;
 struct Action;
 struct Drop;
 struct Output;

@@ -213,13 +213,16 @@ struct Clear_actions : Call_expr
 };
 
 
-
-
 struct Write_drop_action : Call_expr
 {
   using Call_expr::Call_expr;
 };
 
+
+struct Write_set_field_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
 
 
 struct Get_port : Call_expr
@@ -306,6 +309,7 @@ struct Builtin
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
   Expr* call_write_drop(Expr*);
+  Expr* call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -337,6 +341,7 @@ private:
   Function_decl* clear();
   Function_decl* set_field();
   Function_decl* write_drop();
+  Function_decl* write_set_field();
 
   Symbol const* get_identifier(std::string);
 

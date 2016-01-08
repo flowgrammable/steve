@@ -85,6 +85,7 @@ struct Lowerer
   Stmt_seq lower(Clear*);
   Stmt_seq lower(Set_field*);
   Stmt_seq lower(Write_drop*);
+  Stmt_seq lower(Write_set_field*);
 
   // application interface
   Function_decl* load_function();
