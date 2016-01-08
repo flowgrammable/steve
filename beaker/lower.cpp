@@ -241,6 +241,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
 };
 
@@ -1398,25 +1399,23 @@ Lowerer::lower(Output* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // acquire the drop port
-  // TODO: we;re not relly using this right now since we assume
-  // drop is an intrinsic
+  // Acquire the port.
   Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
   ovl = unqualified_lookup(port_name);
   assert(ovl);
   Decl* port = ovl->back();
   assert(port);
 
-  // make a call to the drop function
-  Expr* drop = builtin.call_output(decl_id(cxt), decl_id(port));
-  elab.elaborate(drop);
+  // make a call to the output function
+  Expr* output = builtin.call_output(decl_id(cxt), decl_id(port));
+  elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.
   // No safety guarantees exist after a packet has been outputted.
 
   return
   {
-    new Expression_stmt(drop),
+    new Expression_stmt(output),
     return_void()
   };
 }
@@ -1513,6 +1512,42 @@ Lowerer::lower(Write_drop* w)
   return
   {
     new Expression_stmt(write)
+  };
+}
+
+
+// FIXME: Writing an output for later has some questionable semantics.
+// Upon applying the output, all actions afterward should not be executed
+// (since the outputing of a packet causes its context to be deleted and no
+// longer valid). This is easier to enforce in immediate action rather than
+// written actions which is currently not enforced in.
+Stmt_seq
+Lowerer::lower(Write_output* w)
+{
+  Output* s = w->output();
+  assert(s);
+  
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
+  ovl = unqualified_lookup(port_name);
+  assert(ovl);
+  Decl* port = ovl->back();
+  assert(port);
+
+  // make a call to the drop function
+  Expr* output = builtin.call_write_output(decl_id(cxt), decl_id(port));
+  elab.elaborate(output);
+
+  return
+  {
+    new Expression_stmt(output),
   };
 }
 

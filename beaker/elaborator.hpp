@@ -201,6 +201,7 @@ public:
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Write_drop*);
+  Stmt* elaborate(Write_output*);
   Stmt* elaborate(Write_set_field*);
 
   void declare(Decl*);

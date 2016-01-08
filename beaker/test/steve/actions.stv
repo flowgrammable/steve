@@ -17,7 +17,7 @@ decoder start eth_d(eth)
 	// clear;
   // copy eth::type = eth::src;
   // write drop;
-  // write output p1;
+  write output p1;
   write set eth::type = 0x800;
   // write copy eth::type = eth::src;
 }

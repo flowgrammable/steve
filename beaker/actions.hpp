@@ -125,6 +125,9 @@ struct Write_output : Action
     : first(a)
   { }
 
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
   Output* output() const { return cast<Output>(first); }
 
   Stmt* first;

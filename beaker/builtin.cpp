@@ -147,7 +147,7 @@ Builtin::get_table()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* ret_type = get_reference_type(get_opaque_table());
+  Type const* ret_type = get_opaque_table()->ref();
   Symbol const* fn_name = get_identifier(__get_table);
 
   Decl_seq parms =
@@ -175,8 +175,8 @@ Builtin::add_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   Type const* buffer_type = get_block_type(get_character_type());
 
@@ -211,8 +211,8 @@ Builtin::add_miss()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   // Flows actually become free functions so they have function
   // type when lowered.
@@ -299,7 +299,7 @@ Builtin::get_port()
 {
   Symbol const* fn_name = get_identifier(__get_port);
 
-  Type const* port_type = get_reference_type(get_port_type());
+  Type const* port_type = get_port_type()->ref();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("name"), get_block_type(get_character_type()))
@@ -435,6 +435,30 @@ Builtin::write_drop()
 
 
 Function_decl*
+Builtin::write_output()
+{
+  Symbol const* fn_name = get_identifier(__write_output);
+
+  Type const* void_type = get_void_type();
+  Type const* port_type = get_port_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
+    new Parameter_decl(get_identifier("port"), port_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+Function_decl*
 Builtin::write_set_field()
 {
   Symbol const* fn_name = get_identifier(__write_set);
@@ -483,6 +507,7 @@ Builtin::init_builtins()
     {__clear, clear()},
     {__set_field, set_field()},
     {__write_drop, write_drop()},
+    {__write_output, write_output()},
     {__write_set, write_set_field()},
   };
 }
@@ -739,6 +764,16 @@ Builtin::call_write_drop(Expr* cxt)
   assert(fn);
 
   return new Drop_packet(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_write_output(Expr* cxt, Expr* port)
+{
+  Function_decl* fn = builtin_fn.find(__write_output)->second;
+  assert(fn);
+
+  return new Output_packet(decl_id(fn), {cxt, port});
 }
 
 

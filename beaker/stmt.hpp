@@ -48,6 +48,7 @@ struct Stmt::Visitor
   virtual void visit(Clear const*) = 0;
   virtual void visit(Set_field const*) = 0;
   virtual void visit(Write_drop const*) = 0;
+  virtual void visit(Write_output const*) = 0;
   virtual void visit(Write_set_field const*) = 0;
 };
 
@@ -77,6 +78,7 @@ struct Stmt::Mutator
   virtual void visit(Clear*) = 0;
   virtual void visit(Set_field*) = 0;
   virtual void visit(Write_drop*) = 0;
+  virtual void visit(Write_output*) = 0;
   virtual void visit(Write_set_field*) = 0;
 };
 
@@ -385,6 +387,7 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Clear const* d) { this->invoke(d); };
   void visit(Set_field const* d) { this->invoke(d); };
   void visit(Write_drop const* d) { this->invoke(d); };
+  void visit(Write_output const* d) { this->invoke(d); };
   void visit(Write_set_field const* d) { this->invoke(d); };
 };
 
@@ -431,6 +434,7 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Clear* d) { this->invoke(d); };
   void visit(Set_field* d) { this->invoke(d); };
   void visit(Write_drop* d) { this->invoke(d); };
+  void visit(Write_output* d) { this->invoke(d); };
   void visit(Write_set_field* d) { this->invoke(d); };
 };
 
