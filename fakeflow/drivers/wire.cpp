@@ -1,7 +1,7 @@
 
 #include "buffer.hpp"
-#include "port_table.hpp"
 #include "system.hpp"
+#include "port_table.hpp"
 #include "timer.hpp"
 
 using namespace fp;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
       Timer t;
 
       while(i < pkt_no) {
-        Byte* data = new Byte[1500]{
+        Byte* data = new Byte[64]{
           // src bytes
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
           // dst bytes
@@ -58,12 +58,10 @@ int main(int argc, char* argv[])
 
         dp->process(p1, pkt);
         ++i;
-        packet_destroy(pkt);
       }
       // timer dtor should print time here
 
     } // block
-
   }
   catch(std::string s)
   {

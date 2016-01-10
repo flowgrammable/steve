@@ -28,7 +28,10 @@ add_library(flowpath-rt SHARED
     port_udp.cpp
     system.cpp
     table.cpp
-    types.cpp)
+    types.cpp
+    # thread.cpp
+    # queue.cpp
+    )
 
 
 add_subdirectory(drivers)
