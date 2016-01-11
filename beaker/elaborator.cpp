@@ -2968,13 +2968,15 @@ Elaborator::elaborate(Match_stmt* s)
 }
 
 
-// FIXME: make sure case stmts can only appear
-// in the context of match
+// FIXME: Make sure case stmts can only appear in the context of match.
+//
+// NOTE: Any conversions of types on case labels are done in the elaboration
+// of the match statement.
 Stmt*
 Elaborator::elaborate(Case_stmt* s)
 {
-  Expr* label = require_converted(*this, s->label_, get_integer_type());
-
+  Expr* label = elaborate(s->label());
+  
   if (!is<Literal_expr>(label)) {
     std::stringstream ss;
     ss << "Non-literal value " << *label << " found in case statement.";
