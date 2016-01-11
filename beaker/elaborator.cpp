@@ -1531,9 +1531,14 @@ Elaborator::elaborate(Field_name_expr* e)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -1595,13 +1600,18 @@ Elaborator::elaborate(Field_name_expr* e)
 
   e->decls_ = decls;
 
-  // the type is the type of the final declaration
+  // The type is the type of the final declaration
   Type const* t = decls.back()->type();
   if (!t) {
     std::stringstream ss;
     ss << "Field expression" << *e << " of unknown type.";
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(e), ss.str());
   }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(e), "Cannot extract an entire layout.");
+  }
+
   e->type_ = t;
 
   return e;
@@ -1645,9 +1655,14 @@ Elaborator::elaborate(Field_access_expr* e)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -1716,6 +1731,10 @@ Elaborator::elaborate(Field_access_expr* e)
     std::stringstream ss;
     ss << "Field expression" << *e << " of unknown type.";
     throw Type_error({}, ss.str());
+  }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(e), "Cannot extract an entire layout.");
   }
 
   e->type_ = get_reference_type(t);
@@ -1944,9 +1963,14 @@ Elaborator::elaborate(Key_decl* d)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -2021,6 +2045,10 @@ Elaborator::elaborate(Key_decl* d)
     std::stringstream ss;
     ss << "Field expression" << *d << " of unknown type.";
     throw Type_error({}, ss.str());
+  }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(d), "Cannot extract an entire layout.");
   }
   d->type_ = t;
 
