@@ -107,7 +107,7 @@ struct Table
 // requires those matches to be translated into OXM's but
 // we want to be protocol agnostic. How do we solve this
 // problem?
-struct Hash_table : Table, private std::unordered_map<Key, Flow, Key_hash>
+struct Hash_table : Table, std::unordered_map<Key, Flow, Key_hash>
 {
   using Map = std::unordered_map<Key, Flow, Key_hash>;
 

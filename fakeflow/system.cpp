@@ -167,10 +167,19 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
   va_start(args, n);
   fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
   va_end(args);
-  // find the flow
   fp::Flow const& flow = tbl->find(key);
   // execute the flow function
   flow.instr_(tbl, cxt);
+
+  // // testing find times
+  // static fp::Byte b[fp::key_size];
+  // static fp::Key key(b, 8);
+  // fp::Flow const& flow = tbl->find(key);
+  // // execute the flow function
+  // flow.instr_(tbl, cxt);
+
+  // static fp::Flow const& flow = dynamic_cast<fp::Hash_table*>(tbl)->begin()->second;
+  // flow.instr_(tbl, cxt);
 }
 
 
