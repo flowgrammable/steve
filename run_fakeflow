@@ -1,0 +1,1 @@
+./build/fakeflow/drivers/wire-driver apps/$1.app $2
