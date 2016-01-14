@@ -172,4 +172,36 @@ struct Write_group : Action
 };
 
 
+// Returns true iff the statement is a pipeline terminator action.
+// Terminators are:
+//    decode-stmts
+//    goto-stmt
+//    drop-stmt
+//    flood-stmt
+//    output-stmt
+inline bool
+is_terminator(Stmt* s)
+{
+  return is<Decode_stmt>(s)
+      || is<Goto_stmt>(s)
+      || is<Drop>(s)
+      // || is<Flood_stmt>(s)
+      || is<Output>(s);
+}
+
+
+// Returns true iff at least 1 statement in a statement
+// sequence contains a terminator.
+inline bool
+has_terminator_action(Stmt_seq const& body)
+{
+  for (auto s : body) {
+    if (is_terminator(s))
+      return true;
+  }
+
+  return false;
+}
+
+
 #endif

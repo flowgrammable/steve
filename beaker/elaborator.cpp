@@ -2080,6 +2080,16 @@ Elaborator::elaborate(Flow_decl* d)
   d->type_ = get_flow_type(types);
   d->instructions_ = elaborate(d->instructions());
 
+  if (Block_stmt* block = as<Block_stmt>(d->instructions_)) {
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration missing guaranteed terminator.\n";
+      ss << *block;
+
+      throw Type_error(locate(d), ss.str());
+    }
+  }
+
   return d;
 }
 
@@ -2701,8 +2711,18 @@ Elaborator::elaborate_def(Decode_decl* d)
 
   // Enter a scope since a decode body is
   // basically a special function body
-  if (d->body())
+  if (d->body()) {
     d->body_ = elaborate(d->body());
+    if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+      if (!has_terminator_action(block->statements())) {
+        std::stringstream ss;
+        ss << "Flow declaration missing guaranteed terminator.\n";
+        ss << *block;
+
+        throw Type_error(locate(d), ss.str());
+      }
+    }
+  }
 
   return d;
 }

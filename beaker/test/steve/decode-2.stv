@@ -28,6 +28,8 @@ decoder start eth_d(eth)
 		case 1: decode eth2_d;
 		case 880: goto t1;
 	}
+
+	drop;
 }
 
 decoder eth2_d(eth)
@@ -46,13 +48,15 @@ decoder ipv4_d(ipv4)
 	match (ipv4::protocol) {
 		case 0: goto t1;
 	}
+
+	drop;
 }
 
 
 exact_table t1(eth::src)
 {
-  {0} -> { };
-	{1} -> { };
+	{1} -> { drop; };
+	{0} -> { drop; };
 }
 
 

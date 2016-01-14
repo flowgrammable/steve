@@ -61,6 +61,8 @@ decoder ipv4_d(ipv4)
   match(ipv4::protocol) {
     case 0: goto s2;
   }
+
+	drop;
 }
 
 

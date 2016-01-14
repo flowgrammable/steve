@@ -32,6 +32,8 @@ decoder start eth_d(eth)
 		case 0: decode ipv4_d;
 		case 1: decode ipv4_d;
 	}
+
+	drop;
 }
 
 decoder ipv4_d(ipv4)
@@ -42,6 +44,8 @@ decoder ipv4_d(ipv4)
 	match (ipv4::protocol) {
 		case 0: goto t2;
 	}
+
+	drop;
 }
 
 
@@ -49,14 +53,13 @@ exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
 {
   {0, 1, 2, 3} ->
 	{
-		match (eth::src) {
-
-		}
+		drop;
 	};
 
 
 	{1, 2, 3, 40000} ->
 	{
+		drop;
 	};
 }
 
