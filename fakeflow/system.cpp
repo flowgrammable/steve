@@ -163,19 +163,19 @@ fp_clear(fp::Context* cxt)
 void
 fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 {
-  va_list args;
-  va_start(args, n);
-  fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
-  va_end(args);
-  fp::Flow const& flow = tbl->find(key);
-  // execute the flow function
-  flow.instr_(tbl, cxt);
-
-  // // testing find times
-  // static fp::Byte b[fp::key_size];
-  // static fp::Key key(b, 8);
-  // fp::Flow const& flow = tbl->find(key);
+  // va_list args;
+  // va_start(args, n);
+  // fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
+  // va_end(args);
+  // fp::Flow const& flow = tbl->search(key);
   // // execute the flow function
+  // flow.instr_(tbl, cxt);
+
+  // testing find times
+  static fp::Byte b[fp::key_size];
+  static fp::Key key(b, 8);
+  fp::Flow const& flow = tbl->search(key);
+  // execute the flow function
   // flow.instr_(tbl, cxt);
 
   // static fp::Flow const& flow = dynamic_cast<fp::Hash_table*>(tbl)->begin()->second;
@@ -281,7 +281,7 @@ fp_add_flow(fp::Table* tbl, void* fn, void* key)
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
   fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
-  tbl->insert(k, flow);
+  tbl->add(k, flow);
 }
 
 
@@ -307,7 +307,7 @@ fp_del_flow(fp::Table* tbl, void* key)
   // construct a key object
   fp::Key k(buf, key_size);
   // delete the key
-  tbl->erase(k);
+  tbl->rmv(k);
 }
 
 

@@ -116,6 +116,24 @@ Pipeline_checker::check_stage(Decl const* d, Sym_set const& reqs)
   }
 }
 
+
+void
+Pipeline_checker::check_progression(Stage_set const& branches)
+{
+  for (auto b : branches) {
+    if (b->is_table())
+      if (b->table()->number() <= highest_table) {
+        std::stringstream ss;
+        ss << "Pipeline path goes backwards. Broken path: ";
+        for (auto stage : path)
+          ss << *stage->decl()->name() << " | ";
+
+        throw Lookup_error({}, ss.str());
+      }
+  }
+}
+
+
 // Depth first search
 // specialized to visit ALL PATHS within a
 // graph instead of visiting all nodes within
@@ -124,6 +142,11 @@ void
 Pipeline_checker::dfs(Stage* s)
 {
   s->visited = true;
+
+  // Update the value of the highest table if this is a table stage.
+  if (s->is_table()) {
+    highest_table = as<Table_decl>(s->decl())->number();
+  }
 
   // push all of its productions onto the bindings stack
   stack.produce(s->productions());
@@ -139,6 +162,8 @@ Pipeline_checker::dfs(Stage* s)
 
   // check this stage
   check_stage(s->decl(), s->requirements());
+  // check if this stage progresses to a stage later in the pipeline
+  check_progression(s->branches());
 
   for (auto br : s->branches()) {
     if (br->decl() != s->decl()) {
@@ -163,6 +188,7 @@ Pipeline_checker::dfs(Stage* s)
   // so that we can explore all possible paths instead of
   // just one path
   s->visited = false;
+
 }
 
 

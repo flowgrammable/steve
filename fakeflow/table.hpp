@@ -9,6 +9,9 @@
 #include <cstring>
 #include <algorithm>
 #include <unordered_map>
+#include <tr1/unordered_map>
+#include <utility>
+#include <string>
 
 // delete this later
 #include <iostream>
@@ -18,6 +21,12 @@
 
 namespace fp
 {
+
+inline void
+test()
+{
+  std::tr1::unordered_map<std::string, std::string> myHashTable;
+}
 
 struct Flow;
 
@@ -76,10 +85,10 @@ struct Table
 
   virtual ~Table() { }
 
-  virtual Flow& find(Key const&) = 0;
-  virtual Flow const& find(Key const&) const = 0;
-  virtual void insert(Key const&, Flow const&) = 0;
-  virtual void erase(Key const&) = 0;
+  virtual Flow search(Key const&) = 0;
+  // virtual Flow const search(Key const&) const = 0;
+  virtual void add(Key const&, Flow const&) = 0;
+  virtual void rmv(Key const&) = 0;
   void insert_miss(Flow const& f) { miss_ = f; }
 
   Type type()     const { return type_; }
@@ -107,19 +116,19 @@ struct Table
 // requires those matches to be translated into OXM's but
 // we want to be protocol agnostic. How do we solve this
 // problem?
-struct Hash_table : Table, std::unordered_map<Key, Flow, Key_hash>
+struct Hash_table : Table, std::tr1::unordered_map<Key, Flow, Key_hash>
 {
-  using Map = std::unordered_map<Key, Flow, Key_hash>;
+  using Map = std::tr1::unordered_map<Key, Flow, Key_hash>;
 
   Hash_table(int id, int size, int k)
     : Table(Table::EXACT, id, k), Map(size)
   { }
 
-  Flow&       find(Key const&);
-  Flow const& find(Key const&) const;
+  Flow       search(Key const&);
+  // Flow const search(Key const&) const;
 
-  void insert(Key const&, Flow const&);
-  void erase(Key const&);
+  void add(Key const&, Flow const&);
+  void rmv(Key const&);
 };
 
 

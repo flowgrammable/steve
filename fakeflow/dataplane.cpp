@@ -62,18 +62,24 @@ Dataplane::up()
 }
 
 
-
 struct App1
 {
-  void
+  App1(Table* t)
+    : table(dynamic_cast<Hash_table*>(t))
+  { }
+
+  Hash_table* table;
+
+  inline void
   eth_d(Context* cxt, Port* p)
   {
     fp_bind_header(cxt, 0);
-    fp_output_port(cxt, p);
+    // fp_output_port(cxt, p);
+    fp_goto_table(cxt, table, 1, 0);
   }
 
 
-  void
+  inline void
   pipeline(Context* cxt, Port* p)
   {
     eth_d(cxt, p);
@@ -84,10 +90,10 @@ struct App1
 struct App2
 {
   App2(Table* t)
-    : table(t)
+    : table(dynamic_cast<Hash_table*>(t))
   { }
 
-  Table* table;
+  Hash_table* table;
 
   void
   eth_d(Context* cxt, Port* p)
@@ -153,10 +159,10 @@ Dataplane::process(Port* port, Packet* pkt)
   // std::cout << "PROCESSING\n";
   Context* c = new Context(pkt, port->id_, port->id_, 0);
   // thread_pool.assign(new Task("pipeline", c));
-  app_->lib().exec("pipeline", c);
+  // app_->lib().exec("pipeline", c);
 
-  // App a;
-  // a.pipeline(c, port);
+  static App1 a(tables_.front());
+  a.pipeline(c, port);
   //
   // static App2 b(tables_.front());
   // b.pipeline(c, port);

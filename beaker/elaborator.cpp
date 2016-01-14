@@ -2445,11 +2445,6 @@ Elaborator::elaborate_decl(Table_decl* d)
     }
   }
 
-  // elaborate the individual flows
-  for (auto flow : d->body()) {
-    elaborate(flow);
-  }
-
   Type const* type = get_table_type(field_decls, types);
 
   d->type_ = type;
@@ -2728,6 +2723,18 @@ Elaborator::elaborate_def(Table_decl* d)
 {
   Scope_sentinel scope(*this, d);
 
+  // Make sure all the keys are in scope.
+  for (auto subkey : d->keys()) {
+    if (Key_decl* field = as<Key_decl>(subkey)) {
+      declare(field);
+    }
+  }
+
+  // Elaborate the individual flows for correctness.
+  for (auto flow : d->body()) {
+    elaborate(flow);
+  }
+
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
@@ -2976,7 +2983,7 @@ Stmt*
 Elaborator::elaborate(Case_stmt* s)
 {
   Expr* label = elaborate(s->label());
-  
+
   if (!is<Literal_expr>(label)) {
     std::stringstream ss;
     ss << "Non-literal value " << *label << " found in case statement.";
