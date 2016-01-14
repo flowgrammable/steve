@@ -3110,6 +3110,12 @@ Elaborator::elaborate(Goto_stmt* s)
 
   Expr* tbl = elaborate(s->table_identifier_);
 
+  if (!is<Table_type>(tbl->type()->nonref())) {
+    std::stringstream ss;
+    ss << "invalid table identifier: " << *s->table_identifier();
+    throw Type_error({}, ss.str());
+  }
+
   if (Decl_expr* id = as<Decl_expr>(tbl)) {
     s->table_identifier_ = id;
     s->table_ = id->declaration();

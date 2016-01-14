@@ -121,6 +121,21 @@ void
 Pipeline_checker::check_progression(Stage_set const& branches)
 {
   for (auto b : branches) {
+    // If at any point we branch to a node we've already visited,
+    // there's a possibility a loop exists.
+    if (b->visited) {
+      std::stringstream ss;
+      ss << "Pipeline path goes backwards. Broken path: ";
+      for (auto stage : path)
+        ss << *stage->decl()->name() << " | ";
+
+      ss << *b->decl()->name();
+
+      throw Lookup_error({}, ss.str());
+    }
+
+    // If we advance to a table, confirm that the table is
+    // one with a higher number than our current highest.
     if (b->is_table())
       if (b->table()->number() <= highest_table) {
         std::stringstream ss;
@@ -138,6 +153,13 @@ Pipeline_checker::check_progression(Stage_set const& branches)
 // specialized to visit ALL PATHS within a
 // graph instead of visiting all nodes within
 // a graph.
+//
+// FIXME: We should implement Tarjan's algorithm and
+// look at all strongly connected components. We should confirm
+// that no scc contain tables.
+//
+// This allows for recursive loops amongst decoders but not
+// if tables are part of the loop.
 void
 Pipeline_checker::dfs(Stage* s)
 {
@@ -188,7 +210,6 @@ Pipeline_checker::dfs(Stage* s)
   // so that we can explore all possible paths instead of
   // just one path
   s->visited = false;
-
 }
 
 
