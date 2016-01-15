@@ -5,6 +5,7 @@
 #include "flow.hpp"
 
 #include <boost/functional/hash.hpp>
+#include <farmhash.h>
 
 #include <cstring>
 #include <algorithm>
@@ -16,7 +17,6 @@
 // delete this later
 #include <iostream>
 #include <vector>
-
 
 
 namespace fp
@@ -66,10 +66,8 @@ struct Key_hash
   // hash function.
   std::size_t operator()(Key const& k) const
   {
-    std::size_t seed = 0;
-    for (Byte const* p = std::begin(k.data); p != std::end(k.data); ++p)
-      boost::hash_combine(seed, *p);
-    return seed;
+    const uint64_t hash = util::Hash64((char*)k.data, 128);
+    return hash;
   }
 };
 

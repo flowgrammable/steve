@@ -159,10 +159,10 @@ Dataplane::process(Port* port, Packet* pkt)
   // std::cout << "PROCESSING\n";
   Context* c = new Context(pkt, port->id_, port->id_, 0);
   // thread_pool.assign(new Task("pipeline", c));
-  // app_->lib().exec("pipeline", c);
+  app_->lib().exec("pipeline", c);
 
-  static App1 a(tables_.front());
-  a.pipeline(c, port);
+  // static App1 a(tables_.front());
+  // a.pipeline(c, port);
   //
   // static App2 b(tables_.front());
   // b.pipeline(c, port);

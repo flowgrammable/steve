@@ -163,18 +163,18 @@ fp_clear(fp::Context* cxt)
 void
 fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 {
-  // va_list args;
-  // va_start(args, n);
-  // fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
-  // va_end(args);
-  // fp::Flow const& flow = tbl->search(key);
-  // // execute the flow function
-  // flow.instr_(tbl, cxt);
+  va_list args;
+  va_start(args, n);
+  fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
+  va_end(args);
+  fp::Flow const& flow = tbl->search(key);
+  // execute the flow function
+  flow.instr_(tbl, cxt);
 
   // testing find times
-  static fp::Byte b[fp::key_size];
-  static fp::Key key(b, 8);
-  fp::Flow const& flow = tbl->search(key);
+  // static fp::Byte b[fp::key_size];
+  // static fp::Key key(b, 8);
+  // fp::Flow const& flow = tbl->search(key);
   // execute the flow function
   // flow.instr_(tbl, cxt);
 
