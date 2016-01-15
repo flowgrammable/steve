@@ -600,6 +600,48 @@ check_unary_arithmetic_expr(Elaborator& elab, T* e)
 }
 
 
+bool
+check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
+{
+  Table_type const* table_type = as<Table_type>(table->type());
+
+  Type_seq const& field_types = table_type->field_types();
+  Expr_seq const& key = flow->keys();
+
+  // check for equally size keys
+  if (field_types.size() != key.size()) {
+    std::stringstream ss;
+    ss << "Flow " << *flow << " does not have the same number of keys as"
+       << "table: " << *table->name();
+    throw Type_error({}, ss.str());
+
+    return false;
+  }
+
+  // check that each subkey type can be converted
+  // to the type specified by the table
+  auto table_subtype = field_types.begin();
+  auto subkey = key.begin();
+
+  Expr_seq new_key;
+  for(int i = 0; table_subtype != field_types.end() && subkey != key.end(); ++table_subtype, ++subkey, ++i)
+  {
+    Expr* e = require_converted(elab, *subkey, *table_subtype);
+    if (e)
+      new_key.push_back(e);
+    else {
+      std::stringstream ss;
+      ss << "Failed type conversion in flow field key " << i
+         << " of table " << *table->name() << '.';
+      throw Type_error({}, ss.str());
+    }
+  }
+
+  flow->keys_ = new_key;
+  return true;
+}
+
+
 // Check all flows within a table initializer
 // to confirm that the keys given are of the
 // correct type.
@@ -610,49 +652,13 @@ check_table_initializer(Elaborator& elab, Table_decl* d)
 {
   assert(is<Table_type>(d->type()));
 
-  Table_type const* table_type = as<Table_type>(d->type());
-
-  Type_seq const& field_types = table_type->field_types();
-
-  // key track of the flow in the initializer
-  int flow_cnt = 0;
-
   for (auto f : d->body()) {
     assert(is<Flow_decl>(f));
 
-    ++flow_cnt;
     Flow_decl* flow = as<Flow_decl>(f);
-    Expr_seq const& key = flow->keys();
 
-    // check for equally size keys
-    if (field_types.size() != key.size()) {
-      std::stringstream ss;
-      ss << "Flow " << *f << " does not have the same number of keys as"
-         << "table: " << *d->name();
-      throw Type_error({}, ss.str());
-
+    if (!check_table_flow(elab, d, flow))
       return false;
-    }
-
-    // check that each subkey type can be converted
-    // to the type specified by the table
-    auto table_subtype = field_types.begin();
-    auto subkey = key.begin();
-
-    Expr_seq new_key;
-    for(;table_subtype != field_types.end() && subkey != key.end(); ++table_subtype, ++subkey)
-    {
-      Expr* e = require_converted(elab, *subkey, *table_subtype);
-      if (e)
-        new_key.push_back(e);
-      else {
-        std::stringstream ss;
-        ss << "Failed type conversion in flow #" << flow_cnt << " subkey: " << **subkey;
-        throw Type_error({}, ss.str());
-      }
-    }
-
-    flow->keys_ = new_key;
   }
 
   return true;
@@ -2823,6 +2829,8 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
@@ -3239,6 +3247,20 @@ Elaborator::elaborate(Set_field* s)
   s->field_ = field;
 
   return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Insert_flow* s)
+{
+  lingo_unimplemented();
+}
+
+
+Stmt*
+Elaborator::elaborate(Remove_flow* s)
+{
+  lingo_unimplemented();
 }
 
 

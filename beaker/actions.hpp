@@ -95,6 +95,60 @@ struct Get_field : Action
 };
 
 
+// Add a flow entry to a table.
+struct Insert_flow : Action
+{
+  Insert_flow(Decl* f, Expr* t)
+    : flow_(f), table_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Decl* flow()  const { return flow_; }
+  Decl* table() const;
+  Expr* table_identifier() const { return table_; }
+
+  Decl* flow_;
+  Expr* table_;
+};
+
+
+inline Decl*
+Insert_flow::table() const
+{
+  assert(is<Decl_expr>(table_));
+  return as<Decl_expr>(table_)->declaration();
+}
+
+
+// Remove a flow entry from a table.
+struct Remove_flow : Action
+{
+  Remove_flow(Expr_seq const& k, Expr* t)
+    : keys_(k), table_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Expr_seq keys()  const { return keys_; }
+  Decl*    table() const;
+  Expr*    table_identifier() const { return table_; }
+
+  Expr_seq keys_;
+  Expr* table_;
+};
+
+
+inline Decl*
+Remove_flow::table() const
+{
+  assert(is<Decl_expr>(table_));
+  return as<Decl_expr>(table_)->declaration();
+}
+
+
 // Goto a group table
 struct Group : Action
 {

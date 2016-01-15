@@ -34,6 +34,8 @@ struct Find_branches
   void operator()(Output const* s) { }
   void operator()(Clear const* s) { }
   void operator()(Set_field const* s) { }
+  void operator()(Insert_flow const* s) { }
+  void operator()(Remove_flow const* s) { }
   void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
   void operator()(Write_set_field const* s) { }
@@ -440,7 +442,10 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Break_stmt const* s) { }
     void operator()(Continue_stmt const* s) { }
     void operator()(Expression_stmt const* s) { }
-    void operator()(Return_stmt const* s) { throw Type_error({}, "return found in decoder body"); }
+    void operator()(Return_stmt const* s)
+    {
+      throw Type_error({}, "return found in decoder body");
+    }
     void operator()(Return_void_stmt const* s) { }
     void operator()(If_then_stmt const* s) { }
     void operator()(If_else_stmt const* s) { }
@@ -454,6 +459,8 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Output const* s) { }
     void operator()(Clear const* s) { }
     void operator()(Set_field const* s) { }
+    void operator()(Insert_flow const* s) { }
+    void operator()(Remove_flow const* s) { }
     void operator()(Write_drop const* s) { }
     void operator()(Write_output const* s) { }
     void operator()(Write_set_field const* s) { }

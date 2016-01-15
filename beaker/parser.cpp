@@ -1476,7 +1476,7 @@ Stmt*
 Parser::add_flow_stmt()
 {
   match(add_kw);
-  Decl* flow = nullptr;
+  Decl* flow = flow_decl();
   match(into_kw);
   Expr* table = expr();
 
@@ -1486,12 +1486,29 @@ Parser::add_flow_stmt()
 
 // Remove flow statement.
 //
-//    add-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
+//    rmv-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
 //
 Stmt*
 Parser::rmv_flow_stmt()
 {
-  lingo_unimplemented();
+  match(rmv_kw);
+  match(lbrace_tok);
+  Expr_seq keys;
+  while (lookahead() != rbrace_tok) {
+    Expr* k = expr();
+    if (k)
+      keys.push_back(k);
+
+    if (match_if(comma_tok))
+      continue;
+    else
+      break;
+  }
+  match(rbrace_tok);
+  match(from_kw);
+  Expr* table = expr();
+
+  return on_rmv_flow(keys, table);
 }
 
 
@@ -2342,12 +2359,12 @@ Parser::on_write(Stmt* s)
 Stmt*
 Parser::on_add_flow(Decl* flow, Expr* table)
 {
-  lingo_unimplemented();
+  return new Insert_flow(flow, table);
 }
 
 
 Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
-  lingo_unimplemented();
+  return new Remove_flow(keys, table);
 }

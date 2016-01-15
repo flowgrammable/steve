@@ -138,15 +138,6 @@ struct Generator
   void gen(Decode_stmt const*);
   void gen(Goto_stmt const*);
 
-  void gen(Action const*);
-  void gen(Drop const*);
-  void gen(Output const*);
-  void gen(Clear const*);
-  void gen(Set_field const*);
-  void gen(Write_drop const*);
-  void gen(Write_output const*);
-  void gen(Write_set_field const*);
-
   void gen(Decl const*);
   void gen(Variable_decl const*);
   void gen(Function_decl const*);
