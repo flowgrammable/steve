@@ -22,10 +22,10 @@ exact_table switch(eth::dst, eth::type)
   { 0x00_00_00_00_00_00, 800 } ->
   {
     output p1;
-  };
+  }
 
   miss ->
   {
     output p1;
-  };
+  }
 }

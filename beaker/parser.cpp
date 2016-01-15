@@ -973,7 +973,7 @@ Parser::exact_table_decl()
   Decl_seq flows;
   Decl* miss;
   while (lookahead() != rbrace_tok) {
-    Decl* d = flow_decl(name);
+    Decl* d = flow_decl();
     Flow_decl* flow = as<Flow_decl>(d);
     if (flow) {
       // handle the miss case
@@ -991,14 +991,15 @@ Parser::exact_table_decl()
 
 
 // Parse a flow decl
+//
+// Parsing function takes the name of the table it belongs to.
 Decl*
-Parser::flow_decl(Token tok)
+Parser::flow_decl()
 {
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    match(semicolon_tok);
-    return on_flow_miss(tok, body);
+    return on_flow_miss(body);
   }
 
   match(lbrace_tok);
@@ -1017,9 +1018,7 @@ Parser::flow_decl(Token tok)
   match(arrow_tok);
   Stmt* body = block_stmt();
 
-  match(semicolon_tok);
-
-  return on_flow(tok, keys, body);
+  return on_flow(keys, body);
 }
 
 
@@ -1469,6 +1468,33 @@ Parser::write_stmt()
 }
 
 
+// Add flow statement.
+//
+//    add-flow-stmt -> 'add' flow-decl 'into' table-id
+//
+Stmt*
+Parser::add_flow_stmt()
+{
+  match(add_kw);
+  Decl* flow = nullptr;
+  match(into_kw);
+  Expr* table = expr();
+
+  return on_add_flow(flow, table);
+}
+
+
+// Remove flow statement.
+//
+//    add-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
+//
+Stmt*
+Parser::rmv_flow_stmt()
+{
+  lingo_unimplemented();
+}
+
+
 // Parse a statement.
 //
 //    stmt -> block-stmt
@@ -1531,6 +1557,12 @@ Parser::stmt()
 
     case write_kw:
       return write_stmt();
+
+    case add_kw:
+      return add_flow_stmt();
+
+    case rmv_kw:
+      return rmv_flow_stmt();
 
     default:
       return expression_stmt();
@@ -2129,32 +2161,20 @@ Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
   return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
 }
 
+
 // TODO: handle priorities
 Decl*
-Parser::on_flow(Token tok, Expr_seq& keys, Stmt* body)
+Parser::on_flow(Expr_seq& keys, Stmt* body)
 {
-  static int count = 0;
-
-  // form a name for the flow
-  std::stringstream ss;
-  ss << "_FLOW_" << tok.spelling() << "_flow_" << ++count;
-
-  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
-  return new Flow_decl(name, keys, 0, body);
+  return new Flow_decl(nullptr, keys, 0, body);
 }
 
 
 Decl*
-Parser::on_flow_miss(Token tok, Stmt* body)
+Parser::on_flow_miss(Stmt* body)
 {
-  std::stringstream ss;
-  ss << "_FLOW_" << tok.spelling() << "_flow_miss";
-
-  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
   // No key given
-  return new Flow_decl(name, 0, body, true);
+  return new Flow_decl(nullptr, 0, body, true);
 }
 
 
@@ -2314,5 +2334,20 @@ Parser::on_write(Stmt* s)
   else if (is<Set_field>(s))
     return new Write_set_field(s);
 
+  // Any other action is not currently supported.
+  lingo_unimplemented();
+}
+
+
+Stmt*
+Parser::on_add_flow(Decl* flow, Expr* table)
+{
+  lingo_unimplemented();
+}
+
+
+Stmt*
+Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
+{
   lingo_unimplemented();
 }

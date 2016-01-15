@@ -32,17 +32,17 @@ exact_table t1(eth::dst, eth::type)
 	{ 0x12_34_56_78_90_ab, 800 } ->
 	{
 		output p1;
-	};
+	}
 
 	// flow 2
 	{ 0xab_12_34_56_78_90, 800 } ->
 	{
 		output p2;
-	};
+	}
 
 	// flow 3
 	miss ->
 	{
 		drop;
-	};
+	}
 }

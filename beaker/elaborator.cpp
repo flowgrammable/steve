@@ -13,6 +13,7 @@
 #include "beaker/builtin.hpp"
 #include "beaker/actions.hpp"
 #include "beaker/length.hpp"
+#include "beaker/token.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -2068,6 +2069,16 @@ Elaborator::elaborate(Flow_decl* d)
 
     throw Type_error(locate(d), ss.str());
   }
+
+  // Build a name for the flow declaration.
+  // form a name for the flow
+  std::stringstream ss;
+  if (d->miss_case())
+    ss << "_FLOW_" << table->name()->spelling() << "_f_miss";
+  else
+    ss << "_FLOW_" << table->name()->spelling() << "_f" << ++table->flow_count_;
+  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+  d->name_ = name;
 
   Scope_sentinel scope(*this, d);
 

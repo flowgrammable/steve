@@ -54,13 +54,13 @@ exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
   {0, 1, 2, 3} ->
 	{
 		drop;
-	};
+	}
 
 
 	{1, 2, 3, 40000} ->
 	{
 		drop;
-	};
+	}
 }
 
 
@@ -68,14 +68,14 @@ exact_table t2(ipv4::dst)
 {
   {800} -> {
 		decode ipv4_d;
-	};
+	}
 
 
 	{32} -> {
 		decode eth_d;
-	};
+	}
 
 	miss -> {
 		decode eth_d;
-	};
+	}
 }

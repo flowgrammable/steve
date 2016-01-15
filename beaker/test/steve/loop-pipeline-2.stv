@@ -23,10 +23,10 @@ exact_table s1(eth::dst, eth::type)
   { 0x00_00_00_00_00_00, 800 } ->
   {
     decode eth_d;
-  };
+  }
 
   miss ->
   {
     output p1;
-  };
+  }
 }

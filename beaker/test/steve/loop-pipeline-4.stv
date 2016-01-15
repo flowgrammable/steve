@@ -38,12 +38,12 @@ exact_table s1(eth::dst, eth::type)
   { 0x00_00_00_00_00_00, 800 } ->
   {
     decode ipv4_d;
-  };
+  }
 
   miss ->
   {
     output p1;
-  };
+  }
 }
 
 
@@ -71,10 +71,10 @@ exact_table s2(eth::dst, eth::type)
   { 0x00_00_00_00_00_00, 800 } ->
   {
     decode eth_d;
-  };
+  }
 
   miss ->
   {
     goto s1;
-  };
+  }
 }

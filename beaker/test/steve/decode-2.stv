@@ -36,7 +36,7 @@ decoder eth2_d(eth)
 {
 	extract eth::src;
 
-	goto t2;
+	goto t1;
 }
 
 
@@ -55,13 +55,13 @@ decoder ipv4_d(ipv4)
 
 exact_table t1(eth::src)
 {
-	{1} -> { drop; };
-	{0} -> { drop; };
+	{1} -> { drop; }
+	{0} -> { drop; }
 }
 
 
 exact_table t2(ipv4::dst)
 {
-  {0} -> { decode ipv4_d; };
-	{1} -> { decode eth_d; };
+  {0} -> { decode ipv4_d; }
+	{1} -> { decode eth_d; }
 }

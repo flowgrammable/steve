@@ -81,10 +81,10 @@ exact_table route(ipv4::dst, ipv4::protocol)
 	{0b0000_0000_0000_0000, 0} ->
 	{
 		output p1;
-	};
+	}
 
 	miss ->
 	{
 		drop;
-	};
+	}
 }
