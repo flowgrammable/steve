@@ -1,34 +1,22 @@
+foreign def puts(char[]) -> int;
+
 layout eth
 {
-	src : int;
-	dst : bool;
-	type : int;
+  src : uint(48);
+  dst : uint(48);
+  type : uint(16);
 }
 
+Port p1 = ":5000";
 
-decoder eth_d(eth)
+decoder start eth_d(eth)
 {
-	extract eth::src;
-	extract eth::dst;
+  extract eth::type;
+  match(eth::type) {
+    case 0x0800: puts("Got ipv4");
+    case 0x0880: puts("Got ipv6");
+		miss: puts("No match");
+  }
 
-	match (eth::src) {
-		case 800: decode ipv4_d;
-		case 880: goto t1;
-	}
-
-	match (eth::dst) {
-		case 800: decode ipv4_d;
-		case 880: goto t1;
-	}
-
-	match (eth::src) {
-		case 800: decode ipv4_d;
-		case 800: goto t1;
-	}
-}
-
-
-decoder ipv4_d(eth)
-{
-
+  drop;
 }

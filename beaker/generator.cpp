@@ -1112,6 +1112,11 @@ Generator::gen(Match_stmt const* s)
 
   // generate the merging block
   build.SetInsertPoint(done);
+
+  // handle the default case
+  if (s->has_miss()) {
+    gen(s->miss());
+  }
 }
 
 

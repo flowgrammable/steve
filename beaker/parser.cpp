@@ -1270,6 +1270,20 @@ Parser::case_stmt()
 }
 
 
+// Parse the miss case statement.
+//
+//    miss-case-stmt -> 'miss' ':' stmt ';'
+//
+Stmt*
+Parser::miss_case_stmt()
+{
+  match(miss_kw);
+  match(colon_tok);
+  Stmt* s = stmt();
+  return s;
+}
+
+
 // Parse a match statement
 //
 //    match-stmt -> 'match' '(' expr ')' '{' case-seq '}'
@@ -1285,18 +1299,35 @@ Parser::match_stmt()
     error("Expected expression in match condition.");
 
   Stmt_seq cases;
+  Stmt*    miss = nullptr; // The default case statement.
 
   match(lbrace_tok);
   while(lookahead() != rbrace_tok) {
-    Stmt* c = case_stmt();
-    if (c)
-      cases.push_back(c);
+    // The regular case statements
+    if (lookahead() == case_kw) {
+      Stmt* c = case_stmt();
+      if (c)
+        cases.push_back(c);
+      else
+        error("Invalid case.");
+    }
+
+    // The default case statement
+    else if (lookahead() == miss_kw) {
+      Stmt* m = miss_case_stmt();
+      if (m && !miss) {
+          miss = m;
+      }
+      else
+        error("Invalid miss case in match stmt.");
+    }
     else
       error("Invalid case.");
   }
+
   match(rbrace_tok);
 
-  return on_match(e, cases);
+  return on_match(e, cases, miss);
 }
 
 // Parse a decode stmt
@@ -2218,9 +2249,9 @@ Parser::on_case(Expr* label, Stmt* s)
 
 
 Stmt*
-Parser::on_match(Expr* cond, Stmt_seq& cases)
+Parser::on_match(Expr* cond, Stmt_seq& cases, Stmt* miss)
 {
-  return new Match_stmt(cond, cases);
+  return new Match_stmt(cond, cases, miss);
 }
 
 

@@ -2991,6 +2991,10 @@ Elaborator::elaborate(Match_stmt* s)
     }
   }
 
+  // Elaborate the miss case.
+  if (s->has_miss())
+    s->miss_ = elaborate(s->miss_);
+
   return s;
 }
 

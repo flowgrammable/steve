@@ -84,6 +84,7 @@ public:
   Stmt* expression_stmt();
   Stmt* match_stmt();
   Stmt* case_stmt();
+  Stmt* miss_case_stmt();
   Stmt* decode_stmt();
   Stmt* goto_stmt();
   Stmt* drop_stmt();
@@ -184,7 +185,7 @@ private:
   Stmt* on_declaration(Decl*);
 
   Stmt* on_case(Expr*, Stmt*);
-  Stmt* on_match(Expr*, Stmt_seq&);
+  Stmt* on_match(Expr*, Stmt_seq&, Stmt*);
   Stmt* on_decode(Expr*);
   Stmt* on_goto(Expr*);
   Stmt* on_drop();

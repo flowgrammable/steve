@@ -290,6 +290,8 @@ struct Match_stmt : Stmt
   Stmt_seq const& cases() const    { return cases_; }
   Stmt* miss() const { return miss_; }
 
+  bool has_miss() const { return miss_ ? true : false; }
+
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 

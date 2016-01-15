@@ -977,6 +977,7 @@ Lowerer::lower(Match_stmt* s)
   Expr* condition = lower(s->condition());
 
   Stmt_seq cases;
+  Stmt*    miss = nullptr;
 
   // these should all be case statements
   for (auto c : s->cases()) {
@@ -985,7 +986,10 @@ Lowerer::lower(Match_stmt* s)
     cases.push_back(stmt);
   }
 
-  Match_stmt* match = new Match_stmt(condition, cases);
+  if (s->has_miss())
+    miss = lower(s->miss()).back();
+
+  Match_stmt* match = new Match_stmt(condition, cases, miss);
 
   return { match };
 }
@@ -1526,7 +1530,7 @@ Lowerer::lower(Write_output* w)
 {
   Output* s = w->output();
   assert(s);
-  
+
   // get the context variable which should Always
   // be within the scope of a decoder body
   Overload* ovl = unqualified_lookup(get_identifier(__context));
