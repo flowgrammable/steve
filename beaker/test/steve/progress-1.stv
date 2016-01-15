@@ -1,0 +1,59 @@
+Port p1 = ":5000";
+Port p2 = ":5001";
+
+layout eth
+{
+	src : int;
+	dst : int;
+	type : int;
+}
+
+
+layout ipv4
+{
+	src : int;
+	dst : int;
+	protocol: int;
+}
+
+
+decoder start eth_d(eth)
+{
+	extract eth::src;
+	extract eth::dst;
+	extract eth::type;
+
+	match (eth::type) {
+		case 800: decode ipv4_d;
+		case 880: goto t1;
+	}
+
+	drop;
+}
+
+
+decoder ipv4_d(ipv4)
+{
+	extract ipv4::dst;
+	extract ipv4::protocol;
+
+	match (ipv4::protocol) {
+		case 0: goto t2;
+	}
+
+	drop;
+}
+
+
+exact_table t1(eth::src)
+{
+	{1} -> { drop; }
+	{0} -> { drop; }
+}
+
+
+exact_table t2(ipv4::dst)
+{
+  {0} -> { goto t1; }
+	{1} -> { drop; }
+}
