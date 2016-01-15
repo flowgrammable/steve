@@ -26,7 +26,7 @@ decoder start eth_d(eth)
 	match (eth::type) {
 		case 800: decode ipv4_d;
 		case 1: decode eth2_d;
-		case 880: goto t1;
+		// case 880: goto t1;
 	}
 
 	drop;
@@ -62,6 +62,6 @@ exact_table t1(eth::src)
 
 exact_table t2(ipv4::dst)
 {
-  {0} -> { decode ipv4_d; }
-	{1} -> { decode eth_d; }
+  {0} -> { drop; }
+	{1} -> { drop; }
 }

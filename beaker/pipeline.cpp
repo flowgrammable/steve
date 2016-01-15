@@ -125,7 +125,7 @@ Pipeline_checker::check_progression(Stage_set const& branches)
     // there's a possibility a loop exists.
     if (b->visited) {
       std::stringstream ss;
-      ss << "Pipeline path goes backwards. Broken path: ";
+      ss << "Pipeline progress goes backwards through potential loop. Broken path: ";
       for (auto stage : path)
         ss << *stage->decl()->name() << " | ";
 
@@ -139,9 +139,11 @@ Pipeline_checker::check_progression(Stage_set const& branches)
     if (b->is_table())
       if (b->table()->number() <= highest_table) {
         std::stringstream ss;
-        ss << "Pipeline path goes backwards. Broken path: ";
+        ss << "Pipeline path goes backwards through prior numbered table. Broken path: ";
         for (auto stage : path)
           ss << *stage->decl()->name() << " | ";
+
+        ss << *b->decl()->name();
 
         throw Lookup_error({}, ss.str());
       }
@@ -166,6 +168,7 @@ Pipeline_checker::dfs(Stage* s)
   s->visited = true;
 
   // Update the value of the highest table if this is a table stage.
+  int highest_current_table = highest_table;
   if (s->is_table()) {
     highest_table = as<Table_decl>(s->decl())->number();
   }
@@ -210,6 +213,9 @@ Pipeline_checker::dfs(Stage* s)
   // so that we can explore all possible paths instead of
   // just one path
   s->visited = false;
+
+  // Reset the current highest table.
+  highest_table = highest_current_table;
 }
 
 
