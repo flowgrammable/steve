@@ -2688,6 +2688,9 @@ Elaborator::elaborate_def(Layout_decl* d)
 
   for (Decl*& f : d->fields_) {
     f = elaborate_decl(f);
+    if (!is_scalar(f->type()) && !is<Layout_type>(f->type())) {
+      throw Type_error(locate(f), "Field of invalid type found in layout.");
+    }
   }
   return d;
 }
@@ -3250,10 +3253,83 @@ Elaborator::elaborate(Set_field* s)
 }
 
 
+
+Decl*
+Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
+{
+  Scope_sentinel scope(*this, f);
+
+  // Make sure all the keys are in scope.
+  for (auto subkey : t->keys()) {
+    if (Key_decl* field = as<Key_decl>(subkey)) {
+      declare(field);
+    }
+  }
+
+  // Build a name for the flow declaration.
+  // form a name for the flow
+  std::stringstream ss;
+  if (f->miss_case())
+    ss << "_FLOW_" << t->name()->spelling() << "_f_miss";
+  else
+    ss << "_FLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
+  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+  f->name_ = name;
+
+  // Elaborate the type of the flow.
+  Type_seq types;
+  for (auto expr : f->keys()) {
+    Expr* key = elaborate(expr);
+    types.push_back(key->type());
+  }
+  f->type_ = get_flow_type(types);
+
+  // Elaborate the body of the flow.
+  f->instructions_ = elaborate(f->instructions());
+  if (Block_stmt* block = as<Block_stmt>(f->instructions_)) {
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration missing guaranteed terminator.\n";
+      ss << *f;
+
+      throw Type_error(locate(block), ss.str());
+    }
+  }
+
+  // Add the flow to the list of tentative flows in the table declaration.
+  t->tentative_.push_back(f);
+
+  return f;
+}
+
+
+
 Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
-  lingo_unimplemented();
+  s->table_id_ = elaborate(s->table_identifier());
+
+  // We need to specially elaborate this flow because it doesn't follow the
+  // exact same semantics as initializing flows.
+  //
+  // 1. The name has to be specially assigned since it isn't considered
+  //    "possessed" by a table.
+  //
+  // 2. It occurs outside the scope of a table so flow elaboration will
+  //    complain.
+  s->flow_ =
+    elaborate_added_flow(as<Flow_decl>(s->flow()), as<Table_decl>(s->table()));
+
+  if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
+    return s;
+  }
+  else {
+    std::stringstream ss;
+    ss << "Error with inserting flow: " << *s;
+    throw Type_error(locate(s), ss.str());
+  }
+
+  return nullptr;
 }
 
 

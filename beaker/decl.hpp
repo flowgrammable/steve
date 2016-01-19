@@ -351,6 +351,7 @@ struct Table_decl : Decl
   Decl*           miss_case() const { return miss_; }
   Table_kind      kind()      const { return kind_; }
   bool            is_start()  const { return start_; }
+  Decl_seq const& tentative() const { return tentative_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -361,6 +362,10 @@ struct Table_decl : Decl
   Decl* miss_;
   bool start_;
   Table_kind kind_;
+
+  // Keep track of all flows that may be added to the table by the application
+  // during runtime.
+  Decl_seq tentative_;
 
   // Keep track of flow initializers as they're added.
   int flow_count_;

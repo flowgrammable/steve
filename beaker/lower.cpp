@@ -240,6 +240,8 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
@@ -455,6 +457,28 @@ Lowerer::lower_global_decl(Decode_decl* d)
 }
 
 
+// Every table needs its own key forming function
+// in order to support adding and removing flow entries
+// during runtime using non-static values.
+//
+// For example add {x, y, z} -> {...} into t1
+// can only work if there is a function to compose non-static x, y, and z
+// into a single key which can be passed to the runtime.
+void
+Lowerer::produce_key_function(Table_decl* d)
+{
+  auto table_t = as<Table_type>(d->type());
+
+  // Produce a name for the key function.
+  // Combination of "__KEYFORM_" followed by the table name.
+  static std::string kf = "__KEYFORM_";
+
+  std::string n = kf + d->name()->spelling();
+  Symbol const* fn_name = get_identifier(n);
+}
+
+
+
 // We replace all table types with an opaque
 // table type because after the original type
 // checking we no longer care about the shape of the
@@ -471,8 +495,11 @@ Lowerer::lower_global_decl(Table_decl* d)
                                            get_reference_type(opaque_table),
                                            new Default_init(d->type()));
 
-  // this variable should be initialized during the load function
+  // This variable should be initialized during the load function
   declare(table);
+
+  // Produce a static key forming function for every table.
+  produce_key_function(d);
 
   return d;
 }
@@ -1447,10 +1474,6 @@ Lowerer::lower(Clear* s)
 
 
 
-// FIXME: This is extremely broken right now.
-// FIXME: The process of converting any expression value to i8* is not obvious.
-// TODO:  There should be an explicit instruction in steve to do this since it
-//        seems like a common occurence.
 Stmt_seq
 Lowerer::lower(Set_field* s)
 {
@@ -1496,6 +1519,20 @@ Lowerer::lower(Set_field* s)
     assign,
     new Expression_stmt(set_field)
   };
+}
+
+
+Stmt_seq
+Lowerer::lower(Insert_flow* s)
+{
+  lingo_unimplemented();
+}
+
+
+Stmt_seq
+Lowerer::lower(Remove_flow* s)
+{
+  lingo_unimplemented();
 }
 
 

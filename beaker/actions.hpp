@@ -99,7 +99,7 @@ struct Get_field : Action
 struct Insert_flow : Action
 {
   Insert_flow(Decl* f, Expr* t)
-    : flow_(f), table_(t)
+    : flow_(f), table_id_(t)
   { }
 
   void accept(Visitor& v) const { return v.visit(this); }
@@ -107,18 +107,18 @@ struct Insert_flow : Action
 
   Decl* flow()  const { return flow_; }
   Decl* table() const;
-  Expr* table_identifier() const { return table_; }
+  Expr* table_identifier() const { return table_id_; }
 
   Decl* flow_;
-  Expr* table_;
+  Expr* table_id_;
 };
 
 
 inline Decl*
 Insert_flow::table() const
 {
-  assert(is<Decl_expr>(table_));
-  return as<Decl_expr>(table_)->declaration();
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
 }
 
 
@@ -126,7 +126,7 @@ Insert_flow::table() const
 struct Remove_flow : Action
 {
   Remove_flow(Expr_seq const& k, Expr* t)
-    : keys_(k), table_(t)
+    : keys_(k), table_id_(t)
   { }
 
   void accept(Visitor& v) const { return v.visit(this); }
@@ -134,18 +134,18 @@ struct Remove_flow : Action
 
   Expr_seq keys()  const { return keys_; }
   Decl*    table() const;
-  Expr*    table_identifier() const { return table_; }
+  Expr*    table_identifier() const { return table_id_; }
 
   Expr_seq keys_;
-  Expr* table_;
+  Expr* table_id_;
 };
 
 
 inline Decl*
 Remove_flow::table() const
 {
-  assert(is<Decl_expr>(table_));
-  return as<Decl_expr>(table_)->declaration();
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
 }
 
 

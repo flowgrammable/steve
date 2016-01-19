@@ -206,6 +206,8 @@ public:
   Stmt* elaborate(Write_output*);
   Stmt* elaborate(Write_set_field*);
 
+  Decl* elaborate_added_flow(Flow_decl*, Table_decl*);
+
   void declare(Decl*);
   void redeclare(Decl*);
   void overload(Overload&, Decl*);

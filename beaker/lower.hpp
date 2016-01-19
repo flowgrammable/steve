@@ -53,13 +53,14 @@ struct Lowerer
   Decl* lower(Flow_decl*);
   Decl* lower(Port_decl*);
 
-  void add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
+  void     add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
   Expr_seq lower_flow_keys(Decl_seq const&);
   Stmt*    lower_flow_body(Table_decl*, Stmt*);
   Decl_seq lower_table_flows(Table_decl*);
   Decl*    lower_miss_case(Table_decl*);
   Stmt_seq lower_extracts_decl(Extracts_decl*);
   Stmt_seq lower_rebind_decl(Rebind_decl*);
+  void     produce_key_function(Table_decl*);
 
   Stmt_seq lower(Stmt*);
   Stmt_seq lower(Block_stmt*);
@@ -84,6 +85,8 @@ struct Lowerer
   Stmt_seq lower(Output*);
   Stmt_seq lower(Clear*);
   Stmt_seq lower(Set_field*);
+  Stmt_seq lower(Insert_flow*);
+  Stmt_seq lower(Remove_flow*);
   Stmt_seq lower(Write_drop*);
   Stmt_seq lower(Write_output*);
   Stmt_seq lower(Write_set_field*);

@@ -20,6 +20,10 @@ decoder start eth_d(eth)
   // write output p1;
   // write set eth::type = 0x800;
   // write copy eth::type = eth::src;
+
+	// broken case
+	// add {true} -> { drop; } into t1;
+
 	drop;
 }
 
@@ -29,5 +33,6 @@ exact_table t1(eth::src)
 	miss ->
 	{
 		add {1} -> { drop; } into t1;
+		output p1;
 	}
 }
