@@ -464,17 +464,97 @@ Lowerer::lower_global_decl(Decode_decl* d)
 // For example add {x, y, z} -> {...} into t1
 // can only work if there is a function to compose non-static x, y, and z
 // into a single key which can be passed to the runtime.
+//
+// TODO: Refactor into parm and body components.
 void
 Lowerer::produce_key_function(Table_decl* d)
 {
-  auto table_t = as<Table_type>(d->type());
+  auto table_type = as<Table_type>(d->type());
+
 
   // Produce a name for the key function.
   // Combination of "__KEYFORM_" followed by the table name.
   static std::string kf = "__KEYFORM_";
-
   std::string n = kf + d->name()->spelling();
   Symbol const* fn_name = get_identifier(n);
+
+  // The precision of the return type.
+  int ret_p = 0;
+
+  // The parameters.
+  Decl_seq parms;
+
+  for (auto f : table_type->field_names()) {
+    // Create the parameter.
+    // The parameters have the same respective types as the keys.
+    parms.push_back(new Parameter_decl(f->name(), f->type()));
+
+    // Add to the precision of the return type.
+    ret_p += precision(f->type());
+  }
+
+  // The return type is an integer with precision equal to the sum of all
+  // precisions of the field types.
+  Type const* ret_type = get_integer_type(ret_p, unsigned_int, native_order);
+
+  // Produce the function type.
+  Type const* fn_type = get_function_type(parms, ret_type);
+
+  // Produce the function body.
+  Stmt_seq body;
+  // Maintain a count of temporary variables.
+  int vc = 0;
+  // Maintain the precision of the prior parameter.
+  int pprec = 0;
+  // Create a variable to hold the return value.
+  Variable_decl* retv =
+    new Variable_decl(get_identifier("retv"), ret_type, new Default_init(ret_type));
+  body.push_back(statement(retv));
+
+  // Create the instructions necessary to compose the key.
+  for (auto p : parms) {
+    // First we must create a variable with the precision of the
+    // return type.
+    //
+    // The name we give it is an internal name.
+    std::string vn = "_V" + to_string(vc);
+    Variable_decl* v =
+      new Variable_decl(get_identifier(vn), ret_type, new Default_init(ret_type));
+    body.push_back(statement(v));
+
+    // Bitwise-And the variable with the parameter.
+    Expr* bor = new Bitwise_or_expr(id(v), id(p));
+    // Assign the result to the variable.
+    Assign_stmt* assign = new Assign_stmt(id(v), bor);
+    body.push_back(assign);
+
+    // Shift by the precision of the prior and then bitwise-and it with the
+    // return value.
+    Expr* lshift = new Lshift_expr(id(v), make_int(pprec));
+    // Bitwise-and with result.
+    Expr* or_retv = new Bitwise_or_expr(id(retv), lshift);
+    // Assign to the retv
+    assign = new Assign_stmt(id(retv), or_retv);
+    body.push_back(assign);
+
+    // Set the prior precision to the sum of the current parameter's precision
+    // and the prior.
+    pprec += precision(p->type());
+
+    // Update temp variable counter.
+    ++vc;
+  }
+
+  // Create the return statement.
+  Stmt* ret = new Return_stmt(id(retv));
+  body.push_back(ret);
+
+  // Create the function.
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block(body));
+
+  // Add the function to the list of key forming functions.
+  key_functions.push_back(fn);
 }
 
 
@@ -886,6 +966,14 @@ Lowerer::lower(Module_decl* d)
     apply(decl, decls);
   }
 
+  // Declare all key forming functions formed when
+  // lowering the declarations of tables.
+  for (auto fn : key_functions)
+  {
+    elab.elaborate_decl(fn);
+    elab.elaborate_def(fn);
+  }
+
   // lower all globals
   Lower_global_def defs{*this};
   for (Decl* decl : d->declarations()) {
@@ -897,10 +985,14 @@ Lowerer::lower(Module_decl* d)
     module_decls.push_back(lowered);
   }
 
-  // inject the forward declarations at
+  // inject the forward declarations of runtime functions at
   // the beginning of the file.
   module_decls.insert(module_decls.begin(),
                       prelude.begin(), prelude.end());
+
+  // Inject the key forming functions.
+  module_decls.insert(module_decls.begin(),
+                      key_functions.begin(), key_functions.end());
 
   // Application interface functions
   module_decls.push_back(load_function());

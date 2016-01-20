@@ -123,6 +123,9 @@ struct Lowerer
   // Runtime declarations
   Decl_seq prelude;
 
+  // Key forming functions
+  Decl_seq key_functions;
+
   // load function body
   Stmt_seq load_body;
 

@@ -2454,12 +2454,14 @@ Elaborator::elaborate_decl(Table_decl* d)
   Decl_seq field_decls;
   Type_seq types;
 
+  // construct the table type
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
       elaborate(field);
       declare(field);
 
-      // construct the table type
+      // Get the final declaration in the key path specifier.
+      // This shall provide the type needed for the field.
       Decl* field_decl = field->declarations().back();
 
       assert(field_decl);
@@ -2875,8 +2877,11 @@ Elaborator::elaborate(Assign_stmt* s)
 {
   // FIXME: Write a better predicate?
   Expr* lhs = elaborate(s->object());
-  if (!is<Reference_type>(lhs->type()))
-    throw Type_error({}, "assignment to rvalue");
+  if (!is<Reference_type>(lhs->type())) {
+    std::stringstream ss;
+    ss << "assignment to rvalue: " << *s;
+    throw Type_error({}, ss.str());
+  }
 
   // Apply rvalue conversion to the value and update the
   // expression.
