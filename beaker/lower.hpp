@@ -61,6 +61,7 @@ struct Lowerer
   Stmt_seq lower_extracts_decl(Extracts_decl*);
   Stmt_seq lower_rebind_decl(Rebind_decl*);
   void     produce_key_function(Table_decl*);
+  Decl*    construct_added_flow(Table_decl*, Flow_decl*);
 
   Stmt_seq lower(Stmt*);
   Stmt_seq lower(Block_stmt*);

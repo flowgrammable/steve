@@ -2091,6 +2091,14 @@ Elaborator::elaborate(Flow_decl* d)
   Type_seq types;
   for (auto expr : d->keys()) {
     Expr* key = elaborate(expr);
+
+    // For now we only support literal expressions here.
+    if (!is<Literal_expr>(key)) {
+      std::stringstream ss;
+      ss << "Key value must be a literal. Found: " << *key;
+      throw Type_error(locate(d), ss.str());
+    }
+
     types.push_back(key->type());
   }
 
@@ -3275,9 +3283,9 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
   // form a name for the flow
   std::stringstream ss;
   if (f->miss_case())
-    ss << "_FLOW_" << t->name()->spelling() << "_f_miss";
+    ss << "_AFLOW_" << t->name()->spelling() << "_f_miss";
   else
-    ss << "_FLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
+    ss << "_AFLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
   Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
   f->name_ = name;
 

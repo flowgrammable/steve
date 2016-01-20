@@ -474,7 +474,7 @@ Lowerer::produce_key_function(Table_decl* d)
 
   // Produce a name for the key function.
   // Combination of "__KEYFORM_" followed by the table name.
-  static std::string kf = "__KEYFORM_";
+  static std::string kf = __keyform;
   std::string n = kf + d->name()->spelling();
   Symbol const* fn_name = get_identifier(n);
 
@@ -517,9 +517,7 @@ Lowerer::produce_key_function(Table_decl* d)
     // return type.
     //
     // The name we give it is an internal name.
-    std::string vn = "_V" + to_string(vc);
-    Variable_decl* v =
-      new Variable_decl(get_identifier(vn), ret_type, new Default_init(ret_type));
+    Variable_decl* v = temp_var(elab.syms, ret_type, new Default_init(ret_type));
     body.push_back(statement(v));
 
     // Bitwise-And the variable with the parameter.
@@ -530,6 +528,8 @@ Lowerer::produce_key_function(Table_decl* d)
 
     // Shift by the precision of the prior and then bitwise-and it with the
     // return value.
+    //
+    // FIXME: Only shift if the number of bits shifted is greater than 0
     Expr* lshift = new Lshift_expr(id(v), make_int(pprec));
     // Bitwise-and with result.
     Expr* or_retv = new Bitwise_or_expr(id(retv), lshift);
@@ -666,6 +666,12 @@ Lowerer::lower_global_def(Decode_decl* d)
 }
 
 
+
+// Lowering the body of a flow handles any special transformations needed
+// for a flow to become a function.
+//
+// This currently includes allocated local variables so key values may be
+// accessed inside the scope of the flow function.
 Stmt*
 Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 {
@@ -682,6 +688,7 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
     body.push_back(new Declaration_stmt(load_var));
   }
 
+  // Insert the allocated variables to the beginning of the body.
   Stmt* l = lower(s).back();
   Block_stmt* flow_body = as<Block_stmt>(l);
   assert(flow_body);
@@ -692,6 +699,8 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 }
 
 
+// Lower all flows within a table and construct the necessary flow function
+// required by the runtime system.
 Decl_seq
 Lowerer::lower_table_flows(Table_decl* d)
 {
@@ -702,7 +711,7 @@ Lowerer::lower_table_flows(Table_decl* d)
   Type const* void_type = get_void_type();
 
   for (auto f : d->body()) {
-    // Create parameters common to all
+    // Create parameters common to all flow functions.
     Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
     Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
     Decl_seq parms { tbl, cxt };
@@ -724,7 +733,7 @@ Lowerer::lower_table_flows(Table_decl* d)
     // Trust that the lowering process correctly elaborates the body so
     // its not necessary to do so again.
     //
-    // Each flow body should allocate space for every local variable.
+    // Each flow body should allocate space for every local variable (related to keys).
     // Handle any additional modifications to the flow body.
     Stmt* flow_body = lower_flow_body(d, flow->instructions());
 
@@ -767,7 +776,7 @@ Lowerer::lower_miss_case(Table_decl* d)
 
     // Trust that the lowering process correctly elaborates all the statements
     // so we don't have to elaborate again.
-    Stmt* flow_body = lower(flow->instructions()).back();
+    Stmt* flow_body = lower_flow_body(d, flow->instructions());
 
     Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
     fn->spec_ |= extern_spec;
@@ -780,6 +789,17 @@ Lowerer::lower_miss_case(Table_decl* d)
 }
 
 
+// 'table' is a global variable declaration which retains the pointer to the
+// table received via the runtime.
+//
+// 'flow_fns' are a sequence of lowered flows (aka regular functions of
+// type: (Table*, Context*)->void ).
+//
+// 'miss' is a pointer to the lowered miss function.
+//
+// 'keys' are the block literals statically created to be passed as keys
+// to the runtime. Right now these are character arrays but they should be
+// changed to something else.
 void
 Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq const& keys)
 {
@@ -1003,6 +1023,8 @@ Lowerer::lower(Module_decl* d)
 }
 
 
+// All lowering of flows is done alongside the lowering of their
+// containing tables.
 Decl*
 Lowerer::lower(Flow_decl* d)
 {
@@ -1614,10 +1636,98 @@ Lowerer::lower(Set_field* s)
 }
 
 
+
+Decl*
+Lowerer::construct_added_flow(Table_decl* table, Flow_decl* flow)
+{
+  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_reference_type(opaque_table);
+  Type const* void_type = get_void_type();
+
+  // Create parameters common to all
+  Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+  Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+  Decl_seq parms { tbl, cxt };
+
+  // The type of all flows is fn(Table&, Context&) -> void
+  Type const* type = get_function_type(parms, void_type);
+
+  Symbol const* flow_name = flow->name();
+
+  // Enter flow function scope.
+  Scope_sentinel scope(*this, flow);
+
+  // declare an implicit context and table variable
+  declare(cxt);
+  declare(tbl);
+
+  // Contruct the body from the instructions.
+  // Trust that the lowering process correctly elaborates the body so
+  // its not necessary to do so again.
+  //
+  // Each flow body should allocate space for every local variable.
+  // Handle any additional modifications to the flow body.
+  Stmt* flow_body = lower_flow_body(table, flow->instructions());
+
+  // Produce the flow function.
+  Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
+
+  // Make sure it has external linkage.
+  fn->spec_ |= extern_spec;
+
+  // Add the flow function to the module.
+  module_decls.push_back(fn);
+
+  return fn;
+}
+
+
 Stmt_seq
 Lowerer::lower(Insert_flow* s)
 {
-  lingo_unimplemented();
+  Table_decl* table = as<Table_decl>(s->table());
+  assert(table);
+
+  // Form a call to the appropriate key forming function.
+  std::string fn_name = __keyform + table->name()->spelling();
+  Overload* ovl = unqualified_lookup(get_identifier(fn_name));
+  assert(ovl);
+  Decl* key_fn = ovl->back();
+  assert(key_fn);
+
+  ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
+
+  // Get the key values needed for the flow.
+  Flow_decl* flow = as<Flow_decl>(s->flow());
+  assert(flow);
+
+  // Form a call.
+  Expr_seq keys;
+  // Lower all keys first.
+  for (auto e : flow->keys()) {
+    keys.push_back(lower(e));
+  }
+  Expr* call = new Call_expr(id(key_fn), keys);
+  elab.elaborate(call);
+  Variable_decl* temp = temp_var(elab.syms, call->type(), call);
+
+  // Void cast the result
+  Expr* vcast = new Void_cast(decl_id(temp));
+
+  // Construct the flow function and add it into the module.
+  Decl* flow_fn = construct_added_flow(table, flow);
+
+  // Make a call to fp_add_flow
+  Expr* add_flow =
+    builtin.call_add_flow({ decl_id(tblptr), decl_id(flow_fn), vcast });
+
+  return {
+    statement(temp),
+    statement(add_flow),
+  };
 }
 
 

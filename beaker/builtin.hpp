@@ -33,6 +33,7 @@ constexpr char const* __table        = "_table_";
 constexpr char const* __key          = "_key_";
 constexpr char const* __drop_port    = "_drop_";
 constexpr char const* __flood_port   = "_flood_";
+constexpr char const* __keyform     = "_KEYFORM_";
 
 // runtime interface functions
 constexpr char const* __load         = "config";

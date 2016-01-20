@@ -1479,6 +1479,7 @@ Parser::add_flow_stmt()
   Decl* flow = flow_decl();
   match(into_kw);
   Expr* table = expr();
+  match(semicolon_tok);
 
   return on_add_flow(flow, table);
 }

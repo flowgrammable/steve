@@ -134,7 +134,7 @@ inline Variable_decl*
 temp_var(Symbol_table& syms, Type const* t, Expr* init)
 {
   static int count = 0;
-  std::string s = "reserved." + std::to_string(count);
+  std::string s = "reserved." + std::to_string(count++);
   Symbol const* name = syms.put<Identifier_sym>(s, identifier_tok);
   return new Variable_decl(name, t, new Copy_init(t, init));
 }
@@ -159,8 +159,6 @@ statement(Expr* e)
 
 // ----------------------------------------------------- //
 //      Function building
-
-
 
 
 #endif
