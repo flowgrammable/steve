@@ -1734,6 +1734,8 @@ Lowerer::lower(Insert_flow* s)
 Stmt_seq
 Lowerer::lower(Remove_flow* s)
 {
+  // To remove a flow, we must compose the key first.
+
   lingo_unimplemented();
 }
 

@@ -15,6 +15,7 @@ constexpr char const* __read_field   = "fp_read_field";
 constexpr char const* __advance      = "fp_advance_header";
 constexpr char const* __get_table    = "fp_create_table";
 constexpr char const* __add_flow     = "fp_add_flow";
+constexpr char const* __rmv_flow     = "fp_rmv_flow";
 constexpr char const* __add_miss     = "fp_add_miss";
 constexpr char const* __match        = "fp_goto_table";
 constexpr char const* __set_field    = "fp_set_field";
@@ -145,6 +146,12 @@ struct Delete_table : Call_expr
 
 
 struct Add_flow : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Rmv_flow : Call_expr
 {
   using Call_expr::Call_expr;
 };
