@@ -24,6 +24,13 @@ struct Drop : Action
 };
 
 
+struct Flood : Action
+{
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+};
+
+
 // Output the packet to a given
 // port.
 struct Output : Action

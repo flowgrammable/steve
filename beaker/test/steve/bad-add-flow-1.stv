@@ -1,0 +1,34 @@
+foreign def puts(char[]) -> int;
+
+Port p1 = ":5000";
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth::dst;
+  extract eth::type;
+  goto t1;
+}
+
+
+exact_table t1(eth::dst, eth::type)
+{
+  miss ->
+  {
+    add
+    { eth::dst, eth::type } ->
+    {
+      decode eth_d;
+    }
+    into t1;
+
+    output p1;
+  }
+}
