@@ -265,4 +265,19 @@ has_terminator_action(Stmt_seq const& body)
 }
 
 
+// Returns true iff more than 1 statement in a statement sequence
+// is a terminator.
+inline bool
+has_multiple_terminators(Stmt_seq const& body)
+{
+  int c = 0;
+  for (auto s : body) {
+    if (is_terminator(s))
+      c++;
+  }
+
+  return (c > 1) ? true : false;
+}
+
+
 #endif

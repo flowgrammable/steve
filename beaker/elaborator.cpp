@@ -2112,7 +2112,15 @@ Elaborator::elaborate(Flow_decl* d)
       ss << "Flow declaration missing guaranteed terminator.\n";
       ss << *block;
 
-      throw Type_error(locate(d), ss.str());
+      throw Type_error(locate(block), ss.str());
+    }
+
+    if (has_multiple_terminators(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration has multiple terminators.\n";
+      ss << *block;
+
+      throw Type_error(locate(block), ss.str());
     }
   }
 
@@ -2747,10 +2755,18 @@ Elaborator::elaborate_def(Decode_decl* d)
     if (Block_stmt* block = as<Block_stmt>(d->body_)) {
       if (!has_terminator_action(block->statements())) {
         std::stringstream ss;
-        ss << "Flow declaration missing guaranteed terminator.\n";
+        ss << "Decode declaration missing guaranteed terminator.\n";
         ss << *block;
 
-        throw Type_error(locate(d), ss.str());
+        throw Type_error(locate(block), ss.str());
+      }
+
+      if (has_multiple_terminators(block->statements())) {
+        std::stringstream ss;
+        ss << "Flow declaration has multiple terminators.\n";
+        ss << *block;
+
+        throw Type_error(locate(block), ss.str());
       }
     }
   }

@@ -140,7 +140,7 @@ Parser::primary_expr()
     return e;
   }
 
-  throw std::runtime_error("Failed to parse primary expression.");
+  // throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
   error("expected primary expression");
@@ -1576,6 +1576,9 @@ Parser::stmt()
 
     case output_kw:
       return output_stmt();
+
+    case flood_kw:
+      return flood_stmt();
 
     case clear_kw:
       return clear_stmt();

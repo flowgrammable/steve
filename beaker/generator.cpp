@@ -945,9 +945,13 @@ Generator::gen(Assign_stmt const* s)
 void
 Generator::gen(Return_stmt const* s)
 {
-  llvm::Value* v = gen(s->value());
-  build.CreateStore(v, ret);
-  build.CreateBr(exit);
+  llvm::BasicBlock* curr = build.GetInsertBlock();
+  // Only create a branch if the current block has no terminator.
+  if (!curr->getTerminator()) {
+    llvm::Value* v = gen(s->value());
+    build.CreateStore(v, ret);
+    build.CreateBr(exit);
+  }
 }
 
 
@@ -957,7 +961,13 @@ Generator::gen(Return_stmt const* s)
 void
 Generator::gen(Return_void_stmt const* s)
 {
-  build.CreateBr(exit);
+  llvm::BasicBlock* curr = build.GetInsertBlock();
+
+  // Only create a branch if the current block has no terminator.
+  if (!curr->getTerminator()) {
+    build.CreateBr(exit);
+    return;
+  }
 }
 
 

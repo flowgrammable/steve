@@ -24,6 +24,7 @@ decoder start eth_d(eth)
 	// broken case
 	add {eth::src} -> { drop; } into t1;
 
+	flood;
 	drop;
 }
 
