@@ -1508,6 +1508,7 @@ Parser::rmv_flow_stmt()
   match(rbrace_tok);
   match(from_kw);
   Expr* table = expr();
+  match(semicolon_tok);
 
   return on_rmv_flow(keys, table);
 }

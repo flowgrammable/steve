@@ -624,7 +624,8 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
   auto subkey = key.begin();
 
   Expr_seq new_key;
-  for(int i = 0; table_subtype != field_types.end() && subkey != key.end(); ++table_subtype, ++subkey, ++i)
+  for(int i = 0; table_subtype != field_types.end() && subkey != key.end();
+      ++table_subtype, ++subkey, ++i)
   {
     Expr* e = require_converted(elab, *subkey, *table_subtype);
     if (e)
@@ -3349,7 +3350,46 @@ Elaborator::elaborate(Insert_flow* s)
 Stmt*
 Elaborator::elaborate(Remove_flow* s)
 {
-  lingo_unimplemented();
+  s->table_id_ = elaborate(s->table_identifier());
+  Table_decl* table = as<Table_decl>(s->table());
+
+  // Confirm that every key has a matching type in the table decl
+  // being inserted.
+  Table_type const* table_type = as<Table_type>(table->type());
+
+  Type_seq const& field_types = table_type->field_types();
+  Expr_seq const& key = s->keys();
+
+  // check for equally size keys
+  if (field_types.size() != key.size()) {
+    std::stringstream ss;
+    ss << "Keys in " << *s << " do not match number of keys needed by table "
+       << *s->table_identifier();
+    throw Type_error({}, ss.str());
+  }
+
+  // check that each subkey type can be converted
+  // to the type specified by the table
+  auto table_subtype = field_types.begin();
+  auto subkey = key.begin();
+
+  Expr_seq new_key;
+  for(int i = 0; table_subtype != field_types.end() && subkey != key.end();
+      ++table_subtype, ++subkey, ++i)
+  {
+    Expr* e = require_converted(*this, *subkey, *table_subtype);
+    if (e)
+      new_key.push_back(e);
+    else {
+      std::stringstream ss;
+      ss << "Failed type conversion in flow field key " << i
+         << " of table " << *table->name() << '.';
+      throw Type_error({}, ss.str());
+    }
+  }
+
+  s->keys_ = new_key;
+  return s;
 }
 
 
