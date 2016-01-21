@@ -246,7 +246,7 @@ is_terminator(Stmt* s)
   return is<Decode_stmt>(s)
       || is<Goto_stmt>(s)
       || is<Drop>(s)
-      // || is<Flood_stmt>(s)
+      || is<Flood>(s)
       || is<Output>(s);
 }
 

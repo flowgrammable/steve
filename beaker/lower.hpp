@@ -84,6 +84,7 @@ struct Lowerer
   Stmt_seq lower(Action*);
   Stmt_seq lower(Drop*);
   Stmt_seq lower(Output*);
+  Stmt_seq lower(Flood*);
   Stmt_seq lower(Clear*);
   Stmt_seq lower(Set_field*);
   Stmt_seq lower(Insert_flow*);

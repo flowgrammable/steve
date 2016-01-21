@@ -24,6 +24,7 @@ constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
 constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
+constexpr char const* __flood        = "fp_flood";
 constexpr char const* __clear        = "fp_clear";
 constexpr char const* __write_drop   = "fp_write_drop";
 constexpr char const* __write_output = "fp_write_output";
@@ -215,6 +216,12 @@ struct Output_packet : Call_expr
 };
 
 
+struct Flood_packet : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 struct Clear_actions : Call_expr
 {
   using Call_expr::Call_expr;
@@ -319,6 +326,7 @@ struct Builtin
   Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
+  Expr* call_flood(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
@@ -352,6 +360,7 @@ private:
   Function_decl* match();
   Function_decl* get_port();
   Function_decl* drop();
+  Function_decl* flood();
   Function_decl* output();
   Function_decl* clear();
   Function_decl* set_field();

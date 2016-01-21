@@ -2841,6 +2841,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
@@ -3223,6 +3224,14 @@ Elaborator::elaborate(Output* s)
   // certainly get rewritten with a decl expr
   s->port_ = port;
 
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Flood* s)
+{
+  // No further elaboration required
   return s;
 }
 

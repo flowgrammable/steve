@@ -198,6 +198,7 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
+  Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);

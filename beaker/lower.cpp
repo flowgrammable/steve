@@ -238,6 +238,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
@@ -1561,6 +1562,31 @@ Lowerer::lower(Output* s)
   return
   {
     new Expression_stmt(output),
+    return_void()
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Flood* s)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // make a call to the drop function
+  Expr* flood = builtin.call_flood(decl_id(cxt));
+  elab.elaborate(flood);
+
+  // Drops should cause an implicit return void. After a drop, any statements
+  // after can not be guaranteed to be safe since the context has likely been
+  // deleted by then.
+  return
+  {
+    new Expression_stmt(flood),
     return_void()
   };
 }

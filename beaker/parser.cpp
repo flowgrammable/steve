@@ -1372,6 +1372,18 @@ Parser::drop_stmt()
 }
 
 
+// Parse a flood stmt.
+//
+//    flood-stmt -> 'flood;'
+Stmt*
+Parser::flood_stmt()
+{
+  match(flood_kw);
+  match(semicolon_tok);
+
+  return on_flood();
+}
+
 
 // Parse an output stmt
 //
@@ -2312,6 +2324,13 @@ Stmt*
 Parser::on_drop()
 {
   return new Drop();
+}
+
+
+Stmt*
+Parser::on_flood()
+{
+  return new Flood();
 }
 
 

@@ -154,6 +154,7 @@ struct Get_dataplane;
 struct Action;
 struct Drop;
 struct Output;
+struct Flood;
 struct Clear;
 struct Group;
 struct Set_field;
