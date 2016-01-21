@@ -49,9 +49,9 @@ int main(int argc, char* argv[])
           // src bytes
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
           // dst bytes
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
           // type bytes
-          ' ', '\03', 0, 0, 0
+          0x00, 0x08, 0, 0, 0
         };
 
         Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);

@@ -132,9 +132,9 @@ struct Remove_flow : Action
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 
-  Expr_seq keys()  const { return keys_; }
-  Decl*    table() const;
-  Expr*    table_identifier() const { return table_id_; }
+  Expr_seq const& keys()  const { return keys_; }
+  Decl*           table() const;
+  Expr*           table_identifier() const { return table_id_; }
 
   Expr_seq keys_;
   Expr* table_id_;

@@ -22,7 +22,7 @@ decoder start eth_d(eth)
   // write copy eth::type = eth::src;
 
 	// broken case
-	// add {eth::src} -> { drop; } into t1;
+	add {eth::src} -> { drop; } into t1;
 
 	drop;
 }

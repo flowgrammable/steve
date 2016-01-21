@@ -19,8 +19,9 @@ decoder start eth_d(eth)
 
 exact_table switch(eth::dst, eth::type)
 {
-  { 0x00_00_00_00_00_00, 800 } ->
+  { 0x12_34_56_78_90_ab, 0x0800 } ->
   {
+		puts("hit");
     output p1;
   }
 

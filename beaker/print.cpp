@@ -42,6 +42,8 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Action const* s) { os << *s; }
     void operator()(Drop const* s) { os << *s; }
     void operator()(Output const* s) { os << *s; }
+    void operator()(Insert_flow const* s) { os << *s; }
+    void operator()(Remove_flow const* s) { os << *s; }
     void operator()(Write_drop const* s) { os << *s; }
   };
 
@@ -175,6 +177,28 @@ std::ostream& operator<<(std::ostream& os, Drop const& s)
 std::ostream& operator<<(std::ostream& os, Output const& s)
 {
   return os << "output " << s.port() << ';';
+}
+
+
+std::ostream& operator<<(std::ostream& os, Insert_flow const& s)
+{
+  return os << "insert " << *s.flow()
+            << "into " << *s.table_identifier() << ';';
+}
+
+
+std::ostream& operator<<(std::ostream& os, Remove_flow const& s)
+{
+  os << "remove {";
+  for (auto k = s.keys().begin(); k < s.keys().end(); ++k) {
+    os << **k;
+    if (k != s.keys().end() - 1) {
+      os << ", ";
+    }
+  }
+  os << '}' << "from " << *s.table_identifier() << ';';
+
+  return os;
 }
 
 

@@ -369,6 +369,13 @@ Pipeline_checker::register_stage(Decode_decl const* d)
 
 
 // Register a table decl
+//
+// NOTE: Tentative flows are also added to the pipeline checking model.
+// The reason for this is we do NOT allow the adding of flows which
+// could potentially break progression and cause infinite loops.
+//
+// It may not be completely possible to stop this, but the compiler should
+// make a best effort to reduce the risk.
 void
 Pipeline_checker::register_stage(Table_decl const* d)
 {
@@ -397,8 +404,15 @@ Pipeline_checker::register_stage(Table_decl const* d)
 
   pipeline.push_back(stage);
 
-  // create a stage for all the flows within the pipeline
+  // create a stage for all the flows within the table
   for (auto f : d->body()) {
+    Flow_decl* flow = as<Flow_decl>(f);
+    register_stage(flow, d);
+  }
+
+  // Create a stage for all flows that MIGHT be added to the table
+  // if inserted.
+  for (auto f : d->tentative()) {
     Flow_decl* flow = as<Flow_decl>(f);
     register_stage(flow, d);
   }
@@ -558,6 +572,14 @@ Pipeline_checker::find_branches(Table_decl const* d)
   // Tables branch to all of their containing flows
   Stage_set branches;
   for (auto flow : d->body()) {
+    Stage* s = pipeline.find(flow);
+    assert(s);
+    branches.insert(s);
+  }
+
+  // They also are assumed to branch to all flows that may or
+  // may not be added to them during runtime.
+  for (auto flow : d->tentative()) {
     Stage* s = pipeline.find(flow);
     assert(s);
     branches.insert(s);
