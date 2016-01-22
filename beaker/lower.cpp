@@ -1761,7 +1761,37 @@ Lowerer::lower(Insert_flow* s)
 Stmt_seq
 Lowerer::lower(Remove_flow* s)
 {
+  Table_decl* table = as<Table_decl>(s->table());
+  assert(table);
+
   // To remove a flow, we must compose the key first.
+  // Form a call to the appropriate key forming function.
+  std::string fn_name = __keyform + table->name()->spelling();
+  Overload* ovl = unqualified_lookup(get_identifier(fn_name));
+  assert(ovl);
+  Decl* key_fn = ovl->back();
+  assert(key_fn);
+
+  ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
+
+  // Form a call.
+  Expr_seq keys;
+  // Lower all keys first.
+  for (auto e : s->keys()) {
+    keys.push_back(lower(e));
+  }
+  Expr* call = new Call_expr(id(key_fn), keys);
+  elab.elaborate(call);
+  Variable_decl* temp = temp_var(elab.syms, call->type(), call);
+
+  // Void cast the result
+  Expr* vcast = new Void_cast(decl_id(temp));
+
+  // Make a call to fp_del_flow.
+  
 
   lingo_unimplemented();
 }

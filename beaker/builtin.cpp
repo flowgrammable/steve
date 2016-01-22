@@ -169,6 +169,8 @@ Builtin::get_table()
 }
 
 
+// Add flow has the form:
+//    void add_flow(Table*, Flow*, i8* buf)
 Function_decl*
 Builtin::add_flow()
 {
@@ -205,6 +207,8 @@ Builtin::add_flow()
 }
 
 
+// Add miss has the form:
+//    void add_miss_case(Table*, Flow*)
 Function_decl*
 Builtin::add_miss()
 {
@@ -238,7 +242,10 @@ Builtin::add_miss()
 }
 
 
-// Gather keys
+// Gather keys from certain fields. This has the form:
+//    Key gather(Context*, int fld_cnt, ...)
+//
+// The variadic arguments specify which fields are being gathered.
 Function_decl*
 Builtin::gather()
 {
@@ -264,6 +271,11 @@ Builtin::gather()
 }
 
 
+// Match is used to goto a table and tell it to match the packet fields
+// against flow entries and execute the flow. This has the form:
+//    void goto_table(Context*, Table*, int fld_cnt, ...)
+//
+// The variadic arguments specify which fields are being matched upon.
 Function_decl*
 Builtin::match()
 {
@@ -294,6 +306,13 @@ Builtin::match()
   return fn;
 }
 
+
+// This function call gets a port with a specific name from the runtime system.
+// This has the form:
+//    Port* get_port(char*, char*);
+//
+// TODO: Add the configuration string to the function call. Write now the
+// runtime doesn't support it so we're only going with the port name.
 Function_decl*
 Builtin::get_port()
 {
@@ -315,6 +334,9 @@ Builtin::get_port()
 }
 
 
+// This call to the runtime instructs it to immediately drop the packet.
+// This has the form:
+//    void drop(Context*)
 Function_decl*
 Builtin::drop()
 {
@@ -337,6 +359,9 @@ Builtin::drop()
 }
 
 
+// This instructs the runtime to flood the packet.
+// This has the form:
+//    void flood(Context*)
 Function_decl*
 Builtin::flood()
 {
@@ -359,6 +384,9 @@ Builtin::flood()
 }
 
 
+// This instructs the runtime to send the packet out of the given port.
+// This has the form:
+//    void output(Context*, Port*)
 Function_decl*
 Builtin::output()
 {
@@ -383,6 +411,10 @@ Builtin::output()
 }
 
 
+// This instructs the runtime to clear the action list that has been
+// written to the packet.
+//
+//    void clear(Context*);
 Function_decl*
 Builtin::clear()
 {
