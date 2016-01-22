@@ -326,7 +326,8 @@ struct Builtin
   Expr* call_read_field(Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
-  Expr* call_add_flow(Expr_seq const& args);
+  Expr* call_add_flow(Expr*, Expr*, Expr*);
+  Expr* call_remove_flow(Expr*, Expr*);
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
@@ -363,6 +364,7 @@ private:
   Function_decl* advance();
   Function_decl* get_table();
   Function_decl* add_flow();
+  Function_decl* remove_flow();
   Function_decl* add_miss();
   Function_decl* gather();
   Function_decl* match();

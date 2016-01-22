@@ -48,7 +48,7 @@ Lowerer::load_function()
   //
   // The parameter should be directly stored into the global variable.
   Expr* set_dp = builtin.call_get_dataplane(p1, dp);
-  load_body.insert(load_body.begin(), new Expression_stmt(set_dp));
+  load_body.insert(load_body.begin(), statement(set_dp));
 
   // Construct the load function with the accumulated load_body.
   Function_decl* load = new Function_decl(fn_name, fn_type,
@@ -90,7 +90,7 @@ Lowerer::process_function()
   elab.elaborate(call);
 
   Stmt_seq process_body;
-  process_body.push_back(new Expression_stmt(call));
+  process_body.push_back(statement(call));
 
   process->spec_ |= extern_spec;
 
@@ -100,6 +100,7 @@ Lowerer::process_function()
 }
 
 
+// Returns the amount of ports specifically asked for by the application.
 Function_decl*
 Lowerer::port_number_function()
 {
@@ -122,6 +123,8 @@ Lowerer::port_number_function()
 }
 
 
+// Maintain a pointer to the dataplane that this application has been loaded
+// by.
 Variable_decl*
 Lowerer::dataplane_pointer()
 {
@@ -140,9 +143,8 @@ struct Lower_expr_fn
 {
   Lowerer& lower;
 
-  // catch all case
-  // simply return the original
-  // expression without lowering it
+  // Catch all case.
+  // Simply return the original expression without lowering it.
   template<typename T>
   Expr* operator()(T* e) const { return e; }
 
@@ -185,10 +187,8 @@ struct Lower_expr_fn
   Expr* operator()(Demotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Sign_conv* e) const { return lower.lower_unary_expr(e); }
 
-  // Field access expr
-  // becomes an id_expr whose declaration is
-  // resolved against a variable created by lowering
-  // the extracts decl
+  // Field access expr becomes an id_expr whose declaration is
+  // resolved against a variable created by lowering the extracts decl.
   Expr* operator()(Field_access_expr* e) const { return lower.lower(e); }
 };
 
@@ -220,9 +220,7 @@ struct Lower_stmt_fn
   template<typename T>
   Stmt_seq operator()(T* s) const { return { s }; }
 
-  // TODO: consider how this works and if we allow this
-  // Stmt_seq operator()(Assign_stmt* s) const { return lower.lower(s); }
-
+  Stmt_seq operator()(Assign_stmt* s) const { return lower.lower(s); }
   Stmt_seq operator()(Empty_stmt* s) const { return lower.lower(s); }
   Stmt_seq operator()(Block_stmt* s) const { return lower.lower(s); }
   Stmt_seq operator()(If_then_stmt* s) const { return lower.lower(s); }
@@ -658,7 +656,7 @@ Lowerer::lower_global_def(Decode_decl* d)
 
   // attach the bind header call to the body
   Block_stmt* block = as<Block_stmt>(body);
-  block->first.insert(block->first.begin(), new Expression_stmt(bind));
+  block->first.insert(block->first.begin(), statement(bind));
 
   // register the starting decoder
   if (d->is_start())
@@ -687,7 +685,7 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 
     declare(load_var);
 
-    body.push_back(new Declaration_stmt(load_var));
+    body.push_back(statement(load_var));
   }
 
   // Insert the allocated variables to the beginning of the body.
@@ -815,11 +813,10 @@ Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq c
     // function pointers so we don't elaborate this for now.
     // However, it should be guaranteed to work.
     Type const* buffer_t = get_block_type(get_character_type());
-    Expr* add_flow = builtin.call_add_flow({ decl_id(table),
-                                             decl_id(flow),
-                                             new Block_conv(buffer_t, *key_it) });
+    Expr* add_flow =
+      builtin.call_add_flow(decl_id(table), decl_id(flow), new Block_conv(buffer_t, *key_it));
     // elab.elaborate(add_flow);
-    load_body.push_back(new Expression_stmt(add_flow));
+    load_body.push_back(statement(add_flow));
 
     ++key_it;
   }
@@ -827,7 +824,7 @@ Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq c
   // Handle the miss case
   if (miss) {
     Expr* add_miss = builtin.call_add_miss(decl_id(table), decl_id(miss));
-    load_body.push_back(new Expression_stmt(add_miss));
+    load_body.push_back(statement(add_miss));
   }
 }
 
@@ -893,7 +890,7 @@ Lowerer::lower_global_def(Table_decl* d)
   // of course you can't have an object of that type because
   // it is opaque and you have no type info about it.
   elab.elaborate(get_table);
-  load_body.push_back(new Expression_stmt(get_table));
+  load_body.push_back(statement(get_table));
 
   // lower the flows transforms them into a bunch of
   // free functions
@@ -934,7 +931,7 @@ Lowerer::lower_global_def(Port_decl* d)
     { make_cstr(d->name()->spelling().c_str()) });
 
   elab.elaborate(get_port);
-  load_body.push_back(new Expression_stmt(get_port));
+  load_body.push_back(statement(get_port));
 
   return var;
 }
@@ -1056,6 +1053,20 @@ Lowerer::lower(Stmt* s)
 }
 
 
+// To lower an assign, lower the lhs of the statement only.
+// You cannot have field-access-expr on the rhs or anything that
+// needs lowered either.
+//
+// Lowering the lhs lets you assign field-access-expr to existing variables.
+Stmt_seq
+Lowerer::lower(Assign_stmt* s)
+{
+  s->second = lower(s->value());
+  assert(s->second);
+  return { s };
+}
+
+
 // The lowering of a block statement
 // causes the generation of a new block
 // whose body is a concatenation of all lowered
@@ -1172,7 +1183,7 @@ Lowerer::lower(Expression_stmt* s)
   Expression_stmt* expr_stmt = nullptr;
 
   if (expr != s->expression())
-    expr_stmt = new Expression_stmt(expr);
+    expr_stmt = statement(expr);
   else
     expr_stmt = s;
 
@@ -1219,8 +1230,8 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
 
   return
   {
-    new Expression_stmt(bind_field),
-    new Declaration_stmt(load_var)
+    statement(bind_field),
+    statement(load_var)
   };
 }
 
@@ -1270,8 +1281,8 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
   declare(load_var);
 
   Stmt_seq stmts {
-    new Expression_stmt(bind_field),
-    new Declaration_stmt(load_var)
+    statement(bind_field),
+    statement(load_var)
   };
 
   return stmts;
@@ -1305,7 +1316,7 @@ Lowerer::lower(Declaration_stmt* s)
   // Regular lowering process for decl stmts
   if (Decl* decl = lower(s->declaration())) {
     if (decl != s->declaration())
-      stmts.push_back(new Declaration_stmt(decl));
+      stmts.push_back(statement(decl));
     else
       stmts.push_back(s);
   }
@@ -1340,7 +1351,7 @@ Lowerer::lower(Decode_stmt* s)
     Expr* advance = builtin.call_advance({ id(cxt), length });
     elab.elaborate(advance);
 
-    stmts.push_back(new Expression_stmt(advance));
+    stmts.push_back(statement(advance));
   }
 
 
@@ -1351,7 +1362,7 @@ Lowerer::lower(Decode_stmt* s)
   elab.elaborate(call);
 
   // return the call
-  stmts.push_back(new Expression_stmt(call));
+  stmts.push_back(statement(call));
 
   // Decodes should cause implicit returns. Once control of the packet
   // is transfered to a decode stage, its impossible to guarantee that any
@@ -1385,7 +1396,7 @@ Lowerer::goto_advance(Decl const* decoder)
     Expr* length = get_length(header->type());
     Expr* advance = builtin.call_advance({ id(cxt), length });
     elab.elaborate(advance);
-    return new Expression_stmt(advance);
+    return statement(advance);
   }
 
   throw Type_error({}, "Header type not found when generating goto.");
@@ -1418,7 +1429,7 @@ Lowerer::goto_advance(Decl const* decoder)
 //                                          gather);
 //
 //   declare(key);
-//   return new Declaration_stmt(key);
+//   return statement(key);
 // }
 
 
@@ -1464,7 +1475,7 @@ Lowerer::goto_match(Goto_stmt* s)
   // NOTE: Avoid elaboration again since we don't fully support variable args.
   // elab.elaborate(match);
 
-  return new Expression_stmt(match);
+  return statement(match);
 }
 
 
@@ -1530,7 +1541,7 @@ Lowerer::lower(Drop* s)
   // deleted by then.
   return
   {
-    new Expression_stmt(drop),
+    statement(drop),
     return_void()
   };
 }
@@ -1562,7 +1573,7 @@ Lowerer::lower(Output* s)
 
   return
   {
-    new Expression_stmt(output),
+    statement(output),
     return_void()
   };
 }
@@ -1587,7 +1598,7 @@ Lowerer::lower(Flood* s)
   // deleted by then.
   return
   {
-    new Expression_stmt(flood),
+    statement(flood),
     return_void()
   };
 }
@@ -1609,7 +1620,7 @@ Lowerer::lower(Clear* s)
 
   return
   {
-    new Expression_stmt(clear),
+    statement(clear),
   };
 }
 
@@ -1658,7 +1669,7 @@ Lowerer::lower(Set_field* s)
 
   return {
     assign,
-    new Expression_stmt(set_field)
+    statement(set_field)
   };
 }
 
@@ -1749,7 +1760,7 @@ Lowerer::lower(Insert_flow* s)
 
   // Make a call to fp_add_flow
   Expr* add_flow =
-    builtin.call_add_flow({ decl_id(tblptr), decl_id(flow_fn), vcast });
+    builtin.call_add_flow(decl_id(tblptr), decl_id(flow_fn), vcast);
 
   return {
     statement(temp),
@@ -1791,9 +1802,12 @@ Lowerer::lower(Remove_flow* s)
   Expr* vcast = new Void_cast(decl_id(temp));
 
   // Make a call to fp_del_flow.
-  
+  Expr* rmv_flow = builtin.call_remove_flow(decl_id(tblptr), vcast);
 
-  lingo_unimplemented();
+  return {
+    statement(temp),
+    statement(rmv_flow),
+  };
 }
 
 
@@ -1813,7 +1827,7 @@ Lowerer::lower(Write_drop* w)
 
   return
   {
-    new Expression_stmt(write)
+    statement(write)
   };
 }
 
@@ -1849,7 +1863,7 @@ Lowerer::lower(Write_output* w)
 
   return
   {
-    new Expression_stmt(output),
+    statement(output),
   };
 }
 
@@ -1870,7 +1884,7 @@ Lowerer::lower(Write_flood* w)
 
   return
   {
-    new Expression_stmt(write)
+    statement(write)
   };
 }
 
@@ -1911,8 +1925,8 @@ Lowerer::lower(Write_set_field* w)
   elab.elaborate(write);
 
   return {
-    new Declaration_stmt(var),
-    new Expression_stmt(write)
+    statement(var),
+    statement(write)
   };
 }
 

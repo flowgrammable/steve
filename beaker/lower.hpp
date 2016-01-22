@@ -64,6 +64,7 @@ struct Lowerer
   Decl*    construct_added_flow(Table_decl*, Flow_decl*);
 
   Stmt_seq lower(Stmt*);
+  Stmt_seq lower(Assign_stmt*);
   Stmt_seq lower(Block_stmt*);
   Stmt_seq lower(If_then_stmt*);
   Stmt_seq lower(If_else_stmt*);
