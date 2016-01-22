@@ -245,6 +245,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
 };
 
@@ -1819,6 +1820,27 @@ Lowerer::lower(Write_output* w)
   return
   {
     new Expression_stmt(output),
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Write_flood* w)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // make a call to the drop function
+  Expr* write = builtin.call_write_flood(decl_id(cxt));
+  elab.elaborate(write);
+
+  return
+  {
+    new Expression_stmt(write)
   };
 }
 

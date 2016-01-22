@@ -14,18 +14,18 @@ decoder start eth_d(eth)
   extract eth::type;
 	set eth::type = eth::type + 80;
   // set eth::type = 800;
-	// clear;
+	clear;
   // copy eth::type = eth::src;
-  // write drop;
-  // write output p1;
-  // write set eth::type = 0x800;
+  write drop;
+	write flood;
+  write output p1;
+  write set eth::type = 0x800;
   // write copy eth::type = eth::src;
-
-	// broken case
 	add {eth::src} -> { drop; } into t1;
+	// remove {eth::src} from t1;
 
 	flood;
-	drop;
+	// drop;
 }
 
 

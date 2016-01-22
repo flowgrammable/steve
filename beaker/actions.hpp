@@ -195,6 +195,22 @@ struct Write_output : Action
 };
 
 
+// Write a flood action to context.
+struct Write_flood : Action
+{
+  Write_flood(Stmt* a)
+    : first(a)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Flood* flood() const { return cast<Flood>(first); }
+
+  Stmt* first;
+};
+
+
 // Write set field
 struct Write_set_field : Action
 {

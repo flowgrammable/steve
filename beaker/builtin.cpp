@@ -457,6 +457,29 @@ Builtin::write_drop()
 
 
 Function_decl*
+Builtin::write_flood()
+{
+  Symbol const* fn_name = get_identifier(__write_flood);
+
+  Type const* void_type = get_void_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+Function_decl*
 Builtin::write_output()
 {
   Symbol const* fn_name = get_identifier(__write_output);
@@ -530,6 +553,7 @@ Builtin::init_builtins()
     {__clear, clear()},
     {__set_field, set_field()},
     {__write_drop, write_drop()},
+    {__write_flood, write_flood()},
     {__write_output, write_output()},
     {__write_set, write_set_field()},
   };
@@ -776,7 +800,7 @@ Builtin::call_clear(Expr* cxt)
   Function_decl* fn = builtin_fn.find(__clear)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Call_expr(decl_id(fn), {cxt});
 }
 
 
@@ -796,7 +820,17 @@ Builtin::call_write_drop(Expr* cxt)
   Function_decl* fn = builtin_fn.find(__write_drop)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Write_drop_action(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_write_flood(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__write_flood)->second;
+  assert(fn);
+
+  return new Write_flood_action(decl_id(fn), {cxt});
 }
 
 
@@ -806,7 +840,7 @@ Builtin::call_write_output(Expr* cxt, Expr* port)
   Function_decl* fn = builtin_fn.find(__write_output)->second;
   assert(fn);
 
-  return new Output_packet(decl_id(fn), {cxt, port});
+  return new Write_output_action(decl_id(fn), {cxt, port});
 }
 
 

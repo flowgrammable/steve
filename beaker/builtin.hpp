@@ -28,6 +28,7 @@ constexpr char const* __flood        = "fp_flood";
 constexpr char const* __clear        = "fp_clear";
 constexpr char const* __write_drop   = "fp_write_drop";
 constexpr char const* __write_output = "fp_write_output";
+constexpr char const* __write_flood = "fp_write_flood";
 constexpr char const* __write_set    = "fp_write_set_field";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
@@ -240,6 +241,12 @@ struct Write_output_action : Call_expr
 };
 
 
+struct Write_flood_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 struct Write_set_field_action : Call_expr
 {
   using Call_expr::Call_expr;
@@ -331,6 +338,7 @@ struct Builtin
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
   Expr* call_write_drop(Expr*);
+  Expr* call_write_flood(Expr*);
   Expr* call_write_output(Expr* cxt, Expr* port);
   Expr* call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
 
@@ -365,6 +373,7 @@ private:
   Function_decl* clear();
   Function_decl* set_field();
   Function_decl* write_drop();
+  Function_decl* write_flood();
   Function_decl* write_output();
   Function_decl* write_set_field();
 

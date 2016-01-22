@@ -205,6 +205,7 @@ public:
   Stmt* elaborate(Remove_flow*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
+  Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
   Decl* elaborate_added_flow(Flow_decl*, Table_decl*);

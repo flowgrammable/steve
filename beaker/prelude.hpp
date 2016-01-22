@@ -163,6 +163,7 @@ struct Insert_flow;
 struct Remove_flow;
 struct Write_drop;
 struct Write_output;
+struct Write_flood;
 struct Write_set_field;
 struct Write_copy_field;
 

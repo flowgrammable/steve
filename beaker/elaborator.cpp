@@ -2863,6 +2863,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
@@ -3432,6 +3433,16 @@ Stmt*
 Elaborator::elaborate(Write_output* s)
 {
   assert(s->output());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_flood* s)
+{
+  assert(s->flood());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
   return s;
