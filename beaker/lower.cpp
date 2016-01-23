@@ -366,6 +366,16 @@ Lowerer::lower(Call_expr* e)
 }
 
 
+// NOTE: Field access expressions always recover the value from the last
+// extracted instance of a field. This is a valid operation in both decoders
+// and tables and should not provoke unexpected behaviour.
+//
+// Within decoders, you can only access fields that have been extracted in that
+// decoder, so this is a safe operation.
+//
+// Tables ALWAYS match on the most recently extracted fields. Any field access
+// expr which occur within the flows, thus, by definition, refer to the most
+// recently extracted values for those fields.
 Expr*
 Lowerer::lower(Field_access_expr* e)
 {

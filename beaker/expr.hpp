@@ -581,8 +581,19 @@ struct Field_access_expr : Expr
 };
 
 
-// This expression allows access the the in_port field of the Context.
-
+// This expression allows access the the in_port field of the context.
+//
+// Inport_expr always resolves into an integer id asigned the port by the runtime
+// so that it can be used as part of a table key. However, inport cannot be
+// used in arithmetic situations.
+//
+// This expr is not to be confused with the inport keyword used in the statement
+//    output inport;
+// Output inport is a special statement which says to output to the inport of
+// the packet.
+struct Inport_expr : Expr
+{
+};
 
 
 
