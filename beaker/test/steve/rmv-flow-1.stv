@@ -1,3 +1,5 @@
+foreign def puts(char[]) -> int;
+
 Port p1 = ":5000";
 
 layout eth
@@ -15,12 +17,21 @@ decoder start eth_d(eth)
   goto switch;
 }
 
-
 exact_table switch(eth::dst, eth::type)
 {
   miss ->
   {
-    remove { 0, eth::type } from switch;
+		puts("Miss...adding flow now.");
+
+    add
+    { eth::dst, eth::type } ->
+    {
+			puts("Hit added flow....Now removing.");
+			remove { eth::dst, eth::type } from switch;
+
+      output p1;
+    }
+    into switch;
 
     output p1;
   }
