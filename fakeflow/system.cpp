@@ -14,6 +14,7 @@ namespace fp
 Module_table     module_table;     // Flowpath module table.
 Dataplane_table  dataplane_table;  // Flowpath data plane table.
 Port_table       port_table;       // Flowpath port table.
+// Thread_pool      thread_pool(0, true);      // Flowpath thread pool.
 
 
 // Creates a new port, adds it to the master port table, and
@@ -166,10 +167,19 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
   va_start(args, n);
   fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
   va_end(args);
-  // find the flow
-  fp::Flow const& flow = tbl->find(key);
+  fp::Flow const& flow = tbl->search(key);
   // execute the flow function
   flow.instr_(tbl, cxt);
+
+  // testing find times
+  // static fp::Byte b[fp::key_size];
+  // static fp::Key key(b, 8);
+  // fp::Flow const& flow = tbl->search(key);
+  // execute the flow function
+  // flow.instr_(tbl, cxt);
+
+  // static fp::Flow const& flow = dynamic_cast<fp::Hash_table*>(tbl)->begin()->second;
+  // flow.instr_(tbl, cxt);
 }
 
 
@@ -259,11 +269,11 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 void
 fp_add_flow(fp::Table* tbl, void* fn, void* key)
 {
-  std::cout << "Adding flow\n";
-
+  // std::cout << "Adding flow to " << tbl->id() << '\n';
+  //
   // get the length of the table's expected key
   int key_size = tbl->key_size();
-  std::cout << "Key size: " << key_size << '\n';
+  // std::cout << "Key size: " << key_size << '\n';
   // cast the key to Byte*
   fp::Byte* buf = reinterpret_cast<fp::Byte*>(key);
   // construct a key object
@@ -271,7 +281,8 @@ fp_add_flow(fp::Table* tbl, void* fn, void* key)
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
   fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
-  tbl->insert(k, flow);
+
+  tbl->add(k, flow);
 }
 
 
@@ -297,7 +308,7 @@ fp_del_flow(fp::Table* tbl, void* key)
   // construct a key object
   fp::Key k(buf, key_size);
   // delete the key
-  tbl->erase(k);
+  tbl->rmv(k);
 }
 
 
@@ -344,13 +355,28 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 }
 
 
-fp::Byte* fp_read_field(fp::Context* cxt, int fld)
+fp::Byte*
+fp_read_field(fp::Context* cxt, int fld)
 {
   // std::cout << "READING FIELD";
   // Lookup the field in the context.
   fp::Binding b = cxt->get_field_binding(fld);
   fp::Byte* p = cxt->get_field(b.offset);
   return p;
+}
+
+
+void
+fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
+{
+  fp::Binding& b = cxt->get_field_binding(fld);
+
+  // Copy the new data into the packet at the appropriate location.
+  fp::Byte* p = cxt->get_field(b.offset);
+  std::copy(val, val + len, p);
+
+  // Update the length if it changed (which it shouldn't).
+  b.length = len;
 }
 
 } // extern "C"

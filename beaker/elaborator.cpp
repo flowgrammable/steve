@@ -13,6 +13,7 @@
 #include "beaker/builtin.hpp"
 #include "beaker/actions.hpp"
 #include "beaker/length.hpp"
+#include "beaker/token.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -599,6 +600,49 @@ check_unary_arithmetic_expr(Elaborator& elab, T* e)
 }
 
 
+bool
+check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
+{
+  Table_type const* table_type = as<Table_type>(table->type());
+
+  Type_seq const& field_types = table_type->field_types();
+  Expr_seq const& key = flow->keys();
+
+  // check for equally size keys
+  if (field_types.size() != key.size()) {
+    std::stringstream ss;
+    ss << "Flow " << *flow << " does not have the same number of keys as"
+       << "table: " << *table->name();
+    throw Type_error({}, ss.str());
+
+    return false;
+  }
+
+  // check that each subkey type can be converted
+  // to the type specified by the table
+  auto table_subtype = field_types.begin();
+  auto subkey = key.begin();
+
+  Expr_seq new_key;
+  for(int i = 0; table_subtype != field_types.end() && subkey != key.end();
+      ++table_subtype, ++subkey, ++i)
+  {
+    Expr* e = require_converted(elab, *subkey, *table_subtype);
+    if (e)
+      new_key.push_back(e);
+    else {
+      std::stringstream ss;
+      ss << "Failed type conversion in flow field key " << i
+         << " of table " << *table->name() << '.';
+      throw Type_error({}, ss.str());
+    }
+  }
+
+  flow->keys_ = new_key;
+  return true;
+}
+
+
 // Check all flows within a table initializer
 // to confirm that the keys given are of the
 // correct type.
@@ -609,49 +653,13 @@ check_table_initializer(Elaborator& elab, Table_decl* d)
 {
   assert(is<Table_type>(d->type()));
 
-  Table_type const* table_type = as<Table_type>(d->type());
-
-  Type_seq const& field_types = table_type->field_types();
-
-  // key track of the flow in the initializer
-  int flow_cnt = 0;
-
   for (auto f : d->body()) {
     assert(is<Flow_decl>(f));
 
-    ++flow_cnt;
     Flow_decl* flow = as<Flow_decl>(f);
-    Expr_seq const& key = flow->keys();
 
-    // check for equally size keys
-    if (field_types.size() != key.size()) {
-      std::stringstream ss;
-      ss << "Flow " << *f << " does not have the same number of keys as"
-         << "table: " << *d->name();
-      throw Type_error({}, ss.str());
-
+    if (!check_table_flow(elab, d, flow))
       return false;
-    }
-
-    // check that each subkey type can be converted
-    // to the type specified by the table
-    auto table_subtype = field_types.begin();
-    auto subkey = key.begin();
-
-    Expr_seq new_key;
-    for(;table_subtype != field_types.end() && subkey != key.end(); ++table_subtype, ++subkey)
-    {
-      Expr* e = require_converted(elab, *subkey, *table_subtype);
-      if (e)
-        new_key.push_back(e);
-      else {
-        std::stringstream ss;
-        ss << "Failed type conversion in flow #" << flow_cnt << " subkey: " << **subkey;
-        throw Type_error({}, ss.str());
-      }
-    }
-
-    flow->keys_ = new_key;
   }
 
   return true;
@@ -1531,9 +1539,14 @@ Elaborator::elaborate(Field_name_expr* e)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -1595,13 +1608,18 @@ Elaborator::elaborate(Field_name_expr* e)
 
   e->decls_ = decls;
 
-  // the type is the type of the final declaration
+  // The type is the type of the final declaration
   Type const* t = decls.back()->type();
   if (!t) {
     std::stringstream ss;
     ss << "Field expression" << *e << " of unknown type.";
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(e), ss.str());
   }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(e), "Cannot extract an entire layout.");
+  }
+
   e->type_ = t;
 
   return e;
@@ -1645,9 +1663,14 @@ Elaborator::elaborate(Field_access_expr* e)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -1716,6 +1739,10 @@ Elaborator::elaborate(Field_access_expr* e)
     std::stringstream ss;
     ss << "Field expression" << *e << " of unknown type.";
     throw Type_error({}, ss.str());
+  }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(e), "Cannot extract an entire layout.");
   }
 
   e->type_ = get_reference_type(t);
@@ -1944,9 +1971,14 @@ Elaborator::elaborate(Key_decl* d)
   Layout_decl* prev = nullptr;
 
   if (id1) {
-    Decl* d = stack.lookup(id1->symbol())->second.front();
-    if (Layout_decl* lay = as<Layout_decl>(d)) {
+    Decl_expr* d = as<Decl_expr>(elaborate(id1));
+    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
       prev = lay;
+    }
+    else {
+      std::stringstream ss;
+      ss << "Invalid layout identifier: " << *id1;
+      throw Type_error({}, ss.str());
     }
   }
   else {
@@ -2022,6 +2054,10 @@ Elaborator::elaborate(Key_decl* d)
     ss << "Field expression" << *d << " of unknown type.";
     throw Type_error({}, ss.str());
   }
+  // The type cannot be a layout type either.
+  if (is<Layout_type>(t)) {
+    throw Type_error(locate(d), "Cannot extract an entire layout.");
+  }
   d->type_ = t;
 
   return d;
@@ -2041,16 +2077,52 @@ Elaborator::elaborate(Flow_decl* d)
     throw Type_error(locate(d), ss.str());
   }
 
+  // Build a name for the flow declaration.
+  // form a name for the flow
+  std::stringstream ss;
+  if (d->miss_case())
+    ss << "_FLOW_" << table->name()->spelling() << "_f_miss";
+  else
+    ss << "_FLOW_" << table->name()->spelling() << "_f" << ++table->flow_count_;
+  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+  d->name_ = name;
+
   Scope_sentinel scope(*this, d);
 
   Type_seq types;
   for (auto expr : d->keys()) {
     Expr* key = elaborate(expr);
+
+    // For now we only support literal expressions here.
+    if (!is<Literal_expr>(key)) {
+      std::stringstream ss;
+      ss << "Key value must be a literal. Found: " << *key;
+      throw Type_error(locate(d), ss.str());
+    }
+
     types.push_back(key->type());
   }
 
   d->type_ = get_flow_type(types);
   d->instructions_ = elaborate(d->instructions());
+
+  if (Block_stmt* block = as<Block_stmt>(d->instructions_)) {
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration missing guaranteed terminator.\n";
+      ss << *block;
+
+      throw Type_error(locate(block), ss.str());
+    }
+
+    if (has_multiple_terminators(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration has multiple terminators.\n";
+      ss << *block;
+
+      throw Type_error(locate(block), ss.str());
+    }
+  }
 
   return d;
 }
@@ -2399,12 +2471,14 @@ Elaborator::elaborate_decl(Table_decl* d)
   Decl_seq field_decls;
   Type_seq types;
 
+  // construct the table type
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
       elaborate(field);
       declare(field);
 
-      // construct the table type
+      // Get the final declaration in the key path specifier.
+      // This shall provide the type needed for the field.
       Decl* field_decl = field->declarations().back();
 
       assert(field_decl);
@@ -2415,11 +2489,6 @@ Elaborator::elaborate_decl(Table_decl* d)
       // save the type of the field decl
       types.push_back(field_decl->type());
     }
-  }
-
-  // elaborate the individual flows
-  for (auto flow : d->body()) {
-    elaborate(flow);
   }
 
   Type const* type = get_table_type(field_decls, types);
@@ -2638,6 +2707,9 @@ Elaborator::elaborate_def(Layout_decl* d)
 
   for (Decl*& f : d->fields_) {
     f = elaborate_decl(f);
+    if (!is_scalar(f->type()) && !is<Layout_type>(f->type())) {
+      throw Type_error(locate(f), "Field of invalid type found in layout.");
+    }
   }
   return d;
 }
@@ -2678,8 +2750,26 @@ Elaborator::elaborate_def(Decode_decl* d)
 
   // Enter a scope since a decode body is
   // basically a special function body
-  if (d->body())
+  if (d->body()) {
     d->body_ = elaborate(d->body());
+    if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+      if (!has_terminator_action(block->statements())) {
+        std::stringstream ss;
+        ss << "Decode declaration missing guaranteed terminator.\n";
+        ss << *block;
+
+        throw Type_error(locate(block), ss.str());
+      }
+
+      if (has_multiple_terminators(block->statements())) {
+        std::stringstream ss;
+        ss << "Flow declaration has multiple terminators.\n";
+        ss << *block;
+
+        throw Type_error(locate(block), ss.str());
+      }
+    }
+  }
 
   return d;
 }
@@ -2699,6 +2789,18 @@ Decl*
 Elaborator::elaborate_def(Table_decl* d)
 {
   Scope_sentinel scope(*this, d);
+
+  // Make sure all the keys are in scope.
+  for (auto subkey : d->keys()) {
+    if (Key_decl* field = as<Key_decl>(subkey)) {
+      declare(field);
+    }
+  }
+
+  // Elaborate the individual flows for correctness.
+  for (auto flow : d->body()) {
+    elaborate(flow);
+  }
 
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
@@ -2755,9 +2857,15 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
   Stmt* stmt = apply(s, Fn{*this});
@@ -2796,8 +2904,11 @@ Elaborator::elaborate(Assign_stmt* s)
 {
   // FIXME: Write a better predicate?
   Expr* lhs = elaborate(s->object());
-  if (!is<Reference_type>(lhs->type()))
-    throw Type_error({}, "assignment to rvalue");
+  if (!is<Reference_type>(lhs->type())) {
+    std::stringstream ss;
+    ss << "assignment to rvalue: " << *s;
+    throw Type_error({}, ss.str());
+  }
 
   // Apply rvalue conversion to the value and update the
   // expression.
@@ -2934,16 +3045,22 @@ Elaborator::elaborate(Match_stmt* s)
     }
   }
 
+  // Elaborate the miss case.
+  if (s->has_miss())
+    s->miss_ = elaborate(s->miss_);
+
   return s;
 }
 
 
-// FIXME: make sure case stmts can only appear
-// in the context of match
+// FIXME: Make sure case stmts can only appear in the context of match.
+//
+// NOTE: Any conversions of types on case labels are done in the elaboration
+// of the match statement.
 Stmt*
 Elaborator::elaborate(Case_stmt* s)
 {
-  Expr* label = require_converted(*this, s->label_, get_integer_type());
+  Expr* label = elaborate(s->label());
 
   if (!is<Literal_expr>(label)) {
     std::stringstream ss;
@@ -3071,6 +3188,12 @@ Elaborator::elaborate(Goto_stmt* s)
 
   Expr* tbl = elaborate(s->table_identifier_);
 
+  if (!is<Table_type>(tbl->type()->nonref())) {
+    std::stringstream ss;
+    ss << "invalid table identifier: " << *s->table_identifier();
+    throw Type_error({}, ss.str());
+  }
+
   if (Decl_expr* id = as<Decl_expr>(tbl)) {
     s->table_identifier_ = id;
     s->table_ = id->declaration();
@@ -3123,6 +3246,14 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
+Elaborator::elaborate(Flood* s)
+{
+  // No further elaboration required
+  return s;
+}
+
+
+Stmt*
 Elaborator::elaborate(Clear* s)
 {
   // No further elaboration required
@@ -3162,10 +3293,166 @@ Elaborator::elaborate(Set_field* s)
 }
 
 
+
+Decl*
+Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
+{
+  Scope_sentinel scope(*this, f);
+
+  // Make sure all the keys are in scope.
+  for (auto subkey : t->keys()) {
+    if (Key_decl* field = as<Key_decl>(subkey)) {
+      declare(field);
+    }
+  }
+
+  // Build a name for the flow declaration.
+  // form a name for the flow
+  std::stringstream ss;
+  if (f->miss_case())
+    ss << "_AFLOW_" << t->name()->spelling() << "_f_miss";
+  else
+    ss << "_AFLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
+  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+  f->name_ = name;
+
+  // Elaborate the type of the flow.
+  Type_seq types;
+  for (auto expr : f->keys()) {
+    Expr* key = elaborate(expr);
+    types.push_back(key->type());
+  }
+  f->type_ = get_flow_type(types);
+
+  // Elaborate the body of the flow.
+  f->instructions_ = elaborate(f->instructions());
+  if (Block_stmt* block = as<Block_stmt>(f->instructions_)) {
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Flow declaration missing guaranteed terminator.\n";
+      ss << *f;
+
+      throw Type_error(locate(block), ss.str());
+    }
+  }
+
+  // Add the flow to the list of tentative flows in the table declaration.
+  t->tentative_.push_back(f);
+
+  return f;
+}
+
+
+
+Stmt*
+Elaborator::elaborate(Insert_flow* s)
+{
+  s->table_id_ = elaborate(s->table_identifier());
+
+  // We need to specially elaborate this flow because it doesn't follow the
+  // exact same semantics as initializing flows.
+  //
+  // 1. The name has to be specially assigned since it isn't considered
+  //    "possessed" by a table.
+  //
+  // 2. It occurs outside the scope of a table so flow elaboration will
+  //    complain.
+  s->flow_ =
+    elaborate_added_flow(as<Flow_decl>(s->flow()), as<Table_decl>(s->table()));
+
+  if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
+    return s;
+  }
+  else {
+    std::stringstream ss;
+    ss << "Error with inserting flow: " << *s;
+    throw Type_error(locate(s), ss.str());
+  }
+
+  return nullptr;
+}
+
+
+Stmt*
+Elaborator::elaborate(Remove_flow* s)
+{
+  s->table_id_ = elaborate(s->table_identifier());
+  Table_decl* table = as<Table_decl>(s->table());
+
+  // Confirm that every key has a matching type in the table decl
+  // being inserted.
+  Table_type const* table_type = as<Table_type>(table->type());
+
+  Type_seq const& field_types = table_type->field_types();
+  Expr_seq const& key = s->keys();
+
+  // check for equally size keys
+  if (field_types.size() != key.size()) {
+    std::stringstream ss;
+    ss << "Keys in " << *s << " do not match number of keys needed by table "
+       << *s->table_identifier();
+    throw Type_error({}, ss.str());
+  }
+
+  // check that each subkey type can be converted
+  // to the type specified by the table
+  auto table_subtype = field_types.begin();
+  auto subkey = key.begin();
+
+  Expr_seq new_key;
+  for(int i = 0; table_subtype != field_types.end() && subkey != key.end();
+      ++table_subtype, ++subkey, ++i)
+  {
+    Expr* e = require_converted(*this, *subkey, *table_subtype);
+    if (e)
+      new_key.push_back(e);
+    else {
+      std::stringstream ss;
+      ss << "Failed type conversion in flow field key " << i
+         << " of table " << *table->name() << '.';
+      throw Type_error({}, ss.str());
+    }
+  }
+
+  s->keys_ = new_key;
+  return s;
+}
+
+
 Stmt*
 Elaborator::elaborate(Write_drop* s)
 {
   assert(s->drop());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_output* s)
+{
+  assert(s->output());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_flood* s)
+{
+  assert(s->flood());
+  // Elaborate the drop action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_set_field* s)
+{
+  assert(s->set_field());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
   return s;

@@ -13,9 +13,9 @@ decoder start eth_d(eth)
 {
   extract eth::type;
   match(eth::type) {
-    case 800: puts("Got ipv4");
-    case 880: puts("Got ipv6");
+    case 0x0800: puts("Got ipv4");
+    case 0x0880: puts("Got ipv6");
   }
-  // puts("Performing decode and routing.");
+  puts("Performing decode and routing.");
   output p1;
 }

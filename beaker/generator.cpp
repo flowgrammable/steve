@@ -891,12 +891,18 @@ Generator::gen(Stmt const* s)
     void operator()(Decode_stmt const* s) { g.gen(s); }
     void operator()(Goto_stmt const* s) { g.gen(s); }
 
-    void operator()(Action const* s) { g.gen(s); }
-    void operator()(Drop const* s) { g.gen(s); }
-    void operator()(Output const* s) { g.gen(s); }
-    void operator()(Clear const* s) { g.gen(s); }
-    void operator()(Set_field const* s) { g.gen(s); }
-    void operator()(Write_drop const* s) { g.gen(s); }
+    void operator()(Action const* s) { lingo_unreachable(); }
+    void operator()(Drop const* s) { lingo_unreachable(); }
+    void operator()(Output const* s) { lingo_unreachable(); }
+    void operator()(Flood const* s) { lingo_unreachable(); }
+    void operator()(Clear const* s) { lingo_unreachable(); }
+    void operator()(Set_field const* s) { lingo_unreachable(); }
+    void operator()(Insert_flow const* s) { lingo_unreachable(); }
+    void operator()(Remove_flow const* s) { lingo_unreachable(); }
+    void operator()(Write_drop const* s) { lingo_unreachable(); }
+    void operator()(Write_output const* s) { lingo_unreachable(); }
+    void operator()(Write_flood const* s) { lingo_unreachable(); }
+    void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
   apply(s, Fn{*this});
 }
@@ -940,9 +946,13 @@ Generator::gen(Assign_stmt const* s)
 void
 Generator::gen(Return_stmt const* s)
 {
-  llvm::Value* v = gen(s->value());
-  build.CreateStore(v, ret);
-  build.CreateBr(exit);
+  llvm::BasicBlock* curr = build.GetInsertBlock();
+  // Only create a branch if the current block has no terminator.
+  if (!curr->getTerminator()) {
+    llvm::Value* v = gen(s->value());
+    build.CreateStore(v, ret);
+    build.CreateBr(exit);
+  }
 }
 
 
@@ -952,7 +962,13 @@ Generator::gen(Return_stmt const* s)
 void
 Generator::gen(Return_void_stmt const* s)
 {
-  build.CreateBr(exit);
+  llvm::BasicBlock* curr = build.GetInsertBlock();
+
+  // Only create a branch if the current block has no terminator.
+  if (!curr->getTerminator()) {
+    build.CreateBr(exit);
+    return;
+  }
 }
 
 
@@ -1110,53 +1126,16 @@ Generator::gen(Match_stmt const* s)
 
   // generate the merging block
   build.SetInsertPoint(done);
+
+  // handle the default case
+  if (s->has_miss()) {
+    gen(s->miss());
+  }
 }
 
 
 void
 Generator::gen(Case_stmt const* s)
-{
-  lingo_unreachable();
-}
-
-
-void
-Generator::gen(Action const* s)
-{
-  lingo_unreachable("unimplemented instruction gen");
-}
-
-
-void
-Generator::gen(Drop const* s)
-{
-  lingo_unreachable("unimplemented instruction gen");
-}
-
-
-void
-Generator::gen(Output const* s)
-{
-  lingo_unreachable("unimplemented instruction gen");
-}
-
-
-void
-Generator::gen(Clear const* s)
-{
-  lingo_unreachable("unimplemented instruction gen");
-}
-
-
-void
-Generator::gen(Set_field const* s)
-{
-  lingo_unreachable();
-}
-
-
-void
-Generator::gen(Write_drop const* s)
 {
   lingo_unreachable();
 }

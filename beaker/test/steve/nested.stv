@@ -1,0 +1,22 @@
+foreign def puts(char[]) -> int;
+
+layout eth
+{
+  src : uint(48);
+  dst : uint(48);
+  type : uint(16);
+  n : nested;
+  m : uint;
+}
+
+
+layout nested
+{
+  nest : uint;
+}
+
+decoder start eth_d(eth)
+{
+  extract eth::n::nest;
+  extract eth::m;
+}

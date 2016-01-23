@@ -1,0 +1,21 @@
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+decoder start eth_d(eth)
+{
+  extract eth::dst;
+  extract eth::type;
+  eth::type * 4;
+	eth::type | 4;
+	eth::type & 4;
+	eth::type ^ 4;
+	eth::type << 4;
+	eth::type >> 4;
+
+  var x : uint(16) = eth::type;
+  var y : uint(16) = eth::type * 4;
+}

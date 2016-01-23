@@ -1,0 +1,6 @@
+for file in $(ls beaker/test/steve/$1*.stv)
+do
+	echo $file
+	./build/beaker/unit-tests/test-pipeline $file > apps/$1.ll
+	clang-3.6 -shared -fPIC apps/$1.ll -o apps/$1.app -O3
+done

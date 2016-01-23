@@ -151,16 +151,19 @@ struct Create_table;
 struct Get_dataplane;
 
 // Actions
-struct Goto_stmt;
 struct Action;
 struct Drop;
 struct Output;
+struct Flood;
 struct Clear;
 struct Group;
 struct Set_field;
 struct Copy_field;
+struct Insert_flow;
+struct Remove_flow;
 struct Write_drop;
 struct Write_output;
+struct Write_flood;
 struct Write_set_field;
 struct Write_copy_field;
 

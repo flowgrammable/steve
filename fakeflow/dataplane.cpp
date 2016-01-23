@@ -3,6 +3,8 @@
 #include "dataplane.hpp"
 #include "context.hpp"
 #include "timer.hpp"
+#include "system.hpp"
+#include "fakeapps.hpp"
 
 #include <iostream>
 #include <cassert>
@@ -10,6 +12,7 @@
 namespace fp {
 
 extern Module_table module_table;
+
 
 // Data plane ctor.
 Dataplane::Dataplane(std::string const& name, std::string const& app_name)
@@ -49,7 +52,16 @@ Dataplane::remove_port(Port* p)
 void
 Dataplane::up()
 {
+  // if (!app_)
+  //   throw std::string("No applicaiton is installed.");
+  // else if (app_->state() == Application::State::READY) {
+  //   thread_pool.install(app());
+  //   thread_pool.start();
+  // }
+  // else if (app_->state() == Application::State::NEW)
+  //   throw std::string("Data plane has not been configured, unable to start");
 }
+
 
 
 // For manually passing in packets to the data plane.
@@ -58,7 +70,15 @@ Dataplane::process(Port* port, Packet* pkt)
 {
   // std::cout << "PROCESSING\n";
   Context* c = new Context(pkt, port->id_, port->id_, 0);
+  // thread_pool.assign(new Task("pipeline", c));
   app_->lib().exec("pipeline", c);
+
+  // static App1 a(tables_.front());
+  // a.pipeline(c, port);
+  //
+  // static App2 b(tables_.front());
+  // b.pipeline(c, port);
+
   // std::cout << "DONE PROCESSING\n";
 }
 
@@ -67,7 +87,12 @@ Dataplane::process(Port* port, Packet* pkt)
 void
 Dataplane::down()
 {
-  throw std::string("Data plane is not running.");
+ //  if (app_->state() == Application::State::RUNNING) {
+ //   thread_pool.stop();
+ //   thread_pool.uninstall();
+ // }
+ // else
+ //   throw std::string("Data plane is not running.");
 }
 
 
@@ -79,7 +104,7 @@ Dataplane::configure()
 
   if (app_->state() == Application::State::NEW) {
     std::cout << "RUNNING CONFIG\n";
-    
+
     app_->lib().exec("config", this);
     app_->state_ = Application::State::READY;
   }

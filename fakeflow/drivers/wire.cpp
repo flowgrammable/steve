@@ -1,7 +1,7 @@
 
 #include "buffer.hpp"
-#include "port_table.hpp"
 #include "system.hpp"
+#include "port_table.hpp"
 #include "timer.hpp"
 
 using namespace fp;
@@ -44,26 +44,37 @@ int main(int argc, char* argv[])
       long long i = 0;
       Timer t;
 
+      Byte* data1 = new Byte[64]{
+        // src bytes
+        0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
+        // dst bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // type bytes
+        0x00, 0x08, 0, 0, 0
+      };
+
+      Packet* pkt1 = packet_create(data1, 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, pkt1);
+
       while(i < pkt_no) {
-        Byte* data = new Byte[1500]{
+
+        Byte* data2 = new Byte[64]{
           // src bytes
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
           // dst bytes
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
           // type bytes
-          ' ', '\03', 0, 0, 0
+          0x00, 0x08, 0, 0, 0
         };
 
-        Packet* pkt = packet_create(data, 1500, 0, nullptr, FP_BUF_ALLOC);
+        Packet* pkt2 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p1, pkt);
+        dp->process(p1, pkt2);
         ++i;
-        packet_destroy(pkt);
       }
       // timer dtor should print time here
 
     } // block
-
   }
   catch(std::string s)
   {

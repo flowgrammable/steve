@@ -1,0 +1,80 @@
+foreign def puts(char[]) -> int;
+
+Port p1 = ":5000";
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+
+layout ipv4
+{
+  version_ihl : uint(8);
+  dscp_ecn    : uint(8);
+  len         : uint(16);
+	id					: uint(16);
+	fragment    : uint(16);
+  ttl         : uint(8);
+  protocol    : uint(8);
+  checksum    : uint(16);
+  src         : uint(32);
+  dst         : uint(32);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth::dst;
+  extract eth::type;
+  goto s1;
+}
+
+
+exact_table s1(eth::dst, eth::type)
+{
+  { 0x00_00_00_00_00_00, 800 } ->
+  {
+    decode ipv4_d;
+  }
+
+  miss ->
+  {
+    output p1;
+  }
+}
+
+
+decoder ipv4_d(ipv4)
+{
+	extract ipv4::ttl;
+	extract ipv4::version_ihl;
+	extract ipv4::dscp_ecn;
+	extract ipv4::checksum;
+	extract ipv4::protocol;
+	extract ipv4::len;
+  extract ipv4::src;
+  extract ipv4::dst;
+
+  match(ipv4::protocol) {
+    case 0: goto s2;
+  }
+
+	drop;
+}
+
+
+exact_table s2(eth::dst, eth::type)
+{
+  { 0x00_00_00_00_00_00, 800 } ->
+  {
+    decode eth_d;
+  }
+
+  miss ->
+  {
+    goto s1;
+  }
+}

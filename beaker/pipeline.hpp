@@ -84,6 +84,12 @@ struct Stage
   Field_env products_;
   Sym_set reqs_;
 
+  bool is_table()   const { return is<Table_decl>(stage_); }
+  bool is_decoder() const { return is<Decode_decl>(stage_); }
+
+  Table_decl const* table() const { return as<Table_decl>(stage_); }
+  Decode_decl const* decoder() const { return as<Decode_decl>(stage_); }
+
   // for dfs
   bool visited;
 };
@@ -151,6 +157,7 @@ struct Pipeline_checker
 
 private:
   void check_stage(Decl const*, Sym_set const&);
+  void check_progression(Stage_set const&);
   void dfs(Stage*);
 
   // Map headers to integers
@@ -177,6 +184,9 @@ private:
 
   // Maintain the current path for debugging purposes
   std::vector<Stage*> path;
+
+  // Maintain the current state of highest table.
+  int highest_table = 0;
 };
 
 

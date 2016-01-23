@@ -140,7 +140,7 @@ Parser::primary_expr()
     return e;
   }
 
-  throw std::runtime_error("Failed to parse primary expression.");
+  // throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
   error("expected primary expression");
@@ -973,7 +973,7 @@ Parser::exact_table_decl()
   Decl_seq flows;
   Decl* miss;
   while (lookahead() != rbrace_tok) {
-    Decl* d = flow_decl(name);
+    Decl* d = flow_decl();
     Flow_decl* flow = as<Flow_decl>(d);
     if (flow) {
       // handle the miss case
@@ -991,14 +991,15 @@ Parser::exact_table_decl()
 
 
 // Parse a flow decl
+//
+// Parsing function takes the name of the table it belongs to.
 Decl*
-Parser::flow_decl(Token tok)
+Parser::flow_decl()
 {
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    match(semicolon_tok);
-    return on_flow_miss(tok, body);
+    return on_flow_miss(body);
   }
 
   match(lbrace_tok);
@@ -1017,9 +1018,7 @@ Parser::flow_decl(Token tok)
   match(arrow_tok);
   Stmt* body = block_stmt();
 
-  match(semicolon_tok);
-
-  return on_flow(tok, keys, body);
+  return on_flow(keys, body);
 }
 
 
@@ -1270,6 +1269,20 @@ Parser::case_stmt()
 }
 
 
+// Parse the miss case statement.
+//
+//    miss-case-stmt -> 'miss' ':' stmt ';'
+//
+Stmt*
+Parser::miss_case_stmt()
+{
+  match(miss_kw);
+  match(colon_tok);
+  Stmt* s = stmt();
+  return s;
+}
+
+
 // Parse a match statement
 //
 //    match-stmt -> 'match' '(' expr ')' '{' case-seq '}'
@@ -1285,18 +1298,35 @@ Parser::match_stmt()
     error("Expected expression in match condition.");
 
   Stmt_seq cases;
+  Stmt*    miss = nullptr; // The default case statement.
 
   match(lbrace_tok);
   while(lookahead() != rbrace_tok) {
-    Stmt* c = case_stmt();
-    if (c)
-      cases.push_back(c);
+    // The regular case statements
+    if (lookahead() == case_kw) {
+      Stmt* c = case_stmt();
+      if (c)
+        cases.push_back(c);
+      else
+        error("Invalid case.");
+    }
+
+    // The default case statement
+    else if (lookahead() == miss_kw) {
+      Stmt* m = miss_case_stmt();
+      if (m && !miss) {
+          miss = m;
+      }
+      else
+        error("Invalid miss case in match stmt.");
+    }
     else
       error("Invalid case.");
   }
+
   match(rbrace_tok);
 
-  return on_match(e, cases);
+  return on_match(e, cases, miss);
 }
 
 // Parse a decode stmt
@@ -1341,6 +1371,18 @@ Parser::drop_stmt()
   return on_drop();
 }
 
+
+// Parse a flood stmt.
+//
+//    flood-stmt -> 'flood;'
+Stmt*
+Parser::flood_stmt()
+{
+  match(flood_kw);
+  match(semicolon_tok);
+
+  return on_flood();
+}
 
 
 // Parse an output stmt
@@ -1408,7 +1450,8 @@ Parser::copy_stmt()
 
 // Write an action to be applied later.
 //
-//  write-stmt -> 'write' [drop-stmt | output-stmt | set-stmt | copy-stmt]
+//  write-stmt -> 'write' [drop-stmt | output-stmt | flood-stmt |
+//                         set-stmt | copy-stmt]
 Stmt*
 Parser::write_stmt()
 {
@@ -1420,6 +1463,9 @@ Parser::write_stmt()
       break;
     case output_kw:
       s = output_stmt();
+      break;
+    case flood_kw:
+      s = flood_stmt();
       break;
     case set_kw:
       s = set_stmt();
@@ -1435,6 +1481,52 @@ Parser::write_stmt()
   }
 
   return on_write(s);
+}
+
+
+// Add flow statement.
+//
+//    add-flow-stmt -> 'add' flow-decl 'into' table-id
+//
+Stmt*
+Parser::add_flow_stmt()
+{
+  match(add_kw);
+  Decl* flow = flow_decl();
+  match(into_kw);
+  Expr* table = expr();
+  match(semicolon_tok);
+
+  return on_add_flow(flow, table);
+}
+
+
+// Remove flow statement.
+//
+//    rmv-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
+//
+Stmt*
+Parser::rmv_flow_stmt()
+{
+  match(rmv_kw);
+  match(lbrace_tok);
+  Expr_seq keys;
+  while (lookahead() != rbrace_tok) {
+    Expr* k = expr();
+    if (k)
+      keys.push_back(k);
+
+    if (match_if(comma_tok))
+      continue;
+    else
+      break;
+  }
+  match(rbrace_tok);
+  match(from_kw);
+  Expr* table = expr();
+  match(semicolon_tok);
+
+  return on_rmv_flow(keys, table);
 }
 
 
@@ -1489,6 +1581,9 @@ Parser::stmt()
     case output_kw:
       return output_stmt();
 
+    case flood_kw:
+      return flood_stmt();
+
     case clear_kw:
       return clear_stmt();
 
@@ -1500,6 +1595,12 @@ Parser::stmt()
 
     case write_kw:
       return write_stmt();
+
+    case add_kw:
+      return add_flow_stmt();
+
+    case rmv_kw:
+      return rmv_flow_stmt();
 
     default:
       return expression_stmt();
@@ -2098,32 +2199,20 @@ Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
   return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
 }
 
+
 // TODO: handle priorities
 Decl*
-Parser::on_flow(Token tok, Expr_seq& keys, Stmt* body)
+Parser::on_flow(Expr_seq& keys, Stmt* body)
 {
-  static int count = 0;
-
-  // form a name for the flow
-  std::stringstream ss;
-  ss << "_FLOW_" << tok.spelling() << "_flow_" << ++count;
-
-  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
-  return new Flow_decl(name, keys, 0, body);
+  return new Flow_decl(nullptr, keys, 0, body);
 }
 
 
 Decl*
-Parser::on_flow_miss(Token tok, Stmt* body)
+Parser::on_flow_miss(Stmt* body)
 {
-  std::stringstream ss;
-  ss << "_FLOW_" << tok.spelling() << "_flow_miss";
-
-  Symbol const* name = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
   // No key given
-  return new Flow_decl(name, 0, body, true);
+  return new Flow_decl(nullptr, 0, body, true);
 }
 
 
@@ -2218,9 +2307,9 @@ Parser::on_case(Expr* label, Stmt* s)
 
 
 Stmt*
-Parser::on_match(Expr* cond, Stmt_seq& cases)
+Parser::on_match(Expr* cond, Stmt_seq& cases, Stmt* miss)
 {
-  return new Match_stmt(cond, cases);
+  return new Match_stmt(cond, cases, miss);
 }
 
 
@@ -2242,6 +2331,13 @@ Stmt*
 Parser::on_drop()
 {
   return new Drop();
+}
+
+
+Stmt*
+Parser::on_flood()
+{
+  return new Flood();
 }
 
 
@@ -2280,8 +2376,25 @@ Parser::on_write(Stmt* s)
     return new Write_drop(s);
   else if (is<Output>(s))
     return new Write_output(s);
+  else if (is<Flood>(s))
+    return new Write_flood(s);
   else if (is<Set_field>(s))
     return new Write_set_field(s);
 
+  // Any other action is not currently supported.
   lingo_unimplemented();
+}
+
+
+Stmt*
+Parser::on_add_flow(Decl* flow, Expr* table)
+{
+  return new Insert_flow(flow, table);
+}
+
+
+Stmt*
+Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
+{
+  return new Remove_flow(keys, table);
 }

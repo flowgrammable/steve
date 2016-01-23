@@ -764,12 +764,20 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Declaration_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Decode_stmt const* s) { return ev.eval(s, r); }
     Control operator()(Goto_stmt const* s) { return ev.eval(s, r); }
+
+
     Control operator()(Action const* s) { lingo_unreachable(); }
     Control operator()(Drop const* s) { lingo_unreachable(); }
     Control operator()(Output const* s) { lingo_unreachable(); }
+    Control operator()(Flood const* s) { lingo_unreachable(); }
     Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
+    Control operator()(Insert_flow const* s) { lingo_unreachable(); }
+    Control operator()(Remove_flow const* s) { lingo_unreachable(); }
     Control operator()(Write_drop const* s) { lingo_unreachable(); }
+    Control operator()(Write_output const* s) { lingo_unreachable(); }
+    Control operator()(Write_flood const* s) { lingo_unreachable(); }
+    Control operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
 
   return apply(s, Fn{*this, r});

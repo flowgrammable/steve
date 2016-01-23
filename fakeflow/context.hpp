@@ -100,12 +100,14 @@ struct Context
   void apply_actions();
   void clear_actions();
 
-  // FIXME: Implement me.
   void bind_header(int);
   void bind_field(int, std::uint16_t, std::uint16_t);
+
   Byte const* get_field(std::uint16_t) const;
   Byte*       get_field(std::uint16_t);
-  Binding     get_field_binding(int) const;
+
+  Binding const& get_field_binding(int) const;
+  Binding&       get_field_binding(int);
 
   Packet*         packet_;
   Metadata        metadata_;
@@ -217,12 +219,19 @@ Context::get_field(std::uint16_t off)
 
 
 // Returns the binding for the given field.
-inline Binding
+inline Binding const&
 Context::get_field_binding(int fld) const
 {
   return fld_[fld].top();
 }
 
+
+// Returns the binding for the given field.
+inline Binding&
+Context::get_field_binding(int fld)
+{
+  return fld_[fld].top();
+}
 
 } // namespace fp
 

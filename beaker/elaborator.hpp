@@ -198,9 +198,17 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
+  Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
+  Stmt* elaborate(Insert_flow*);
+  Stmt* elaborate(Remove_flow*);
   Stmt* elaborate(Write_drop*);
+  Stmt* elaborate(Write_output*);
+  Stmt* elaborate(Write_flood*);
+  Stmt* elaborate(Write_set_field*);
+
+  Decl* elaborate_added_flow(Flow_decl*, Table_decl*);
 
   void declare(Decl*);
   void redeclare(Decl*);

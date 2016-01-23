@@ -98,10 +98,15 @@ enum Token_kind
   output_kw,
   write_kw,
   drop_kw,
+  flood_kw,
   clear_kw,
   set_kw,
   copy_kw,
   get_kw,
+  add_kw,
+  rmv_kw,
+  into_kw,
+  from_kw,
 
   // Multi-valued tokens
   boolean_tok,      // true | false

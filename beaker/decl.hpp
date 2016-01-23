@@ -331,7 +331,7 @@ struct Table_decl : Decl
   Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
              Decl_seq& init, Decl* miss)
     : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
-      start_(false), kind_(exact_table)
+      start_(false), kind_(exact_table), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
@@ -339,7 +339,7 @@ struct Table_decl : Decl
   Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
              Decl_seq& init, Decl* miss, Table_kind k)
     : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
-      start_(false), kind_(k)
+      start_(false), kind_(k), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
@@ -351,6 +351,7 @@ struct Table_decl : Decl
   Decl*           miss_case() const { return miss_; }
   Table_kind      kind()      const { return kind_; }
   bool            is_start()  const { return start_; }
+  Decl_seq const& tentative() const { return tentative_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -361,6 +362,13 @@ struct Table_decl : Decl
   Decl* miss_;
   bool start_;
   Table_kind kind_;
+
+  // Keep track of all flows that may be added to the table by the application
+  // during runtime.
+  Decl_seq tentative_;
+
+  // Keep track of flow initializers as they're added.
+  int flow_count_;
 };
 
 

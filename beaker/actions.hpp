@@ -24,6 +24,13 @@ struct Drop : Action
 };
 
 
+struct Flood : Action
+{
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+};
+
+
 // Output the packet to a given
 // port.
 struct Output : Action
@@ -95,6 +102,60 @@ struct Get_field : Action
 };
 
 
+// Add a flow entry to a table.
+struct Insert_flow : Action
+{
+  Insert_flow(Decl* f, Expr* t)
+    : flow_(f), table_id_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Decl* flow()  const { return flow_; }
+  Decl* table() const;
+  Expr* table_identifier() const { return table_id_; }
+
+  Decl* flow_;
+  Expr* table_id_;
+};
+
+
+inline Decl*
+Insert_flow::table() const
+{
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
+}
+
+
+// Remove a flow entry from a table.
+struct Remove_flow : Action
+{
+  Remove_flow(Expr_seq const& k, Expr* t)
+    : keys_(k), table_id_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Expr_seq const& keys()  const { return keys_; }
+  Decl*           table() const;
+  Expr*           table_identifier() const { return table_id_; }
+
+  Expr_seq keys_;
+  Expr* table_id_;
+};
+
+
+inline Decl*
+Remove_flow::table() const
+{
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
+}
+
+
 // Goto a group table
 struct Group : Action
 {
@@ -125,7 +186,26 @@ struct Write_output : Action
     : first(a)
   { }
 
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
   Output* output() const { return cast<Output>(first); }
+
+  Stmt* first;
+};
+
+
+// Write a flood action to context.
+struct Write_flood : Action
+{
+  Write_flood(Stmt* a)
+    : first(a)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Flood* flood() const { return cast<Flood>(first); }
 
   Stmt* first;
 };
@@ -138,7 +218,10 @@ struct Write_set_field : Action
   : first(a)
 { }
 
-  Set_field* output() const { return cast<Set_field>(first); }
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Set_field* set_field() const { return cast<Set_field>(first); }
 
   Stmt* first;
 };
@@ -164,6 +247,53 @@ struct Write_copy_field : Action
 struct Write_group : Action
 {
 };
+
+
+// Returns true iff the statement is a pipeline terminator action.
+// Terminators are:
+//    decode-stmts
+//    goto-stmt
+//    drop-stmt
+//    flood-stmt
+//    output-stmt
+inline bool
+is_terminator(Stmt* s)
+{
+  return is<Decode_stmt>(s)
+      || is<Goto_stmt>(s)
+      || is<Drop>(s)
+      || is<Flood>(s)
+      || is<Output>(s);
+}
+
+
+// Returns true iff at least 1 statement in a statement
+// sequence contains a terminator.
+inline bool
+has_terminator_action(Stmt_seq const& body)
+{
+  for (auto s : body) {
+    if (is_terminator(s))
+      return true;
+  }
+
+  return false;
+}
+
+
+// Returns true iff more than 1 statement in a statement sequence
+// is a terminator.
+inline bool
+has_multiple_terminators(Stmt_seq const& body)
+{
+  int c = 0;
+  for (auto s : body) {
+    if (is_terminator(s))
+      c++;
+  }
+
+  return (c > 1) ? true : false;
+}
 
 
 #endif

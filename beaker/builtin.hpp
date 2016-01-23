@@ -15,6 +15,7 @@ constexpr char const* __read_field   = "fp_read_field";
 constexpr char const* __advance      = "fp_advance_header";
 constexpr char const* __get_table    = "fp_create_table";
 constexpr char const* __add_flow     = "fp_add_flow";
+constexpr char const* __rmv_flow     = "fp_del_flow";
 constexpr char const* __add_miss     = "fp_add_miss";
 constexpr char const* __match        = "fp_goto_table";
 constexpr char const* __set_field    = "fp_set_field";
@@ -23,9 +24,11 @@ constexpr char const* __gather       = "fp_gather";
 constexpr char const* __output       = "fp_output_port";
 constexpr char const* __dataplane    = "fp_dataplane";
 constexpr char const* __drop         = "fp_drop";
+constexpr char const* __flood        = "fp_flood";
 constexpr char const* __clear        = "fp_clear";
 constexpr char const* __write_drop   = "fp_write_drop";
 constexpr char const* __write_output = "fp_write_output";
+constexpr char const* __write_flood = "fp_write_flood";
 constexpr char const* __write_set    = "fp_write_set_field";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
@@ -33,6 +36,7 @@ constexpr char const* __table        = "_table_";
 constexpr char const* __key          = "_key_";
 constexpr char const* __drop_port    = "_drop_";
 constexpr char const* __flood_port   = "_flood_";
+constexpr char const* __keyform     = "_KEYFORM_";
 
 // runtime interface functions
 constexpr char const* __load         = "config";
@@ -149,6 +153,12 @@ struct Add_flow : Call_expr
 };
 
 
+struct Rmv_flow : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 struct Add_miss : Call_expr
 {
   using Call_expr::Call_expr;
@@ -207,12 +217,16 @@ struct Output_packet : Call_expr
 };
 
 
-struct Clear_actions : Call_expr
+struct Flood_packet : Call_expr
 {
   using Call_expr::Call_expr;
 };
 
 
+struct Clear_actions : Call_expr
+{
+  using Call_expr::Call_expr;
+};
 
 
 struct Write_drop_action : Call_expr
@@ -220,6 +234,23 @@ struct Write_drop_action : Call_expr
   using Call_expr::Call_expr;
 };
 
+
+struct Write_output_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Write_flood_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
+struct Write_set_field_action : Call_expr
+{
+  using Call_expr::Call_expr;
+};
 
 
 struct Get_port : Call_expr
@@ -295,17 +326,22 @@ struct Builtin
   Expr* call_read_field(Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
-  Expr* call_add_flow(Expr_seq const& args);
+  Expr* call_add_flow(Expr*, Expr*, Expr*);
+  Expr* call_remove_flow(Expr*, Expr*);
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr_seq const& args);
   Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
+  Expr* call_flood(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
   Expr* call_write_drop(Expr*);
+  Expr* call_write_flood(Expr*);
+  Expr* call_write_output(Expr* cxt, Expr* port);
+  Expr* call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -328,15 +364,20 @@ private:
   Function_decl* advance();
   Function_decl* get_table();
   Function_decl* add_flow();
+  Function_decl* remove_flow();
   Function_decl* add_miss();
   Function_decl* gather();
   Function_decl* match();
   Function_decl* get_port();
   Function_decl* drop();
+  Function_decl* flood();
   Function_decl* output();
   Function_decl* clear();
   Function_decl* set_field();
   Function_decl* write_drop();
+  Function_decl* write_flood();
+  Function_decl* write_output();
+  Function_decl* write_set_field();
 
   Symbol const* get_identifier(std::string);
 

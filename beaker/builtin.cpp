@@ -93,6 +93,10 @@ Builtin::alias_bind()
 }
 
 
+// Requests the the runtime returns a pointer to a specific field.
+// The pointer is to the latest extracted field of that field kind.
+//
+//    void* read_field(Context*, int field)
 Function_decl*
 Builtin::read_field()
 {
@@ -141,13 +145,16 @@ Builtin::advance()
 }
 
 
+// Requests a table from the runtime by providing some config details.
+//
+//    Table* get_table(Dataplane*, int id, int key_size, int tbl_size, int tbl_kind)
 Function_decl*
 Builtin::get_table()
 {
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* ret_type = get_reference_type(get_opaque_table());
+  Type const* ret_type = get_opaque_table()->ref();
   Symbol const* fn_name = get_identifier(__get_table);
 
   Decl_seq parms =
@@ -169,14 +176,17 @@ Builtin::get_table()
 }
 
 
+// Add a flow entry to the table.
+//
+//    void add_flow(Table*, Flow*, i8* buf)
 Function_decl*
 Builtin::add_flow()
 {
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   Type const* buffer_type = get_block_type(get_character_type());
 
@@ -205,14 +215,48 @@ Builtin::add_flow()
 }
 
 
+// Remove a flow entry with a given key from a given table.
+//
+//    void del_flow(Table*, void* key)
+Function_decl*
+Builtin::remove_flow()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
+
+  Symbol const* fn_name = get_identifier(__rmv_flow);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref),
+    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Add miss entry to the table.
+//
+//    void add_miss_case(Table*, Flow*)
 Function_decl*
 Builtin::add_miss()
 {
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_reference_type(get_table_type({}, {}));
-  Type const* cxt_ref = get_reference_type(get_context_type());
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   // Flows actually become free functions so they have function
   // type when lowered.
@@ -238,7 +282,11 @@ Builtin::add_miss()
 }
 
 
-// Gather keys
+// Gather keys from certain fields. This has the form:
+//
+//    Key gather(Context*, int fld_cnt, ...)
+//
+// The variadic arguments specify which fields are being gathered.
 Function_decl*
 Builtin::gather()
 {
@@ -264,6 +312,12 @@ Builtin::gather()
 }
 
 
+// Match is used to goto a table and tell it to match the packet fields
+// against flow entries and execute the flow. This has the form:
+//
+//    void goto_table(Context*, Table*, int fld_cnt, ...)
+//
+// The variadic arguments specify which fields are being matched upon.
 Function_decl*
 Builtin::match()
 {
@@ -294,12 +348,19 @@ Builtin::match()
   return fn;
 }
 
+
+// This function call gets a port with a specific name from the runtime system.
+//
+//    Port* get_port(char*, char*);
+//
+// TODO: Add the configuration string to the function call. Write now the
+// runtime doesn't support it so we're only going with the port name.
 Function_decl*
 Builtin::get_port()
 {
   Symbol const* fn_name = get_identifier(__get_port);
 
-  Type const* port_type = get_reference_type(get_port_type());
+  Type const* port_type = get_port_type()->ref();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("name"), get_block_type(get_character_type()))
@@ -315,6 +376,9 @@ Builtin::get_port()
 }
 
 
+// This call to the runtime instructs it to immediately drop the packet.
+//
+//    void drop(Context*)
 Function_decl*
 Builtin::drop()
 {
@@ -337,6 +401,34 @@ Builtin::drop()
 }
 
 
+// This instructs the runtime to flood the packet.
+//
+//    void flood(Context*)
+Function_decl*
+Builtin::flood()
+{
+  Symbol const* fn_name = get_identifier(__flood);
+
+  Type const* void_type = get_void_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+// This instructs the runtime to send the packet out of the given port.
+//
+//    void output(Context*, Port*)
 Function_decl*
 Builtin::output()
 {
@@ -361,6 +453,10 @@ Builtin::output()
 }
 
 
+// This instructs the runtime to clear the action list that has been
+// written to the packet.
+//
+//    void clear(Context*);
 Function_decl*
 Builtin::clear()
 {
@@ -383,6 +479,10 @@ Builtin::clear()
 }
 
 
+// Requests that the runtime write over a certain field in the packet
+// with the data provided to the function.
+//
+//    void set_field(Context*, int field, int len, void* val)
 Function_decl*
 Builtin::set_field()
 {
@@ -395,7 +495,7 @@ Builtin::set_field()
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), cxt_ref),
-    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("field"), int_type),
     new Parameter_decl(get_identifier("len"), int_type),
     new Parameter_decl(get_identifier("val"), buffer)
   };
@@ -411,6 +511,9 @@ Builtin::set_field()
 }
 
 
+// Writes a drop action to the context.
+//
+//    void write_drop(Context*)
 Function_decl*
 Builtin::write_drop()
 {
@@ -434,6 +537,92 @@ Builtin::write_drop()
 }
 
 
+// Writes a flood action to the context.
+//
+//    void write_flood(Context*)
+Function_decl*
+Builtin::write_flood()
+{
+  Symbol const* fn_name = get_identifier(__write_flood);
+
+  Type const* void_type = get_void_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+// Write an output action to the context.
+//
+//      void write_output(Context*, Port*)
+Function_decl*
+Builtin::write_output()
+{
+  Symbol const* fn_name = get_identifier(__write_output);
+
+  Type const* void_type = get_void_type();
+  Type const* port_type = get_port_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
+    new Parameter_decl(get_identifier("port"), port_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+// Write a set field action to the context.
+//
+//    void write_set_field(Context*, int field, int len, void* buf)
+Function_decl*
+Builtin::write_set_field()
+{
+  Symbol const* fn_name = get_identifier(__write_set);
+
+  Type const* void_type = get_void_type();
+  Type const* int_type = get_integer_type();
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* buffer = get_character_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), cxt_ref),
+    new Parameter_decl(get_identifier("field"), int_type),
+    new Parameter_decl(get_identifier("len"), int_type),
+    new Parameter_decl(get_identifier("val"), buffer)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
+// Instantiate all the builtin functions required by the compiler
+// from the runtime.
 void
 Builtin::init_builtins()
 {
@@ -446,19 +635,25 @@ Builtin::init_builtins()
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
+    {__rmv_flow, remove_flow()},
     {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
     {__drop, drop()},
+    {__flood, flood()},
     {__output, output()},
     {__clear, clear()},
     {__set_field, set_field()},
     {__write_drop, write_drop()},
+    {__write_flood, write_flood()},
+    {__write_output, write_output()},
+    {__write_set, write_set_field()},
   };
 }
 
 
+// Constructs the load/config function which is called by the runtime.
 Function_decl*
 Builtin::load(Stmt_seq const& s)
 {
@@ -507,7 +702,7 @@ Builtin::flow_fn(Symbol const* name, Stmt* body)
 }
 
 
-
+// Returns the builtin with the given name.
 Function_decl*
 Builtin::get_builtin_function(std::string name)
 {
@@ -549,7 +744,7 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
   // does not handle header length and its unsure if the length of a header
   // matters.
 
-  return new Bind_header(decl_id(fn), {cxt, id1, id2, off, len});
+  return new Call_expr(decl_id(fn), {cxt, id1, id2, off, len});
 }
 
 
@@ -587,12 +782,22 @@ Builtin::call_advance(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_add_flow(Expr_seq const& args)
+Builtin::call_add_flow(Expr* table, Expr* flow, Expr* key)
 {
   Function_decl* fn = builtin_fn.find(__add_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), args);
+  return new Add_flow(decl_id(fn), {table, flow, key});
+}
+
+
+Expr*
+Builtin::call_remove_flow(Expr* table, Expr* key)
+{
+  Function_decl* fn = builtin_fn.find(__rmv_flow)->second;
+  assert(fn);
+
+  return new Rmv_flow(decl_id(fn), {table, key});
 }
 
 
@@ -684,12 +889,22 @@ Builtin::call_output(Expr* cxt, Expr* port)
 
 
 Expr*
+Builtin::call_flood(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__flood)->second;
+  assert(fn);
+
+  return new Flood_packet(decl_id(fn), {cxt});
+}
+
+
+Expr*
 Builtin::call_clear(Expr* cxt)
 {
   Function_decl* fn = builtin_fn.find(__clear)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Call_expr(decl_id(fn), {cxt});
 }
 
 
@@ -709,5 +924,35 @@ Builtin::call_write_drop(Expr* cxt)
   Function_decl* fn = builtin_fn.find(__write_drop)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Write_drop_action(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_write_flood(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__write_flood)->second;
+  assert(fn);
+
+  return new Write_flood_action(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_write_output(Expr* cxt, Expr* port)
+{
+  Function_decl* fn = builtin_fn.find(__write_output)->second;
+  assert(fn);
+
+  return new Write_output_action(decl_id(fn), {cxt, port});
+}
+
+
+Expr*
+Builtin::call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
+{
+  Function_decl* fn = builtin_fn.find(__write_set)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt, id, len, val});
 }

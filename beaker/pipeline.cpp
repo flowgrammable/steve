@@ -32,9 +32,15 @@ struct Find_branches
   void operator()(Action const* s) { }
   void operator()(Drop const* s) { }
   void operator()(Output const* s) { }
+  void operator()(Flood const* s) { }
   void operator()(Clear const* s) { }
   void operator()(Set_field const* s) { }
+  void operator()(Insert_flow const* s) { }
+  void operator()(Remove_flow const* s) { }
   void operator()(Write_drop const* s) { }
+  void operator()(Write_output const* s) { }
+  void operator()(Write_flood const* s) { }
+  void operator()(Write_set_field const* s) { }
 
 
   // these can cause branches
@@ -114,14 +120,62 @@ Pipeline_checker::check_stage(Decl const* d, Sym_set const& reqs)
   }
 }
 
+
+void
+Pipeline_checker::check_progression(Stage_set const& branches)
+{
+  for (auto b : branches) {
+    // If at any point we branch to a node we've already visited,
+    // there's a possibility a loop exists.
+    if (b->visited) {
+      std::stringstream ss;
+      ss << "Pipeline progress goes backwards through potential loop. Broken path: ";
+      for (auto stage : path)
+        ss << *stage->decl()->name() << " | ";
+
+      ss << *b->decl()->name();
+
+      throw Lookup_error({}, ss.str());
+    }
+
+    // If we advance to a table, confirm that the table is
+    // one with a higher number than our current highest.
+    if (b->is_table())
+      if (b->table()->number() <= highest_table) {
+        std::stringstream ss;
+        ss << "Pipeline path goes backwards through prior numbered table. Broken path: ";
+        for (auto stage : path)
+          ss << *stage->decl()->name() << " | ";
+
+        ss << *b->decl()->name();
+
+        throw Lookup_error({}, ss.str());
+      }
+  }
+}
+
+
 // Depth first search
 // specialized to visit ALL PATHS within a
 // graph instead of visiting all nodes within
 // a graph.
+//
+// FIXME: We should implement Tarjan's algorithm and
+// look at all strongly connected components. We should confirm
+// that no scc contain tables.
+//
+// This allows for recursive loops amongst decoders but not
+// if tables are part of the loop.
 void
 Pipeline_checker::dfs(Stage* s)
 {
   s->visited = true;
+
+  // Update the value of the highest table if this is a table stage.
+  int highest_current_table = highest_table;
+  if (s->is_table()) {
+    highest_table = as<Table_decl>(s->decl())->number();
+  }
 
   // push all of its productions onto the bindings stack
   stack.produce(s->productions());
@@ -137,6 +191,8 @@ Pipeline_checker::dfs(Stage* s)
 
   // check this stage
   check_stage(s->decl(), s->requirements());
+  // check if this stage progresses to a stage later in the pipeline
+  check_progression(s->branches());
 
   for (auto br : s->branches()) {
     if (br->decl() != s->decl()) {
@@ -161,6 +217,9 @@ Pipeline_checker::dfs(Stage* s)
   // so that we can explore all possible paths instead of
   // just one path
   s->visited = false;
+
+  // Reset the current highest table.
+  highest_table = highest_current_table;
 }
 
 
@@ -312,6 +371,13 @@ Pipeline_checker::register_stage(Decode_decl const* d)
 
 
 // Register a table decl
+//
+// NOTE: Tentative flows are also added to the pipeline checking model.
+// The reason for this is we do NOT allow the adding of flows which
+// could potentially break progression and cause infinite loops.
+//
+// It may not be completely possible to stop this, but the compiler should
+// make a best effort to reduce the risk.
 void
 Pipeline_checker::register_stage(Table_decl const* d)
 {
@@ -340,8 +406,15 @@ Pipeline_checker::register_stage(Table_decl const* d)
 
   pipeline.push_back(stage);
 
-  // create a stage for all the flows within the pipeline
+  // create a stage for all the flows within the table
   for (auto f : d->body()) {
+    Flow_decl* flow = as<Flow_decl>(f);
+    register_stage(flow, d);
+  }
+
+  // Create a stage for all flows that MIGHT be added to the table
+  // if inserted.
+  for (auto f : d->tentative()) {
     Flow_decl* flow = as<Flow_decl>(f);
     register_stage(flow, d);
   }
@@ -385,7 +458,10 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Break_stmt const* s) { }
     void operator()(Continue_stmt const* s) { }
     void operator()(Expression_stmt const* s) { }
-    void operator()(Return_stmt const* s) { throw Type_error({}, "return found in decoder body"); }
+    void operator()(Return_stmt const* s)
+    {
+      throw Type_error({}, "return found in decoder body");
+    }
     void operator()(Return_void_stmt const* s) { }
     void operator()(If_then_stmt const* s) { }
     void operator()(If_else_stmt const* s) { }
@@ -397,9 +473,15 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Action const* s) { }
     void operator()(Drop const* s) { }
     void operator()(Output const* s) { }
+    void operator()(Flood const* s) { }
     void operator()(Clear const* s) { }
     void operator()(Set_field const* s) { }
+    void operator()(Insert_flow const* s) { }
+    void operator()(Remove_flow const* s) { }
     void operator()(Write_drop const* s) { }
+    void operator()(Write_output const* s) { }
+    void operator()(Write_flood const* s) { }
+    void operator()(Write_set_field const* s) { }
 
     // the only productions (for now) come out of decl statements
     // and only if it is an extracts decl or rebind decl
@@ -494,6 +576,14 @@ Pipeline_checker::find_branches(Table_decl const* d)
   // Tables branch to all of their containing flows
   Stage_set branches;
   for (auto flow : d->body()) {
+    Stage* s = pipeline.find(flow);
+    assert(s);
+    branches.insert(s);
+  }
+
+  // They also are assumed to branch to all flows that may or
+  // may not be added to them during runtime.
+  for (auto flow : d->tentative()) {
     Stage* s = pipeline.find(flow);
     assert(s);
     branches.insert(s);

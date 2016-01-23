@@ -5,7 +5,7 @@ layout eth
 {
 	src : int;
 	dst : int;
-	type : uint;
+	type : int;
 }
 
 
@@ -24,15 +24,13 @@ decoder start eth_d(eth)
 	extract eth::type;
 
 	match (eth::type) {
-		case 0: decode ipv4_d;
-		case 1: decode ipv4_d;
+		case 800: decode ipv4_d;
+		case 880: goto t1;
 	}
 
-	match (eth::type) {
-		case 0: decode ipv4_d;
-		case 1: decode ipv4_d;
-	}
+	drop;
 }
+
 
 decoder ipv4_d(ipv4)
 {
@@ -42,37 +40,20 @@ decoder ipv4_d(ipv4)
 	match (ipv4::protocol) {
 		case 0: goto t2;
 	}
+
+	drop;
 }
 
 
-exact_table t1(eth::src, eth::dst, ipv4::dst, ipv4::protocol)
+exact_table t1(eth::src)
 {
-  {0, 1, 2, 3} ->
-	{
-		match (eth::src) {
-
-		}
-	};
-
-
-	{1, 2, 3, 40000} ->
-	{
-	};
+	{1} -> { drop; }
+	{0} -> { drop; }
 }
 
 
 exact_table t2(ipv4::dst)
 {
-  {800} -> {
-		decode ipv4_d;
-	};
-
-
-	{32} -> {
-		decode eth_d;
-	};
-
-	miss -> {
-		decode eth_d;
-	};
+  {0} -> { drop; }
+	{1} -> { drop; }
 }
