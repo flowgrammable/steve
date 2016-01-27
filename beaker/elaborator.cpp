@@ -3196,13 +3196,7 @@ Elaborator::elaborate(Decode_stmt* s)
 
   // guarantee this stmt occurs
   // within the context of a decoder function or a flow function
-  if (!is_valid_action_context(s)) {
-    std::stringstream ss;
-    ss << "decode statement " << *s
-       << " found outside of the context of a flow, decoder, or event.";
-
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* target = elaborate(s->decoder_identifier());
   Decl_expr* target_id = as<Decl_expr>(target);
@@ -3236,13 +3230,7 @@ Elaborator::elaborate(Goto_stmt* s)
 {
   // guarantee this stmt occurs
   // within the context of a decoder function
-  if (!is_valid_action_context(s)) {
-    std::stringstream ss;
-    ss << "goto statement " << *s
-       << " found outside of the context of a flow, decoder, or event.";
-
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* tbl = elaborate(s->table_identifier_);
 
@@ -3266,6 +3254,20 @@ Elaborator::elaborate(Goto_stmt* s)
 }
 
 
+// Confirms that an action occurs within a flow, decoder, or event.
+void
+Elaborator::check_valid_action_context(Stmt* s)
+{
+  if (!is_valid_action_context(s)) {
+    std::stringstream ss;
+    ss << *s
+       << " found outside of the context of a flow, decoder, or event.";
+
+    throw Type_error(locate(s), ss.str());
+  }
+}
+
+
 Stmt*
 Elaborator::elaborate(Action* s)
 {
@@ -3277,6 +3279,8 @@ Elaborator::elaborate(Action* s)
 Stmt*
 Elaborator::elaborate(Drop* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3285,6 +3289,8 @@ Elaborator::elaborate(Drop* s)
 Stmt*
 Elaborator::elaborate(Output* s)
 {
+  check_valid_action_context(s);
+
   // elaborate the port identififier and confirm
   // that it has port type
   Expr* port = elaborate(s->port_);
@@ -3306,6 +3312,8 @@ Elaborator::elaborate(Output* s)
 Stmt*
 Elaborator::elaborate(Flood* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3314,6 +3322,8 @@ Elaborator::elaborate(Flood* s)
 Stmt*
 Elaborator::elaborate(Clear* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3322,14 +3332,7 @@ Elaborator::elaborate(Clear* s)
 Stmt*
 Elaborator::elaborate(Set_field* s)
 {
-  if (!is<Flow_decl>(stack.context())
-      && !is<Decode_decl>(stack.context()))
-  {
-    std::stringstream ss;
-    ss << "Set field occuring outside the context of "
-          "a decoder or flow declaration.";
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* field = elaborate(s->field_);
   Expr* val = elaborate(s->value_);
@@ -3418,6 +3421,8 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
 Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
+  check_valid_action_context(s);
+
   s->table_id_ = elaborate(s->table_identifier());
 
   // We need to specially elaborate this flow because it doesn't follow the
@@ -3447,6 +3452,8 @@ Elaborator::elaborate(Insert_flow* s)
 Stmt*
 Elaborator::elaborate(Remove_flow* s)
 {
+  check_valid_action_context(s);
+
   s->table_id_ = elaborate(s->table_identifier());
   Table_decl* table = as<Table_decl>(s->table());
 
@@ -3493,6 +3500,8 @@ Elaborator::elaborate(Remove_flow* s)
 Stmt*
 Elaborator::elaborate(Write_drop* s)
 {
+  check_valid_action_context(s);
+
   assert(s->drop());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3503,6 +3512,8 @@ Elaborator::elaborate(Write_drop* s)
 Stmt*
 Elaborator::elaborate(Write_output* s)
 {
+  check_valid_action_context(s);
+
   assert(s->output());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3513,6 +3524,8 @@ Elaborator::elaborate(Write_output* s)
 Stmt*
 Elaborator::elaborate(Write_flood* s)
 {
+  check_valid_action_context(s);
+
   assert(s->flood());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3523,6 +3536,8 @@ Elaborator::elaborate(Write_flood* s)
 Stmt*
 Elaborator::elaborate(Write_set_field* s)
 {
+  check_valid_action_context(s);
+
   assert(s->set_field());
   // Elaborate the drop action.
   s->first = elaborate(s->first);

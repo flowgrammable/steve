@@ -225,6 +225,7 @@ public:
   Overload* member_lookup(Record_decl*, Symbol const*);
 
   // Diagnostics
+  void check_valid_action_context(Stmt*);
   void on_call_error(Expr_seq const&, Expr_seq const&, Type_seq const&);
   void locate(void const*, Location);
   Location locate(void const*);
