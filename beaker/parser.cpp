@@ -1062,6 +1062,36 @@ Parser::extract_decl()
 }
 
 
+// Parse an event declaration.
+//
+//    event-decl -> 'event' name '(' field-name-seq ')' '{' [stmt-seq] '}'
+//
+Decl*
+Parser::event_decl()
+{
+  match(event_kw);
+  Token name = require(identifier_tok);
+
+  match(lparen_tok);
+  Expr_seq fields;
+  while (lookahead() != rbrace_tok) {
+    Expr* f = expr();
+    if (f)
+      fields.push_back(f);
+
+    if (match_if(comma_tok))
+      continue;
+    else
+      break;
+  }
+  match(rparen_tok);
+
+  Stmt* b = block_stmt();
+
+  return on_event(name, fields, b);
+}
+
+
 // Parse a declaration.
 //
 //    decl -> [specifier-seq] entity-decl
@@ -2220,6 +2250,13 @@ Decl*
 Parser::on_port(Token tok, Expr* e)
 {
   return new Port_decl(tok.symbol(), get_port_type(), e);
+}
+
+
+Decl*
+Parser::on_event(Token tok, Expr_seq const& e, Stmt* s)
+{
+  return new Event_decl(tok.symbol(), e, s);
 }
 
 

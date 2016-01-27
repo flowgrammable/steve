@@ -2300,6 +2300,7 @@ struct Elab_decl_fn
   Decl* operator()(Port_decl* d) const { return elab.elaborate_decl(d); }
   Decl* operator()(Decode_decl* d) const { return elab.elaborate_decl(d); }
   Decl* operator()(Table_decl* d) const { return elab.elaborate_decl(d); }
+  Decl* operator()(Event_decl* d) const { return elab.elaborate_decl(d); }
 };
 
 
@@ -2506,6 +2507,22 @@ Elaborator::elaborate_decl(Table_decl* d)
 }
 
 
+// Elaborating the event declaration attaches the type of all event declarations
+// (Context&)->void (for now).
+//
+// Events are just another stage of processing, except there behavior may or
+// may not be asynchronous depending on the runtime configuration for event
+// handling.
+Decl*
+Elaborator::elaborate_decl(Event_decl* d)
+{
+  static Function_type event_type({get_context_type()->ref()}, get_void_type());
+  d->type_ = &event_type;
+  declare(d);
+  return d;
+}
+
+
 // Since modules aren't nested, we should never get here.
 Decl*
 Elaborator::elaborate_decl(Module_decl* d)
@@ -2536,7 +2553,7 @@ struct Elab_def_fn
   Decl* operator()(Layout_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Port_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Decode_decl* d) const { return elab.elaborate_def(d); }
-  Decl* operator()(Table_decl* d) const { return elab.elaborate_def(d); }
+  Decl* operator()(Event_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Module_decl* d) const { return elab.elaborate_def(d); }
 };
 
@@ -2820,6 +2837,36 @@ Elaborator::elaborate_def(Table_decl* d)
   // check the miss case
   if (d->miss_)
     d->miss_ = elaborate(d->miss_);
+
+  return d;
+}
+
+
+// Elaborate the fields in the requirements.
+//
+// Elaborate the body.
+Decl*
+Elaborator::elaborate_def(Event_decl* d)
+{
+  for (Expr*& r : d->requirements_) {
+    r = elaborate(r);
+  }
+
+  d->body_ = elaborate(d->body());
+
+  if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+    // Confirmt that the body has a terminating action to ensure
+    // progress is made through the pipeline.
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Event declaration missing guaranteed terminator.\n";
+      ss << *d;
+
+      throw Type_error(locate(d), ss.str());
+    }
+  }
+  else
+    throw Type_error(locate(d), "Ill-formed body of event.");
 
   return d;
 }
@@ -3335,12 +3382,25 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
   // Elaborate the body of the flow.
   f->instructions_ = elaborate(f->instructions());
   if (Block_stmt* block = as<Block_stmt>(f->instructions_)) {
+    // Confirm that every statement inside the flow is an action.
+    for (auto s : block->statements()) {
+      if (!is_action(s)) {
+        std::stringstream ss;
+        ss << "Non-action found inside the body of a flow.\n";
+        ss << *s;
+
+        throw Type_error(locate(f), ss.str());
+      }
+    }
+
+    // Confirmt that the flow body has a terminating action to ensure
+    // progress is made through the pipeline.
     if (!has_terminator_action(block->statements())) {
       std::stringstream ss;
       ss << "Flow declaration missing guaranteed terminator.\n";
       ss << *f;
 
-      throw Type_error(locate(block), ss.str());
+      throw Type_error(locate(f), ss.str());
     }
   }
 

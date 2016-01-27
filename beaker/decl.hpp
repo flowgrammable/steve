@@ -491,19 +491,23 @@ struct Port_decl : Decl
 //
 // Events have requirements just like decode stages to ensure
 // that fields needed by the event have been decoded.
+//
+// Events are just another stage of processing, except there behavior may or
+// may not be asynchronous depending on the runtime configuration for event
+// handling.
 struct Event_decl : Decl
 {
   Event_decl(Symbol const* n, Expr_seq const& fields, Stmt* body)
-    : Decl(n, nullptr), fields_(fields), body_(body)
+    : Decl(n, nullptr), requirements_(fields), body_(body)
   { }
 
-  Expr_seq const& requirements() const { return fields_; }
+  Expr_seq const& requirements() const { return requirements_; }
   Stmt*           body()         const { return body_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
-  Expr_seq fields_;
+  Expr_seq requirements_;
   Stmt* body_;
 };
 
