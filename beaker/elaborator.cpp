@@ -2050,8 +2050,8 @@ Elaborator::elaborate(Key_decl* d)
   Type const* t = decls.back()->type();
   if (!t) {
     std::stringstream ss;
-    ss << "Field expression" << *d << " of unknown type.";
-    throw Type_error({}, ss.str());
+    ss << "Field" << *d << " of unknown type.";
+    throw Type_error(locate(d), ss.str());
   }
   // The type cannot be a layout type either.
   if (is<Layout_type>(t)) {
@@ -2553,6 +2553,7 @@ struct Elab_def_fn
   Decl* operator()(Layout_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Port_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Decode_decl* d) const { return elab.elaborate_def(d); }
+  Decl* operator()(Table_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Event_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Module_decl* d) const { return elab.elaborate_def(d); }
 };
@@ -2848,7 +2849,7 @@ Elaborator::elaborate_def(Table_decl* d)
 Decl*
 Elaborator::elaborate_def(Event_decl* d)
 {
-  for (Expr*& r : d->requirements_) {
+  for (Decl*& r : d->requirements_) {
     r = elaborate(r);
   }
 
@@ -2888,6 +2889,10 @@ Elaborator::elaborate_def(Module_decl* d)
 Stmt*
 Elaborator::elaborate(Stmt* s)
 {
+  // attach the context to the statement
+  s->context_ = stack.context();
+  assert(s->context_);
+
   struct Fn
   {
     Elaborator& elab;
@@ -2924,8 +2929,6 @@ Elaborator::elaborate(Stmt* s)
   };
 
   Stmt* stmt = apply(s, Fn{*this});
-  // attach the context to the statement
-  stmt->context_ = stack.context();
   return stmt;
 }
 
@@ -3193,10 +3196,10 @@ Elaborator::elaborate(Decode_stmt* s)
 
   // guarantee this stmt occurs
   // within the context of a decoder function or a flow function
-  if (!is<Decode_decl>(stack.context()) && !is<Flow_decl>(stack.context())) {
+  if (!is_valid_action_context(s)) {
     std::stringstream ss;
     ss << "decode statement " << *s
-       << " found outside of the context of a decoder or flow.";
+       << " found outside of the context of a flow, decoder, or event.";
 
     throw Type_error({}, ss.str());
   }
@@ -3233,10 +3236,10 @@ Elaborator::elaborate(Goto_stmt* s)
 {
   // guarantee this stmt occurs
   // within the context of a decoder function
-  if (!is<Decode_decl>(stack.context()) && !is<Flow_decl>(stack.context())) {
+  if (!is_valid_action_context(s)) {
     std::stringstream ss;
-    ss << "decode statement " << *s
-       << " found outside of the context of a decoder.";
+    ss << "goto statement " << *s
+       << " found outside of the context of a flow, decoder, or event.";
 
     throw Type_error({}, ss.str());
   }

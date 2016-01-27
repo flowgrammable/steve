@@ -1064,7 +1064,7 @@ Parser::extract_decl()
 
 // Parse an event declaration.
 //
-//    event-decl -> 'event' name '(' field-name-seq ')' '{' [stmt-seq] '}'
+//    event-decl -> 'event' name '(' key-decl-seq ')' '{' [stmt-seq] '}'
 //
 Decl*
 Parser::event_decl()
@@ -1073,11 +1073,11 @@ Parser::event_decl()
   Token name = require(identifier_tok);
 
   match(lparen_tok);
-  Expr_seq fields;
-  while (lookahead() != rbrace_tok) {
-    Expr* f = expr();
-    if (f)
-      fields.push_back(f);
+  Decl_seq keys;
+  while (lookahead() != rparen_tok) {
+    Decl* k = key_decl();
+    if (k)
+      keys.push_back(k);
 
     if (match_if(comma_tok))
       continue;
@@ -1088,7 +1088,7 @@ Parser::event_decl()
 
   Stmt* b = block_stmt();
 
-  return on_event(name, fields, b);
+  return on_event(name, keys, b);
 }
 
 
@@ -1122,6 +1122,8 @@ Parser::decl()
       return exact_table_decl();
     case port_kw:
       return port_decl();
+    case event_kw:
+      return event_decl();
 
     default:
       // TODO: Is this a recoverable error?
@@ -2254,9 +2256,9 @@ Parser::on_port(Token tok, Expr* e)
 
 
 Decl*
-Parser::on_event(Token tok, Expr_seq const& e, Stmt* s)
+Parser::on_event(Token tok, Decl_seq const& req, Stmt* s)
 {
-  return new Event_decl(tok.symbol(), e, s);
+  return new Event_decl(tok.symbol(), req, s);
 }
 
 

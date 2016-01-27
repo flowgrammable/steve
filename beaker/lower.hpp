@@ -35,11 +35,13 @@ struct Lowerer
   Decl* lower_global_decl(Decode_decl*);
   Decl* lower_global_decl(Table_decl*);
   Decl* lower_global_decl(Port_decl*);
+  Decl* lower_global_decl(Event_decl*);
 
   Decl* lower_global_def(Decl*);
   Decl* lower_global_def(Decode_decl*);
   Decl* lower_global_def(Table_decl*);
   Decl* lower_global_def(Port_decl*);
+  Decl* lower_global_def(Event_decl*);
 
   Decl* lower(Decl*);
   Decl* lower(Module_decl*);

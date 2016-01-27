@@ -259,6 +259,7 @@ struct Lower_global_decl
   Decl* operator()(Decode_decl* d) const { return l.lower_global_decl(d); }
   Decl* operator()(Table_decl* d) const { return l.lower_global_decl(d); }
   Decl* operator()(Port_decl* d) const { return l.lower_global_decl(d); }
+  Decl* operator()(Event_decl* d) const { return l.lower_global_decl(d); }
 };
 
 
@@ -273,6 +274,7 @@ struct Lower_global_def
   Decl* operator()(Decode_decl* d) const { return l.lower_global_def(d); }
   Decl* operator()(Table_decl* d) const { return l.lower_global_def(d); }
   Decl* operator()(Port_decl* d) const { return l.lower_global_def(d); }
+  Decl* operator()(Event_decl* d) const { return l.lower_global_def(d); }
 };
 
 } // namespace
@@ -611,6 +613,26 @@ Lowerer::lower_global_decl(Port_decl* d)
 }
 
 
+// Event declarations get lowered into functions as well.
+// These get passed to the runtime with the context
+// whenever a raise action is used.
+Decl*
+Lowerer::lower_global_decl(Event_decl* d)
+{
+  // declare an implicit context variable
+  Type const* cxt_ref = get_context_type()->ref();
+  Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+
+  // The type of all events is fn(Context&) -> void
+  Function_decl* fn = new Function_decl(d->name(), d->type(), {cxt}, d->body());
+
+  declare(fn);
+
+  return fn;
+}
+
+
+
 Decl*
 Lowerer::lower_global_def(Decl* d)
 {
@@ -944,6 +966,53 @@ Lowerer::lower_global_def(Port_decl* d)
   load_body.push_back(statement(get_port));
 
   return var;
+}
+
+
+Decl*
+Lowerer::lower_global_def(Event_decl* d)
+{
+  // Lookup the new function.
+  Overload* ovl = unqualified_lookup(d->name());
+  assert(ovl);
+  Function_decl* fn = as<Function_decl>(ovl->back());
+  assert(fn);
+
+  // enter a scope
+  Scope_sentinel scope(*this, d);
+
+  // The new body for the function.
+  Block_stmt* body = as<Block_stmt>(d->body());
+
+  // Allocate variables corresponding to every key so that their value
+  // can be recovered in the flow function.
+  for (auto decl : d->requirements()) {
+    Symbol const* name = get_identifier(mangle(decl));
+    Variable_decl* load_var =
+      new Variable_decl(name, decl->type(), new Default_init(decl->type()));
+
+    body->first.insert(body->statements().begin(), statement(load_var));
+  }
+
+  // declare all parameters again
+  // NOTE: this declares the context parameter
+  for (auto parm : fn->parameters()) {
+    declare(parm);
+  }
+
+  // get the context varaible
+  ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Lower the body and change the definition of the function.
+  Stmt* b = lower(d->body()).back();
+
+  fn->body_ = b;
+  fn->spec_ |= extern_spec;
+
+  return fn;
 }
 
 
@@ -1353,7 +1422,11 @@ Lowerer::lower(Decode_stmt* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // form an advance based on the length of the header
+  // Form an advance based on the length of the header.
+  //
+  // NOTE: This will only occur if within the context of a decode
+  // declaration because this implicit header variable used to recover
+  // the header information only gets declared within decoder declarations.
   ovl = unqualified_lookup(get_identifier(__header));
   if (ovl) {
     Decl* header = ovl->back();

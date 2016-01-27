@@ -174,7 +174,7 @@ private:
   Decl* on_flow(Expr_seq&, Stmt*);
   Decl* on_flow_miss(Stmt*);
   Decl* on_port(Token, Expr*);
-  Decl* on_event(Token, Expr_seq const&, Stmt*);
+  Decl* on_event(Token, Decl_seq const&, Stmt*);
 
 
   // FIXME: Remove _stmt from handlers.

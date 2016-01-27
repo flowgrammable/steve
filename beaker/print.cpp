@@ -417,11 +417,11 @@ operator<<(std::ostream& os, Rebind_decl const& d)
 std::ostream&
 operator<<(std::ostream& os, Event_decl const& d)
 {
-  os << "event " << d.name()->spelling();
+  os << "event " << d.name()->spelling() << '(';
   for (auto k : d.requirements()) {
     os << *k << ' ';
   }
-  os << *d.body();
+  os << ')' << *d.body();
 
   return os;
 }

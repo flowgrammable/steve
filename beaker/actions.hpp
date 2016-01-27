@@ -323,4 +323,15 @@ is_action(Stmt* s)
 }
 
 
+// Returns true iff an action occurs within the context of a
+// decoder, flow, or event.
+inline bool
+is_valid_action_context(Stmt* s)
+{
+  return is<Decode_decl>(s->context())
+      || is<Flow_decl>(s->context())
+      || is<Event_decl>(s->context());
+}
+
+
 #endif
