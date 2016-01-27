@@ -53,5 +53,6 @@ void mangle(std::ostream&, Flow_decl const*);
 void mangle(std::ostream&, Port_decl const*);
 void mangle(std::ostream&, Extracts_decl const*);
 void mangle(std::ostream&, Rebind_decl const*);
+void mangle(std::ostream&, Event_decl const*);
 
 #endif

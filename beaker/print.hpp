@@ -51,6 +51,7 @@ std::ostream& operator<<(std::ostream&, Flow_decl const&);
 std::ostream& operator<<(std::ostream&, Port_decl const&);
 std::ostream& operator<<(std::ostream&, Extracts_decl const&);
 std::ostream& operator<<(std::ostream&, Rebind_decl const&);
+std::ostream& operator<<(std::ostream&, Event_decl const&);
 
 
 std::ostream& operator<<(std::ostream&, Type const&);

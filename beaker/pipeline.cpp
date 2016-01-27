@@ -37,6 +37,7 @@ struct Find_branches
   void operator()(Set_field const* s) { }
   void operator()(Insert_flow const* s) { }
   void operator()(Remove_flow const* s) { }
+  void operator()(Raise const* s) { }
   void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
   void operator()(Write_flood const* s) { }
@@ -478,6 +479,7 @@ Pipeline_checker::get_productions(Decode_decl const* d)
     void operator()(Set_field const* s) { }
     void operator()(Insert_flow const* s) { }
     void operator()(Remove_flow const* s) { }
+    void operator()(Raise const* s) { }
     void operator()(Write_drop const* s) { }
     void operator()(Write_output const* s) { }
     void operator()(Write_flood const* s) { }

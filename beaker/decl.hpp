@@ -70,6 +70,7 @@ struct Decl::Visitor
   virtual void visit(Port_decl const*) = 0;
   virtual void visit(Extracts_decl const*) = 0;
   virtual void visit(Rebind_decl const*) = 0;
+  virtual void visit(Event_decl const*) = 0;
 };
 
 
@@ -93,6 +94,7 @@ struct Decl::Mutator
   virtual void visit(Port_decl*) = 0;
   virtual void visit(Extracts_decl*) = 0;
   virtual void visit(Rebind_decl*) = 0;
+  virtual void visit(Event_decl*) = 0;
 };
 
 
@@ -485,6 +487,27 @@ struct Port_decl : Decl
 };
 
 
+// Declares an event stage and its associated function handler.
+//
+// Events have requirements just like decode stages to ensure
+// that fields needed by the event have been decoded.
+struct Event_decl : Decl
+{
+  Event_decl(Symbol const* n, Expr_seq const& fields, Stmt* body)
+    : Decl(n, nullptr), fields_(fields), body_(body)
+  { }
+
+  Expr_seq const& requirements() const { return fields_; }
+  Stmt*           body()         const { return body_; }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Expr_seq fields_;
+  Stmt* body_;
+};
+
+
 // -------------------------------------------------------------------------- //
 // Queries
 
@@ -576,6 +599,7 @@ struct Generic_decl_visitor : Decl::Visitor, lingo::Generic_visitor<F, T>
   void visit(Port_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
   void visit(Rebind_decl const* d) { this->invoke(d); }
+  void visit(Event_decl const* d) { this->invoke(d); }
 };
 
 
@@ -613,6 +637,7 @@ struct Generic_decl_mutator : Decl::Mutator, lingo::Generic_mutator<F, T>
   void visit(Port_decl* d) { this->invoke(d); }
   void visit(Extracts_decl* d) { this->invoke(d); }
   void visit(Rebind_decl* d) { this->invoke(d); }
+  void visit(Event_decl* d) { this->invoke(d); }
 };
 
 

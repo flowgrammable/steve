@@ -899,6 +899,7 @@ Generator::gen(Stmt const* s)
     void operator()(Set_field const* s) { lingo_unreachable(); }
     void operator()(Insert_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_flow const* s) { lingo_unreachable(); }
+    void operator()(Raise const* s) { lingo_unreachable(); }
     void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
     void operator()(Write_flood const* s) { lingo_unreachable(); }
@@ -1180,6 +1181,7 @@ Generator::gen(Decl const* d)
     void operator()(Port_decl const* d) { return g.gen(d); }
     void operator()(Extracts_decl const* d) { return g.gen(d); }
     void operator()(Rebind_decl const* d) { return g.gen(d); }
+    void operator()(Event_decl const* d) { return g.gen(d); }
   };
   return apply(d, Fn{*this});
 }
@@ -1478,7 +1480,7 @@ Generator::gen(Layout_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Decode_decl const* d)
 {
@@ -1486,7 +1488,7 @@ Generator::gen(Decode_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Table_decl const* d)
 {
@@ -1494,7 +1496,7 @@ Generator::gen(Table_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Key_decl const* d)
 {
@@ -1502,7 +1504,7 @@ Generator::gen(Key_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Flow_decl const* d)
 {
@@ -1510,7 +1512,7 @@ Generator::gen(Flow_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Port_decl const* d)
 {
@@ -1518,7 +1520,7 @@ Generator::gen(Port_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Extracts_decl const* d)
 {
@@ -1526,11 +1528,18 @@ Generator::gen(Extracts_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Rebind_decl const* d)
 {
   throw std::runtime_error("unreachable rebind");
+}
+
+
+void
+Generator::gen(Event_decl const* d)
+{
+  throw std::runtime_error("unreachable event");
 }
 
 

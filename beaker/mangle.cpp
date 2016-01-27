@@ -331,6 +331,15 @@ void mangle(std::ostream& os, Rebind_decl const* d)
 }
 
 
+void mangle(std::ostream& os, Event_decl const* d)
+{
+  os << "_Evt" << d->name()->spelling();
+  for (auto r : d->requirements()) {
+    os << mangle(r->type());
+  }
+}
+
+
 void
 mangle(std::ostream& os, Decl const* d)
 {
@@ -354,6 +363,7 @@ mangle(std::ostream& os, Decl const* d)
     void operator()(Port_decl const* d) { mangle(os, d); }
     void operator()(Extracts_decl const* d) { mangle(os, d); }
     void operator()(Rebind_decl const* d) { mangle(os, d); }
+    void operator()(Event_decl const* d) { mangle(os, d); }
   };
   apply(d, Fn{os});
 }

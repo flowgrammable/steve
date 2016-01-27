@@ -156,6 +156,22 @@ Remove_flow::table() const
 }
 
 
+// Raise an event.
+struct Raise : Action
+{
+  Raise(Decl* event)
+    : event_(event)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Decl* event() const { return event_; }
+
+  Decl* event_;
+};
+
+
 // Goto a group table
 struct Group : Action
 {
@@ -293,6 +309,17 @@ has_multiple_terminators(Stmt_seq const& body)
   }
 
   return (c > 1) ? true : false;
+}
+
+
+// Returns true iff a statement is an action.
+inline bool
+is_action(Stmt* s)
+{
+  // FIXME: Get rid of this once Decode_stmt and Goto_stmt are made actions.
+  return is<Action>(s)
+      || is<Decode_stmt>(s)
+      || is<Goto_stmt>(s);
 }
 
 

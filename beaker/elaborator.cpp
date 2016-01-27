@@ -1809,6 +1809,7 @@ Elaborator::elaborate(Decl* d)
     Decl* operator()(Port_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Extracts_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Rebind_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Event_decl* d) const { return elab.elaborate(d); }
   };
 
   return apply(d, Fn{*this});
@@ -1936,19 +1937,17 @@ Elaborator::elaborate(Table_decl* d)
 // Elaborating a key decl checks whether
 // or not the keys name valid field within
 // layouts
+//
+// TODO: Refactor this. Its incredibly difficult to follow
+// and hard to debug if anything were to go wrong.
 Decl*
 Elaborator::elaborate(Key_decl* d)
 {
   // declare(d);
 
-  // confirm this occurs within the
-  // context of a table
-  if (!is<Table_decl>(stack.context())) {
-    std::stringstream ss;
-    ss << "Key appearing outside the context of a table declaration: " << *d;
-    throw Type_error({}, ss.str());
-  }
-
+  // Checking the context of the declaration is not necessary because the
+  // grammar of the language prevents this from occuring anywhere other than
+  // where it's supposed to.
 
   // maintain every declaration that the field
   // name expr refers to
@@ -2259,6 +2258,15 @@ Elaborator::elaborate(Rebind_decl* d)
   d->type_ = e1->type();
 
   return d;
+}
+
+
+
+// There is no non-global declaration of events.
+Decl*
+Elaborator::elaborate(Event_decl* d)
+{
+  throw Type_error(locate(d), "Event declaration in block scope");
 }
 
 
