@@ -206,6 +206,7 @@ public:
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);
   Stmt* elaborate(Remove_flow*);
+  Stmt* elaborate(Raise*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
   Stmt* elaborate(Write_flood*);

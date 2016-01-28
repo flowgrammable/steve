@@ -2922,6 +2922,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
@@ -3493,6 +3494,32 @@ Elaborator::elaborate(Remove_flow* s)
   }
 
   s->keys_ = new_key;
+  return s;
+}
+
+
+// Confirm that the identifier for the raise is a valid event.
+Stmt*
+Elaborator::elaborate(Raise* s)
+{
+  Expr* id = elaborate(s->event());
+
+  Decl_expr* event = as<Decl_expr>(id);
+  if (!event) {
+    std::stringstream ss;
+    ss << "Invalid event identifier: " << *id;
+    throw Type_error(locate(s), ss.str());
+  }
+
+  Event_decl* d = as<Event_decl>(event->declaration());
+  if (!d) {
+    std::stringstream ss;
+    ss << "Invalid event identifier: " << *id;
+    throw Type_error(locate(s), ss.str());
+  }
+
+  s->event_ = id;
+
   return s;
 }
 

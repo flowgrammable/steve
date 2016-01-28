@@ -159,16 +159,16 @@ Remove_flow::table() const
 // Raise an event.
 struct Raise : Action
 {
-  Raise(Decl* event)
+  Raise(Expr* event)
     : event_(event)
   { }
 
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 
-  Decl* event() const { return event_; }
+  Expr* event() const { return event_; }
 
-  Decl* event_;
+  Expr* event_;
 };
 
 

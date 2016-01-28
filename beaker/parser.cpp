@@ -1562,6 +1562,20 @@ Parser::rmv_flow_stmt()
 }
 
 
+// Parse a raise action.
+//
+//    raise-stmt -> 'raise' event-id ';'
+//
+Stmt*
+Parser::raise_stmt()
+{
+  match(raise_kw);
+  Expr* id = expr();
+  match(semicolon_tok);
+  return on_raise(id);
+}
+
+
 // Parse a statement.
 //
 //    stmt -> block-stmt
@@ -1633,6 +1647,9 @@ Parser::stmt()
 
     case rmv_kw:
       return rmv_flow_stmt();
+
+    case raise_kw:
+      return raise_stmt();
 
     default:
       return expression_stmt();
@@ -2436,4 +2453,11 @@ Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
   return new Remove_flow(keys, table);
+}
+
+
+Stmt*
+Parser::on_raise(Expr* e)
+{
+  return new Raise(e);
 }
