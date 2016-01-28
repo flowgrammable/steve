@@ -437,6 +437,10 @@ Builtin::clear()
 }
 
 
+// This instructs the runtime to set the field to the given
+// value sent as an i8*.
+//
+//
 Function_decl*
 Builtin::set_field()
 {
