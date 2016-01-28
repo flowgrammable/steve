@@ -279,7 +279,8 @@ is_terminator(Stmt* s)
       || is<Goto_stmt>(s)
       || is<Drop>(s)
       || is<Flood>(s)
-      || is<Output>(s);
+      || is<Output>(s)
+      || is<Raise>(s);
 }
 
 

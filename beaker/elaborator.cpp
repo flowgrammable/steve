@@ -2853,6 +2853,8 @@ Elaborator::elaborate_def(Event_decl* d)
     r = elaborate(r);
   }
 
+  Scope_sentinel scope(*this, d);
+
   d->body_ = elaborate(d->body());
 
   if (Block_stmt* block = as<Block_stmt>(d->body_)) {
