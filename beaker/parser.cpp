@@ -1062,6 +1062,36 @@ Parser::extract_decl()
 }
 
 
+// Parse an event declaration.
+//
+//    event-decl -> 'event' name '(' key-decl-seq ')' '{' [stmt-seq] '}'
+//
+Decl*
+Parser::event_decl()
+{
+  match(event_kw);
+  Token name = require(identifier_tok);
+
+  match(lparen_tok);
+  Decl_seq keys;
+  while (lookahead() != rparen_tok) {
+    Decl* k = key_decl();
+    if (k)
+      keys.push_back(k);
+
+    if (match_if(comma_tok))
+      continue;
+    else
+      break;
+  }
+  match(rparen_tok);
+
+  Stmt* b = block_stmt();
+
+  return on_event(name, keys, b);
+}
+
+
 // Parse a declaration.
 //
 //    decl -> [specifier-seq] entity-decl
@@ -1092,6 +1122,8 @@ Parser::decl()
       return exact_table_decl();
     case port_kw:
       return port_decl();
+    case event_kw:
+      return event_decl();
 
     default:
       // TODO: Is this a recoverable error?
@@ -2220,6 +2252,13 @@ Decl*
 Parser::on_port(Token tok, Expr* e)
 {
   return new Port_decl(tok.symbol(), get_port_type(), e);
+}
+
+
+Decl*
+Parser::on_event(Token tok, Decl_seq const& req, Stmt* s)
+{
+  return new Event_decl(tok.symbol(), req, s);
 }
 
 

@@ -241,6 +241,7 @@ operator<<(std::ostream& os, Decl const& d)
     void operator()(Port_decl const* d) { os << *d; };
     void operator()(Extracts_decl const* d) { os << *d; };
     void operator()(Rebind_decl const* d) { os << *d; };
+    void operator()(Event_decl const* d) { os << *d; };
   };
 
   apply(&d, Fn{os});
@@ -381,7 +382,7 @@ std::ostream& operator<<(std::ostream& os, Key_decl const& d)
 std::ostream&
 operator<<(std::ostream& os, Flow_decl const& d)
 {
-  os << "flow: ";
+  os << d.name()->spelling();
   for (auto k : d.keys()) {
     os << *k << ' ';
   }
@@ -409,6 +410,19 @@ operator<<(std::ostream& os, Extracts_decl const& d)
 std::ostream&
 operator<<(std::ostream& os, Rebind_decl const& d)
 {
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Event_decl const& d)
+{
+  os << "event " << d.name()->spelling() << '(';
+  for (auto k : d.requirements()) {
+    os << *k << ' ';
+  }
+  os << ')' << *d.body();
+
   return os;
 }
 

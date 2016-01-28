@@ -156,6 +156,7 @@ struct Generator
   void gen(Port_decl const*);
   void gen(Extracts_decl const*);
   void gen(Rebind_decl const*);
+  void gen(Event_decl const*);
 
   void gen_local(Variable_decl const*);
   void gen_global(Variable_decl const*);

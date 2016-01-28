@@ -93,6 +93,10 @@ Builtin::alias_bind()
 }
 
 
+// Requests the the runtime returns a pointer to a specific field.
+// The pointer is to the latest extracted field of that field kind.
+//
+//    void* read_field(Context*, int field)
 Function_decl*
 Builtin::read_field()
 {
@@ -141,6 +145,9 @@ Builtin::advance()
 }
 
 
+// Requests a table from the runtime by providing some config details.
+//
+//    Table* get_table(Dataplane*, int id, int key_size, int tbl_size, int tbl_kind)
 Function_decl*
 Builtin::get_table()
 {
@@ -169,7 +176,8 @@ Builtin::get_table()
 }
 
 
-// Add flow has the form:
+// Add a flow entry to the table.
+//
 //    void add_flow(Table*, Flow*, i8* buf)
 Function_decl*
 Builtin::add_flow()
@@ -207,7 +215,39 @@ Builtin::add_flow()
 }
 
 
-// Add miss has the form:
+// Remove a flow entry with a given key from a given table.
+//
+//    void del_flow(Table*, void* key)
+Function_decl*
+Builtin::remove_flow()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
+
+  Symbol const* fn_name = get_identifier(__rmv_flow);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref),
+    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Add miss entry to the table.
+//
 //    void add_miss_case(Table*, Flow*)
 Function_decl*
 Builtin::add_miss()
@@ -243,6 +283,7 @@ Builtin::add_miss()
 
 
 // Gather keys from certain fields. This has the form:
+//
 //    Key gather(Context*, int fld_cnt, ...)
 //
 // The variadic arguments specify which fields are being gathered.
@@ -273,6 +314,7 @@ Builtin::gather()
 
 // Match is used to goto a table and tell it to match the packet fields
 // against flow entries and execute the flow. This has the form:
+//
 //    void goto_table(Context*, Table*, int fld_cnt, ...)
 //
 // The variadic arguments specify which fields are being matched upon.
@@ -308,7 +350,7 @@ Builtin::match()
 
 
 // This function call gets a port with a specific name from the runtime system.
-// This has the form:
+//
 //    Port* get_port(char*, char*);
 //
 // TODO: Add the configuration string to the function call. Write now the
@@ -335,7 +377,7 @@ Builtin::get_port()
 
 
 // This call to the runtime instructs it to immediately drop the packet.
-// This has the form:
+//
 //    void drop(Context*)
 Function_decl*
 Builtin::drop()
@@ -360,7 +402,7 @@ Builtin::drop()
 
 
 // This instructs the runtime to flood the packet.
-// This has the form:
+//
 //    void flood(Context*)
 Function_decl*
 Builtin::flood()
@@ -385,7 +427,7 @@ Builtin::flood()
 
 
 // This instructs the runtime to send the packet out of the given port.
-// This has the form:
+//
 //    void output(Context*, Port*)
 Function_decl*
 Builtin::output()
@@ -437,10 +479,10 @@ Builtin::clear()
 }
 
 
-// This instructs the runtime to set the field to the given
-// value sent as an i8*.
+// Requests that the runtime write over a certain field in the packet
+// with the data provided to the function.
 //
-//
+//    void set_field(Context*, int field, int len, void* val)
 Function_decl*
 Builtin::set_field()
 {
@@ -453,7 +495,7 @@ Builtin::set_field()
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), cxt_ref),
-    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("field"), int_type),
     new Parameter_decl(get_identifier("len"), int_type),
     new Parameter_decl(get_identifier("val"), buffer)
   };
@@ -469,6 +511,9 @@ Builtin::set_field()
 }
 
 
+// Writes a drop action to the context.
+//
+//    void write_drop(Context*)
 Function_decl*
 Builtin::write_drop()
 {
@@ -492,6 +537,9 @@ Builtin::write_drop()
 }
 
 
+// Writes a flood action to the context.
+//
+//    void write_flood(Context*)
 Function_decl*
 Builtin::write_flood()
 {
@@ -515,6 +563,9 @@ Builtin::write_flood()
 }
 
 
+// Write an output action to the context.
+//
+//      void write_output(Context*, Port*)
 Function_decl*
 Builtin::write_output()
 {
@@ -539,6 +590,9 @@ Builtin::write_output()
 }
 
 
+// Write a set field action to the context.
+//
+//    void write_set_field(Context*, int field, int len, void* buf)
 Function_decl*
 Builtin::write_set_field()
 {
@@ -551,7 +605,7 @@ Builtin::write_set_field()
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), cxt_ref),
-    new Parameter_decl(get_identifier("id"), int_type),
+    new Parameter_decl(get_identifier("field"), int_type),
     new Parameter_decl(get_identifier("len"), int_type),
     new Parameter_decl(get_identifier("val"), buffer)
   };
@@ -567,6 +621,8 @@ Builtin::write_set_field()
 }
 
 
+// Instantiate all the builtin functions required by the compiler
+// from the runtime.
 void
 Builtin::init_builtins()
 {
@@ -579,6 +635,7 @@ Builtin::init_builtins()
     {__advance, advance()},
     {__get_table, get_table()},
     {__add_flow, add_flow()},
+    {__rmv_flow, remove_flow()},
     {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
@@ -596,6 +653,7 @@ Builtin::init_builtins()
 }
 
 
+// Constructs the load/config function which is called by the runtime.
 Function_decl*
 Builtin::load(Stmt_seq const& s)
 {
@@ -644,7 +702,7 @@ Builtin::flow_fn(Symbol const* name, Stmt* body)
 }
 
 
-
+// Returns the builtin with the given name.
 Function_decl*
 Builtin::get_builtin_function(std::string name)
 {
@@ -686,7 +744,7 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
   // does not handle header length and its unsure if the length of a header
   // matters.
 
-  return new Bind_header(decl_id(fn), {cxt, id1, id2, off, len});
+  return new Call_expr(decl_id(fn), {cxt, id1, id2, off, len});
 }
 
 
@@ -724,12 +782,22 @@ Builtin::call_advance(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_add_flow(Expr_seq const& args)
+Builtin::call_add_flow(Expr* table, Expr* flow, Expr* key)
 {
   Function_decl* fn = builtin_fn.find(__add_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), args);
+  return new Add_flow(decl_id(fn), {table, flow, key});
+}
+
+
+Expr*
+Builtin::call_remove_flow(Expr* table, Expr* key)
+{
+  Function_decl* fn = builtin_fn.find(__rmv_flow)->second;
+  assert(fn);
+
+  return new Rmv_flow(decl_id(fn), {table, key});
 }
 
 

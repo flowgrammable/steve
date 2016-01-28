@@ -12,8 +12,9 @@ layout eth
 
 decoder start eth_d(eth)
 {
+	extract eth::src;
   extract eth::dst;
-  goto switch;
+  goto learn;
 }
 
 
@@ -21,14 +22,17 @@ exact_table learn(eth::src)
 {
   miss ->
   {
+		puts("Learning eth src.");
+
     add
     { eth::src } ->
     {
+			puts("Learned eth src.");
       output p1;
     }
     into switch;
 
-    output p1;
+    goto switch;
   }
 }
 
@@ -36,6 +40,7 @@ exact_table switch(eth::dst)
 {
   miss ->
   {
-    drop;
+		puts("missed...flooding...");
+    flood;
   }
 }

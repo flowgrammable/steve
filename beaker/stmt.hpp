@@ -51,6 +51,7 @@ struct Stmt::Visitor
   virtual void visit(Set_field const*) = 0;
   virtual void visit(Insert_flow const*) = 0;
   virtual void visit(Remove_flow const*) = 0;
+  virtual void visit(Raise const*) = 0;
   virtual void visit(Write_drop const*) = 0;
   virtual void visit(Write_output const*) = 0;
   virtual void visit(Write_flood const*) = 0;
@@ -86,6 +87,7 @@ struct Stmt::Mutator
   virtual void visit(Set_field*) = 0;
   virtual void visit(Insert_flow*) = 0;
   virtual void visit(Remove_flow*) = 0;
+  virtual void visit(Raise*) = 0;
   virtual void visit(Write_drop*) = 0;
   virtual void visit(Write_output*) = 0;
   virtual void visit(Write_flood*) = 0;
@@ -331,6 +333,7 @@ struct Case_stmt : Stmt
 
 
 // Call to the next decoder and pass it the context
+// FIXME: This should be migrated to an action.
 struct Decode_stmt : Stmt
 {
   Decode_stmt(Expr* e)
@@ -348,7 +351,8 @@ struct Decode_stmt : Stmt
 };
 
 
-
+// Goto a table.
+// FIXME: This should be migrated to an action.
 struct Goto_stmt : Stmt
 {
   Goto_stmt(Expr* e)
@@ -401,6 +405,7 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Set_field const* d) { this->invoke(d); };
   void visit(Insert_flow const* d) { this->invoke(d); };
   void visit(Remove_flow const* d) { this->invoke(d); };
+  void visit(Raise const* d) { this->invoke(d); };
   void visit(Write_drop const* d) { this->invoke(d); };
   void visit(Write_output const* d) { this->invoke(d); };
   void visit(Write_flood const* d) { this->invoke(d); };
@@ -452,6 +457,7 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Set_field* d) { this->invoke(d); };
   void visit(Insert_flow* d) { this->invoke(d); };
   void visit(Remove_flow* d) { this->invoke(d); };
+  void visit(Raise* d) { this->invoke(d); };
   void visit(Write_drop* d) { this->invoke(d); };
   void visit(Write_output* d) { this->invoke(d); };
   void visit(Write_flood* d) { this->invoke(d); };

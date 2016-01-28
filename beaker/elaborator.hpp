@@ -147,6 +147,7 @@ public:
   Decl* elaborate(Port_decl*);
   Decl* elaborate(Extracts_decl*);
   Decl* elaborate(Rebind_decl*);
+  Decl* elaborate(Event_decl*);
 
   // Support for two-phase elaboration.
   Decl* elaborate_decl(Decl*);
@@ -161,6 +162,7 @@ public:
   Decl* elaborate_decl(Port_decl*);
   Decl* elaborate_decl(Decode_decl*);
   Decl* elaborate_decl(Table_decl*);
+  Decl* elaborate_decl(Event_decl*);
   Decl* elaborate_decl(Module_decl*);
 
   Decl* elaborate_def(Decl*);
@@ -175,6 +177,7 @@ public:
   Decl* elaborate_def(Port_decl*);
   Decl* elaborate_def(Decode_decl*);
   Decl* elaborate_def(Table_decl*);
+  Decl* elaborate_def(Event_decl*);
   Decl* elaborate_def(Module_decl*);
 
   Stmt* elaborate(Stmt*);
@@ -222,6 +225,7 @@ public:
   Overload* member_lookup(Record_decl*, Symbol const*);
 
   // Diagnostics
+  void check_valid_action_context(Stmt*);
   void on_call_error(Expr_seq const&, Expr_seq const&, Type_seq const&);
   void locate(void const*, Location);
   Location locate(void const*);

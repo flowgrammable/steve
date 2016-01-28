@@ -22,7 +22,7 @@ decoder start eth_d(eth)
   write set eth::type = 0x800;
   // write copy eth::type = eth::src;
 	add {eth::src} -> { drop; } into t1;
-	// remove {eth::src} from t1;
+	remove {eth::src} from t1;
 
 	flood;
 	// drop;

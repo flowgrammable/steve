@@ -269,11 +269,11 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 void
 fp_add_flow(fp::Table* tbl, void* fn, void* key)
 {
-  std::cout << "Adding flow\n";
-
+  // std::cout << "Adding flow to " << tbl->id() << '\n';
+  //
   // get the length of the table's expected key
   int key_size = tbl->key_size();
-  std::cout << "Key size: " << key_size << '\n';
+  // std::cout << "Key size: " << key_size << '\n';
   // cast the key to Byte*
   fp::Byte* buf = reinterpret_cast<fp::Byte*>(key);
   // construct a key object
@@ -281,6 +281,7 @@ fp_add_flow(fp::Table* tbl, void* fn, void* key)
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
   fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
+
   tbl->add(k, flow);
 }
 

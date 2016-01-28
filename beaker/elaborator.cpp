@@ -1809,6 +1809,7 @@ Elaborator::elaborate(Decl* d)
     Decl* operator()(Port_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Extracts_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Rebind_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Event_decl* d) const { return elab.elaborate(d); }
   };
 
   return apply(d, Fn{*this});
@@ -1936,19 +1937,17 @@ Elaborator::elaborate(Table_decl* d)
 // Elaborating a key decl checks whether
 // or not the keys name valid field within
 // layouts
+//
+// TODO: Refactor this. Its incredibly difficult to follow
+// and hard to debug if anything were to go wrong.
 Decl*
 Elaborator::elaborate(Key_decl* d)
 {
   // declare(d);
 
-  // confirm this occurs within the
-  // context of a table
-  if (!is<Table_decl>(stack.context())) {
-    std::stringstream ss;
-    ss << "Key appearing outside the context of a table declaration: " << *d;
-    throw Type_error({}, ss.str());
-  }
-
+  // Checking the context of the declaration is not necessary because the
+  // grammar of the language prevents this from occuring anywhere other than
+  // where it's supposed to.
 
   // maintain every declaration that the field
   // name expr refers to
@@ -2051,8 +2050,8 @@ Elaborator::elaborate(Key_decl* d)
   Type const* t = decls.back()->type();
   if (!t) {
     std::stringstream ss;
-    ss << "Field expression" << *d << " of unknown type.";
-    throw Type_error({}, ss.str());
+    ss << "Field" << *d << " of unknown type.";
+    throw Type_error(locate(d), ss.str());
   }
   // The type cannot be a layout type either.
   if (is<Layout_type>(t)) {
@@ -2263,6 +2262,15 @@ Elaborator::elaborate(Rebind_decl* d)
 
 
 
+// There is no non-global declaration of events.
+Decl*
+Elaborator::elaborate(Event_decl* d)
+{
+  throw Type_error(locate(d), "Event declaration in block scope");
+}
+
+
+
 // -------------------------------------------------------------------------- //
 // Elaboration of declarations (but not definitions)
 
@@ -2292,6 +2300,7 @@ struct Elab_decl_fn
   Decl* operator()(Port_decl* d) const { return elab.elaborate_decl(d); }
   Decl* operator()(Decode_decl* d) const { return elab.elaborate_decl(d); }
   Decl* operator()(Table_decl* d) const { return elab.elaborate_decl(d); }
+  Decl* operator()(Event_decl* d) const { return elab.elaborate_decl(d); }
 };
 
 
@@ -2498,6 +2507,22 @@ Elaborator::elaborate_decl(Table_decl* d)
 }
 
 
+// Elaborating the event declaration attaches the type of all event declarations
+// (Context&)->void (for now).
+//
+// Events are just another stage of processing, except there behavior may or
+// may not be asynchronous depending on the runtime configuration for event
+// handling.
+Decl*
+Elaborator::elaborate_decl(Event_decl* d)
+{
+  static Function_type event_type({get_context_type()->ref()}, get_void_type());
+  d->type_ = &event_type;
+  declare(d);
+  return d;
+}
+
+
 // Since modules aren't nested, we should never get here.
 Decl*
 Elaborator::elaborate_decl(Module_decl* d)
@@ -2529,6 +2554,7 @@ struct Elab_def_fn
   Decl* operator()(Port_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Decode_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Table_decl* d) const { return elab.elaborate_def(d); }
+  Decl* operator()(Event_decl* d) const { return elab.elaborate_def(d); }
   Decl* operator()(Module_decl* d) const { return elab.elaborate_def(d); }
 };
 
@@ -2817,6 +2843,36 @@ Elaborator::elaborate_def(Table_decl* d)
 }
 
 
+// Elaborate the fields in the requirements.
+//
+// Elaborate the body.
+Decl*
+Elaborator::elaborate_def(Event_decl* d)
+{
+  for (Decl*& r : d->requirements_) {
+    r = elaborate(r);
+  }
+
+  d->body_ = elaborate(d->body());
+
+  if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+    // Confirmt that the body has a terminating action to ensure
+    // progress is made through the pipeline.
+    if (!has_terminator_action(block->statements())) {
+      std::stringstream ss;
+      ss << "Event declaration missing guaranteed terminator.\n";
+      ss << *d;
+
+      throw Type_error(locate(d), ss.str());
+    }
+  }
+  else
+    throw Type_error(locate(d), "Ill-formed body of event.");
+
+  return d;
+}
+
+
 Decl*
 Elaborator::elaborate_def(Module_decl* d)
 {
@@ -2833,6 +2889,10 @@ Elaborator::elaborate_def(Module_decl* d)
 Stmt*
 Elaborator::elaborate(Stmt* s)
 {
+  // attach the context to the statement
+  s->context_ = stack.context();
+  assert(s->context_);
+
   struct Fn
   {
     Elaborator& elab;
@@ -2869,8 +2929,6 @@ Elaborator::elaborate(Stmt* s)
   };
 
   Stmt* stmt = apply(s, Fn{*this});
-  // attach the context to the statement
-  stmt->context_ = stack.context();
   return stmt;
 }
 
@@ -3138,13 +3196,7 @@ Elaborator::elaborate(Decode_stmt* s)
 
   // guarantee this stmt occurs
   // within the context of a decoder function or a flow function
-  if (!is<Decode_decl>(stack.context()) && !is<Flow_decl>(stack.context())) {
-    std::stringstream ss;
-    ss << "decode statement " << *s
-       << " found outside of the context of a decoder or flow.";
-
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* target = elaborate(s->decoder_identifier());
   Decl_expr* target_id = as<Decl_expr>(target);
@@ -3178,13 +3230,7 @@ Elaborator::elaborate(Goto_stmt* s)
 {
   // guarantee this stmt occurs
   // within the context of a decoder function
-  if (!is<Decode_decl>(stack.context()) && !is<Flow_decl>(stack.context())) {
-    std::stringstream ss;
-    ss << "decode statement " << *s
-       << " found outside of the context of a decoder.";
-
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* tbl = elaborate(s->table_identifier_);
 
@@ -3208,6 +3254,20 @@ Elaborator::elaborate(Goto_stmt* s)
 }
 
 
+// Confirms that an action occurs within a flow, decoder, or event.
+void
+Elaborator::check_valid_action_context(Stmt* s)
+{
+  if (!is_valid_action_context(s)) {
+    std::stringstream ss;
+    ss << *s
+       << " found outside of the context of a flow, decoder, or event.";
+
+    throw Type_error(locate(s), ss.str());
+  }
+}
+
+
 Stmt*
 Elaborator::elaborate(Action* s)
 {
@@ -3219,6 +3279,8 @@ Elaborator::elaborate(Action* s)
 Stmt*
 Elaborator::elaborate(Drop* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3227,6 +3289,8 @@ Elaborator::elaborate(Drop* s)
 Stmt*
 Elaborator::elaborate(Output* s)
 {
+  check_valid_action_context(s);
+
   // elaborate the port identififier and confirm
   // that it has port type
   Expr* port = elaborate(s->port_);
@@ -3248,6 +3312,8 @@ Elaborator::elaborate(Output* s)
 Stmt*
 Elaborator::elaborate(Flood* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3256,6 +3322,8 @@ Elaborator::elaborate(Flood* s)
 Stmt*
 Elaborator::elaborate(Clear* s)
 {
+  check_valid_action_context(s);
+
   // No further elaboration required
   return s;
 }
@@ -3264,14 +3332,7 @@ Elaborator::elaborate(Clear* s)
 Stmt*
 Elaborator::elaborate(Set_field* s)
 {
-  if (!is<Flow_decl>(stack.context())
-      && !is<Decode_decl>(stack.context()))
-  {
-    std::stringstream ss;
-    ss << "Set field occuring outside the context of "
-          "a decoder or flow declaration.";
-    throw Type_error({}, ss.str());
-  }
+  check_valid_action_context(s);
 
   Expr* field = elaborate(s->field_);
   Expr* val = elaborate(s->value_);
@@ -3327,12 +3388,25 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
   // Elaborate the body of the flow.
   f->instructions_ = elaborate(f->instructions());
   if (Block_stmt* block = as<Block_stmt>(f->instructions_)) {
+    // Confirm that every statement inside the flow is an action.
+    for (auto s : block->statements()) {
+      if (!is_action(s)) {
+        std::stringstream ss;
+        ss << "Non-action found inside the body of a flow.\n";
+        ss << *s;
+
+        throw Type_error(locate(f), ss.str());
+      }
+    }
+
+    // Confirmt that the flow body has a terminating action to ensure
+    // progress is made through the pipeline.
     if (!has_terminator_action(block->statements())) {
       std::stringstream ss;
       ss << "Flow declaration missing guaranteed terminator.\n";
       ss << *f;
 
-      throw Type_error(locate(block), ss.str());
+      throw Type_error(locate(f), ss.str());
     }
   }
 
@@ -3347,6 +3421,8 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
 Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
+  check_valid_action_context(s);
+
   s->table_id_ = elaborate(s->table_identifier());
 
   // We need to specially elaborate this flow because it doesn't follow the
@@ -3376,6 +3452,8 @@ Elaborator::elaborate(Insert_flow* s)
 Stmt*
 Elaborator::elaborate(Remove_flow* s)
 {
+  check_valid_action_context(s);
+
   s->table_id_ = elaborate(s->table_identifier());
   Table_decl* table = as<Table_decl>(s->table());
 
@@ -3422,6 +3500,8 @@ Elaborator::elaborate(Remove_flow* s)
 Stmt*
 Elaborator::elaborate(Write_drop* s)
 {
+  check_valid_action_context(s);
+
   assert(s->drop());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3432,6 +3512,8 @@ Elaborator::elaborate(Write_drop* s)
 Stmt*
 Elaborator::elaborate(Write_output* s)
 {
+  check_valid_action_context(s);
+
   assert(s->output());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3442,6 +3524,8 @@ Elaborator::elaborate(Write_output* s)
 Stmt*
 Elaborator::elaborate(Write_flood* s)
 {
+  check_valid_action_context(s);
+
   assert(s->flood());
   // Elaborate the drop action.
   s->first = elaborate(s->first);
@@ -3452,6 +3536,8 @@ Elaborator::elaborate(Write_flood* s)
 Stmt*
 Elaborator::elaborate(Write_set_field* s)
 {
+  check_valid_action_context(s);
+
   assert(s->set_field());
   // Elaborate the drop action.
   s->first = elaborate(s->first);

@@ -35,11 +35,13 @@ struct Lowerer
   Decl* lower_global_decl(Decode_decl*);
   Decl* lower_global_decl(Table_decl*);
   Decl* lower_global_decl(Port_decl*);
+  Decl* lower_global_decl(Event_decl*);
 
   Decl* lower_global_def(Decl*);
   Decl* lower_global_def(Decode_decl*);
   Decl* lower_global_def(Table_decl*);
   Decl* lower_global_def(Port_decl*);
+  Decl* lower_global_def(Event_decl*);
 
   Decl* lower(Decl*);
   Decl* lower(Module_decl*);
@@ -64,6 +66,7 @@ struct Lowerer
   Decl*    construct_added_flow(Table_decl*, Flow_decl*);
 
   Stmt_seq lower(Stmt*);
+  Stmt_seq lower(Assign_stmt*);
   Stmt_seq lower(Block_stmt*);
   Stmt_seq lower(If_then_stmt*);
   Stmt_seq lower(If_else_stmt*);

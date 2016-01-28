@@ -70,6 +70,7 @@ public:
   Decl* port_decl();
   Decl* extract_decl();
   Decl* rebind_decl();
+  Decl* event_decl();
 
   // Statement parsers
   Stmt* stmt();
@@ -173,6 +174,7 @@ private:
   Decl* on_flow(Expr_seq&, Stmt*);
   Decl* on_flow_miss(Stmt*);
   Decl* on_port(Token, Expr*);
+  Decl* on_event(Token, Decl_seq const&, Stmt*);
 
 
   // FIXME: Remove _stmt from handlers.
@@ -202,6 +204,7 @@ private:
   Stmt* on_add_flow(Decl*, Expr*);
   Stmt* on_rmv_flow(Expr_seq const&, Expr*);
   Stmt* raise(Expr*);
+  Stmt* on_raise(Expr*);
 
   // Parsing support
   Token_kind lookahead() const;

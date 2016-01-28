@@ -143,14 +143,14 @@ temp_var(Symbol_table& syms, Type const* t, Expr* init)
 // ----------------------------------------------------- //
 //      Statement building
 
-inline Stmt*
+inline Declaration_stmt*
 statement(Decl* d)
 {
   return new Declaration_stmt(d);
 }
 
 
-inline Stmt*
+inline Expression_stmt*
 statement(Expr* e)
 {
   return new Expression_stmt(e);

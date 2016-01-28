@@ -70,6 +70,7 @@ struct Decl::Visitor
   virtual void visit(Port_decl const*) = 0;
   virtual void visit(Extracts_decl const*) = 0;
   virtual void visit(Rebind_decl const*) = 0;
+  virtual void visit(Event_decl const*) = 0;
 };
 
 
@@ -93,6 +94,7 @@ struct Decl::Mutator
   virtual void visit(Port_decl*) = 0;
   virtual void visit(Extracts_decl*) = 0;
   virtual void visit(Rebind_decl*) = 0;
+  virtual void visit(Event_decl*) = 0;
 };
 
 
@@ -485,6 +487,31 @@ struct Port_decl : Decl
 };
 
 
+// Declares an event stage and its associated function handler.
+//
+// Events have requirements just like decode stages to ensure
+// that fields needed by the event have been decoded.
+//
+// Events are just another stage of processing, except there behavior may or
+// may not be asynchronous depending on the runtime configuration for event
+// handling.
+struct Event_decl : Decl
+{
+  Event_decl(Symbol const* n, Decl_seq const& req, Stmt* body)
+    : Decl(n, nullptr), requirements_(req), body_(body)
+  { }
+
+  Decl_seq const& requirements() const { return requirements_; }
+  Stmt*           body()         const { return body_; }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Decl_seq requirements_;
+  Stmt* body_;
+};
+
+
 // -------------------------------------------------------------------------- //
 // Queries
 
@@ -576,6 +603,7 @@ struct Generic_decl_visitor : Decl::Visitor, lingo::Generic_visitor<F, T>
   void visit(Port_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
   void visit(Rebind_decl const* d) { this->invoke(d); }
+  void visit(Event_decl const* d) { this->invoke(d); }
 };
 
 
@@ -613,6 +641,7 @@ struct Generic_decl_mutator : Decl::Mutator, lingo::Generic_mutator<F, T>
   void visit(Port_decl* d) { this->invoke(d); }
   void visit(Extracts_decl* d) { this->invoke(d); }
   void visit(Rebind_decl* d) { this->invoke(d); }
+  void visit(Event_decl* d) { this->invoke(d); }
 };
 
 

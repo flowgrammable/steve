@@ -107,6 +107,7 @@ enum Token_kind
   rmv_kw,
   into_kw,
   from_kw,
+  event_kw,
   raise_kw,
 
   // Multi-valued tokens
