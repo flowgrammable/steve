@@ -96,6 +96,7 @@ public:
   Stmt* write_stmt();
   Stmt* add_flow_stmt();
   Stmt* rmv_flow_stmt();
+  Stmt* raise_stmt();
 
   // Top-level.
   Decl* module(Module_decl*);
@@ -200,6 +201,7 @@ private:
   Stmt* on_write(Stmt*);
   Stmt* on_add_flow(Decl*, Expr*);
   Stmt* on_rmv_flow(Expr_seq const&, Expr*);
+  Stmt* raise(Expr*);
 
   // Parsing support
   Token_kind lookahead() const;
