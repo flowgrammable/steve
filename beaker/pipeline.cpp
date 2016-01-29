@@ -481,6 +481,12 @@ Pipeline_checker::register_stage(Table_decl const* d)
     register_stage(flow, d);
   }
 
+  // If a miss case exists, create a stage for it.
+  if (d->miss_case()) {
+    Flow_decl* miss = as<Flow_decl>(d->miss_case());
+    register_stage(miss, d);
+  }
+
   // Create a stage for all flows that MIGHT be added to the table
   // if inserted.
   for (auto f : d->tentative()) {
@@ -551,6 +557,9 @@ Pipeline_checker::get_productions(Decode_decl const* d)
 
 
 // Not sure we can discover if tables produce anything
+//
+// FIXME: Get the productions of each flow. This is okay for now since
+// flows don't actually produce, but they can in the future.
 Field_env
 Pipeline_checker::get_productions(Table_decl const* d)
 {
@@ -638,6 +647,13 @@ Pipeline_checker::find_branches(Table_decl const* d)
     branches.insert(s);
   }
 
+  // If there is a miss case, branch to it.
+  if (d->miss_case()) {
+    Stage* s = pipeline.find(d->miss_case());
+    assert(s);
+    branches.insert(s);
+  }
+
   // They also are assumed to branch to all flows that may or
   // may not be added to them during runtime.
   for (auto flow : d->tentative()) {
@@ -674,6 +690,7 @@ Pipeline_checker::find_branches(Decode_decl const* d)
 
   return branches;
 }
+
 
 Stage_set
 Pipeline_checker::find_branches(Event_decl const* d)
