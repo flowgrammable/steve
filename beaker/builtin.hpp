@@ -30,6 +30,7 @@ constexpr char const* __write_drop   = "fp_write_drop";
 constexpr char const* __write_output = "fp_write_output";
 constexpr char const* __write_flood  = "fp_write_flood";
 constexpr char const* __write_set    = "fp_write_set_field";
+constexpr char const* __raise_event  = "fp_raise_event";
 constexpr char const* __context      = "_cxt_";
 constexpr char const* __header       = "_header_";
 constexpr char const* __table        = "_table_";
@@ -253,6 +254,16 @@ struct Write_set_field_action : Call_expr
 };
 
 
+// NOTE: The semantics of calling raise with the runtime should be
+// that the implicit context being passed to the event handler is
+// COPIED. This allows us to continue processing the packet, after having
+// asynchronously passed it off to some event handler.
+struct Raise_event : Call_expr
+{
+  using Call_expr::Call_expr;
+};
+
+
 struct Get_port : Call_expr
 {
   Get_port(Expr* fn, Expr_seq const& args)
@@ -342,6 +353,7 @@ struct Builtin
   Expr* call_write_flood(Expr*);
   Expr* call_write_output(Expr* cxt, Expr* port);
   Expr* call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
+  Expr* call_raise_event(Expr*, Expr*);
 
   // exposed interface
   Function_decl* load(Stmt_seq const&);
@@ -378,6 +390,7 @@ private:
   Function_decl* write_flood();
   Function_decl* write_output();
   Function_decl* write_set_field();
+  Function_decl* raise_event();
 
   Symbol const* get_identifier(std::string);
 

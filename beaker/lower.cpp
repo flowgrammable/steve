@@ -245,6 +245,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
 };
 
 
@@ -1947,6 +1948,38 @@ Lowerer::lower(Write_output* w)
   return
   {
     statement(output),
+  };
+}
+
+
+// Raise passes a task to a hypothetical asynchronous thread in the runtime
+// system with a context.
+//
+// NOTE: The semantics of calling raise with the runtime should be
+// that the implicit context being passed to the event handler is
+// COPIED. This allows us to continue processing the packet, after having
+// asynchronously passed it off to some event handler.
+Stmt_seq
+Lowerer::lower(Raise* s)
+{
+  // Lookup the context.
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Lookup the event function.
+  ovl = unqualified_lookup(s->event()->name());
+  assert(ovl);
+  Decl* event = ovl->back();
+  assert(event);
+
+  // Make a call to fp_raise_event(Context*, Event*)
+  Expr* raise_event = builtin.call_raise_event(decl_id(cxt), decl_id(event));
+
+  return
+  {
+    statement(raise_event)
   };
 }
 

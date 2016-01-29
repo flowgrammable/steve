@@ -621,6 +621,37 @@ Builtin::write_set_field()
 }
 
 
+// NOTE: The semantics of calling raise with the runtime should be
+// that the implicit context being passed to the event handler is
+// COPIED. This allows us to continue processing the packet, after having
+// asynchronously passed it off to some event handler.
+//
+//    void raise_event(Context*, void (Context*)* event_handler);
+Function_decl*
+Builtin::raise_event()
+{
+  Symbol const* fn_name = get_identifier(__raise_event);
+
+  Type const* void_type = get_void_type();
+  Type const* event_type =
+    get_function_type({get_context_type()->ref()}, void_type);
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
+    new Parameter_decl(get_identifier("event_handle"), event_type->ref())
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+
+  return fn;
+}
+
+
 // Instantiate all the builtin functions required by the compiler
 // from the runtime.
 void
@@ -649,6 +680,7 @@ Builtin::init_builtins()
     {__write_flood, write_flood()},
     {__write_output, write_output()},
     {__write_set, write_set_field()},
+    {__raise_event, raise_event()},
   };
 }
 
@@ -955,4 +987,14 @@ Builtin::call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt, id, len, val});
+}
+
+
+Expr*
+Builtin::call_raise_event(Expr* cxt, Expr* event_fn)
+{
+  Function_decl* fn = builtin_fn.find(__raise_event)->second;
+  assert(fn);
+
+  return new Raise_event(decl_id(fn), {cxt, event_fn});
 }
