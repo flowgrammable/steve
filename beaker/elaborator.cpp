@@ -2518,6 +2518,9 @@ Elaborator::elaborate_decl(Event_decl* d)
 {
   static Function_type event_type({get_context_type()->ref()}, get_void_type());
   d->type_ = &event_type;
+
+  // Insert as a stage into the pipeline.
+  pipelines.insert(d);
   declare(d);
   return d;
 }
@@ -3504,7 +3507,7 @@ Elaborator::elaborate(Remove_flow* s)
 Stmt*
 Elaborator::elaborate(Raise* s)
 {
-  Expr* id = elaborate(s->event());
+  Expr* id = elaborate(s->event_identifier());
 
   Decl_expr* event = as<Decl_expr>(id);
   if (!event) {
@@ -3520,7 +3523,8 @@ Elaborator::elaborate(Raise* s)
     throw Type_error(locate(s), ss.str());
   }
 
-  s->event_ = id;
+  s->event_id_ = id;
+  s->event_    = d;
 
   return s;
 }

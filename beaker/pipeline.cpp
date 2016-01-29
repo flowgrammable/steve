@@ -2,6 +2,7 @@
 #include "beaker/expr.hpp"
 #include "beaker/decl.hpp"
 #include "beaker/stmt.hpp"
+#include "beaker/actions.hpp"
 #include "beaker/pipeline.hpp"
 #include "beaker/error.hpp"
 
@@ -26,9 +27,7 @@ struct Find_branches
   {
     throw Type_error({}, "return found in processing stage.");
   }
-
   void operator()(Return_void_stmt const* s) { }
-
   void operator()(Action const* s) { }
   void operator()(Drop const* s) { }
   void operator()(Output const* s) { }
@@ -37,7 +36,6 @@ struct Find_branches
   void operator()(Set_field const* s) { }
   void operator()(Insert_flow const* s) { }
   void operator()(Remove_flow const* s) { }
-  void operator()(Raise const* s) { }
   void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
   void operator()(Write_flood const* s) { }
@@ -91,6 +89,76 @@ struct Find_branches
     Stage* b = p.find(s->table());
     assert(b);
     br.insert(b);
+  }
+
+  // Raise transfers control to an event.
+  // We want to make sure the event handler also has
+  // safety guarantees applied to it.
+  void operator()(Raise const* s)
+  {
+    Stage* b = p.find(s->event());
+    assert(b);
+    br.insert(b);
+  }
+};
+
+
+struct Find_products
+{
+  Field_env& prod;
+  Field_map& fld_map;
+
+  void operator()(Empty_stmt const* s) { }
+  void operator()(Block_stmt const* s) { }
+  void operator()(Assign_stmt const* s) { }
+  void operator()(Break_stmt const* s) { }
+  void operator()(Continue_stmt const* s) { }
+  void operator()(Expression_stmt const* s) { }
+  void operator()(Return_stmt const* s)
+  {
+    throw Type_error({}, "return found in decoder body");
+  }
+  void operator()(Return_void_stmt const* s) { }
+  void operator()(If_then_stmt const* s) { }
+  void operator()(If_else_stmt const* s) { }
+  void operator()(Match_stmt const* s) { }
+  void operator()(Case_stmt const* s) { }
+  void operator()(While_stmt const* s) { }
+  void operator()(Decode_stmt const* s) { }
+  void operator()(Goto_stmt const* s) { }
+  void operator()(Action const* s) { }
+  void operator()(Drop const* s) { }
+  void operator()(Output const* s) { }
+  void operator()(Flood const* s) { }
+  void operator()(Clear const* s) { }
+  void operator()(Set_field const* s) { }
+  void operator()(Insert_flow const* s) { }
+  void operator()(Remove_flow const* s) { }
+  void operator()(Raise const* s) { }
+  void operator()(Write_drop const* s) { }
+  void operator()(Write_output const* s) { }
+  void operator()(Write_flood const* s) { }
+  void operator()(Write_set_field const* s) { }
+
+  // the only productions (for now) come out of decl statements
+  // and only if it is an extracts decl or rebind decl
+  void operator()(Declaration_stmt const* s)
+  {
+    // NOTE: Must check for rebind decl first since it is a child of
+    // extracts decl and will be a successful cast.
+    if (Rebind_decl const* reb = as<Rebind_decl>(s->declaration())) {
+      // bind both the original name
+      // and the aliased name
+      prod.emplace(reb->name(), reb);
+      prod.emplace(reb->original(), reb);
+
+      fld_map.insert(reb->name());
+      fld_map.insert(reb->original());
+    }
+    else if (Extracts_decl const* ext = as<Extracts_decl>(s->declaration())) {
+      prod.emplace(ext->name(), ext);
+      fld_map.insert(ext);
+    }
   }
 };
 
@@ -434,6 +502,29 @@ Pipeline_checker::register_stage(Flow_decl const* flow, Table_decl const* table)
 }
 
 
+// Register an event as a stage in processing to ensure that all
+// language declared events provide the same safety guarantees given
+// by decoding and table matching stages.
+void
+Pipeline_checker::register_stage(Event_decl const* event)
+{
+  // get productions
+  Field_env product = get_productions(event);
+
+  // get requirements
+  // Right now, decoders do not have explicit requirements
+  // as they do no care about what happened in the previous
+  // decoder. Only tables have requirements.
+  Sym_set requirements = get_requirements(event);
+
+  Stage* stage = new Stage(event, Stage_set(), product, requirements);
+
+  assert(event->name());
+
+  pipeline.push_back(stage);
+}
+
+
 // Get productions of a decode declaration
 //
 // These correspond to extracted fields.
@@ -447,65 +538,6 @@ Pipeline_checker::get_productions(Decode_decl const* d)
   assert(body);
 
   Field_env products;
-
-  struct Find_products
-  {
-    Field_env& prod;
-    Field_map& fld_map;
-
-    void operator()(Empty_stmt const* s) { }
-    void operator()(Block_stmt const* s) { }
-    void operator()(Assign_stmt const* s) { }
-    void operator()(Break_stmt const* s) { }
-    void operator()(Continue_stmt const* s) { }
-    void operator()(Expression_stmt const* s) { }
-    void operator()(Return_stmt const* s)
-    {
-      throw Type_error({}, "return found in decoder body");
-    }
-    void operator()(Return_void_stmt const* s) { }
-    void operator()(If_then_stmt const* s) { }
-    void operator()(If_else_stmt const* s) { }
-    void operator()(Match_stmt const* s) { }
-    void operator()(Case_stmt const* s) { }
-    void operator()(While_stmt const* s) { }
-    void operator()(Decode_stmt const* s) { }
-    void operator()(Goto_stmt const* s) { }
-    void operator()(Action const* s) { }
-    void operator()(Drop const* s) { }
-    void operator()(Output const* s) { }
-    void operator()(Flood const* s) { }
-    void operator()(Clear const* s) { }
-    void operator()(Set_field const* s) { }
-    void operator()(Insert_flow const* s) { }
-    void operator()(Remove_flow const* s) { }
-    void operator()(Raise const* s) { }
-    void operator()(Write_drop const* s) { }
-    void operator()(Write_output const* s) { }
-    void operator()(Write_flood const* s) { }
-    void operator()(Write_set_field const* s) { }
-
-    // the only productions (for now) come out of decl statements
-    // and only if it is an extracts decl or rebind decl
-    void operator()(Declaration_stmt const* s)
-    {
-      // NOTE: Must check for rebind decl first since it is a child of
-      // extracts decl and will be a successful cast.
-      if (Rebind_decl const* reb = as<Rebind_decl>(s->declaration())) {
-        // bind both the original name
-        // and the aliased name
-        prod.emplace(reb->name(), reb);
-        prod.emplace(reb->original(), reb);
-
-        fld_map.insert(reb->name());
-        fld_map.insert(reb->original());
-      }
-      else if (Extracts_decl const* ext = as<Extracts_decl>(s->declaration())) {
-        prod.emplace(ext->name(), ext);
-        fld_map.insert(ext);
-      }
-    }
-  };
 
   // scan through the decode decl body
   //    extract decls will add fields to the context
@@ -521,6 +553,15 @@ Pipeline_checker::get_productions(Decode_decl const* d)
 // Not sure we can discover if tables produce anything
 Field_env
 Pipeline_checker::get_productions(Table_decl const* d)
+{
+  return Field_env();
+}
+
+
+// Events do not currently produce. They might if we eventually support
+// push/pop of fields.
+Field_env
+Pipeline_checker::get_productions(Event_decl const* d)
 {
   return Field_env();
 }
@@ -565,6 +606,20 @@ Sym_set
 Pipeline_checker::get_requirements(Decode_decl const* d)
 {
   Sym_set requirements;
+
+  return requirements;
+}
+
+
+// Events have similar requirements to tables.
+// They require that certain fields be extracted.
+Sym_set
+Pipeline_checker::get_requirements(Event_decl const* d)
+{
+  Sym_set requirements;
+  for (auto r : d->requirements()) {
+    requirements.insert(r->name());
+  }
 
   return requirements;
 }
@@ -653,6 +708,9 @@ Pipeline_checker::check_pipeline()
     }
     else if (Decode_decl const* decode = as<Decode_decl>(d)) {
       register_stage(decode);
+    }
+    else if (Event_decl const* event = as<Event_decl>(d)) {
+      register_stage(event);
     }
     else
       throw std::runtime_error("Unknown pipeline stage.");
