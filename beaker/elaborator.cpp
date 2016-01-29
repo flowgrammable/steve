@@ -2852,11 +2852,12 @@ Elaborator::elaborate_def(Table_decl* d)
 Decl*
 Elaborator::elaborate_def(Event_decl* d)
 {
+  Scope_sentinel scope(*this, d);
+
   for (Decl*& r : d->requirements_) {
     r = elaborate(r);
+    declare(r);
   }
-
-  Scope_sentinel scope(*this, d);
 
   d->body_ = elaborate(d->body());
 

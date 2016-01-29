@@ -131,6 +131,7 @@ struct Pipeline_checker
   Stage_set find_branches(Decode_decl const*);
   Stage_set find_branches(Table_decl const*);
   Stage_set find_branches(Flow_decl const*);
+  Stage_set find_branches(Event_decl const*);
 
   // Register a decoding stage
   void register_stage(Decode_decl const*);

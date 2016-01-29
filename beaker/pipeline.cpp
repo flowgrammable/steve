@@ -675,6 +675,16 @@ Pipeline_checker::find_branches(Decode_decl const* d)
   return branches;
 }
 
+Stage_set
+Pipeline_checker::find_branches(Event_decl const* d)
+{
+  Stage_set branches;
+
+  apply(d->body(), Find_branches{branches, pipeline});
+
+  return branches;
+}
+
 
 // Go through all stages in the pipeline
 // and discover the branches which it goes to.
@@ -688,6 +698,8 @@ Pipeline_checker::discover_branches()
       stage->branches_ = find_branches(table);
     else if (Flow_decl const* flow = as<Flow_decl>(stage->decl()))
       stage->branches_ = find_branches(flow);
+    else if (Event_decl const* event = as<Event_decl>(stage->decl()))
+      stage->branches_ = find_branches(event);
     else
       throw std::runtime_error("Invalid decl found in pipeline.");
   }
