@@ -894,6 +894,7 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { lingo_unreachable(); }
     void operator()(Drop const* s) { lingo_unreachable(); }
     void operator()(Output const* s) { lingo_unreachable(); }
+    void operator()(Output_inport const* s) { lingo_unreachable(); }
     void operator()(Flood const* s) { lingo_unreachable(); }
     void operator()(Clear const* s) { lingo_unreachable(); }
     void operator()(Set_field const* s) { lingo_unreachable(); }

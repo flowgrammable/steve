@@ -1428,8 +1428,10 @@ Parser::output_stmt()
   match(output_kw);
 
   // If its a special output statement.
-  if (match_if(inport_kw))
+  if (match_if(inport_kw)) {
+    match(semicolon_tok);
     return on_output_inport();
+  }
   // else if (match_if(pktinport_kw))
   //   return on_output_pktinport();
 

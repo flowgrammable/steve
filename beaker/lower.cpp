@@ -236,6 +236,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Output_inport* s) const { return lower.lower(s); }
   Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
@@ -750,7 +751,7 @@ Lowerer::lower_table_flows(Table_decl* d)
     // Flow functions take an implicit 'this' parameter to their flow data.
     // Flow functions take a context to process.
     // Flow functions take a reference to their containing table.
-    Parameter_decl* flw = new Parameter_decl(get_identifier("__this"), flow_ref);
+    Parameter_decl* flw = new Parameter_decl(get_identifier(__flow_self), flow_ref);
     Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
     Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
     Decl_seq parms { flw, tbl, cxt };
@@ -1671,6 +1672,40 @@ Lowerer::lower(Output* s)
 
 
 Stmt_seq
+Lowerer::lower(Output_inport* s)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  // Make a call to the flow to get its inport field and resolve it into
+  // a Port*.
+  ovl = unqualified_lookup(get_identifier(__flow_self));
+  assert(ovl);
+  Decl* self = ovl->back();
+  assert(self);
+
+  Expr* inport = builtin.call_get_flow_inport(decl_id(self));
+
+  // make a call to the output function
+  Expr* output = builtin.call_output(decl_id(cxt), inport);
+  elab.elaborate(output);
+
+  // Outputs should cause an implicit return void for the same reason as drops.
+  // No safety guarantees exist after a packet has been outputted.
+  return
+  {
+    statement(output),
+    return_void()
+  };
+}
+
+
+Stmt_seq
 Lowerer::lower(Flood* s)
 {
   // get the context variable which should Always
@@ -1775,7 +1810,7 @@ Lowerer::construct_added_flow(Table_decl* table, Flow_decl* flow)
   Type const* void_type = get_void_type();
 
   // Create parameters common to all
-  Parameter_decl* flw = new Parameter_decl(get_identifier("__this"), flw_ref);
+  Parameter_decl* flw = new Parameter_decl(get_identifier(__flow_self), flw_ref);
   Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
   Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
   Decl_seq parms { flw, tbl, cxt };

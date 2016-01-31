@@ -377,6 +377,31 @@ Builtin::get_port()
 }
 
 
+// Retrieves the inport value from a Flow structure.
+//
+//    void get_flow_inport(Flow*);
+Function_decl*
+Builtin::get_flow_inport()
+{
+  Symbol const* fn_name = get_identifier(__get_flow_inport);
+
+  Type const* flow_ref = get_opaque_type()->ref();
+  Type const* port_ref = get_port_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__flow_self), flow_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, port_ref);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // This call to the runtime instructs it to immediately drop the packet.
 //
 //    void drop(Context*)
@@ -672,6 +697,7 @@ Builtin::init_builtins()
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
+    {__get_flow_inport, get_flow_inport()},
     {__drop, drop()},
     {__flood, flood()},
     {__output, output()},
@@ -854,6 +880,16 @@ Builtin::call_get_port(Decl* d, Expr_seq const& args)
   e->port_ = d;
 
   return e;
+}
+
+
+Expr*
+Builtin::call_get_flow_inport(Expr* flow)
+{
+  Function_decl* fn = builtin_fn.find(__get_flow_inport)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {flow});
 }
 
 

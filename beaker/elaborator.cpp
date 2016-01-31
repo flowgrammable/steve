@@ -2924,6 +2924,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Output_inport* d) { return elab.elaborate(d); }
     Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
@@ -3312,6 +3313,20 @@ Elaborator::elaborate(Output* s)
   // this is necessary as the id expr will almost
   // certainly get rewritten with a decl expr
   s->port_ = port;
+
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Output_inport* s)
+{
+  // This is special since it can only occur within the context of flows.
+  if (!is<Flow_decl>(stack.context())) {
+    std::stringstream ss;
+    ss << "\'output inport\' occuring outside a flow declaration.";
+    throw Type_error(locate(s), ss.str());
+  }
 
   return s;
 }
