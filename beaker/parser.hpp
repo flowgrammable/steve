@@ -198,6 +198,7 @@ private:
   Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
+  Stmt* on_output_inport();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);

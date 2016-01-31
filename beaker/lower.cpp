@@ -739,15 +739,21 @@ Lowerer::lower_table_flows(Table_decl* d)
 {
   Decl_seq flow_fns;
 
-  Type const* cxt_ref = get_reference_type(get_context_type());
-  Type const* tbl_ref = get_reference_type(opaque_table);
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* tbl_ref = opaque_table->ref();
+  Type const* flow_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
   for (auto f : d->body()) {
     // Create parameters common to all flow functions.
+    //
+    // Flow functions take an implicit 'this' parameter to their flow data.
+    // Flow functions take a context to process.
+    // Flow functions take a reference to their containing table.
+    Parameter_decl* flw = new Parameter_decl(get_identifier("__this"), flow_ref);
     Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
     Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
-    Decl_seq parms { tbl, cxt };
+    Decl_seq parms { flw, tbl, cxt };
 
     // The type of all flows is fn(Table&, Context&) -> void
     Type const* type = get_function_type(parms, void_type);
@@ -758,7 +764,8 @@ Lowerer::lower_table_flows(Table_decl* d)
     // Enter flow function scope.
     Scope_sentinel scope(*this, flow);
 
-    // declare an implicit context and table variable
+    // declare an implicit flow, context and table variable
+    declare(flw);
     declare(cxt);
     declare(tbl);
 
@@ -1762,14 +1769,16 @@ Lowerer::lower(Set_field* s)
 Decl*
 Lowerer::construct_added_flow(Table_decl* table, Flow_decl* flow)
 {
-  Type const* cxt_ref = get_reference_type(get_context_type());
-  Type const* tbl_ref = get_reference_type(opaque_table);
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* tbl_ref = opaque_table->ref();
+  Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
   // Create parameters common to all
+  Parameter_decl* flw = new Parameter_decl(get_identifier("__this"), flw_ref);
   Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
   Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
-  Decl_seq parms { tbl, cxt };
+  Decl_seq parms { flw, tbl, cxt };
 
   // The type of all flows is fn(Table&, Context&) -> void
   Type const* type = get_function_type(parms, void_type);
@@ -1780,6 +1789,7 @@ Lowerer::construct_added_flow(Table_decl* table, Flow_decl* flow)
   Scope_sentinel scope(*this, flow);
 
   // declare an implicit context and table variable
+  declare(flw);
   declare(cxt);
   declare(tbl);
 
@@ -1959,6 +1969,10 @@ Lowerer::lower(Write_output* w)
 // that the implicit context being passed to the event handler is
 // COPIED. This allows us to continue processing the packet, after having
 // asynchronously passed it off to some event handler.
+//
+// FIXME: This isn't quite right yet. We avoid elaborating the call to raise
+// event because we do not currently support passing around function pointer.
+// Therefore the behavior is faked to generate the correct code.
 Stmt_seq
 Lowerer::lower(Raise* s)
 {

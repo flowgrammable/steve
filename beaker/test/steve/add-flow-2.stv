@@ -27,7 +27,6 @@ exact_table learn(eth::src)
     add
     { eth::src } ->
     {
-			puts("Learned eth src.");
       output p1;
     }
     into switch;

@@ -591,10 +591,14 @@ struct Field_access_expr : Expr
 //    output inport;
 // Output inport is a special statement which says to output to the inport of
 // the packet.
+//
+// Inport should always have port type.
 struct Inport_expr : Expr
 {
+  Inport_expr(Type const* t)
+    : Expr(t)
+  { }
 };
-
 
 
 // The expression e1.e2. This is an unresolved

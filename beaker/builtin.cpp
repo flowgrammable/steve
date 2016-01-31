@@ -187,12 +187,13 @@ Builtin::add_flow()
   // as it is a table type.
   Type const* tbl_ref = get_table_type({}, {})->ref();
   Type const* cxt_ref = get_context_type()->ref();
+  Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
   Type const* buffer_type = get_block_type(get_character_type());
 
   // Flows actually become free functions so they have function
   // type when lowered.
-  Type_seq types {tbl_ref, cxt_ref};
+  Type_seq types {flw_ref, tbl_ref, cxt_ref};
   Type const* flow_fn_type = get_function_type(types, void_type);
   Type const* flow_ref = get_reference_type(flow_fn_type);
 

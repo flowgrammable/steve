@@ -109,6 +109,8 @@ enum Token_kind
   from_kw,
   event_kw,
   raise_kw,
+  inport_kw,
+  pktinport_kw,
 
   // Multi-valued tokens
   boolean_tok,      // true | false

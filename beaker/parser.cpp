@@ -1420,10 +1420,20 @@ Parser::flood_stmt()
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
+//                 | 'output' 'inport'
+//                 | 'output' 'pktinport'
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
+
+  // If its a special output statement.
+  if (match_if(inport_kw))
+    return on_output_inport();
+  // else if (match_if(pktinport_kw))
+  //   return on_output_pktinport();
+
+  // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
   match(semicolon_tok);
 
@@ -2408,6 +2418,13 @@ Stmt*
 Parser::on_output(Expr* e)
 {
   return new Output(e);
+}
+
+
+Stmt*
+Parser::on_output_inport()
+{
+  return new Output_inport();
 }
 
 

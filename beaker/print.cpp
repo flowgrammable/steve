@@ -46,6 +46,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Insert_flow const* s) { os << *s; }
     void operator()(Remove_flow const* s) { os << *s; }
     void operator()(Write_drop const* s) { os << *s; }
+    void operator()(Raise const* s) { os << *s; }
   };
 
   apply(&s, Fn{os});
@@ -212,6 +213,12 @@ std::ostream& operator<<(std::ostream& os, Remove_flow const& s)
 std::ostream& operator<<(std::ostream& os, Write_drop const& s)
 {
   return os << "write " << *s.drop();
+}
+
+
+std::ostream& operator<<(std::ostream& os, Raise const& s)
+{
+  return os << "raise " << *s.event_identifier();
 }
 
 

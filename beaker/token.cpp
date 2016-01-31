@@ -93,6 +93,8 @@ spelling(Token_kind k)
     case from_kw: return "from";
     case event_kw: return "event";
     case raise_kw: return "raise";
+    case inport_kw: return "inport";
+    case pktinport_kw: return "pktinport";
 
     default: return "<unspecified>";
   }
@@ -189,6 +191,8 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("from", from_kw);
   syms.put<Symbol>("event", event_kw);
   syms.put<Symbol>("raise", raise_kw);
+  syms.put<Symbol>("inport", inport_kw);
+  syms.put<Symbol>("pktinport", pktinport_kw);
 
   // Reserved names.
   syms.put<Boolean_sym>("true", boolean_tok, true);

@@ -26,9 +26,7 @@ exact_table switch(eth::dst, eth::type)
     add
     { eth::dst, eth::type } ->
     {
-			puts("Hit added flow....Now removing.");
 			remove { eth::dst, eth::type } from switch;
-
       output p1;
     }
     into switch;

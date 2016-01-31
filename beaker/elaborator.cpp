@@ -957,8 +957,9 @@ Elaborator::on_call_error(Expr_seq const& conv,
       String s = format(
         "type mismatch in argument {} (expected {} but got {})\n",
         i + 1,
-        *a->type(),
-        *p);
+        *p,
+        *a->type()
+        );
 
       // FIXME: Don't fail on the first error.
       throw Type_error({}, s);

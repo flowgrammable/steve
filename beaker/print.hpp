@@ -33,6 +33,7 @@ std::ostream& operator<<(std::ostream& os, Flood const&);
 std::ostream& operator<<(std::ostream& os, Insert_flow const&);
 std::ostream& operator<<(std::ostream& os, Remove_flow const&);
 std::ostream& operator<<(std::ostream& os, Write_drop const&);
+std::ostream& operator<<(std::ostream& os, Raise const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);

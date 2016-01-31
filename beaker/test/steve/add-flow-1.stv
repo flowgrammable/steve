@@ -26,7 +26,6 @@ exact_table switch(eth::dst, eth::type)
     add
     { eth::dst, eth::type } ->
     {
-			puts("Added");
       output p1;
     }
     into switch;
