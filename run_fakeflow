@@ -1,1 +1,1 @@
-./build/fakeflow/drivers/wire-driver apps/$1.app $2
+./build/fakeflow/drivers/$1 apps/$2.app $3
