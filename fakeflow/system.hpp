@@ -46,8 +46,8 @@ fp::Port*      fp_get_flow_in_port(fp::Flow*);
 // Header tracking.
 void           fp_advance_header(fp::Context*, std::uint16_t);
 void           fp_bind_header(fp::Context*, int);
-fp::Byte*      fp_bind_field(fp::Context*, int, std::uint16_t, std::uint16_t);
-fp::Byte*      fp_read_field(fp::Context*, int);
+void           fp_bind_field(fp::Context*, int, std::uint16_t, std::uint16_t);
+fp::Byte*      fp_read_field(fp::Context*, int, fp::Byte*);
 
 void           fp_raise_event(fp::Context*, void*);
 

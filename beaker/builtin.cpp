@@ -107,7 +107,8 @@ Builtin::read_field()
   Decl_seq parms =
   {
     new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
-    new Parameter_decl(get_identifier("field"), get_integer_type())
+    new Parameter_decl(get_identifier("field"), get_integer_type()),
+    new Parameter_decl(get_identifier("res"), get_character_type()->ref())
   };
 
   Type const* fn_type = get_function_type(parms, ret_type);
@@ -851,12 +852,12 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 
 
 Expr*
-Builtin::call_read_field(Expr* cxt, Expr* id)
+Builtin::call_read_field(Expr* cxt, Expr* id, Expr* ret)
 {
   Function_decl* fn = builtin_fn.find(__read_field)->second;
   assert(fn);
 
-  return new Read_field(decl_id(fn), {cxt, id});
+  return new Read_field(decl_id(fn), {cxt, id, ret});
 }
 
 

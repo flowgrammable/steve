@@ -338,7 +338,7 @@ struct Builtin
   Expr* call_bind_field(Expr_seq const& args);
   Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
-  Expr* call_read_field(Expr*, Expr*);
+  Expr* call_read_field(Expr*, Expr*, Expr*);
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_init_flow(Expr*, Expr*, Expr*);

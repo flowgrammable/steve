@@ -49,7 +49,7 @@ struct App2
     fp_bind_field(cxt, 12, 0, 6);
     fp_bind_field(cxt, 13, 6, 6);
     fp_bind_field(cxt, 14, 12, 2);
-    fp::Byte* b = fp_read_field(cxt, 14);
+    fp::Byte* b = fp_read_field(cxt, 14, (fp::Byte*)&type);
     type = *reinterpret_cast<uint16_t*>(b);
     switch (type) {
       case 800: ipv4_d(cxt, p); break;
@@ -71,7 +71,7 @@ struct App2
     fp_bind_field(cxt, 10, 8, 4);
     fp_bind_field(cxt, 11, 12, 4);
 
-    fp::Byte* b = fp_read_field(cxt, 8);
+    fp::Byte* b = fp_read_field(cxt, 8, (fp::Byte*)&protocol);
     protocol = *reinterpret_cast<uint8_t*>(b);
     switch (protocol) {
       case 0: udp_d(cxt, p); break;

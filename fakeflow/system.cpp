@@ -398,7 +398,7 @@ fp_bind_header(fp::Context* cxt, int id)
 // length we can grab exactly what we need.
 //
 // Returns the pointer to the byte at that specific location
-fp::Byte*
+void
 fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 {
   // std::cout << "BINDING FIELD\n";
@@ -411,19 +411,11 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
   // FIXME: There needs to be a way to store the relative offset instead of the
   // absolute offset.
   cxt->bind_field(id, abs_off, len);
-  fp::Byte* p = cxt->get_field(abs_off);
-
-  // Copy the value to a temporary.
-  fp::Byte* temp = new fp::Byte[len];
-  std::copy(p, p + len, temp);
-  fp::network_to_native_order(temp, len);
-
-  return temp;
 }
 
 
 fp::Byte*
-fp_read_field(fp::Context* cxt, int fld)
+fp_read_field(fp::Context* cxt, int fld, fp::Byte* ret)
 {
   // std::cout << "READING FIELD";
   // Lookup the field in the context.
@@ -431,11 +423,10 @@ fp_read_field(fp::Context* cxt, int fld)
   fp::Byte* p = cxt->get_field(b.offset);
   // Convert to native byte ordering.
   // Copy the value to a temporary.
-  fp::Byte* temp = new fp::Byte[b.length];
-  std::copy(p, p + b.length, temp);
-  fp::network_to_native_order(temp, b.length);
+  std::copy(p, p + b.length, ret);
+  fp::network_to_native_order(ret, b.length);
 
-  return temp;
+  return ret;
 }
 
 

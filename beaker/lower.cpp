@@ -413,6 +413,7 @@ Lowerer::lower(Field_access_expr* e)
   // well, so any changes to that field in the context cause updates to the local
   // variable instead of creating a new call to read_field() from the runtime.
   // This should reduce the number of crosses between the runtime barrier.
+
   if (is<Default_init>(var->init())) {
     // This should always be valid since flows and decoders have an implicit
     // context parameter.
@@ -424,11 +425,14 @@ Lowerer::lower(Field_access_expr* e)
     // get the integer mapping for the field
     int mapping = checker.get_field_mapping(e->name());
 
-    // produce the call
-    Expr* read_field = builtin.call_read_field(decl_id(cxt), make_int(mapping));
+    // cast the variable which will hold the result into a i8*
+    Expr* cast = new Void_cast(decl_id(var));
 
-    // cast the return type into the correct type
-    Expr* cast = new Reinterpret_cast(read_field, e->type()->nonref());
+    // produce the call
+    Expr* read_field = builtin.call_read_field(decl_id(cxt), make_int(mapping), cast);
+
+    // Reinterpret the bits of the return back into the appropriate type.
+    cast = new Reinterpret_cast(read_field, e->type()->nonref());
 
     var->init_ = cast;
   }
