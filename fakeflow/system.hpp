@@ -30,15 +30,18 @@ void           fp_write(fp::Context*, fp::Action);
 
 // System queries.
 fp::Dataplane* fp_get_dataplane(std::string const&);
-fp::Port*      fp_get_port(char const*);
+fp::Port*      fp_get_port_by_name(char const*);
+fp::Port*      fp_get_port_by_id(unsigned int);
 fp::Key        fp_gather(fp::Context*, int, int, va_list);
 
 // Flow tables.
 fp::Table*     fp_create_table(fp::Dataplane*, int, int, int, fp::Table::Type);
 void           fp_delete_table(fp::Dataplane*, fp::Table*);
-void           fp_add_flow(fp::Table*, void*, void*);
+void           fp_add_init_flow(fp::Table*, void*, void*);
+void           fp_add_new_flow(fp::Table*, void*, void*, fp::Context*);
 void           fp_add_miss(fp::Table*, void*);
 void           fp_remove_flow(fp::Table*, void*);
+fp::Port*      fp_get_flow_in_port(fp::Flow*);
 
 // Header tracking.
 void           fp_advance_header(fp::Context*, std::uint16_t);
@@ -46,6 +49,7 @@ void           fp_bind_header(fp::Context*, int);
 fp::Byte*      fp_bind_field(fp::Context*, int, std::uint16_t, std::uint16_t);
 fp::Byte*      fp_read_field(fp::Context*, int);
 
+void           fp_raise_event(fp::Context*, void*);
 
 } // extern "C"
 

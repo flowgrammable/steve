@@ -167,9 +167,9 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
   va_start(args, n);
   fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
   va_end(args);
-  fp::Flow const& flow = tbl->search(key);
+  fp::Flow flow = tbl->search(key);
   // execute the flow function
-  flow.instr_(tbl, cxt);
+  flow.instr_(&flow, tbl, cxt);
 
   // testing find times
   // static fp::Byte b[fp::key_size];
@@ -188,11 +188,19 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 
 // Returns the port matching the given name.
 fp::Port*
-fp_get_port(char const* name)
+fp_get_port_by_name(char const* name)
 {
   // std::cout << "GETTING PORT\n";
   fp::Port* p = fp::port_table.find(name);
   // std::cout << "FOUND PORT\n";
+  assert(p);
+  return p;
+}
+
+fp::Port*
+fp_get_port_by_id(unsigned int id)
+{
+  fp::Port* p = fp::port_table.find(id);
   assert(p);
   return p;
 }
@@ -267,7 +275,7 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 // Creates a new flow rule from the given key and function pointer
 // and adds it to the given table.
 void
-fp_add_flow(fp::Table* tbl, void* fn, void* key)
+fp_add_init_flow(fp::Table* tbl, void* fn, void* key)
 {
   // std::cout << "Adding flow to " << tbl->id() << '\n';
   //
@@ -283,6 +291,34 @@ fp_add_flow(fp::Table* tbl, void* fn, void* key)
   fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
 
   tbl->add(k, flow);
+}
+
+
+void
+fp_add_new_flow(fp::Table* tbl, void* fn, void* key, fp::Context* c)
+{
+  int key_size = tbl->key_size();
+  // cast the key to Byte*
+  fp::Byte* buf = reinterpret_cast<fp::Byte*>(key);
+  // construct a key object
+  fp::Key k(buf, key_size);
+  // cast the flow into a flow instruction
+  fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, c->in_port);
+
+  tbl->add(k, flow);
+}
+
+
+fp::Port*
+fp_get_flow_in_port(fp::Flow* f)
+{
+  assert(f);
+  assert(f->in_port_ > 0);
+  if (f->in_port_ > 0)
+    return fp_get_port_by_id(f->in_port_);
+  // Otherwise you're trying to get a non-existent port.
+  return nullptr;
 }
 
 
@@ -309,6 +345,21 @@ fp_del_flow(fp::Table* tbl, void* key)
   fp::Key k(buf, key_size);
   // delete the key
   tbl->rmv(k);
+}
+
+
+// Raise an event.
+// TODO: Make this asynchronous on another thread.
+void
+fp_raise_event(fp::Context* cxt, void* handler)
+{
+  // Cast the handler back to its appropriate function type
+  // of void (*)(Context*)
+  void (*event)(fp::Context*);
+  event = (void (*)(fp::Context*)) (handler);
+  // Invoke the event.
+  // FIXME: Pass it to a thread instead.
+  event(cxt);
 }
 
 

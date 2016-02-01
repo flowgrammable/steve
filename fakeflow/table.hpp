@@ -122,7 +122,7 @@ struct Hash_table : Table, std::tr1::unordered_map<Key, Flow, Key_hash>
     : Table(Table::EXACT, id, k), Map(size)
   { }
 
-  Flow       search(Key const&);
+  Flow      search(Key const&);
   // Flow const search(Key const&) const;
 
   void add(Key const&, Flow const&);

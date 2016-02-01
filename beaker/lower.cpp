@@ -795,14 +795,16 @@ Lowerer::lower_miss_case(Table_decl* d)
 {
   // Lower the miss case if there is one
   if (d->miss_case()) {
-    Type const* cxt_ref = get_reference_type(get_context_type());
-    Type const* tbl_ref = get_reference_type(opaque_table);
+    Type const* cxt_ref = get_context_type()->ref();
+    Type const* tbl_ref = opaque_table->ref();
+    Type const* flow_ref = get_opaque_type()->ref();
     Type const* void_type = get_void_type();
 
     // declare an implicit context variable
+    Parameter_decl* flw = new Parameter_decl(get_identifier(__flow_self), flow_ref);
     Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
     Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
-    Decl_seq parms { tbl, cxt };
+    Decl_seq parms { flw, tbl, cxt };
 
     // The type of all flows is fn(Context&) -> void
     Type const* type = get_function_type(parms, void_type);
@@ -811,7 +813,7 @@ Lowerer::lower_miss_case(Table_decl* d)
     Symbol const* flow_name = flow->name();
 
     Scope_sentinel scope(*this, flow);
-
+    declare(flw);
     declare(cxt);
     declare(tbl);
 
@@ -834,7 +836,7 @@ Lowerer::lower_miss_case(Table_decl* d)
 // table received via the runtime.
 //
 // 'flow_fns' are a sequence of lowered flows (aka regular functions of
-// type: (Table*, Context*)->void ).
+// type: (Flow*, Table*, Context*)->void ).
 //
 // 'miss' is a pointer to the lowered miss function.
 //
@@ -855,7 +857,7 @@ Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq c
     // However, it should be guaranteed to work.
     Type const* buffer_t = get_block_type(get_character_type());
     Expr* add_flow =
-      builtin.call_add_flow(decl_id(table), decl_id(flow), new Block_conv(buffer_t, *key_it));
+      builtin.call_add_init_flow(decl_id(table), decl_id(flow), new Block_conv(buffer_t, *key_it));
     // elab.elaborate(add_flow);
     load_body.push_back(statement(add_flow));
 
@@ -1867,6 +1869,11 @@ Lowerer::lower(Insert_flow* s)
   Decl* tblptr = ovl->back();
   assert(tblptr);
 
+  ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
   // Get the key values needed for the flow.
   Flow_decl* flow = as<Flow_decl>(s->flow());
   assert(flow);
@@ -1889,7 +1896,7 @@ Lowerer::lower(Insert_flow* s)
 
   // Make a call to fp_add_flow
   Expr* add_flow =
-    builtin.call_add_flow(decl_id(tblptr), decl_id(flow_fn), vcast);
+    builtin.call_add_new_flow(decl_id(tblptr), decl_id(flow_fn), vcast, decl_id(cxt));
 
   return {
     statement(temp),

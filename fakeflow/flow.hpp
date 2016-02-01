@@ -10,13 +10,15 @@ namespace fp
 struct Dataplane;
 struct Context;
 struct Table;
+struct Port;
+struct Flow;
 
 // Flow instructions are a pointer to a function to
 // be executed on match.
-using Flow_instructions = void (*)(Table*, Context*);
+using Flow_instructions = void (*)(Flow*, Table*, Context*);
 
 // Default miss case.
-void Drop_miss(Table*, Context*);
+void Drop_miss(Flow*, Table*, Context*);
 
 
 // The flow counters mantain counts on matches.
@@ -37,13 +39,20 @@ struct Flow_timeouts
 struct Flow
 {
   Flow()
-    : pri_(0), count_(), instr_(Drop_miss), time_(), cookie_(0), flags_(0)
+    : pri_(0), count_(), instr_(Drop_miss), time_(), cookie_(0), flags_(0),
+      in_port_(0)
   { }
 
   Flow(std::size_t pri, Flow_counters count, Flow_instructions instr,
        Flow_timeouts time, std::size_t cookie, std::size_t flags)
     : pri_(pri), count_(count), instr_(instr), time_(time), cookie_(cookie),
-      flags_(flags)
+      flags_(flags), in_port_(0)
+  { }
+
+  Flow(std::size_t pri, Flow_counters count, Flow_instructions instr,
+       Flow_timeouts time, std::size_t cookie, std::size_t flags, unsigned int inport)
+    : pri_(pri), count_(count), instr_(instr), time_(time), cookie_(cookie),
+      flags_(flags), in_port_(inport)
   { }
 
   std::size_t       pri_;
@@ -52,6 +61,9 @@ struct Flow
   Flow_timeouts     time_;
   std::size_t       cookie_;
   std::size_t       flags_;
+  // Maintain the port of the packet which caused this flow to be installed.
+  // 0 if this was a default initialized flow.
+  unsigned int      in_port_;
 };
 
 

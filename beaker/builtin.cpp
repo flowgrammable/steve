@@ -176,11 +176,11 @@ Builtin::get_table()
 }
 
 
-// Add a flow entry to the table.
+// Add an initial flow entry to the table.
 //
-//    void add_flow(Table*, Flow*, i8* buf)
+//    void add_init_flow(Table*, Flow*, i8* key)
 Function_decl*
-Builtin::add_flow()
+Builtin::add_init_flow()
 {
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
@@ -197,13 +197,54 @@ Builtin::add_flow()
   Type const* flow_fn_type = get_function_type(types, void_type);
   Type const* flow_ref = get_reference_type(flow_fn_type);
 
-  Symbol const* fn_name = get_identifier(__add_flow);
+  Symbol const* fn_name = get_identifier(__add_init_flow);
 
   Decl_seq parms =
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_ref),
     new Parameter_decl(get_identifier("key_buf"), buffer_type)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Add a new flow entry to the table.
+//
+//    void add_new_flow(Table*, Flow*, i8* key, Context*)
+Function_decl*
+Builtin::add_new_flow()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* cxt_ref = get_context_type()->ref();
+  Type const* flw_ref = get_opaque_type()->ref();
+  Type const* void_type = get_void_type();
+  Type const* buffer_type = get_block_type(get_character_type());
+
+  // Flows actually become free functions so they have function
+  // type when lowered.
+  Type_seq types {flw_ref, tbl_ref, cxt_ref};
+  Type const* flow_fn_type = get_function_type(types, void_type);
+  Type const* flow_ref = get_reference_type(flow_fn_type);
+
+  Symbol const* fn_name = get_identifier(__add_new_flow);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref),
+    new Parameter_decl(get_identifier("flow"), flow_ref),
+    new Parameter_decl(get_identifier("key_buf"), buffer_type),
+    new Parameter_decl(get_identifier("cxt"), cxt_ref)
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -256,21 +297,22 @@ Builtin::add_miss()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
+  Type const* flow_ref = get_opaque_type()->ref();
   Type const* tbl_ref = get_table_type({}, {})->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   // Flows actually become free functions so they have function
   // type when lowered.
-  Type_seq types {tbl_ref, cxt_ref};
+  Type_seq types {flow_ref, tbl_ref, cxt_ref};
   Type const* flow_fn_type = get_function_type(types, void_type);
-  Type const* flow_ref = get_reference_type(flow_fn_type);
+  Type const* flow_fn_ref = get_reference_type(flow_fn_type);
 
   Symbol const* fn_name = get_identifier(__add_miss);
 
   Decl_seq parms =
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
-    new Parameter_decl(get_identifier("flow"), flow_ref),
+    new Parameter_decl(get_identifier("flow"), flow_fn_ref),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -691,7 +733,8 @@ Builtin::init_builtins()
     {__read_field, read_field()},
     {__advance, advance()},
     {__get_table, get_table()},
-    {__add_flow, add_flow()},
+    {__add_init_flow, add_init_flow()},
+    {__add_new_flow, add_new_flow()},
     {__rmv_flow, remove_flow()},
     {__add_miss, add_miss()},
     {__match, match()},
@@ -841,12 +884,22 @@ Builtin::call_advance(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_add_flow(Expr* table, Expr* flow, Expr* key)
+Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key)
 {
-  Function_decl* fn = builtin_fn.find(__add_flow)->second;
+  Function_decl* fn = builtin_fn.find(__add_init_flow)->second;
   assert(fn);
 
   return new Add_flow(decl_id(fn), {table, flow, key});
+}
+
+
+Expr*
+Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__add_new_flow)->second;
+  assert(fn);
+
+  return new Add_flow(decl_id(fn), {table, flow, key, cxt});
 }
 
 

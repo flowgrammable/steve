@@ -2850,6 +2850,10 @@ Elaborator::elaborate_def(Table_decl* d)
 // Elaborate the fields in the requirements.
 //
 // Elaborate the body.
+//
+// NOTE: Do event's need guaranteed terminators? I don't believe they do.
+// Events use copies of contexts and they should be responsible for deleting
+// them as well.
 Decl*
 Elaborator::elaborate_def(Event_decl* d)
 {
@@ -2862,18 +2866,7 @@ Elaborator::elaborate_def(Event_decl* d)
 
   d->body_ = elaborate(d->body());
 
-  if (Block_stmt* block = as<Block_stmt>(d->body_)) {
-    // Confirmt that the body has a terminating action to ensure
-    // progress is made through the pipeline.
-    if (!has_terminator_action(block->statements())) {
-      std::stringstream ss;
-      ss << "Event declaration missing guaranteed terminator.\n";
-      ss << *d;
-
-      throw Type_error(locate(d), ss.str());
-    }
-  }
-  else
+  if (!is<Block_stmt>(d->body_))
     throw Type_error(locate(d), "Ill-formed body of event.");
 
   return d;
