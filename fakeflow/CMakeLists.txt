@@ -34,6 +34,7 @@ add_library(flowpath-rt SHARED
     system.cpp
     table.cpp
     types.cpp
+    endian.cpp
     # thread.cpp
     # queue.cpp
     )

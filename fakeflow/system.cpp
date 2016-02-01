@@ -5,6 +5,7 @@
 #include "system.hpp"
 #include "port_table.hpp"
 #include "application.hpp"
+#include "endian.hpp"
 
 
 namespace fp
@@ -231,10 +232,18 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
     // Lookup the field in the context.
     fp::Binding b = cxt->get_field_binding(f);
     fp::Byte* p = cxt->get_field(b.offset);
+
+    // Convert a temporary to native order.
+    fp::Byte* temp = new fp::Byte[b.length];
+    std::copy(p, p + b.length, temp);
+    fp::network_to_native_order(temp, b.length);
+
     // Copy the field into the buffer.
-    std::copy(p, p + b.length, &buf[j]);
+    std::copy(temp, temp + b.length, &buf[j]);
     j += b.length;
     ++i;
+    // Clean up the copy.
+    delete [] temp;
   }
 
   return fp::Key(buf, key_width);
@@ -402,7 +411,14 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
   // FIXME: There needs to be a way to store the relative offset instead of the
   // absolute offset.
   cxt->bind_field(id, abs_off, len);
-  return cxt->get_field(abs_off);
+  fp::Byte* p = cxt->get_field(abs_off);
+
+  // Copy the value to a temporary.
+  fp::Byte* temp = new fp::Byte[len];
+  std::copy(p, p + len, temp);
+  fp::network_to_native_order(temp, len);
+
+  return temp;
 }
 
 
@@ -413,7 +429,13 @@ fp_read_field(fp::Context* cxt, int fld)
   // Lookup the field in the context.
   fp::Binding b = cxt->get_field_binding(fld);
   fp::Byte* p = cxt->get_field(b.offset);
-  return p;
+  // Convert to native byte ordering.
+  // Copy the value to a temporary.
+  fp::Byte* temp = new fp::Byte[b.length];
+  std::copy(p, p + b.length, temp);
+  fp::network_to_native_order(temp, b.length);
+
+  return temp;
 }
 
 
@@ -424,8 +446,8 @@ fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
 
   // Copy the new data into the packet at the appropriate location.
   fp::Byte* p = cxt->get_field(b.offset);
+  // Convert native to network order
   std::copy(val, val + len, p);
-
   // Update the length if it changed (which it shouldn't).
   b.length = len;
 }
