@@ -15,8 +15,12 @@ layout nested
   nest : uint;
 }
 
+
 decoder start eth_d(eth)
 {
   extract eth::n::nest;
   extract eth::m;
+
+  var x : uint = eth::n::nest - 1;
+  drop;
 }
