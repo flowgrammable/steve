@@ -967,16 +967,44 @@ Parser::exact_table_decl()
 }
 
 
+// Parse flow properties.
+//
+//    'properties' { [assign-stmt]+ }
+Stmt_seq
+Parser::flow_properties()
+{
+  // Optional properties block following the body.
+  Stmt_seq properties;
+  if (match_if(properties_kw)) {
+    match(lbrace_tok);
+    while (lookahead() != rbrace_tok) {
+      // Match a series of assignments to properties.
+      // prop '=' val ';'
+      Token tok = match(identifier_tok);
+      Expr* prop = on_id(tok);
+      match(equal_tok);
+      Expr* val = expr();
+      Stmt* a = on_assign(prop, val);
+      match(semicolon_tok);
+      properties.push_back(a);
+    }
+    match(rbrace_tok);
+  }
+
+  return properties;
+}
+
 // Parse a flow decl
 //
-// Parsing function takes the name of the table it belongs to.
+//    flow-decl -> { expr-seq } -> { action-seq } (optional) properties
 Decl*
 Parser::flow_decl()
 {
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    return on_flow_miss(body);
+    Stmt_seq properties = flow_properties();
+    return on_flow_miss(body, properties);
   }
 
   match(lbrace_tok);
@@ -994,8 +1022,9 @@ Parser::flow_decl()
   match(rbrace_tok);
   match(arrow_tok);
   Stmt* body = block_stmt();
+  Stmt_seq properties = flow_properties();
 
-  return on_flow(keys, body);
+  return on_flow(keys, body, properties);
 }
 
 
@@ -2240,17 +2269,17 @@ Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
 
 // TODO: handle priorities
 Decl*
-Parser::on_flow(Expr_seq& keys, Stmt* body)
+Parser::on_flow(Expr_seq const& keys, Stmt* body, Stmt_seq const& prop)
 {
-  return new Flow_decl(nullptr, keys, 0, body);
+  return new Flow_decl(nullptr, keys, 0, body, prop);
 }
 
 
 Decl*
-Parser::on_flow_miss(Stmt* body)
+Parser::on_flow_miss(Stmt* body, Stmt_seq const& prop)
 {
   // No key given
-  return new Flow_decl(nullptr, 0, body, true);
+  return new Flow_decl(nullptr, 0, body, prop, true);
 }
 
 

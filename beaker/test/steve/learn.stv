@@ -23,6 +23,8 @@ event learn_mac(eth.src)
 	{
 		// puts("Using learned in learn.");
 		goto switch;
+	} properties {
+		timeout = 1000;
 	}
 	into learn;
 
@@ -44,7 +46,9 @@ exact_table learn(eth.src)
 		// puts("LEARN MISS");
 		raise learn_mac;
     goto switch;
-  }
+  } properties {
+		timeout = 0;
+	}
 }
 
 

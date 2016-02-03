@@ -1935,6 +1935,56 @@ Elaborator::elaborate(Key_decl* d)
 }
 
 
+// Current valid properties:
+//      timeout
+bool
+Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
+{
+  // NOTE: Always check that the property doesn't exist.
+  if (pname == "timeout") {
+    if (p.timeout) {
+      throw Type_error(locate(val), "Duplicate property 'timeout'.");
+      return false;
+    }
+
+    Expr* e = elaborate(val);
+    if (!is<Integer_type>(e->type())) {
+      throw Type_error(locate(val), "Property 'timeout' must be an integer.");
+      return false;
+    }
+
+    p.timeout = e;
+    return true;
+  }
+
+  // Otherwise its not a valid property.
+  return false;
+}
+
+
+Flow_properties
+Elaborator::elaborate_flow_properties(Flow_decl* d)
+{
+  Flow_properties p;
+
+  for (auto s : d->prop_block_) {
+    // Start checking for valid properties.
+    Assign_stmt* a = as<Assign_stmt>(s);
+    assert(a);
+
+    Id_expr* prop = as<Id_expr>(a->object());
+    Symbol const* pname = prop->symbol();
+    if (!is_valid_property(pname->spelling(), a->value(), p)) {
+      std::stringstream ss;
+      ss << *a << " is not a valid property.";
+      throw Type_error(locate(prop), ss.str());
+    }
+  }
+
+  return p;
+}
+
+
 Decl*
 Elaborator::elaborate(Flow_decl* d)
 {
@@ -1959,6 +2009,11 @@ Elaborator::elaborate(Flow_decl* d)
   d->name_ = name;
 
   Scope_sentinel scope(*this, d);
+
+  // Elaborate the properties block to and build a properties object instide
+  // the flow declaration.
+  Flow_properties p = elaborate_flow_properties(d);
+  d->prop_ = p;
 
   Type_seq types;
   for (auto expr : d->keys()) {
@@ -3272,6 +3327,11 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
     ss << "_ADDED_FLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
   Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
   f->name_ = name;
+
+  // Elaborate the properties block to and build a properties object instide
+  // the flow declaration.
+  Flow_properties p = elaborate_flow_properties(f);
+  f->prop_ = p;
 
   // Elaborate the type of the flow.
   Type_seq types;

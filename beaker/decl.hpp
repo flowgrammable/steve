@@ -395,6 +395,17 @@ struct Key_decl : Decl
 };
 
 
+// Flows also maintain a set of configurable properties.
+struct Flow_properties
+{
+  Flow_properties()
+    : timeout(nullptr)
+  { }
+
+  Expr* timeout;
+};
+
+
 // An entry within a flow table.
 //
 // FIXME: We should check during compile time that the
@@ -402,14 +413,16 @@ struct Key_decl : Decl
 // size of the table.
 struct Flow_decl : Decl
 {
-  Flow_decl(Symbol const* n, Expr_seq& conds, int prio, Stmt* i)
+  using Properties = Flow_properties;
+
+  Flow_decl(Symbol const* n, Expr_seq const& conds, int prio, Stmt* i, Stmt_seq const& p)
     : Decl(n, nullptr), prio_(prio), keys_(conds), instructions_(i),
-      miss_(false)
+      miss_(false), prop_block_(p)
   { }
 
-  Flow_decl(Symbol const* n, int prio, Stmt* i, bool miss = true)
+  Flow_decl(Symbol const* n, int prio, Stmt* i, Stmt_seq const& p, bool miss = true)
     : Decl(n, nullptr), prio_(prio), keys_{}, instructions_(i),
-      miss_(miss)
+      miss_(miss), prop_block_(p)
   { }
 
   int             priority() const { return prio_; }
@@ -426,6 +439,8 @@ struct Flow_decl : Decl
   Expr_seq keys_;
   Stmt* instructions_;
   bool miss_;
+  Properties prop_;
+  Stmt_seq prop_block_;
 };
 
 

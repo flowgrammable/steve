@@ -15,6 +15,7 @@
 
 struct Pipeline;
 struct Lowerer;
+struct Flow_properties;
 
 // Maintains a sequence of declarations
 // which comprise a pipeline and retain
@@ -125,13 +126,6 @@ public:
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
 
-  std::string        build_field_name(Dot_expr*);
-  Symbol const*      get_field_name(Dot_expr*);
-  bool               is_field_access(Dot_expr*);
-  Decl*              check_field_path(Dot_expr*, Decl_seq&, Expr_seq&);
-  Field_name_expr*   elaborate_field_name(Dot_expr*);
-  Field_access_expr* elaborate_field_access(Dot_expr*);
-
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
   Expr* elaborate(Get_dataplane* e);
@@ -220,7 +214,16 @@ public:
   Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
-  Decl* elaborate_added_flow(Flow_decl*, Table_decl*);
+  // Helper functions.
+  Decl*                 elaborate_added_flow(Flow_decl*, Table_decl*);
+  std::string           build_field_name(Dot_expr*);
+  Symbol const*         get_field_name(Dot_expr*);
+  bool                  is_field_access(Dot_expr*);
+  Decl*                 check_field_path(Dot_expr*, Decl_seq&, Expr_seq&);
+  Field_name_expr*      elaborate_field_name(Dot_expr*);
+  Field_access_expr*    elaborate_field_access(Dot_expr*);
+  Flow_properties       elaborate_flow_properties(Flow_decl*);
+  bool                  is_valid_property(String, Expr*, Flow_properties&);
 
   void declare(Decl*);
   void redeclare(Decl*);

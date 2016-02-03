@@ -41,6 +41,8 @@ constexpr char const* __key             = "_key_";
 constexpr char const* __drop_port       = "_drop_";
 constexpr char const* __flood_port      = "_flood_";
 constexpr char const* __flow_self       = "__flow_self";
+constexpr char const* __inport          = "__inport";
+constexpr char const* __pktinport       = "__pktinport";
 constexpr char const* __keyform         = "_KEYFORM_";
 
 // runtime interface functions

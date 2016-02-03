@@ -109,6 +109,7 @@ enum Token_kind
   from_kw,
   event_kw,
   raise_kw,
+  properties_kw,
   inport_kw,
   pktinport_kw,
 

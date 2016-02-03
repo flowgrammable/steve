@@ -105,6 +105,7 @@ public:
   // Helpers
   Expr_seq parse_colon_seperated(Token tok);
   Symbol const* get_qualified_name(Expr_seq const&);
+  Stmt_seq flow_properties();
 
   // Parse state
   bool ok() const { return errs_ == 0; }
@@ -171,8 +172,8 @@ private:
   Decl* on_rebind(Expr*, Expr*);
   Decl* on_exact_table(Token, Decl_seq&, Decl_seq&, Decl*);
   Decl* on_key(Expr*);
-  Decl* on_flow(Expr_seq&, Stmt*);
-  Decl* on_flow_miss(Stmt*);
+  Decl* on_flow(Expr_seq const&, Stmt*, Stmt_seq const&);
+  Decl* on_flow_miss(Stmt*, Stmt_seq const&);
   Decl* on_port(Token, Expr*);
   Decl* on_event(Token, Decl_seq const&, Stmt*);
 
