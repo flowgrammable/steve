@@ -1218,35 +1218,45 @@ get_path(Record_decl* r, Field_decl* f)
 } // namespace
 
 
+bool
+Elaborator::is_field_access(Dot_expr* e)
+{
+  // Tentative elaborate the container.
+  Expr* e1 = e->container();
+  // Base case: the dot expr has one layout identifier and one field identifier.
+  if (Id_expr* id = as<Id_expr>(e1)) {
+    // Do a lookup.
+    Overload* ovl = unqualified_lookup(id->symbol());
+    if (!ovl)
+      return false;
+    if (is<Layout_decl>(ovl->back()))
+      return true;
+
+    return false;
+  }
+  // Recursive case: The container is still a dot-expr.
+  if (Dot_expr* dot = as<Dot_expr>(e1)) {
+    return is_field_access(dot);
+  }
+  // Otherwise its probably something else (eg a field/method expr).
+  return false;
+}
+
+
 // TODO: Document the semantics of member access.
 Expr*
 Elaborator::elaborate(Dot_expr* e)
 {
-  Expr* e1 = elaborate(e->container());
-  // If it is a layout declaration transfer control to
-  // elaboration of a field access expression.
-  //
-  // The default assumption is always field access expression when the
-  // dot expr starts with a layout.
-  if (Decl_expr* de = as<Decl_expr>(e1)) {
-    if (is<Layout_decl>(de->declaration())) {
-      // Update the container.
-      e->first = e1;
-      // Continue elaboration as a field access expr.
-      return elaborate_field_access(e);
-    }
-  }
+  // Check if its a field access expr first. The assumption is that all
+  // field * expr appearing in non-specific locations are field access expr.
+  if (is_field_access(e))
+    return elaborate_field_access(e);
 
+  Expr* e1 = elaborate(e->container());
   if (!is<Reference_type>(e1->type())) {
     std::stringstream ss;
     ss << "cannot access a member of a non-object";
     throw Type_error({}, ss.str());
-  }
-
-  // The default assumption is always field access expression when the
-  // dot expr starts with a layout.
-  if (is<Layout_type>(e1->type()->nonref())) {
-    return elaborate_field_access(e);
   }
 
   // Get the non-reference type of the outer object
@@ -1587,6 +1597,7 @@ Elaborator::check_field_path(Dot_expr* e, Decl_seq& p, Expr_seq& ids)
     // The container has to be a field decl of layout type.
     // It can't be a layout decl because that can only happen at the base case.
     Field_decl* container = as<Field_decl>(d);
+    container->type_ = elaborate(container->type());
     assert(container);
     Layout_type const* t = as<Layout_type>(container->type());
     if (!t) {
@@ -1665,8 +1676,8 @@ Elaborator::elaborate_field_name(Dot_expr* e)
 
   // Compose an internal name for the field name expr.
   Symbol const* name = get_qualified_name(ids);
-
-  return new Field_name_expr(last->type(), path, ids, name);
+  Field_name_expr* f = new Field_name_expr(last->type(), path, ids, name);
+  return f;
 }
 
 

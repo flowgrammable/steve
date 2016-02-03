@@ -27,13 +27,13 @@ layout ipv4
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
   goto s1;
 }
 
 
-exact_table s1(eth::dst, eth::type)
+exact_table s1(eth.dst, eth.type)
 {
   { 0x00_00_00_00_00_00, 800 } ->
   {
@@ -49,16 +49,16 @@ exact_table s1(eth::dst, eth::type)
 
 decoder ipv4_d(ipv4)
 {
-	extract ipv4::ttl;
-	extract ipv4::version_ihl;
-	extract ipv4::dscp_ecn;
-	extract ipv4::checksum;
-	extract ipv4::protocol;
-	extract ipv4::len;
-  extract ipv4::src;
-  extract ipv4::dst;
+	extract ipv4.ttl;
+	extract ipv4.version_ihl;
+	extract ipv4.dscp_ecn;
+	extract ipv4.checksum;
+	extract ipv4.protocol;
+	extract ipv4.len;
+  extract ipv4.src;
+  extract ipv4.dst;
 
-  match(ipv4::protocol) {
+  match(ipv4.protocol) {
     case 0: goto s2;
   }
 
@@ -66,7 +66,7 @@ decoder ipv4_d(ipv4)
 }
 
 
-exact_table s2(eth::dst, eth::type)
+exact_table s2(eth.dst, eth.type)
 {
   { 0x00_00_00_00_00_00, 800 } ->
   {

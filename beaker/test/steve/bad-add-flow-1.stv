@@ -12,18 +12,18 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
   goto t1;
 }
 
 
-exact_table t1(eth::dst, eth::type)
+exact_table t1(eth.dst, eth.type)
 {
   miss ->
   {
     add
-    { eth::dst, eth::type } ->
+    { eth.dst, eth.type } ->
     {
       decode eth_d;
     }

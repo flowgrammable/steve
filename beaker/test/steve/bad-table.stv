@@ -12,14 +12,14 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
   goto switch;
 }
 
 var bad_var : uint(48) = 0;
 
-exact_table switch(eth::dst, eth::type)
+exact_table switch(eth.dst, eth.type)
 {
   { bad_var, 800 } ->
   {

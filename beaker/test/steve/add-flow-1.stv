@@ -12,19 +12,19 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
   goto switch;
 }
 
-exact_table switch(eth::dst, eth::type)
+exact_table switch(eth.dst, eth.type)
 {
   miss ->
   {
 		puts("Miss");
 
     add
-    { eth::dst, eth::type } ->
+    { eth.dst, eth.type } ->
     {
       output p1;
     }

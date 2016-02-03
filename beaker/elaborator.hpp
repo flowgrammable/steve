@@ -125,9 +125,9 @@ public:
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
 
-  std::string   build_field_name(Dot_expr*);
-  Symbol const* get_field_name(Dot_expr*);
-
+  std::string        build_field_name(Dot_expr*);
+  Symbol const*      get_field_name(Dot_expr*);
+  bool               is_field_access(Dot_expr*);
   Decl*              check_field_path(Dot_expr*, Decl_seq&, Expr_seq&);
   Field_name_expr*   elaborate_field_name(Dot_expr*);
   Field_access_expr* elaborate_field_access(Dot_expr*);
