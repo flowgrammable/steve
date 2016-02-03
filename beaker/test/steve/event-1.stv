@@ -6,7 +6,7 @@ layout eth
 }
 
 
-event control_learn(eth::src)
+event control_learn(eth.src)
 {
   drop;
 }
@@ -14,7 +14,7 @@ event control_learn(eth::src)
 
 decoder start eth_d(eth)
 {
-  extract eth::src;
+  extract eth.src;
   raise control_learn;
   flood;
 }

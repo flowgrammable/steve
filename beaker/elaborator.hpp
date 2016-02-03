@@ -87,6 +87,7 @@ public:
   Expr* elaborate(Literal_expr*);
   Expr* elaborate(Id_expr*);
   Expr* elaborate(Decl_expr*);
+  Expr* elaborate(Port_expr*);
   Expr* elaborate(Add_expr* e);
   Expr* elaborate(Sub_expr* e);
   Expr* elaborate(Mul_expr* e);

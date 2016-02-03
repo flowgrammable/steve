@@ -89,6 +89,7 @@ struct Expr::Visitor
   virtual void visit(Get_port const*) = 0;
   virtual void visit(Create_table const*) = 0;
   virtual void visit(Get_dataplane const*) = 0;
+  virtual void visit(Port_expr const*) = 0;
 };
 
 
@@ -142,6 +143,7 @@ struct Expr::Mutator
   virtual void visit(Get_port*) = 0;
   virtual void visit(Create_table*) = 0;
   virtual void visit(Get_dataplane*) = 0;
+  virtual void visit(Port_expr*) = 0;
 };
 
 
@@ -198,6 +200,19 @@ struct Decl_expr : Id_expr
   Decl*         declaration() const { return decl; }
 
   Decl* decl;
+};
+
+
+// A reference to a port. These are produced similar to
+// decl-expr when an id resolves into a port name.
+struct Port_expr : Decl_expr
+{
+  Port_expr(Type const* t, Decl* d)
+    : Decl_expr(t, d)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 
@@ -601,6 +616,7 @@ struct Inport_expr : Expr
 };
 
 
+
 // The expression e1.e2. This is an unresolved
 // expression.
 //
@@ -869,6 +885,24 @@ struct Reference_init : Init
 bool is_callable(Expr const*);
 
 
+// Returns true iff the declaration is a constant one.
+//
+// Identifiers to ports and tables.
+inline bool
+is_constant_expr(Expr const* e)
+{
+  if (Decl_expr const* id = as<Decl_expr>(e)) {
+    if (is<Table_decl>(id->declaration()))
+      return true;
+    if (is<Port_decl>(id->declaration()))
+      return true;
+  }
+
+  return false;
+}
+
+
+
 // -------------------------------------------------------------------------- //
 // Generic visitor
 
@@ -917,14 +951,15 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Default_init const* e) { this->invoke(e); }
   void visit(Copy_init const* e) { this->invoke(e); }
   void visit(Reference_init const* e) { this->invoke(e); }
-  void visit(Field_name_expr const* e) { this->invoke(e); }
-  void visit(Field_access_expr const* e) { this->invoke(e); }
   void visit(Reinterpret_cast const* e) { this->invoke(e); }
   void visit(Void_cast const* e) { this->invoke(e); }
 
+  void visit(Field_name_expr const* e) { this->invoke(e); }
+  void visit(Field_access_expr const* e) { this->invoke(e); }
   void visit(Get_port const* e) { this->invoke(e); }
   void visit(Create_table const* e) { this->invoke(e); }
   void visit(Get_dataplane const* e) { this->invoke(e); }
+  void visit(Port_expr const* e) { this->invoke(e); }
 };
 
 
@@ -986,14 +1021,15 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Default_init* e) { this->invoke(e); }
   void visit(Copy_init* e) { this->invoke(e); }
   void visit(Reference_init* e) { this->invoke(e); }
-  void visit(Field_name_expr* e) { this->invoke(e); }
-  void visit(Field_access_expr* e) { this->invoke(e); }
   void visit(Reinterpret_cast* e) { this->invoke(e); }
   void visit(Void_cast* e) { this->invoke(e); }
 
+  void visit(Field_name_expr* e) { this->invoke(e); }
+  void visit(Field_access_expr* e) { this->invoke(e); }
   void visit(Get_port* e) { this->invoke(e); }
   void visit(Create_table* e) { this->invoke(e); }
   void visit(Get_dataplane* e) { this->invoke(e); }
+  void visit(Port_expr* e) { this->invoke(e); }
 };
 
 

@@ -18,6 +18,7 @@ struct Lowerer
   { }
 
   Expr* lower(Expr*);
+  Expr* lower(Port_expr*);
   Expr* lower(Value_conv* e);
   Expr* lower(Promotion_conv* e);
   Expr* lower(Demotion_conv* e);

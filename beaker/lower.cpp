@@ -19,123 +19,6 @@ Lowerer::get_identifier(std::string s)
 }
 
 
-// -------------------------------------------------------------------------- //
-// Application interface
-
-// This is the function called when the dataplane wants configuration information
-// upon loading the application.
-Function_decl*
-Lowerer::load_function()
-{
-  Type const* void_type = get_void_type();
-  auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
-  Decl_seq parms {
-    p1
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-  Symbol const* fn_name = get_identifier(__load);
-
-  // The Load function should save a pointer to the dataplane that is loading it.
-  // Construct a global variable of opaque dataplane type.
-  Overload* ovl = unqualified_lookup(get_identifier(__dataplane));
-  assert(ovl);
-  Decl* dp = ovl->back();
-  assert(dp);
-
-  // In the load body, set the dp global variable to be equal to the pointer
-  // passed in the parameter.
-  //
-  // The parameter should be directly stored into the global variable.
-  Expr* set_dp = builtin.call_get_dataplane(p1, dp);
-  load_body.insert(load_body.begin(), statement(set_dp));
-
-  // Construct the load function with the accumulated load_body.
-  Function_decl* load = new Function_decl(fn_name, fn_type,
-                                          parms, block(load_body));
-
-  load->spec_ |= extern_spec;
-  declare(load);
-
-  return load;
-}
-
-
-// Process takes a context pointer
-// and passes it to the first decoder specified
-// in the pipeline.
-Function_decl*
-Lowerer::process_function()
-{
-  // Form the function
-  Symbol const* fn_name = get_identifier(__process);
-  Type const* void_type = get_void_type();
-  Type const* cxt_ref = get_reference_type(get_context_type());
-  Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
-  Type const* fn_type = get_function_type(Type_seq{cxt_ref}, void_type);
-
-  Function_decl* process =
-    new Function_decl(fn_name, fn_type, {cxt}, nullptr);
-  declare(process);
-
-  Scope_sentinel scope(*this, process);
-  // declare the context parameter
-  declare(cxt);
-
-  // Form a call to the first function in a pipeline
-  // form a call to the decoder
-  assert(start_fn);
-  Call_expr* call =
-    new Call_expr(get_void_type(), id(start_fn), { id(cxt) });
-  elab.elaborate(call);
-
-  Stmt_seq process_body;
-  process_body.push_back(statement(call));
-
-  process->spec_ |= extern_spec;
-
-  process->body_ = block(process_body);
-
-  return process;
-}
-
-
-// Returns the amount of ports specifically asked for by the application.
-Function_decl*
-Lowerer::port_number_function()
-{
-  Symbol const* fn_name = get_identifier(__port_num);
-  Decl_seq parms;
-  Type const* fn_type = get_function_type(parms, get_integer_type());
-
-  Expr* port_num = new Literal_expr(get_integer_type(), port_count);
-
-  Stmt_seq body {
-    new Return_stmt(port_num)
-  };
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block(body));
-
-  fn->spec_ |= extern_spec;
-
-  return fn;
-}
-
-
-// Maintain a pointer to the dataplane that this application has been loaded
-// by.
-Variable_decl*
-Lowerer::dataplane_pointer()
-{
-  static Variable_decl dp(get_identifier(__dataplane),
-                          get_opaque_type()->ref(),
-                          new Default_init(get_opaque_type()->ref()));
-  declare(&dp);
-  return &dp;
-}
-
-
 namespace
 {
 
@@ -147,6 +30,9 @@ struct Lower_expr_fn
   // Simply return the original expression without lowering it.
   template<typename T>
   Expr* operator()(T* e) const { return e; }
+
+  // Port expr.
+  Expr* operator()(Port_expr* e) const { return lower.lower(e); }
 
   // Unary expressions
   Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
@@ -283,6 +169,121 @@ struct Lower_global_def
 
 
 
+// -------------------------------------------------------------------------- //
+// Application interface
+
+// This is the function called when the dataplane wants configuration information
+// upon loading the application.
+Function_decl*
+Lowerer::load_function()
+{
+  Type const* void_type = get_void_type();
+  auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
+  Decl_seq parms {
+    p1
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+  Symbol const* fn_name = get_identifier(__load);
+
+  // The Load function should save a pointer to the dataplane that is loading it.
+  // Construct a global variable of opaque dataplane type.
+  Overload* ovl = unqualified_lookup(get_identifier(__dataplane));
+  assert(ovl);
+  Decl* dp = ovl->back();
+  assert(dp);
+
+  // In the load body, set the dp global variable to be equal to the pointer
+  // passed in the parameter.
+  //
+  // The parameter should be directly stored into the global variable.
+  Expr* set_dp = builtin.call_get_dataplane(p1, dp);
+  load_body.insert(load_body.begin(), statement(set_dp));
+
+  // Construct the load function with the accumulated load_body.
+  Function_decl* load = new Function_decl(fn_name, fn_type,
+                                          parms, block(load_body));
+
+  load->spec_ |= extern_spec;
+  declare(load);
+
+  return load;
+}
+
+
+// Process takes a context pointer
+// and passes it to the first decoder specified
+// in the pipeline.
+Function_decl*
+Lowerer::process_function()
+{
+  // Form the function
+  Symbol const* fn_name = get_identifier(__process);
+  Type const* void_type = get_void_type();
+  Type const* cxt_ref = get_reference_type(get_context_type());
+  Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+  Type const* fn_type = get_function_type(Type_seq{cxt_ref}, void_type);
+
+  Function_decl* process =
+    new Function_decl(fn_name, fn_type, {cxt}, nullptr);
+  declare(process);
+
+  Scope_sentinel scope(*this, process);
+  // declare the context parameter
+  declare(cxt);
+
+  // Form a call to the first function in a pipeline
+  // form a call to the decoder
+  assert(start_fn);
+  Call_expr* call =
+    new Call_expr(get_void_type(), id(start_fn), { id(cxt) });
+  elab.elaborate(call);
+
+  Stmt_seq process_body;
+  process_body.push_back(statement(call));
+
+  process->spec_ |= extern_spec;
+
+  process->body_ = block(process_body);
+
+  return process;
+}
+
+
+// Returns the amount of ports specifically asked for by the application.
+Function_decl*
+Lowerer::port_number_function()
+{
+  Symbol const* fn_name = get_identifier(__port_num);
+  Decl_seq parms;
+  Type const* fn_type = get_function_type(parms, get_integer_type());
+
+  Expr* port_num = new Literal_expr(get_integer_type(), port_count);
+
+  Stmt_seq body {
+    new Return_stmt(port_num)
+  };
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block(body));
+
+  fn->spec_ |= extern_spec;
+
+  return fn;
+}
+
+
+// Maintain a pointer to the dataplane that this application has been loaded
+// by.
+Variable_decl*
+Lowerer::dataplane_pointer()
+{
+  static Variable_decl dp(get_identifier(__dataplane),
+                          get_opaque_type()->ref(),
+                          new Default_init(get_opaque_type()->ref()));
+  declare(&dp);
+  return &dp;
+}
 
 
 // ------------------------------------------------------------------------- //
@@ -316,6 +317,22 @@ Expr*
 Lowerer::lower(Expr* e)
 {
   return apply(e, Lower_expr_fn{*this});
+}
+
+
+Expr*
+Lowerer::lower(Port_expr* e)
+{
+  // Lookup the new port variable declaration.
+  Overload* ovl = unqualified_lookup(e->name());
+  assert(ovl);
+
+  Decl* p = ovl->back();
+  assert(is<Port_type>(p->type()->nonref()));
+
+  e->decl = p;
+
+  return e;
 }
 
 
@@ -611,7 +628,7 @@ Lowerer::lower_global_decl(Port_decl* d)
   // this should be a port pointer
   // not a port object
   Variable_decl* port = new Variable_decl(d->name(),
-                                          get_reference_type(d->type()),
+                                          d->type(),
                                           new Default_init(d->type()));
 
   declare(port);
@@ -975,10 +992,13 @@ Lowerer::lower_global_def(Port_decl* d)
 
   // Construct a call to get port
   Expr* get_port = builtin.call_get_port(var,
-    { make_cstr(d->name()->spelling().c_str()) });
+    make_cstr(d->name()->spelling().c_str()), d->address());
 
-  elab.elaborate(get_port);
-  load_body.push_back(statement(get_port));
+  // Construct the assigment.
+  Assign_stmt* a = new Assign_stmt(id(var), get_port);
+  elab.elaborate(a);
+
+  load_body.push_back(a);
 
   return var;
 }
@@ -1147,10 +1167,6 @@ Lowerer::lower(Stmt* s)
 }
 
 
-// To lower an assign, lower the lhs of the statement only.
-// You cannot have field-access-expr on the rhs or anything that
-// needs lowered either.
-//
 // Lowering the lhs lets you assign field-access-expr to existing variables.
 Stmt_seq
 Lowerer::lower(Assign_stmt* s)
@@ -1501,36 +1517,6 @@ Lowerer::goto_advance(Decl const* decoder)
 }
 
 
-// Stmt*
-// Lowerer::goto_get_key(Decl const* table)
-// {
-//   Table_decl const* t = as<Table_decl>(table);
-//   Expr_seq key_mappings;
-//
-//   for (auto subkey : t->keys()) {
-//     int mapping = checker.get_field_mapping(subkey->name());
-//     key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
-//   }
-//
-//   // get the context variable which should Always
-//   // be within the scope of a decoder body
-//   Overload* ovl = unqualified_lookup(get_identifier(__context));
-//   assert(ovl);
-//   Decl* cxt = ovl->back();
-//   assert(cxt);
-//
-//   // TODO: fully support variable arguments to functions so that
-//   // we can actually elaborate this without it failing.
-//   Expr* gather = builtin.call_gather(decl_id(cxt), key_mappings);
-//   Variable_decl* key = new Variable_decl(get_identifier("key"),
-//                                          get_reference_type(get_key_type()),
-//                                          gather);
-//
-//   declare(key);
-//   return statement(key);
-// }
-
-
 // NOTE: It is the current expectation that when the runtime
 // goes to match the context against the table that it implicitly goes to
 // compose the key from the fields provided as arguments in this function.
@@ -1663,7 +1649,7 @@ Lowerer::lower(Output* s)
   assert(port);
 
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), decl_id(port));
+  Expr* output = builtin.call_output(decl_id(cxt), id(port));
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.
@@ -1998,7 +1984,7 @@ Lowerer::lower(Write_output* w)
   assert(port);
 
   // make a call to the drop function
-  Expr* output = builtin.call_write_output(decl_id(cxt), decl_id(port));
+  Expr* output = builtin.call_write_output(decl_id(cxt), id(port));
   elab.elaborate(output);
 
   return

@@ -348,7 +348,7 @@ struct Builtin
   Expr* call_remove_flow(Expr*, Expr*);
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
-  Expr* call_get_port(Decl*, Expr_seq const& args);
+  Expr* call_get_port(Decl*, Expr*, Expr*);
   Expr* call_get_flow_inport(Expr*);
   Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);

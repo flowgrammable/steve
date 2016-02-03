@@ -391,6 +391,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Literal_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Id_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Decl_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Port_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Add_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Sub_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Mul_expr* e) const { return elab.elaborate(e); }
@@ -494,6 +495,14 @@ Elaborator::elaborate(Id_expr* e)
   if (is_object(d))
     t = t->ref();
 
+  // Distinguish between regular declaration identifiers and those which
+  // refer to ports.
+  if (is<Port_decl>(d)) {
+    Expr* ret = new Port_expr(t, d);
+    locate(ret, loc);
+    return ret;
+  }
+
   // Return a new expression.
   Expr* ret = new Decl_expr(t, d);
   locate(ret, loc);
@@ -505,6 +514,14 @@ Elaborator::elaborate(Id_expr* e)
 // This deoes not require elaboration.
 Expr*
 Elaborator::elaborate(Decl_expr* e)
+{
+  return e;
+}
+
+
+// This does not require elaboration.
+Expr*
+Elaborator::elaborate(Port_expr* e)
 {
   return e;
 }
@@ -2902,6 +2919,13 @@ Elaborator::elaborate(Assign_stmt* s)
   if (!is<Reference_type>(lhs->type())) {
     std::stringstream ss;
     ss << "assignment to rvalue: " << *s;
+    throw Type_error({}, ss.str());
+  }
+
+  // Cannot assign to references to constant declarations.
+  if (is_constant_expr(lhs)) {
+    std::stringstream ss;
+    ss << "assignment to constant declaration: " << *s;
     throw Type_error({}, ss.str());
   }
 

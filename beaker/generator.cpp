@@ -237,11 +237,11 @@ Generator::get_type(Flow_type const*)
 }
 
 
-// Produces and opaque type
+// Produces a port id type which is an unsigned 32-bit integer.
 llvm::Type*
 Generator::get_type(Port_type const* t)
 {
-  static llvm::Type* port_type = llvm::StructType::create(cxt, "Port");
+  auto port_type = build.getInt32Ty();
   return port_type;
 }
 

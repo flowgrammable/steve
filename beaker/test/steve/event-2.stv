@@ -10,16 +10,16 @@ layout eth
 
 decoder start eth_d(eth)
 {
-	extract eth::src;
-  extract eth::dst;
+	extract eth.src;
+  extract eth.dst;
   goto learn;
 }
 
 
-event switch_learn(eth::src)
+event switch_learn(eth.src)
 {
   add
-  { eth::src } ->
+  { eth.src } ->
   {
     drop;
   }
@@ -29,7 +29,7 @@ event switch_learn(eth::src)
 }
 
 
-exact_table learn(eth::src)
+exact_table learn(eth.src)
 {
   miss ->
   {
@@ -39,7 +39,7 @@ exact_table learn(eth::src)
 }
 
 
-exact_table switch(eth::dst)
+exact_table switch(eth.dst)
 {
   miss ->
   {

@@ -395,7 +395,7 @@ Builtin::match()
 
 // This function call gets a port with a specific name from the runtime system.
 //
-//    Port* get_port(char*, char*);
+//    Port::ID get_port(char*, char*);
 //
 // TODO: Add the configuration string to the function call. Write now the
 // runtime doesn't support it so we're only going with the port name.
@@ -404,7 +404,7 @@ Builtin::get_port()
 {
   Symbol const* fn_name = get_identifier(__get_port);
 
-  Type const* port_type = get_port_type()->ref();
+  Type const* port_type = get_port_type();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("name"), get_block_type(get_character_type()))
@@ -429,13 +429,13 @@ Builtin::get_flow_inport()
   Symbol const* fn_name = get_identifier(__get_flow_inport);
 
   Type const* flow_ref = get_opaque_type()->ref();
-  Type const* port_ref = get_port_type()->ref();
+  Type const* port_type = get_port_type();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier(__flow_self), flow_ref)
   };
 
-  Type const* fn_type = get_function_type(parms, port_ref);
+  Type const* fn_type = get_function_type(parms, port_type);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
@@ -504,7 +504,7 @@ Builtin::output()
   Symbol const* fn_name = get_identifier(__output);
 
   Type const* void_type = get_void_type();
-  Type const* port_type = get_port_type()->ref();
+  Type const* port_type = get_port_type();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
@@ -641,7 +641,7 @@ Builtin::write_output()
   Symbol const* fn_name = get_identifier(__write_output);
 
   Type const* void_type = get_void_type();
-  Type const* port_type = get_port_type()->ref();
+  Type const* port_type = get_port_type();
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
@@ -924,14 +924,17 @@ Builtin::call_add_miss(Expr* tbl, Expr* flow)
 }
 
 
+// FIXME: Currently the runtime doesnt support confirmation for both name
+// and args, only name.
 Expr*
-Builtin::call_get_port(Decl* d, Expr_seq const& args)
+Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 {
   Function_decl* fn = builtin_fn.find(__get_port)->second;
   assert(fn);
 
-  Get_port* e = new Get_port(decl_id(fn), args);
-  e->port_ = d;
+  // Get_port* e = new Get_port(decl_id(fn), {name});
+  // e->port_ = d;
+  Expr* e = new Call_expr(decl_id(fn), {name});
 
   return e;
 }
