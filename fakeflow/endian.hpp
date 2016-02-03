@@ -18,6 +18,11 @@ network_to_native_order(fp::Byte* buf, int len)
 {
 }
 
+inline void
+native_to_network_order(fp::Byte* buf, int len)
+{
+}
+
 #endif
 
 
@@ -26,6 +31,13 @@ network_to_native_order(fp::Byte* buf, int len)
 // Big endian is network byte order so no reverse is necessary
 inline void
 network_to_native_order(fp::Byte* buf, int len)
+{
+  std::reverse(buf, buf + len);
+}
+
+
+inline void
+native_to_network_order(fp::Byte* buf, int len)
 {
   std::reverse(buf, buf + len);
 }

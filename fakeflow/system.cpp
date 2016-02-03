@@ -168,6 +168,12 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
   va_start(args, n);
   fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
   va_end(args);
+
+  // std::cout << "KEY: ";
+  // for (int i = 0; i < tbl->key_size(); ++i)
+  //   std::cout << std::hex << (int) key.data[i];
+  // std::cout << '\n';
+
   fp::Flow flow = tbl->search(key);
   // execute the flow function
   flow.instr_(&flow, tbl, cxt);
@@ -233,17 +239,13 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
     fp::Binding b = cxt->get_field_binding(f);
     fp::Byte* p = cxt->get_field(b.offset);
 
-    // Convert a temporary to native order.
-    fp::Byte* temp = new fp::Byte[b.length];
-    std::copy(p, p + b.length, temp);
-    fp::network_to_native_order(temp, b.length);
-
     // Copy the field into the buffer.
-    std::copy(temp, temp + b.length, &buf[j]);
+    std::copy(p, p + b.length, &buf[j]);
+    // Then reverse the field in place.
+    fp::network_to_native_order(&buf[j], b.length);
+
     j += b.length;
     ++i;
-    // Clean up the copy.
-    delete [] temp;
   }
 
   return fp::Key(buf, key_width);
@@ -437,8 +439,9 @@ fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
 
   // Copy the new data into the packet at the appropriate location.
   fp::Byte* p = cxt->get_field(b.offset);
-  // Convert native to network order
+  // Convert native to network order after copying.
   std::copy(val, val + len, p);
+  fp::native_to_network_order(p, len);
   // Update the length if it changed (which it shouldn't).
   b.length = len;
 }
