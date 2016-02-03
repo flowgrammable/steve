@@ -1,0 +1,37 @@
+foreign def puts(char[]) -> int;
+
+Port p1 = ":5000";
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.dst;
+  extract eth.type;
+
+  set eth.dst = 0x11_11_11_11_11_00;
+  set eth.type = 13;
+
+  goto switch;
+}
+
+
+exact_table switch(eth.dst, eth.type)
+{
+  { 0x11_11_11_11_11_00, 13 } ->
+  {
+		puts("hit");
+    output p1;
+  }
+
+  miss ->
+  {
+    output p1;
+  }
+}
