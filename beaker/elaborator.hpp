@@ -125,6 +125,13 @@ public:
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
 
+  std::string   build_field_name(Dot_expr*);
+  Symbol const* get_field_name(Dot_expr*);
+
+  Decl*              check_field_path(Dot_expr*, Decl_seq&, Expr_seq&);
+  Field_name_expr*   elaborate_field_name(Dot_expr*);
+  Field_access_expr* elaborate_field_access(Dot_expr*);
+
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
   Expr* elaborate(Get_dataplane* e);
@@ -225,6 +232,8 @@ public:
   Overload* unqualified_lookup(Symbol const*);
   Overload* qualified_lookup(Scope*, Symbol const*);
   Overload* member_lookup(Record_decl*, Symbol const*);
+
+  Symbol const* get_qualified_name(Expr_seq const&);
 
   // Diagnostics
   void check_valid_action_context(Stmt*);

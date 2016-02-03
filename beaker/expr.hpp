@@ -537,8 +537,8 @@ struct Void_cast : Expr
 //
 struct Field_name_expr : Expr
 {
-  Field_name_expr(Expr_seq const& e, Symbol const* n)
-    : Expr(nullptr), identifiers_(e), name_(n)
+  Field_name_expr(Type const* t, Decl_seq const& d, Expr_seq const& e, Symbol const* n)
+    : Expr(t), decls_(d), identifiers_(e), name_(n)
   { }
 
   Expr_seq const& identifiers() const { return identifiers_; }
@@ -561,8 +561,8 @@ struct Field_name_expr : Expr
 // which refers to the usage of an extracted field.
 struct Field_access_expr : Expr
 {
-  Field_access_expr(Expr_seq const& e, Symbol const* n)
-    : Expr(nullptr), identifiers_(e), name_(n)
+  Field_access_expr(Type const* t, Decl_seq const& d, Expr_seq const& e, Symbol const* n)
+    : Expr(t), decls_(d), identifiers_(e), name_(n)
   { }
 
   Expr_seq const& identifiers() const { return identifiers_; }

@@ -378,23 +378,20 @@ struct Table_decl : Decl
 // set of subkeys
 struct Key_decl : Decl
 {
-  Key_decl(Expr_seq const& e, Symbol const* n)
-    : Decl(n, nullptr), identifiers_(e), name_(n)
+  Key_decl(Expr* const& e, Symbol const* n)
+    : Decl(n, nullptr), field_(e)
   { }
 
-  Expr_seq const& identifiers() const { return identifiers_; }
+  Expr* const&    field() const { return field_; }
   Decl_seq const& declarations() const { return decls_; }
-
-  Symbol const* name() const { return name_; }
-  String const& spelling() const { return name_->spelling(); }
+  Expr_seq const& identifiers()  const { return ids_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
   Decl_seq decls_;
-  Expr_seq identifiers_;
-
-  Symbol const* name_;
+  Expr_seq ids_;
+  Expr* field_;
 };
 
 

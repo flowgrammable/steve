@@ -37,7 +37,7 @@ public:
   Expr* logical_and_expr();
   Expr* logical_or_expr();
   Expr* field_name_expr();
-  Expr* field_access_expr(Token);
+  Expr* field_access_expr();
   Expr* expr();
 
   // Postfix expr
@@ -170,7 +170,7 @@ private:
   Decl* on_extract(Expr*);
   Decl* on_rebind(Expr*, Expr*);
   Decl* on_exact_table(Token, Decl_seq&, Decl_seq&, Decl*);
-  Decl* on_key(Expr_seq const&);
+  Decl* on_key(Expr*);
   Decl* on_flow(Expr_seq&, Stmt*);
   Decl* on_flow_miss(Stmt*);
   Decl* on_port(Token, Expr*);

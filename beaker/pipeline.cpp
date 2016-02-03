@@ -172,18 +172,18 @@ Pipeline_checker::check_stage(Decl const* d, Sym_set const& reqs)
 
   for (auto field : reqs) {
     auto search = stack.lookup(field);
-
     if (!search) {
       error = true;
-      ss << "Field " << *field
+      ss << "Field "
          << " required but not decoded.\n";
     }
   }
 
   if (error) {
     ss << "Broken path: ";
-    for (auto stage : path)
+    for (auto stage : path) {
       ss << *stage->decl()->name() << " | ";
+    }
 
     throw Lookup_error({}, ss.str());
   }
@@ -595,6 +595,7 @@ Pipeline_checker::get_requirements(Table_decl const* d)
   // keys in the table.
   Sym_set requirements;
   for (auto subkey : d->keys()) {
+    assert(subkey->name());
     requirements.insert(subkey->name());
   }
 
@@ -731,7 +732,6 @@ Pipeline_checker::check_pipeline()
   Pipeline_decls pipeline_decls = elab.pipelines.front();
 
   for (Decl const* d : pipeline_decls) {
-
     if (Table_decl const* table = as<Table_decl>(d)) {
       register_stage(table);
     }

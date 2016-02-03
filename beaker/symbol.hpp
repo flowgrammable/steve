@@ -223,8 +223,11 @@ Symbol_table::put(String const& s, Args&&... args)
   } else {
     // Insertion did not succeed. Check that we have
     // not redefined the symbol kind.
-    if (typeid(T) != typeid(*sym))
-      throw std::runtime_error("redefinition of symbol");
+    if (typeid(T) != typeid(*sym)) {
+      std::stringstream ss;
+      ss << "redefinition of symbol: " << sym->spelling();
+      throw std::runtime_error(ss.str());
+    }
   }
   return iter->second;
 

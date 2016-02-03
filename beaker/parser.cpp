@@ -44,49 +44,30 @@ Parser::parse_colon_seperated(Token tok)
 }
 
 
-Symbol const*
-Parser::get_qualified_name(Expr_seq const& e)
-{
-  std::stringstream ss;
-
-  for (auto expr = e.begin(); expr != e.end(); ++expr) {
-    if (Id_expr* id = as<Id_expr>(*expr)) {
-      ss << id->spelling();
-      if (expr != e.end() - 1)
-        ss << "::";
-    }
-  }
-
-  Symbol const* sym = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
-  return sym;
-}
-
 // -------------------------------------------------------------------------- //
 // Expression parsing
 
 // Parse a field name expression
+// NOTE: Currently relying on dot expr parsing.
 //
-//    field-name-expr  -> identifier '::' identifier
-//                        field-name-expr '::' identifier
+//    field-name-expr  -> identifier '.' identifier
+//                        field-name-expr '.' identifier
 Expr*
 Parser::field_name_expr()
 {
-  Token tok = match(identifier_tok);
-  Expr_seq identifiers = parse_colon_seperated(tok);
-  return on_field_name(identifiers);
+  return expr();
 }
 
 
 // Parse a field access expression
+// NOTE: Currently relying on dot expr parsing.
 //
-//    field-access-expr  -> identifier '::' identifier
-//                          field-access-expr '::' identifier
+//    field-access-expr  -> identifier '.' identifier
+//                          field-access-expr '.' identifier
 Expr*
-Parser::field_access_expr(Token tok)
+Parser::field_access_expr()
 {
-  Expr_seq identifiers = parse_colon_seperated(tok);
-  return on_field_access(identifiers);
+  return expr();
 }
 
 
@@ -102,12 +83,8 @@ Expr*
 Parser::primary_expr()
 {
   // identifier
-  if (Token tok = match_if(identifier_tok)) {
-    if (lookahead() == scope_tok)
-      return field_access_expr(tok);
-    else
-      return on_id(tok);
-  }
+  if (Token tok = match_if(identifier_tok))
+    return on_id(tok);
 
   // boolean-literal
   if (Token tok = match_if(boolean_tok))
@@ -932,14 +909,14 @@ Parser::decode_decl()
 
 
 // Parse a key decl
-//    key-decl -> id::id
-//                key-decl::id
+//    key-decl -> id.id
+//                key-decl.id
 Decl*
 Parser::key_decl()
 {
-  Token id = match(identifier_tok);
-  Expr_seq identifiers = parse_colon_seperated(id);
-  return on_key(identifiers);
+  // Use postfix parsing hoping for a dot expr.
+  Expr* key = expr();
+  return on_key(key);
 }
 
 
@@ -1458,14 +1435,13 @@ Parser::clear_stmt()
 
 // Set a field to a given value
 //
-//  set-stmt -> 'set' field-name-expr '=' expr ';'
+//  set-stmt -> 'set' field-access-expr '=' expr ';'
 //
 Stmt*
 Parser::set_stmt()
 {
   match(set_kw);
-  Token tok = match(identifier_tok);
-  Expr* f = field_access_expr(tok);
+  Expr* f = field_access_expr();
   match(equal_tok);
   Expr* v = expr();
   match(semicolon_tok);
@@ -1476,14 +1452,13 @@ Parser::set_stmt()
 
 // Copy a field to a given space.
 //
-//  copy-stmt -> 'copy' field-name-expr '->' expr
+//  copy-stmt -> 'copy' field-access-expr '->' expr
 //
 Stmt*
 Parser::copy_stmt()
 {
   match(copy_kw);
-  Token tok = match(identifier_tok);
-  Expr* f = field_access_expr(tok);
+  Expr* f = field_access_expr();
   match(equal_tok);
   Expr* v = expr();
   match(semicolon_tok);
@@ -2093,24 +2068,26 @@ Parser::on_dot(Expr* e1, Expr* e2)
 Expr*
 Parser::on_field_name(Expr_seq const& e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Field_name_expr(e, sym);
+  // Symbol const* sym = get_qualified_name(e);
+  // return new Field_name_expr(e, nullptr);
+  lingo_unreachable();
 }
 
 
 Expr*
 Parser::on_field_access(Expr_seq const& e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Field_access_expr(e, sym);;
+  // Symbol const* sym = get_qualified_name(e);
+  // return new Field_access_expr(e, nu);;
+  lingo_unreachable();
 }
 
 
 Decl*
-Parser::on_key(Expr_seq const& e)
+Parser::on_key(Expr* e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Key_decl(e, sym);
+  // Symbol const* sym = get_qualified_name(e);
+  return new Key_decl(e, nullptr);
 }
 
 

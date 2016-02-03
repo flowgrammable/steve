@@ -1223,10 +1223,30 @@ Expr*
 Elaborator::elaborate(Dot_expr* e)
 {
   Expr* e1 = elaborate(e->container());
+  // If it is a layout declaration transfer control to
+  // elaboration of a field access expression.
+  //
+  // The default assumption is always field access expression when the
+  // dot expr starts with a layout.
+  if (Decl_expr* de = as<Decl_expr>(e1)) {
+    if (is<Layout_decl>(de->declaration())) {
+      // Update the container.
+      e->first = e1;
+      // Continue elaboration as a field access expr.
+      return elaborate_field_access(e);
+    }
+  }
+
   if (!is<Reference_type>(e1->type())) {
     std::stringstream ss;
     ss << "cannot access a member of a non-object";
     throw Type_error({}, ss.str());
+  }
+
+  // The default assumption is always field access expression when the
+  // dot expr starts with a layout.
+  if (is<Layout_type>(e1->type()->nonref())) {
+    return elaborate_field_access(e);
   }
 
   // Get the non-reference type of the outer object
@@ -1515,115 +1535,138 @@ Elaborator::elaborate(Void_cast* e)
 }
 
 
+// Used to build internal names for field name exprs.
+Symbol const*
+Elaborator::get_qualified_name(Expr_seq const& e)
+{
+  std::stringstream ss;
+
+  for (auto expr = e.begin(); expr != e.end(); ++expr) {
+    if (Id_expr* id = as<Id_expr>(*expr)) {
+      ss << id->spelling();
+      if (expr != e.end() - 1)
+        ss << "::";
+    }
+  }
+
+  Symbol const* sym = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+
+  return sym;
+}
+
+
 // Names a field within a layout to be extracted
 Expr*
 Elaborator::elaborate(Field_name_expr* e)
 {
-  // maintain every declaration that the field
-  // name expr refers to
-  Decl_seq decls;
-  Expr_seq ids = e->identifiers();
-
-  // confirm that each identifier is a member of the prior element
-  // second should always be an element of first, unless first is the
-  // last element of the list of identifiers
-  if (ids.size() <= 1) {
-    throw Type_error({}, "Invalid field name expr with only one valid field.");
-  }
-
-  auto first = ids.begin();
-  auto second = first + 1;
-
-  Id_expr* id1 = as<Id_expr>(*first);
-
-  // previous
-  Layout_decl* prev = nullptr;
-
-  if (id1) {
-    Decl_expr* d = as<Decl_expr>(elaborate(id1));
-    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
-      prev = lay;
-    }
-    else {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-  }
-  else {
-    std::stringstream ss;
-    ss << "Invalid layout identifier: " << *id1;
-    throw Type_error({}, ss.str());
-  }
-
-  decls.push_back(prev);
-
-  // the first one is always an identifier to a layout decl
-  while(second != ids.end()) {
-    if (!prev) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    id1 = as<Id_expr>(*first);
-
-    if (!id1) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    Id_expr* id2 = as<Id_expr>(*second);
-
-    if (!id2) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id2;
-      throw Type_error({}, ss.str());
-    }
-
-    // if we can find the field
-    // then set prev equal to the new field
-    if (Field_decl* f = find_field(prev, id2->symbol())) {
-      // NOTE: if this ever fails theres probably a reference type
-      // wrapping this thing
-      if (Layout_type const* lt = as<Layout_type>(f->type())) {
-        prev = lt->declaration();
-      }
-      else {
-        prev = nullptr;
-      }
-      decls.push_back(f);
-    }
-    else {
-      std::stringstream ss;
-      ss << "Field " << *id2 << " is not a member of " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    // move the iterators
-    ++first;
-    ++second;
-  }
-
-
-  e->decls_ = decls;
-
-  // The type is the type of the final declaration
-  Type const* t = decls.back()->type();
-  if (!t) {
-    std::stringstream ss;
-    ss << "Field expression" << *e << " of unknown type.";
-    throw Type_error(locate(e), ss.str());
-  }
-  // The type cannot be a layout type either.
-  if (is<Layout_type>(t)) {
-    throw Type_error(locate(e), "Cannot extract an entire layout.");
-  }
-
-  e->type_ = t;
-
   return e;
+}
+
+
+// Recursively check the field path of a dot expr to confirm that it is
+// a valid field name or field access expression.
+//
+// Returns the declaration of the container (layout or field).
+// Constructs a sequence of declarations required to resolve the dot and a
+// sequence of identifiers.
+//
+// The final return should always be the final field decl.
+Decl*
+Elaborator::check_field_path(Dot_expr* e, Decl_seq& p, Expr_seq& ids)
+{
+  // The expectation is the member is a possibly unresolved identifiers.
+  Id_expr* m1 = as<Id_expr>(e->member());
+  assert(m1);
+
+  Expr* c1 = e->container();
+
+  // The recursive case is if c1 is a dot-expr
+  if (Dot_expr* dot = as<Dot_expr>(c1)) {
+    // Recursively check the container.
+    Decl* d = check_field_path(dot, p, ids);
+    // The container has to be a field decl of layout type.
+    // It can't be a layout decl because that can only happen at the base case.
+    Field_decl* container = as<Field_decl>(d);
+    assert(container);
+    Layout_type const* t = as<Layout_type>(container->type());
+    if (!t) {
+      std::stringstream ss;
+      ss << *container << " does not have layout type.";
+      throw Type_error(locate(dot), ss.str());
+    }
+
+    // Confirm that m1 is a member of the container.
+    Field_decl* field = find_field(t->declaration(), m1->symbol());
+    if (!field) {
+      std::stringstream ss;
+      ss << *m1 << " is not a member of " << *c1;
+      throw Type_error(locate(e), ss.str());
+    }
+
+    // Push the member onto the path.
+    p.push_back(field);
+    ids.push_back(m1);
+
+    return field;
+  }
+
+  // The base case occurs if the container is just an identifer.
+  if (Id_expr* id = as<Id_expr>(c1)) {
+    // Do a lookup.
+    Overload* ovl = unqualified_lookup(id->symbol());
+    // Base case is if its a layout decl id and a field decl id.
+    // This can only occur if the lookup succeeds.
+    if (!ovl) {
+      std::stringstream ss;
+      ss << *id << " is not a valid layout.";
+      throw Type_error(locate(e), ss.str());
+    }
+    // Confirm that the layout actually has the member.
+    Layout_decl* layout = as<Layout_decl>(ovl->back());
+    if (!layout) {
+      std::stringstream ss;
+      ss << *id << " is not a valid layout.";
+      throw Type_error(locate(e), ss.str());
+    }
+
+    Field_decl* field = find_field(layout, m1->symbol());
+
+    if (!field) {
+      std::stringstream ss;
+      ss << *m1 << " is not a member of " << *c1;
+      throw Type_error(locate(e), ss.str());
+    }
+
+    // Push the layout declaration onto the sequence.
+    ids.push_back(id);
+    p.push_back(layout);
+    // Push the field declaration onto the sequence.
+    ids.push_back(m1);
+    p.push_back(field);
+    // Return the field.
+    return field;
+  }
+
+  // otherwise this whole thing is in error.
+  throw Type_error(locate(e), "Invalid layout field specifier.");
+}
+
+
+Field_name_expr*
+Elaborator::elaborate_field_name(Dot_expr* e)
+{
+  // Linearize the dot expr into a field name expr.
+  Decl_seq path;
+  Expr_seq ids;
+
+  // 'last' contains the final field declaration in the sequence
+  // and also the type of the field name expr as a whole.
+  Decl* last = check_field_path(e, path, ids);
+
+  // Compose an internal name for the field name expr.
+  Symbol const* name = get_qualified_name(ids);
+
+  return new Field_name_expr(last->type(), path, ids, name);
 }
 
 
@@ -1640,117 +1683,33 @@ Elaborator::elaborate(Field_access_expr* e)
   if (!binding) {
     std::stringstream ss;
     ss << *e << " used but not extracted.";
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(e), ss.str());
   }
-
-  // maintain every declaration that the field
-  // name expr refers to
-  Decl_seq decls;
-  Expr_seq ids = e->identifiers();
-
-  // confirm that each identifier is a member of the prior element
-  // second should always be an element of first, unless first is the
-  // last element of the list of identifiers
-  if (ids.size() <= 1) {
-    throw Type_error({}, "Invalid field name expr with only one valid field.");
-  }
-
-  auto first = ids.begin();
-  auto second = first + 1;
-
-  Id_expr* id1 = as<Id_expr>(*first);
-
-  // previous
-  Layout_decl* prev = nullptr;
-
-  if (id1) {
-    Decl_expr* d = as<Decl_expr>(elaborate(id1));
-    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
-      prev = lay;
-    }
-    else {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-  }
-  else {
-    std::stringstream ss;
-    ss << "Invalid layout identifier: " << *id1;
-    throw Type_error({}, ss.str());
-  }
-
-  decls.push_back(prev);
-
-  // the first one is always an identifier to a layout decl
-  while(second != ids.end()) {
-    if (!prev) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    id1 = as<Id_expr>(*first);
-
-    if (!id1) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    Id_expr* id2 = as<Id_expr>(*second);
-
-    if (!id2) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id2;
-      throw Type_error({}, ss.str());
-    }
-
-    // if we can find the field
-    // then set prev equal to the new field
-    if (Field_decl* f = find_field(prev, id2->symbol())) {
-      // NOTE: if this ever fails theres probably a reference type
-      // wrapping this thing
-      if (Layout_type const* lt = as<Layout_type>(f->type())) {
-        prev = lt->declaration();
-      }
-      else {
-        prev = nullptr;
-      }
-
-      decls.push_back(f);
-    }
-    else {
-      std::stringstream ss;
-      ss << "Field " << *id2 << " is not a member of " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    // move the iterators
-    ++first;
-    ++second;
-  }
-
-
-  e->decls_ = decls;
-
-  // the type is the type of the final declaration
-  Type const* t = decls.back()->type();
-  if (!t) {
-    std::stringstream ss;
-    ss << "Field expression" << *e << " of unknown type.";
-    throw Type_error({}, ss.str());
-  }
-  // The type cannot be a layout type either.
-  if (is<Layout_type>(t)) {
-    throw Type_error(locate(e), "Cannot extract an entire layout.");
-  }
-
-  e->type_ = get_reference_type(t);
 
   return e;
 }
 
+
+Field_access_expr*
+Elaborator::elaborate_field_access(Dot_expr* e)
+{
+  // Linearize the dot expr into a field name expr.
+  Decl_seq path;
+  Expr_seq ids;
+
+  // 'last' contains the final field declaration in the sequence
+  // and also the type of the field name expr as a whole.
+  Decl* last = check_field_path(e, path, ids);
+
+  // Compose an internal name for the field name expr.
+  Symbol const* name = get_qualified_name(ids);
+
+  // Field access expr always refer to an object so they must have reference
+  // type to work.
+  Field_access_expr* f = new Field_access_expr(last->type()->ref(), path, ids, name);
+  elaborate(f);
+  return f;
+}
 
 
 // -------------------------------------------------------------------------- //
@@ -1944,121 +1903,22 @@ Elaborator::elaborate(Table_decl* d)
 Decl*
 Elaborator::elaborate(Key_decl* d)
 {
-  // declare(d);
+  // Field has to be a dot-expr.
+  Dot_expr* f = as<Dot_expr>(d->field());
+  if (!f)
+    throw Type_error(locate(d->field()), "Invalid field for key declaration.");
 
-  // Checking the context of the declaration is not necessary because the
-  // grammar of the language prevents this from occuring anywhere other than
-  // where it's supposed to.
+  Decl_seq p;
+  Expr_seq ids;
 
-  // maintain every declaration that the field
-  // name expr refers to
-  Decl_seq decls;
-  Expr_seq ids = d->identifiers();
+  Decl* last = check_field_path(f, p, ids);
 
-  // confirm that each identifier is a member of the prior element
-  // second should always be an element of first, unless first is the
-  // last element of the list of identifiers
-  if (ids.size() <= 1) {
-    throw Type_error({}, "Invalid key with only one valid field.");
-  }
+  Symbol const* name = get_qualified_name(ids);
 
-  auto first = ids.begin();
-  auto second = first + 1;
-
-  Id_expr* id1 = as<Id_expr>(*first);
-
-  // previous
-  Layout_decl* prev = nullptr;
-
-  if (id1) {
-    Decl_expr* d = as<Decl_expr>(elaborate(id1));
-    if (Layout_decl* lay = as<Layout_decl>(d->declaration())) {
-      prev = lay;
-    }
-    else {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-  }
-  else {
-    std::stringstream ss;
-    ss << "Invalid layout identifier: " << *id1;
-    throw Type_error({}, ss.str());
-  }
-
-  decls.push_back(prev);
-
-  // the first one is always an identifier to a layout decl
-  while(second != ids.end()) {
-    if (!prev) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    id1 = as<Id_expr>(*first);
-
-    if (!id1) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    Id_expr* id2 = as<Id_expr>(*second);
-
-    if (!id2) {
-      std::stringstream ss;
-      ss << "Invalid layout identifier: " << *id2;
-      throw Type_error({}, ss.str());
-    }
-
-    // if we can find the field
-    // then set prev equal to the new field
-    if (Field_decl* f = find_field(prev, id2->symbol())) {
-      // this precludes the very first id from becoming the prev twice
-      // since only fields can have reference type and the first is always
-      // an identifier to a layout
-      //
-      // FIXME: there's something not quite correct here
-      // What happens when we get a record type which can't belong here?
-      if (Reference_type const* ref = as<Reference_type>(f->type())) {
-        if (Layout_type const* lt = as<Layout_type>(ref->nonref())) {
-          prev = lt->declaration();
-        }
-        // Does this correctly handle it with the check
-        // at the beginning of the loop?
-        else
-          prev = nullptr;
-      }
-      decls.push_back(f);
-    }
-    else {
-      std::stringstream ss;
-      ss << "Field " << *id2 << " is not a member of " << *id1;
-      throw Type_error({}, ss.str());
-    }
-
-    // move the iterators
-    ++first;
-    ++second;
-  }
-
-
-  d->decls_ = decls;
-
-  // the type is the type of the final declaration
-  Type const* t = decls.back()->type();
-  if (!t) {
-    std::stringstream ss;
-    ss << "Field" << *d << " of unknown type.";
-    throw Type_error(locate(d), ss.str());
-  }
-  // The type cannot be a layout type either.
-  if (is<Layout_type>(t)) {
-    throw Type_error(locate(d), "Cannot extract an entire layout.");
-  }
-  d->type_ = t;
+  d->decls_ = p;
+  d->ids_   = ids;
+  d->type_  = last->type();
+  d->name_  = name;
 
   return d;
 }
@@ -2152,7 +2012,16 @@ Elaborator::elaborate(Extracts_decl* d)
     throw Type_error({}, ss.str());
   }
 
-  Field_name_expr* fld = as<Field_name_expr>(d->field());
+  Dot_expr* dot = as<Dot_expr>(d->field());
+  if (!dot) {
+    std::stringstream ss;
+    ss << "Expected field name expr inside extracts but found "
+       << *d->field();
+    throw Type_error(locate(d->field()), ss.str());
+  }
+
+  Field_name_expr* fld = elaborate_field_name(dot);
+  elaborate(fld);
 
   if (!fld) {
     std::stringstream ss;
@@ -2165,8 +2034,6 @@ Elaborator::elaborate(Extracts_decl* d)
   d->name_ = fld->name();
   declare(d);
 
-  Expr* e1 = elaborate(d->field());
-
   // confirm that the first declaration is
   // the same layout decl that the decoder
   // handles
@@ -2174,23 +2041,16 @@ Elaborator::elaborate(Extracts_decl* d)
   Layout_type const* header_type = as<Layout_type>(decoder->header());
   assert(header_type);
 
-  if ((fld = as<Field_name_expr>(e1))) {
-    if (fld->declarations().front() != header_type->declaration()) {
-      std::stringstream ss;
-      ss << "Cannot extract from: " << *fld->declarations().front()->name()
-         << " in extracts decl: " << *d
-         << ". Decoder " << *decoder->name() << " decodes layout: " << *header_type;
-      throw Type_error({}, ss.str());
-    }
-  }
-  else {
+  if (fld->declarations().front() != header_type->declaration()) {
     std::stringstream ss;
-    ss << "Invalid field name: " << *d->field() << " in extracts decl: " << *d;
+    ss << "Cannot extract from: " << *fld->declarations().front()->name()
+       << " in extracts decl: " << *d
+       << ". Decoder " << *decoder->name() << " decodes layout: " << *header_type;
     throw Type_error({}, ss.str());
   }
 
-  d->field_ = e1;
-  d->type_ = e1->type();
+  d->field_ = fld;
+  d->type_ = fld->type();
 
   return d;
 }
@@ -2212,14 +2072,14 @@ Elaborator::elaborate(Rebind_decl* d)
   }
 
   // Elaborate the first expression
-  Expr* e1 = elaborate(d->field());
-  Field_name_expr* origin = as<Field_name_expr>(e1);
-  if (!origin) {
+  Dot_expr* o1 = as<Dot_expr>(d->field());
+  if (!o1) {
     std::stringstream ss;
-    ss << "Invalid field name: " << *d->field() << " in rebind decl: " << *d;
-    throw Type_error(locate(d), ss.str());
+    ss << d->field() << " is not a valid field.";
+    throw Type_error(locate(d->field()), ss.str());
   }
-  d->field_ = e1;
+  Field_name_expr* origin = elaborate_field_name(o1);
+  d->field_ = origin;
 
   // confirm that the first declaration is
   // the same layout decl that the decoder
@@ -2238,8 +2098,15 @@ Elaborator::elaborate(Rebind_decl* d)
   }
 
   // The second field name provides a name
-  Field_name_expr* alias = as<Field_name_expr>(d->alias());
-  elaborate(alias);
+  Dot_expr* a1 = as<Dot_expr>(d->alias());
+  if (!a1) {
+    std::stringstream ss;
+    ss << d->alias() << " is not a valid field.";
+    throw Type_error(locate(d->alias()), ss.str());
+  }
+  Field_name_expr* alias = elaborate_field_name(a1);
+  d->f2 = alias;
+
   // Confirm the second field name has the same type as the first field name
   if (alias->type() != origin->type()) {
     std::stringstream ss;
@@ -2256,7 +2123,7 @@ Elaborator::elaborate(Rebind_decl* d)
   // declare the rebind
   declare(d);
 
-  d->type_ = e1->type();
+  d->type_ = origin->type();
 
   return d;
 }
@@ -2463,7 +2330,6 @@ Elaborator::elaborate_decl(Decode_decl* d)
 Decl*
 Elaborator::elaborate_decl(Table_decl* d)
 {
-  pipelines.insert(d);
   declare(d);
 
   // Tentatively declare that every field
@@ -2504,6 +2370,9 @@ Elaborator::elaborate_decl(Table_decl* d)
   Type const* type = get_table_type(field_decls, types);
 
   d->type_ = type;
+
+  pipelines.insert(d);
+
   return d;
 }
 

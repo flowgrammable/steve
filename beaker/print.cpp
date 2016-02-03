@@ -369,19 +369,7 @@ operator<<(std::ostream& os, Table_decl const& d)
 
 std::ostream& operator<<(std::ostream& os, Key_decl const& d)
 {
-  for (auto expr : d.identifiers())
-    os << *expr << "::";
-
-  os << '(';
-
-  if (d.type())
-    os << *d.type();
-  else
-    os << "<unknown type>";
-
-  os << ')';
-
-  return os;
+  return os << *d.field();
 }
 
 

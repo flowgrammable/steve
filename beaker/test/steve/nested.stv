@@ -18,9 +18,17 @@ layout nested
 
 decoder start eth_d(eth)
 {
-  extract eth::n::nest;
-  extract eth::m;
+  extract eth.n.nest;
+  extract eth.m;
 
-  var x : uint = eth::n::nest - 1;
+  var x : uint = eth.n.nest - 1;
   drop;
+}
+
+exact_table t1(eth.n.nest)
+{
+  { 42 } ->
+  {
+    drop;
+  }
 }
