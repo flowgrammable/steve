@@ -30,6 +30,9 @@ decoder start eth_d(eth)
   eth.n.v;
   eth.n.nest.n;
 
+  var x : int = eth.n.v;
+  var y : int = eth.n.nest.n;
+
   drop;
 }
 
