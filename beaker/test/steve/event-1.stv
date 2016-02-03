@@ -1,0 +1,20 @@
+layout eth
+{
+  src : uint(48);
+  dst : uint(48);
+  type : uint(16);
+}
+
+
+event control_learn(eth::src)
+{
+  drop;
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth::src;
+  raise control_learn;
+  flood;
+}
