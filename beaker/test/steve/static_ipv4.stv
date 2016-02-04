@@ -1,0 +1,54 @@
+Port p1 = ":5000";
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+layout ipv4
+{
+  version_ihl : uint(8);
+  dscp_ecn    : uint(8);
+  len         : uint(16);
+	id					: uint(16);
+	fragment    : uint(16);
+  ttl         : uint(8);
+  protocol    : uint(8);
+  checksum    : uint(16);
+  src         : uint(32);
+  dst         : uint(32);
+}
+
+decoder start eth_d(eth)
+{
+  extract eth.type;
+  match (eth.type) {
+    case 0x800: decode ipv4_d;
+  }
+
+  // Drop all other case.
+  drop;
+}
+
+
+decoder ipv4_d(ipv4)
+{
+  extract ipv4.dst;
+  extract ipv4.ttl;
+  extract ipv4.len;
+
+  goto static_routing;
+}
+
+
+exact_table static_routing(ipv4.dst)
+  requires(ipv4.dst, ipv4.ttl, ipv4.len)
+{
+  {0b_1111_1111_1111_1111} ->
+  {
+    set ipv4.ttl = ipv4.ttl - 1;
+    output p1;
+  }
+}
