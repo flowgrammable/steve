@@ -224,6 +224,7 @@ private:
 
   // Location management
   void locate(void*, Location);
+  Location locate(void*);
 
   template<typename T, typename... Args>
   T* init(Location, Args&&...);
@@ -275,6 +276,17 @@ inline void
 Parser::locate(void* p, Location l)
 {
   locs_->emplace(p, l);
+}
+
+
+inline Location
+Parser::locate(void* p)
+{
+  auto iter = locs_->find(p);
+  if (iter != locs_->end())
+    return iter->second;
+  else
+    return {};
 }
 
 
