@@ -140,6 +140,13 @@ temp_var(Symbol_table& syms, Type const* t, Expr* init)
 }
 
 
+inline Variable_decl*
+var(Symbol const* n, Type const* t, Expr* init)
+{
+  return new Variable_decl(n, t, new Copy_init(t, init));
+}
+
+
 // ----------------------------------------------------- //
 //      Statement building
 

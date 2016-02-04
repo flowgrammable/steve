@@ -928,9 +928,9 @@ Parser::exact_table_decl()
 
   Token name = require(identifier_tok);
 
+  // Parse the key sequence.
   match(lparen_tok);
   Decl_seq key;
-
   while (lookahead() != rparen_tok) {
     // parse a sequence of key_decl
     Decl* subkey = key_decl();
@@ -945,25 +945,45 @@ Parser::exact_table_decl()
   }
   match(rparen_tok);
 
+  // Parse the optional 'requires' clause as a series of field name expr.
+  Expr_seq reqs;
+  if (match_if(requires_kw)) {
+    match(lparen_tok);
+    while (lookahead() != rparen_tok) {
+      // Parse the field names followed by commas.
+      Expr* f = field_name_expr();
+      reqs.push_back(f);
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rparen_tok);
+  }
 
+  // Parse the flow bodies.
   match(lbrace_tok);
   Decl_seq flows;
-  Decl* miss;
+  Decl* miss = nullptr;
   while (lookahead() != rbrace_tok) {
     Decl* d = flow_decl();
     Flow_decl* flow = as<Flow_decl>(d);
     if (flow) {
       // handle the miss case
       // there should only ever be one miss case
-      if (flow->miss_case() && !miss)
-        miss = flow;
+      if (flow->miss_case()) {
+        if (!miss)
+          miss = flow;
+        else
+          error("Multiple miss cases.");
+      }
       else
         flows.push_back(flow);
     }
   }
   match(rbrace_tok);
 
-  return on_exact_table(name, key, flows, miss);
+  return on_exact_table(name, key, reqs, flows, miss);
 }
 
 
@@ -2258,12 +2278,12 @@ Parser::on_rebind(Expr* field, Expr* alias)
 
 
 Decl*
-Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
+Parser::on_exact_table(Token name, Decl_seq& keys, Expr_seq& reqs, Decl_seq& flows, Decl* miss)
 {
   // maintain a count of tables
   static int count = 0;
 
-  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
+  return new Table_decl(name.symbol(), nullptr, ++count, keys, reqs, flows, miss);
 }
 
 

@@ -12,11 +12,12 @@ decoder start eth_d(eth)
 {
 	extract eth.src;
   extract eth.dst;
+	extract eth.type;
   goto learn;
 }
 
 
-event switch_learn(eth.src)
+event switch_learn(eth.src, eth.type)
 {
   add
   { eth.src } ->
@@ -25,11 +26,14 @@ event switch_learn(eth.src)
   }
   into switch;
 
+	set eth.type = 1111;
+
   goto switch;
 }
 
 
 exact_table learn(eth.src)
+	requires(eth.type)
 {
   miss ->
   {

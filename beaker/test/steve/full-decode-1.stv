@@ -77,9 +77,11 @@ decoder udp_d(udp)
 
 
 exact_table route(ipv4.dst, ipv4.protocol)
+	requires(ipv4.dst, ipv4.ttl)
 {
 	{0b0000_0000_0000_0000, 0} ->
 	{
+		set ipv4.ttl = ipv4.ttl - 1;
 		output p1;
 	}
 

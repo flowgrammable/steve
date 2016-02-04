@@ -194,30 +194,29 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 // Port and table operations
 
 // Returns the port matching the given name.
-unsigned int
+fp::Port*
 fp_get_port_by_name(char const* name)
 {
   // std::cout << "GETTING PORT\n";
   fp::Port* p = fp::port_table.find(name);
   // std::cout << "FOUND PORT\n";
   assert(p);
-  return p->id();
+  return p;
 }
 
-unsigned int
+fp::Port*
 fp_get_port_by_id(unsigned int id)
 {
   fp::Port* p = fp::port_table.find(id);
   assert(p);
-  return p->id();
+  return p;
 }
 
 
 // Outputs the contexts packet on the port with the matching name.
 void
-fp_output_port(fp::Context* cxt, unsigned int id)
+fp_output_port(fp::Context* cxt, fp::Port* p)
 {
-  fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
 
@@ -322,12 +321,15 @@ fp_add_new_flow(fp::Table* tbl, void* fn, void* key, fp::Context* c)
 }
 
 
-unsigned int
+fp::Port*
 fp_get_flow_in_port(fp::Flow* f)
 {
   assert(f);
   assert(f->in_port_ > 0);
-  return f->in_port_;
+  if (f->in_port_ > 0)
+    return fp_get_port_by_id(f->in_port_);
+  // Otherwise you're trying to get a non-existent port.
+  return nullptr;
 }
 
 

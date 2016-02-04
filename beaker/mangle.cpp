@@ -396,3 +396,13 @@ mangle(Field_access_expr const* e)
   ss << boost::replace_all_copy(e->name()->spelling(), "::", "_");
   return ss.str();
 }
+
+
+String
+mangle(Field_name_expr const* e)
+{
+  std::stringstream ss;
+  ss << "_F";
+  ss << boost::replace_all_copy(e->name()->spelling(), "::", "_");
+  return ss.str();
+}

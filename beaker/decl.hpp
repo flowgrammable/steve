@@ -330,17 +330,17 @@ struct Table_decl : Decl
   };
 
   // Default exact table
-  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init, Decl* miss)
-    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& key,
+             Expr_seq& reqs, Decl_seq& init, Decl* miss)
+    : Decl(n, t), num(num), keys_(key), reqs_(reqs), body_(init), miss_(miss),
       start_(false), kind_(exact_table), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
 
-  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init, Decl* miss, Table_kind k)
-    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& key,
+             Expr_seq& reqs, Decl_seq& init, Decl* miss, Table_kind k)
+    : Decl(n, t), num(num), keys_(key), reqs_(reqs), body_(init), miss_(miss),
       start_(false), kind_(k), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
@@ -349,6 +349,7 @@ struct Table_decl : Decl
 
   int             number()    const { return num; }
   Decl_seq const& keys()      const { return keys_; }
+  Expr_seq const& requirements() const { return reqs_; }
   Decl_seq const& body()      const { return body_; }
   Decl*           miss_case() const { return miss_; }
   Table_kind      kind()      const { return kind_; }
@@ -360,6 +361,7 @@ struct Table_decl : Decl
 
   int      num;
   Decl_seq keys_;
+  Expr_seq reqs_;
   Decl_seq body_;
   Decl* miss_;
   bool start_;

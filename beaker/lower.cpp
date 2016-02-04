@@ -743,6 +743,21 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
     body.push_back(statement(load_var));
   }
 
+  // Allocate variables corresponding to every requirement so that their
+  // value can be recovered in the flow function.
+  for (auto r : d->requirements()) {
+    Field_name_expr* fld = as<Field_name_expr>(r);
+    assert(fld);
+    Symbol const* name = get_identifier(mangle(fld));
+
+    if (!unqualified_lookup(name)) {
+      Variable_decl* load_var =
+        new Variable_decl(name, fld->type(), new Default_init(fld->type()));
+      declare(load_var);
+      body.push_back(statement(load_var));
+    }
+  }
+
   // Insert the allocated variables to the beginning of the body.
   Stmt* l = lower(s).back();
   Block_stmt* flow_body = as<Block_stmt>(l);

@@ -76,6 +76,7 @@ spelling(Token_kind k)
     case exact_table_kw: return "exact_table";
     case prefix_table_kw: return "prefix_table";
     case wild_table_kw: return "wildcard_table";
+    case requires_kw: return "requires";
     case miss_kw: return "miss";
     case action_kw: return "action_set";
     case port_kw: return "Port";
@@ -176,6 +177,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("exact_table", exact_table_kw);
   syms.put<Symbol>("prefix_table", prefix_table_kw);
   syms.put<Symbol>("wildcard_table", wild_table_kw);
+  syms.put<Symbol>("requires", requires_kw);
   syms.put<Symbol>("miss", miss_kw);
   syms.put<Symbol>("Port", port_kw);
   syms.put<Symbol>("goto", goto_kw);

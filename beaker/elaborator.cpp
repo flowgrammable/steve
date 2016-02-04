@@ -628,7 +628,7 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
   // check for equally size keys
   if (field_types.size() != key.size()) {
     std::stringstream ss;
-    ss << "Flow " << *flow << " does not have the same number of keys as"
+    ss << "Flow " << *flow << " does not have the same number of keys as "
        << "table: " << *table->name();
     throw Type_error({}, ss.str());
 
@@ -2449,8 +2449,19 @@ Elaborator::elaborate_decl(Table_decl* d)
       types.push_back(field_decl->type());
     }
   }
-
   Type const* type = get_table_type(field_decls, types);
+
+  // Elaborate requirements as field_name_expr.
+  for (Expr*& r : d->reqs_) {
+    Dot_expr* dot = as<Dot_expr>(r);
+    if (!dot) {
+      std::stringstream ss;
+      ss << *r << " is not a valid field identifier.";
+      throw Type_error(locate(r), ss.str());
+    }
+
+    r = elaborate_field_name(dot);
+  }
 
   d->type_ = type;
 
@@ -2776,6 +2787,19 @@ Elaborator::elaborate_def(Table_decl* d)
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
       declare(field);
+    }
+  }
+
+  // Make sure all the required fields are in scope.
+  for (auto r : d->requirements()) {
+    Field_name_expr* f = as<Field_name_expr>(r);
+    assert(f);
+    // Produce a variable and declare it.
+    // This variable doesn't do anything, it just confirms
+    // that the requirement name is valid when used in flows.
+    if (!unqualified_lookup(f->name())) {
+      Variable_decl* v = new Variable_decl(f->name(), f->type(), f);
+      declare(v);
     }
   }
 
@@ -3339,6 +3363,19 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
   for (auto subkey : t->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
       declare(field);
+    }
+  }
+
+  // Make sure all the required fields are in scope.
+  for (auto r : t->requirements()) {
+    Field_name_expr* f = as<Field_name_expr>(r);
+    assert(f);
+    // Produce a variable and declare it.
+    // This variable doesn't do anything, it just confirms
+    // that the requirement name is valid when used in flows.
+    if (!unqualified_lookup(f->name())) {
+      Variable_decl* v = new Variable_decl(f->name(), f->type(), f);
+      declare(v);
     }
   }
 

@@ -91,6 +91,7 @@ enum Token_kind
   exact_table_kw,
   prefix_table_kw,
   wild_table_kw,
+  requires_kw,
   miss_kw,
   action_kw,
   port_kw,

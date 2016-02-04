@@ -174,7 +174,7 @@ Pipeline_checker::check_stage(Decl const* d, Sym_set const& reqs)
     auto search = stack.lookup(field);
     if (!search) {
       error = true;
-      ss << "Field "
+      ss << "Field " << *field
          << " required but not decoded.\n";
     }
   }
@@ -592,11 +592,22 @@ Pipeline_checker::get_requirements(Table_decl const* d)
 {
   // Keep track of requirements
   // Requirements are specified by the declared
-  // keys in the table.
+  // keys in the table and the requirements clause.
+  //
+  // All keys are implicitly required though they can also be explicitly
+  // declared with no issue.
+  //
+  // All additional requirements must be explicitly declared.
   Sym_set requirements;
   for (auto subkey : d->keys()) {
     assert(subkey->name());
     requirements.insert(subkey->name());
+  }
+
+  for (auto req : d->requirements()) {
+    Field_name_expr* fld = as<Field_name_expr>(req);
+    assert(fld);
+    requirements.insert(fld->name());
   }
 
   return requirements;
