@@ -431,6 +431,7 @@ struct Flow_decl : Decl
   Expr_seq const& keys() const { return keys_; }
   Stmt*           instructions() const { return instructions_; }
   bool            miss_case() const { return miss_; }
+  Table_decl*     table() const { return table_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -443,6 +444,7 @@ struct Flow_decl : Decl
   bool miss_;
   Properties prop_;
   Stmt_seq prop_block_;
+  Table_decl* table_;
 };
 
 

@@ -19,13 +19,14 @@ decoder start eth_d(eth)
 
 event switch_learn(eth.src, eth.type)
 {
-  add
-  { eth.src } ->
-  {
-    drop;
-  }
-  into switch;
-
+	add
+	{ eth.src } ->
+	{
+		set eth.src = 1;
+		drop;
+	}
+	into switch;
+	
 	set eth.type = 1111;
 
   goto switch;

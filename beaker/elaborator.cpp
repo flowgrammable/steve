@@ -1683,6 +1683,8 @@ Elaborator::check_field_path(Dot_expr* e, Decl_seq& p, Expr_seq& ids)
 Field_name_expr*
 Elaborator::elaborate_field_name(Dot_expr* e)
 {
+  Location loc = locate(e);
+
   // Linearize the dot expr into a field name expr.
   Decl_seq path;
   Expr_seq ids;
@@ -1694,6 +1696,8 @@ Elaborator::elaborate_field_name(Dot_expr* e)
   // Compose an internal name for the field name expr.
   Symbol const* name = get_qualified_name(ids);
   Field_name_expr* f = new Field_name_expr(last->type(), path, ids, name);
+  locate(f, loc);
+
   return f;
 }
 
@@ -1710,7 +1714,7 @@ Elaborator::elaborate(Field_access_expr* e)
 
   if (!binding) {
     std::stringstream ss;
-    ss << *e << " used but not extracted.";
+    ss << *e << " used but not extracted in this path.";
     throw Type_error(locate(e), ss.str());
   }
 
@@ -1721,6 +1725,8 @@ Elaborator::elaborate(Field_access_expr* e)
 Field_access_expr*
 Elaborator::elaborate_field_access(Dot_expr* e)
 {
+  Location loc = locate(e);
+
   // Linearize the dot expr into a field name expr.
   Decl_seq path;
   Expr_seq ids;
@@ -1735,7 +1741,10 @@ Elaborator::elaborate_field_access(Dot_expr* e)
   // Field access expr always refer to an object so they must have reference
   // type to work.
   Field_access_expr* f = new Field_access_expr(last->type()->ref(), path, ids, name);
+  locate(f, loc);
+
   elaborate(f);
+  
   return f;
 }
 
@@ -1890,6 +1899,11 @@ Elaborator::elaborate(Module_decl* m)
     d = elaborate_decl(d);
   for (Decl*& d : m->decls_)
     d = elaborate_def(d);
+
+  for (Flow_decl*& flow : added_flows_) {
+    elaborate_added_flow_body(flow, flow->table());
+  }
+
   return m;
 }
 
@@ -2048,6 +2062,7 @@ Elaborator::elaborate(Flow_decl* d)
 
   d->type_ = get_flow_type(types);
   d->instructions_ = elaborate(d->instructions());
+  d->table_ = table;
 
   if (Block_stmt* block = as<Block_stmt>(d->instructions_)) {
     if (!has_terminator_action(block->statements())) {
@@ -2423,7 +2438,6 @@ Elaborator::elaborate_decl(Table_decl* d)
   //
   // This allows the elaboration of the key fields
   // to pass without error.
-  Scope_sentinel scope(*this, d);
 
   // maintain the field decl for each field
   // and the type for each field
@@ -2434,7 +2448,6 @@ Elaborator::elaborate_decl(Table_decl* d)
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
       elaborate(field);
-      declare(field);
 
       // Get the final declaration in the key path specifier.
       // This shall provide the type needed for the field.
@@ -3352,10 +3365,10 @@ Elaborator::elaborate(Set_field* s)
   return s;
 }
 
-
-
+// This has to be elaborated at global scope to avoid grabbing local context
+// when elaborating the body.
 Decl*
-Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
+Elaborator::elaborate_added_flow_body(Flow_decl* f, Table_decl* t)
 {
   Scope_sentinel scope(*this, f);
 
@@ -3378,29 +3391,6 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
       declare(v);
     }
   }
-
-  // Build a name for the flow declaration.
-  // form a name for the flow
-  std::stringstream ss;
-  if (f->miss_case())
-    ss << "_ADDED_FLOW_" << t->name()->spelling() << "_f_miss";
-  else
-    ss << "_ADDED_FLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
-  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
-  f->name_ = name;
-
-  // Elaborate the properties block to and build a properties object instide
-  // the flow declaration.
-  Flow_properties p = elaborate_flow_properties(f);
-  f->prop_ = p;
-
-  // Elaborate the type of the flow.
-  Type_seq types;
-  for (auto expr : f->keys()) {
-    Expr* key = elaborate(expr);
-    types.push_back(key->type());
-  }
-  f->type_ = get_flow_type(types);
 
   // Elaborate the body of the flow.
   f->instructions_ = elaborate(f->instructions());
@@ -3427,12 +3417,44 @@ Elaborator::elaborate_added_flow(Flow_decl* f, Table_decl* t)
     }
   }
 
+  return f;
+}
+
+
+Decl*
+Elaborator::elaborate_added_flow_decl(Flow_decl* f, Table_decl* t)
+{
+  // Build a name for the flow declaration.
+  // form a name for the flow
+  std::stringstream ss;
+  if (f->miss_case())
+    ss << "_ADDED_FLOW_" << t->name()->spelling() << "_f_miss";
+  else
+    ss << "_ADDED_FLOW_" << t->name()->spelling() << "_f" << ++t->flow_count_;
+  Symbol const* name = syms.put<Identifier_sym>(ss.str(), identifier_tok);
+  f->name_ = name;
+
+  // Elaborate the properties block to and build a properties object instide
+  // the flow declaration.
+  //
+  // Properties do have to grab local context unlike the body.
+  Flow_properties p = elaborate_flow_properties(f);
+  f->prop_ = p;
+
+  // Elaborate the type of the flow.
+  Type_seq types;
+  for (auto expr : f->keys()) {
+    Expr* key = elaborate(expr);
+    types.push_back(key->type());
+  }
+  f->type_ = get_flow_type(types);
+  f->table_ = t;
+
   // Add the flow to the list of tentative flows in the table declaration.
   t->tentative_.push_back(f);
 
   return f;
 }
-
 
 
 Stmt*
@@ -3450,8 +3472,14 @@ Elaborator::elaborate(Insert_flow* s)
   //
   // 2. It occurs outside the scope of a table so flow elaboration will
   //    complain.
+  //
   s->flow_ =
-    elaborate_added_flow(as<Flow_decl>(s->flow()), as<Table_decl>(s->table()));
+    elaborate_added_flow_decl(as<Flow_decl>(s->flow()), as<Table_decl>(s->table()));
+
+  // The elaboration of the flow body has to happen at global scope to avoid
+  // accidentally grabbing declarations of the surrounding context.
+  // Save the flow declaration to be elaborated later.
+  added_flows_.push_back(as<Flow_decl>(s->flow()));
 
   if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
     return s;

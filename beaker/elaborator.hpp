@@ -216,7 +216,8 @@ public:
   Stmt* elaborate(Write_set_field*);
 
   // Helper functions.
-  Decl*                 elaborate_added_flow(Flow_decl*, Table_decl*);
+  Decl*                 elaborate_added_flow_body(Flow_decl*, Table_decl*);
+  Decl*                 elaborate_added_flow_decl(Flow_decl*, Table_decl*);
   std::string           build_field_name(Dot_expr*);
   Symbol const*         get_field_name(Dot_expr*);
   bool                  is_field_access(Dot_expr*);
@@ -256,6 +257,8 @@ private:
 
   // maintain a list of pipeline decls per module
   Pipeline_stack pipelines;
+  // Maintain added flows.
+  std::vector<Flow_decl*> added_flows_;
 
   Scope_stack   stack;
   Decl_set      defined;

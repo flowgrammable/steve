@@ -10,6 +10,7 @@
 #include "beaker/mangle.hpp"
 #include "beaker/evaluator.hpp"
 #include "beaker/builtin.hpp"
+#include "beaker/error.hpp"
 
 #include "llvm/IR/Type.h"
 #include "llvm/IR/GlobalVariable.h"
