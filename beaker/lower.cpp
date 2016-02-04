@@ -769,60 +769,54 @@ Lowerer::lower_flow_body(Table_decl* d, Stmt* s)
 }
 
 
-// Lower all flows within a table and construct the necessary flow function
+// Lower a flow within a table and construct the necessary flow function
 // required by the runtime system.
-Decl_seq
-Lowerer::lower_table_flows(Table_decl* d)
+Function_decl*
+Lowerer::lower_init_flow(Table_decl* t, Flow_decl* flow)
 {
-  Decl_seq flow_fns;
-
   Type const* cxt_ref = get_context_type()->ref();
   Type const* tbl_ref = opaque_table->ref();
   Type const* flow_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
-  for (auto f : d->body()) {
-    // Create parameters common to all flow functions.
-    //
-    // Flow functions take an implicit 'this' parameter to their flow data.
-    // Flow functions take a context to process.
-    // Flow functions take a reference to their containing table.
-    Parameter_decl* flw = new Parameter_decl(get_identifier(__flow_self), flow_ref);
-    Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
-    Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
-    Decl_seq parms { flw, tbl, cxt };
+  // Create parameters common to all flow functions.
+  //
+  // Flow functions take an implicit 'this' parameter to their flow data.
+  // Flow functions take a context to process.
+  // Flow functions take a reference to their containing table.
+  Parameter_decl* flw = new Parameter_decl(get_identifier(__flow_self), flow_ref);
+  Parameter_decl* cxt = new Parameter_decl(get_identifier(__context), cxt_ref);
+  Parameter_decl* tbl = new Parameter_decl(get_identifier(__table), tbl_ref);
+  Decl_seq parms { flw, tbl, cxt };
 
-    // The type of all flows is fn(Table&, Context&) -> void
-    Type const* type = get_function_type(parms, void_type);
+  // The type of all flows is fn(Table&, Context&) -> void
+  Type const* type = get_function_type(parms, void_type);
 
-    Flow_decl* flow = as<Flow_decl>(f);
-    Symbol const* flow_name = f->name();
+  Symbol const* flow_name = flow->name();
 
-    // Enter flow function scope.
-    Scope_sentinel scope(*this, flow);
+  // Enter flow function scope.
+  Scope_sentinel scope(*this, flow);
 
-    // declare an implicit flow, context and table variable
-    declare(flw);
-    declare(cxt);
-    declare(tbl);
+  // declare an implicit flow, context and table variable
+  declare(flw);
+  declare(cxt);
+  declare(tbl);
 
-    // Contruct the body from the instructions.
-    // Trust that the lowering process correctly elaborates the body so
-    // its not necessary to do so again.
-    //
-    // Each flow body should allocate space for every local variable (related to keys).
-    // Handle any additional modifications to the flow body.
-    Stmt* flow_body = lower_flow_body(d, flow->instructions());
+  // Contruct the body from the instructions.
+  // Trust that the lowering process correctly elaborates the body so
+  // its not necessary to do so again.
+  //
+  // Each flow body should allocate space for every local variable (related to keys).
+  // Handle any additional modifications to the flow body.
+  Stmt* flow_body = lower_flow_body(t, flow->instructions());
 
-    // Produce the flow function.
-    Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
+  // Produce the flow function.
+  Function_decl* fn = new Function_decl(flow_name, type, parms, flow_body);
 
-    // Make sure it has external linkage.
-    fn->spec_ |= extern_spec;
-    flow_fns.push_back(fn);
-  }
+  // Make sure it has external linkage.
+  fn->spec_ |= extern_spec;
 
-  return flow_fns;
+  return fn;
 }
 
 
@@ -880,48 +874,60 @@ Lowerer::lower_miss_case(Table_decl* d)
 // to the runtime. Right now these are character arrays but they should be
 // changed to something else.
 void
-Lowerer::add_flows(Decl* table, Decl_seq const& flow_fns, Decl* miss, Expr_seq const& keys)
+Lowerer::add_init_flows(Table_decl* table)
 {
-  auto key_it = keys.begin();
+  // return the variable declaration of the table
+  Overload* ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
 
-  for (auto flow : flow_fns) {
-    // create a call to add_flow() and pass the flow
-    // and the current table into it as arguments
-    //
-    // FIXME: there's something wrong with the elaboration of
-    // function pointers so we don't elaborate this for now.
-    // However, it should be guaranteed to work.
-    Type const* buffer_t = get_block_type(get_character_type());
-    Expr* add_flow =
-      builtin.call_add_init_flow(decl_id(table), decl_id(flow), new Block_conv(buffer_t, *key_it));
-    // elab.elaborate(add_flow);
-    load_body.push_back(statement(add_flow));
+  // Find the appropriate key forming function.
+  std::string fn_name = __keyform + table->name()->spelling();
+  ovl = unqualified_lookup(get_identifier(fn_name));
+  assert(ovl);
+  Decl* key_fn = ovl->back();
+  assert(key_fn);
 
-    ++key_it;
-  }
-
-  // Handle the miss case
-  if (miss) {
-    Expr* add_miss = builtin.call_add_miss(decl_id(table), decl_id(miss));
-    load_body.push_back(statement(add_miss));
-  }
-}
-
-
-// Converts the keys of flows into c string like
-// literals.
-Expr_seq
-Lowerer::lower_flow_keys(Decl_seq const& flows)
-{
-  Expr_seq keys;
+  Decl_seq const& flows = table->body();
 
   for (auto f : flows) {
     Flow_decl* flow = as<Flow_decl>(f);
-    Expr* g = gather(flow->keys());
-    keys.push_back(g);
+
+    Function_decl* flow_fn = lower_init_flow(table, flow);
+    declare(flow_fn);
+    module_decls.push_back(flow_fn);
+
+    // Form a call.
+    Expr_seq keys;
+    // Lower all keys first.
+    for (auto e : flow->keys()) {
+      keys.push_back(lower(e));
+    }
+    Expr* call = new Call_expr(id(key_fn), keys);
+    elab.elaborate(call);
+    Variable_decl* temp = temp_var(elab.syms, call->type(), call);
+
+    // Void cast the result
+    Expr* vcast = new Void_cast(decl_id(temp));
+
+    // Make a call to fp_add_flow
+    Expr* add_flow =
+      builtin.call_add_init_flow(decl_id(tblptr), decl_id(flow_fn), vcast);
+
+    // elab.elaborate(add_flow);
+    load_body.push_back(statement(temp));
+    load_body.push_back(statement(add_flow));
   }
 
-  return keys;
+  // Handle the miss case
+  Decl* miss = lower_miss_case(table);
+  if (miss) {
+    declare(miss);
+    module_decls.push_back(miss);
+    Expr* add_miss = builtin.call_add_miss(decl_id(tblptr), decl_id(miss));
+    load_body.push_back(statement(add_miss));
+  }
 }
 
 
@@ -940,8 +946,8 @@ Lowerer::lower_global_def(Table_decl* d)
   // return the variable declaration of the table
   Overload* ovl = unqualified_lookup(d->name());
   assert(ovl);
-  Decl* tbl = ovl->back();
-  assert(tbl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
 
   ovl = unqualified_lookup(get_identifier(__dataplane));
   assert(ovl);
@@ -960,7 +966,7 @@ Lowerer::lower_global_def(Table_decl* d)
   // flows are allowed in a table. Do this right!
   Expr* num_flows = make_int(1000);
   Expr* table_kind = make_int(d->kind());
-  Expr* get_table = builtin.call_create_table(tbl, dp, id_no, key_len,
+  Expr* get_table = builtin.call_create_table(tblptr, dp, id_no, key_len,
                                              num_flows, table_kind );
 
   // We do special generation for calls to create table
@@ -971,28 +977,10 @@ Lowerer::lower_global_def(Table_decl* d)
   elab.elaborate(get_table);
   load_body.push_back(statement(get_table));
 
-  // lower the flows transforms them into a bunch of
-  // free functions
-  Decl_seq flows = lower_table_flows(d);
-  Expr_seq keys  = lower_flow_keys(d->body());
-  module_decls.insert(module_decls.end(), flows.begin(), flows.end());
+  // Add the rest of init flows to the table.
+  add_init_flows(d);
 
-  // deal with the flows
-  for (auto flow : flows) {
-    declare(flow);
-  }
-
-  // handle the miss case
-  Decl* miss = lower_miss_case(d);
-  if (miss) {
-    declare(miss);
-    module_decls.push_back(miss);
-  }
-
-  // add the flows to the load body
-  add_flows(tbl, flows, miss, keys);
-
-  return tbl;
+  return tblptr;
 }
 
 

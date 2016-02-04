@@ -25,6 +25,12 @@ exact_table switch(eth.dst, eth.type)
     output p1;
   }
 
+	{ 0xab1234567890, 0x0800 } ->
+  {
+		puts("hit");
+    output p1;
+  }
+
   miss ->
   {
     output p1;

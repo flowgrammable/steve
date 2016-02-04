@@ -413,6 +413,8 @@ struct Flow_properties
 // FIXME: We should check during compile time that the
 // length of the subkey does not exceed the maximum key
 // size of the table.
+//
+// NOTE: All flows maintain a pointer back to their table.
 struct Flow_decl : Decl
 {
   using Properties = Flow_properties;
