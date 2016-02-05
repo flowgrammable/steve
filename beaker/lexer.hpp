@@ -577,11 +577,11 @@ inline Token
 Lexer::hexadecimal_integer()
 {
   // ignore the leading '0'
-  assert(is_decimal_digit(peek()));
-  ignore();
+  assert(peek() == '0');
+  get();
   // ignore the leading 'x'
   assert(peek() == 'x');
-  ignore();
+  get();
 
   // there should be a digit following the
   // 'x' always.
@@ -609,11 +609,11 @@ inline Token
 Lexer::binary_integer()
 {
   // ignore the leading '0'
-  assert(is_decimal_digit(peek()));
-  ignore();
+  assert(peek() == '0');
+  get();
   // ignore the leading 'b'
   assert(peek() == 'b');
-  ignore();
+  get();
 
   // there should be a digit following the
   // 'x' always.

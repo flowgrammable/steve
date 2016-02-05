@@ -989,26 +989,30 @@ Parser::exact_table_decl()
 
 // Parse flow properties.
 //
-//    'properties' { [assign-stmt]+ }
+//    '[' assign-stmt-seq ']'
 Stmt_seq
 Parser::flow_properties()
 {
   // Optional properties block following the body.
   Stmt_seq properties;
-  if (match_if(properties_kw)) {
-    match(lbrace_tok);
-    while (lookahead() != rbrace_tok) {
+  if (match_if(lbrack_tok)) {
+    while (lookahead() != rbrack_tok) {
       // Match a series of assignments to properties.
       // prop '=' val ';'
       Token tok = match(identifier_tok);
       Expr* prop = on_id(tok);
       match(equal_tok);
       Expr* val = expr();
+
       Stmt* a = on_assign(prop, val);
-      match(semicolon_tok);
       properties.push_back(a);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
     }
-    match(rbrace_tok);
+    match(rbrack_tok);
   }
 
   return properties;
@@ -1016,10 +1020,13 @@ Parser::flow_properties()
 
 // Parse a flow decl
 //
-//    flow-decl -> { expr-seq } -> { action-seq } (optional) properties
+//    flow-decl -> '[' (optional) properties-seq ']'
+//                  { expr-seq } -> { action-seq }
 Decl*
 Parser::flow_decl()
 {
+  Stmt_seq properties = flow_properties();
+
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
@@ -1042,7 +1049,6 @@ Parser::flow_decl()
   match(rbrace_tok);
   match(arrow_tok);
   Stmt* body = block_stmt();
-  Stmt_seq properties = flow_properties();
 
   return on_flow(keys, body, properties);
 }
@@ -1900,7 +1906,7 @@ Parser::on_hex(Token tok)
   Hexadecimal_sym const* hex = tok.hexadecimal_symbol();
   Type const* t = get_integer_type(hex->precision(), unsigned_int, native_order);
   // construct an integer value using string and base 16 (hex)
-  Integer_value i(hex->value(), 16);
+  Integer_value i(hex->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -1911,7 +1917,7 @@ Parser::on_binary(Token tok)
   Binary_sym const* bin = tok.binary_symbol();
   Type const* t = get_integer_type(bin->precision(), unsigned_int, native_order);
   // construct an intger value using string and base 2(binary)
-  Integer_value i(bin->value(), 2);
+  Integer_value i(bin->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 

@@ -1973,6 +1973,7 @@ Elaborator::elaborate(Key_decl* d)
 
 // Current valid properties:
 //      timeout
+//      egress
 bool
 Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
 {

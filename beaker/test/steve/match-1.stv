@@ -17,7 +17,7 @@ decoder start eth_d(eth)
     case 0x0880: puts("Got ipv6");
 		miss: puts("No match");
   }
-  
+
   puts("Performing decode and routing.");
 
   drop;

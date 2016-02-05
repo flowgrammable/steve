@@ -20,12 +20,11 @@ event learn_mac
 	requires(eth.src)
 {
 	add
+	[timeout = 1000]
 	{ eth.src } ->
 	{
 		// puts("Using learned in learn.");
 		goto switch;
-	} properties {
-		timeout = 1000;
 	}
 	into learn;
 
@@ -42,14 +41,13 @@ event learn_mac
 
 exact_table learn(eth.src)
 {
+	[timeout = 1000]
   miss ->
   {
 		// puts("LEARN MISS");
 		raise learn_mac;
     goto switch;
-  } properties {
-		timeout = 0;
-	}
+  }
 }
 
 
