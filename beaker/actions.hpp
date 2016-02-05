@@ -343,9 +343,9 @@ is_action(Stmt* s)
   // FIXME: Get rid of this once Decode_stmt and Goto_stmt are made actions.
   return is<Action>(s)
       || is<Decode_stmt>(s)
-      || is<Goto_stmt>(s)
+      || is<Goto_stmt>(s);
       // FIXME: Remove this, currently for debugging purposes only.
-      || is<Expression_stmt>(s);
+      // || is<Stmt>(s);
 }
 
 

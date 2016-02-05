@@ -2106,6 +2106,16 @@ Elaborator::elaborate(Flow_decl* d)
 
       throw Type_error(locate(block), ss.str());
     }
+
+    for (auto s : block->statements()) {
+      if (!is_action(s)) {
+        std::stringstream ss;
+        ss << "Non-action found inside the body of a flow.\n";
+        ss << *s;
+
+        throw Type_error(locate(s), ss.str());
+      }
+    }
   }
 
   return d;

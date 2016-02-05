@@ -1,3 +1,4 @@
+foreign def puts(char[]) -> int;
 Port p1 = ":5000";
 
 layout eth
@@ -38,15 +39,16 @@ decoder ipv4_d(ipv4)
   extract ipv4.dst;
   extract ipv4.ttl;
   extract ipv4.len;
+	extract ipv4.protocol;
 
   goto static_routing;
 }
 
 
-exact_table static_routing(ipv4.dst)
+exact_table static_routing(ipv4.dst, ipv4.len)
   requires(ipv4.dst, ipv4.ttl, ipv4.len)
 {
-  {0b_1111_1111_1111_1111} ->
+  {0b_11111111_11111111_11111111_11111011, 10} ->
   {
     set ipv4.ttl = ipv4.ttl - 1;
     output p1;
