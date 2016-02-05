@@ -2024,6 +2024,11 @@ Elaborator::elaborate_flow_properties(Flow_decl* d)
 Decl*
 Elaborator::elaborate(Flow_decl* d)
 {
+  // Elaborate the properties block to and build a properties object instide
+  // the flow declaration.
+  Flow_properties p = elaborate_flow_properties(d);
+  d->prop_ = p;
+
   Table_decl* table = as<Table_decl>(stack.context());
   // guarantee this occurs within the context of a table
   if (!table) {
@@ -2046,10 +2051,25 @@ Elaborator::elaborate(Flow_decl* d)
 
   Scope_sentinel scope(*this, d);
 
-  // Elaborate the properties block to and build a properties object instide
-  // the flow declaration.
-  Flow_properties p = elaborate_flow_properties(d);
-  d->prop_ = p;
+  // Make sure all the keys are in scope.
+  for (auto subkey : table->keys()) {
+    if (Key_decl* field = as<Key_decl>(subkey)) {
+      declare(field);
+    }
+  }
+
+  // Make sure all the required fields are in scope.
+  for (auto r : table->requirements()) {
+    Field_name_expr* f = as<Field_name_expr>(r);
+    assert(f);
+    // Produce a variable and declare it.
+    // This variable doesn't do anything, it just confirms
+    // that the requirement name is valid when used in flows.
+    if (!unqualified_lookup(f->name())) {
+      Variable_decl* v = new Variable_decl(f->name(), f->type(), f);
+      declare(v);
+    }
+  }
 
   Type_seq types;
   for (auto expr : d->keys()) {
@@ -2800,26 +2820,6 @@ Decl*
 Elaborator::elaborate_def(Table_decl* d)
 {
   Scope_sentinel scope(*this, d);
-
-  // Make sure all the keys are in scope.
-  for (auto subkey : d->keys()) {
-    if (Key_decl* field = as<Key_decl>(subkey)) {
-      declare(field);
-    }
-  }
-
-  // Make sure all the required fields are in scope.
-  for (auto r : d->requirements()) {
-    Field_name_expr* f = as<Field_name_expr>(r);
-    assert(f);
-    // Produce a variable and declare it.
-    // This variable doesn't do anything, it just confirms
-    // that the requirement name is valid when used in flows.
-    if (!unqualified_lookup(f->name())) {
-      Variable_decl* v = new Variable_decl(f->name(), f->type(), f);
-      declare(v);
-    }
-  }
 
   // Elaborate the individual flows for correctness.
   for (auto flow : d->body()) {

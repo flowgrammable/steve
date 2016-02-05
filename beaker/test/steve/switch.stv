@@ -23,7 +23,9 @@ exact_table switch(eth.dst, eth.type)
   {
 		puts("hit1");
     output p1;
-  }
+  } properties {
+		timeout = 1000;
+	}
 
 	{ 0xab_12_34_56_78_90, 0x0880 } ->
   {
