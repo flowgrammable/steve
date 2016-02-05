@@ -6,7 +6,8 @@ layout eth
 }
 
 
-event control_learn(eth.src)
+event control_learn
+  requires(eth.src)
 {
   drop;
 }

@@ -1744,7 +1744,7 @@ Elaborator::elaborate_field_access(Dot_expr* e)
   locate(f, loc);
 
   elaborate(f);
-  
+
   return f;
 }
 
@@ -2848,9 +2848,26 @@ Elaborator::elaborate_def(Event_decl* d)
 {
   Scope_sentinel scope(*this, d);
 
-  for (Decl*& r : d->requirements_) {
-    r = elaborate(r);
-    declare(r);
+  for (Expr*& r : d->requirements_) {
+    Dot_expr* dot = as<Dot_expr>(r);
+    if (!dot) {
+      std::stringstream ss;
+      ss << "Invalid field name: " << *r;
+      throw Type_error(locate(r), ss.str());
+    }
+
+    Field_name_expr* f = elaborate_field_name(dot);
+
+    if (!f) {
+      std::stringstream ss;
+      ss << "Invalid field name: " << *r;
+      throw Type_error(locate(r), ss.str());
+    }
+
+    // Declare a variable so that
+    Variable_decl* v = new Variable_decl(f->name(), f->type(), f);
+    declare(v);
+    r = f;
   }
 
   d->body_ = elaborate(d->body());

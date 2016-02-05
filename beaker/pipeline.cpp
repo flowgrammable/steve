@@ -639,7 +639,9 @@ Pipeline_checker::get_requirements(Event_decl const* d)
 {
   Sym_set requirements;
   for (auto r : d->requirements()) {
-    requirements.insert(r->name());
+    Field_name_expr* f = as<Field_name_expr>(r);
+    assert(f);
+    requirements.insert(f->name());
   }
 
   return requirements;

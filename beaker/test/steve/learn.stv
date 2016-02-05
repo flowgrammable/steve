@@ -16,7 +16,8 @@ decoder start eth_d(eth)
 }
 
 
-event learn_mac(eth.src)
+event learn_mac
+	requires(eth.src)
 {
 	add
 	{ eth.src } ->

@@ -1090,31 +1090,35 @@ Parser::extract_decl()
 
 // Parse an event declaration.
 //
-//    event-decl -> 'event' name '(' key-decl-seq ')' '{' [stmt-seq] '}'
+//    event-decl -> 'event' name
+//                    'requires ''(' field-name-expr-seq ')'
+//                    '{' [stmt-seq] '}'
 //
 Decl*
 Parser::event_decl()
 {
   match(event_kw);
   Token name = require(identifier_tok);
+  // Check for the optional requires.
+  Expr_seq reqs;
+  if (match_if(requires_kw)) {
+    match(lparen_tok);
+    while (lookahead() != rparen_tok) {
+      Expr* f = field_name_expr();
+      if (f)
+        reqs.push_back(f);
 
-  match(lparen_tok);
-  Decl_seq keys;
-  while (lookahead() != rparen_tok) {
-    Decl* k = key_decl();
-    if (k)
-      keys.push_back(k);
-
-    if (match_if(comma_tok))
-      continue;
-    else
-      break;
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rparen_tok);
   }
-  match(rparen_tok);
 
   Stmt* b = block_stmt();
 
-  return on_event(name, keys, b);
+  return on_event(name, reqs, b);
 }
 
 
@@ -2312,7 +2316,7 @@ Parser::on_port(Token tok, Expr* e)
 
 
 Decl*
-Parser::on_event(Token tok, Decl_seq const& req, Stmt* s)
+Parser::on_event(Token tok, Expr_seq const& req, Stmt* s)
 {
   return new Event_decl(tok.symbol(), req, s);
 }

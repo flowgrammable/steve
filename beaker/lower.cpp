@@ -1022,12 +1022,14 @@ Lowerer::lower_global_def(Event_decl* d)
   // The new body for the function.
   Block_stmt* body = as<Block_stmt>(d->body());
 
-  // Allocate variables corresponding to every key so that their value
+  // Allocate variables corresponding to every field required so that their value
   // can be recovered in the flow function.
-  for (auto decl : d->requirements()) {
-    Symbol const* name = get_identifier(mangle(decl));
+  for (auto f : d->requirements()) {
+    Field_name_expr* fld = as<Field_name_expr>(f);
+    assert(fld);
+    Symbol const* name = get_identifier(mangle(fld));
     Variable_decl* load_var =
-      new Variable_decl(name, decl->type(), new Default_init(decl->type()));
+      new Variable_decl(name, fld->type(), new Default_init(fld->type()));
 
     body->first.insert(body->statements().begin(), statement(load_var));
   }

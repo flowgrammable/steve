@@ -515,17 +515,17 @@ struct Port_decl : Decl
 // handling.
 struct Event_decl : Decl
 {
-  Event_decl(Symbol const* n, Decl_seq const& req, Stmt* body)
+  Event_decl(Symbol const* n, Expr_seq const& req, Stmt* body)
     : Decl(n, nullptr), requirements_(req), body_(body)
   { }
 
-  Decl_seq const& requirements() const { return requirements_; }
+  Expr_seq const& requirements() const { return requirements_; }
   Stmt*           body()         const { return body_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
-  Decl_seq requirements_;
+  Expr_seq requirements_;
   Stmt* body_;
 };
 
