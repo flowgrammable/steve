@@ -1366,8 +1366,10 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
   Decl* cxt = ovl->back();
 
   // get the id from the pipeline checker
-  int mapping1 = checker.get_field_mapping(d->name());
-  int mapping2 = checker.get_field_mapping(d->original());
+  // NOTE: The original mapping is the binding it WOULD HAVE been given
+  // if this were a regular extract.
+  int alias = checker.get_field_mapping(d->name());
+  int original = checker.get_field_mapping(d->original());
 
   Field_name_expr* field = as<Field_name_expr>(d->field());
   assert(field);
@@ -1380,8 +1382,8 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
 
   // create the binding call
   Expr* bind_field = builtin.call_alias_bind( id(cxt),
-                                              make_int(mapping1),
-                                              make_int(mapping2),
+                                              make_int(original),
+                                              make_int(alias),
                                               offset,
                                               length);
   bind_field = elab.elaborate(bind_field);

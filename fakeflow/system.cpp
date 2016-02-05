@@ -369,6 +369,9 @@ fp_raise_event(fp::Context* cxt, void* handler)
   void (*event)(fp::Context*);
   event = (void (*)(fp::Context*)) (handler);
   // Invoke the event.
+  // FIXME: This should produce a copy of the context and process it
+  // seperately.
+  //
   // FIXME: Pass it to a thread instead.
   event(cxt);
 }
@@ -414,6 +417,25 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
   // absolute offset.
   cxt->bind_field(id, abs_off, len);
 }
+
+
+// Bind twice: once with the original field and again with its aliased name.
+void
+fp_alias_bind(fp::Context* cxt, int original, int alias,
+              std::uint16_t off, std::uint16_t len)
+{
+  // Get field requires an absolute offset which is the context's current offset
+  // plus the relative offset passed to this function.
+  int abs_off = cxt->offset() + off;
+  // We bind fields using their absolute offset since this is the only way we
+  // can recover the absolute offset when we need to look up the binding later.
+  //
+  // FIXME: There needs to be a way to store the relative offset instead of the
+  // absolute offset.
+  cxt->bind_field(original, abs_off, len);
+  cxt->bind_field(alias, abs_off, len);
+}
+
 
 
 fp::Byte*

@@ -67,7 +67,7 @@ Builtin::bind_field()
 
 
 //
-// Byte* __alias_bind(Context*, int id1, int id2, int offset, int length);
+// Byte* __alias_bind(Context*, int org, int alias, int offset, int length);
 //
 Function_decl*
 Builtin::alias_bind()
@@ -77,8 +77,8 @@ Builtin::alias_bind()
   Decl_seq parms
   {
     new Parameter_decl(get_identifier("cxt"), get_context_type()->ref()),
-    new Parameter_decl(get_identifier("id1"), get_integer_type()),
-    new Parameter_decl(get_identifier("id2"), get_integer_type()),
+    new Parameter_decl(get_identifier("o"), get_integer_type()),
+    new Parameter_decl(get_identifier("a"), get_integer_type()),
     new Parameter_decl(get_identifier("offset"), get_integer_type()),
     new Parameter_decl(get_identifier("length"), get_integer_type()),
   };

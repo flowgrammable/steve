@@ -794,17 +794,22 @@ Expr*
 check_equality_expr(Elaborator& elab, Binary_expr* e)
 {
   // Apply conversions.
+  Type const* z = get_integer_type();
   Type const* b = get_boolean_type();
-  Expr* e1 = require_value(elab, e->first);
-  Expr* e2 = require_value(elab, e->second);
+  Expr* c1 = require_converted(elab, e->first, z);
+  Expr* c2 = require_converted(elab, e->second, z);
+  if (!c1)
+    throw Type_error({}, "left operand cannot be converted to 'int'");
+  if (!c2)
+    throw Type_error({}, "right operand cannot be converted to 'int'");
 
   // Check types.
-  if (e1->type() != e2->type())
+  if (c1->type() != c2->type())
     throw Type_error({}, "operands have different types");
 
   e->type_ = b;
-  e->first = e1;
-  e->second = e2;
+  e->first = c1;
+  e->second = c2;
   return e;
 }
 
