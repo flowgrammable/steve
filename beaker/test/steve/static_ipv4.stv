@@ -51,4 +51,10 @@ exact_table static_routing(ipv4.dst)
     set ipv4.ttl = ipv4.ttl - 1;
     output p1;
   }
+
+	miss ->
+	{
+		set ipv4.ttl = ipv4.ttl - 1;
+		flood;
+	}
 }

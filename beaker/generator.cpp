@@ -1107,9 +1107,9 @@ Generator::gen(Match_stmt const* s)
 
   // Block for each case
   std::vector<llvm::BasicBlock> cases;
-  // block to merge back into
   llvm::BasicBlock* done = llvm::BasicBlock::Create(cxt, "switch.done", fn);
-  llvm::SwitchInst* switch_ = build.CreateSwitch(cond, done);
+  llvm::SwitchInst* switch_ = build.CreateSwitch(cond, nullptr);
+  build.SetInsertPoint(switch_);
 
   for (auto stmt : s->cases()) {
     assert(is<Case_stmt>(stmt));
@@ -1127,13 +1127,21 @@ Generator::gen(Match_stmt const* s)
     switch_->addCase(as<llvm::ConstantInt>(label), c1);
   }
 
+  if (s->has_miss()) {
+    llvm::BasicBlock* def = llvm::BasicBlock::Create(cxt, "switch.default", fn);
+    switch_->setDefaultDest(def);
+    // handle the default case
+    build.SetInsertPoint(def);
+    gen(s->miss());
+    if (!def->getTerminator())
+      build.CreateBr(done);
+  }
+  else {
+    switch_->setDefaultDest(done);
+  }
+
   // generate the merging block
   build.SetInsertPoint(done);
-
-  // handle the default case
-  if (s->has_miss()) {
-    gen(s->miss());
-  }
 }
 
 
