@@ -1719,7 +1719,9 @@ Elaborator::elaborate(Field_access_expr* e)
 
   if (!binding) {
     std::stringstream ss;
-    ss << *e << " used but not extracted in this path.";
+    ss << *e
+       << " used but not extracted in this path OR\n";
+       << " used but not valid in this context."
     throw Type_error(locate(e), ss.str());
   }
 
@@ -2077,11 +2079,11 @@ Elaborator::elaborate(Flow_decl* d)
     Expr* key = elaborate(expr);
 
     // For now we only support literal expressions here.
-    if (!is<Literal_expr>(key)) {
-      std::stringstream ss;
-      ss << "Key value must be a literal. Found: " << *key;
-      throw Type_error(locate(d), ss.str());
-    }
+    // if (!is<Literal_expr>(key)) {
+    //   std::stringstream ss;
+    //   ss << "Key value must be a literal. Found: " << *key;
+    //   throw Type_error(locate(d), ss.str());
+    // }
 
     types.push_back(key->type());
   }
