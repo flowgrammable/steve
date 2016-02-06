@@ -110,6 +110,14 @@ Parser::primary_expr()
   if (Token tok = match_if(string_tok))
     return on_str(tok);
 
+  // inport expr
+  if (Token tok = match_if(inport_kw))
+    return on_inport(tok);
+
+  // inport expr
+  if (Token tok = match_if(inphysport_kw))
+    return on_inphysport(tok);
+
   // paren-expr
   if (match_if(lparen_tok)) {
     Expr* e = expr();
@@ -1470,7 +1478,7 @@ Parser::output_stmt()
   if (match_if(egress_kw)) {
     match(semicolon_tok);
     // FIXME: Change the name to output egress.
-    return on_output_inport();
+    return on_output_egress();
   }
 
   // Otherwise its a regular output followed by a declared port id.
@@ -2145,6 +2153,20 @@ Parser::on_field_access(Expr_seq const& e)
 }
 
 
+Expr*
+Parser::on_inport(Token tok)
+{
+  return init<Inport_expr>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_inphysport(Token tok)
+{
+  return init<Inphysport_expr>(tok.location(), get_port_type());
+}
+
+
 Decl*
 Parser::on_key(Expr* e)
 {
@@ -2463,7 +2485,7 @@ Parser::on_output(Expr* e)
 
 
 Stmt*
-Parser::on_output_inport()
+Parser::on_output_egress()
 {
   return new Output_egress();
 }

@@ -76,6 +76,11 @@ struct Lower_expr_fn
   // Field access expr becomes an id_expr whose declaration is
   // resolved against a variable created by lowering the extracts decl.
   Expr* operator()(Field_access_expr* e) const { return lower.lower(e); }
+
+  // Inport and inphys port turn into calls to fetch those fields out of
+  // the context.
+  Expr* operator()(Inport_expr* e) const { return lower.lower(e); }
+  Expr* operator()(Inphysport_expr* e) const { return lower.lower(e); }
 };
 
 
@@ -459,6 +464,42 @@ Lowerer::lower(Field_access_expr* e)
   // If the variable has already been initialized with a call to read field
   // then just return an identifier to the variable.
   return decl_id(var);
+}
+
+
+// Lowering an inport passes the context to a runtime and requests back
+// the inport id.
+Expr*
+Lowerer::lower(Inport_expr* e)
+{
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Make a call to get_in_port
+  Expr* port = builtin.call_get_in_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an inphysport passes the context to a runtime and requests back
+// the inphysport id.
+Expr*
+Lowerer::lower(Inphysport_expr* e)
+{
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Make a call to get_in_port
+  Expr* port = builtin.call_get_in_phys_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
 }
 
 

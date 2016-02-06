@@ -154,6 +154,8 @@ private:
   Expr* on_dot(Expr*, Expr*);
   Expr* on_field_name(Expr_seq const&);
   Expr* on_field_access(Expr_seq const&);
+  Expr* on_inport(Token);
+  Expr* on_inphysport(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);
@@ -199,7 +201,7 @@ private:
   Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
-  Stmt* on_output_inport();
+  Stmt* on_output_egress();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);

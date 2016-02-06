@@ -420,6 +420,56 @@ Builtin::get_port()
 }
 
 
+// This function call gets the in_port of a context.
+//
+//    Port::ID get_packet_in_port(Context*);
+Function_decl*
+Builtin::get_in_port()
+{
+  Symbol const* fn_name = get_identifier(__get_inport);
+
+  Type const* port_type = get_port_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__context), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// This function call gets the in_phys_port of a context.
+//
+//    Port::ID get_packet_in_phys_port(Context*);
+Function_decl*
+Builtin::get_in_phys_port()
+{
+  Symbol const* fn_name = get_identifier(__get_inphysport);
+
+  Type const* port_type = get_port_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__context), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // Retrieves the inport value from a Flow structure.
 //
 //    void get_flow_egress(Flow*);
@@ -741,6 +791,8 @@ Builtin::init_builtins()
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
+    {__get_inport, get_in_port()},
+    {__get_inphysport, get_in_phys_port()},
     {__get_flow_egress, get_flow_egress()},
     {__drop, drop()},
     {__flood, flood()},
@@ -937,6 +989,26 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
   Expr* e = new Call_expr(decl_id(fn), {name});
 
   return e;
+}
+
+
+Expr*
+Builtin::call_get_in_port(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__get_inport)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_get_in_phys_port(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__get_inphysport)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt});
 }
 
 

@@ -25,6 +25,8 @@ struct Lowerer
   Expr* lower(Sign_conv* e);
   Expr* lower(Call_expr* e);
   Expr* lower(Field_access_expr* e);
+  Expr* lower(Inport_expr* e);
+  Expr* lower(Inphysport_expr* e);
 
   template <typename T>
   Expr* lower_unary_expr(T*);

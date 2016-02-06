@@ -33,7 +33,8 @@ constexpr char const* __write_flood     = "fp_write_flood";
 constexpr char const* __write_set       = "fp_write_set_field";
 constexpr char const* __raise_event     = "fp_raise_event";
 constexpr char const* __get_flow_egress = "fp_get_flow_egress";
-constexpr char const* __packet_inport   = "fp_get_packet_in_port";
+constexpr char const* __get_inport      = "fp_get_packet_in_port";
+constexpr char const* __get_inphysport  = "fp_get_packet_in_phys_port";
 constexpr char const* __context         = "_cxt_";
 constexpr char const* __header          = "_header_";
 constexpr char const* __table           = "_table_";
@@ -349,6 +350,8 @@ struct Builtin
   Expr* call_add_miss(Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr*, Expr*);
+  Expr* call_get_in_port(Expr*);
+  Expr* call_get_in_phys_port(Expr*);
   Expr* call_get_flow_egress(Expr*);
   Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
@@ -390,6 +393,8 @@ private:
   Function_decl* gather();
   Function_decl* match();
   Function_decl* get_port();
+  Function_decl* get_in_port();
+  Function_decl* get_in_phys_port();
   Function_decl* get_flow_egress();
   Function_decl* drop();
   Function_decl* flood();
