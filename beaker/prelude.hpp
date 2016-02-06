@@ -156,7 +156,7 @@ struct Get_dataplane;
 struct Action;
 struct Drop;
 struct Output;
-struct Output_inport;
+struct Output_egress;
 struct Flood;
 struct Clear;
 struct Group;

@@ -54,9 +54,9 @@ struct Output : Action
 //
 // The inport is implicitly resolved at runtime when executing this action
 // by requesting that a flow provide the inport.
-struct Output_inport : Output
+struct Output_egress : Output
 {
-  Output_inport()
+  Output_egress()
     : Output(nullptr)
   { }
 

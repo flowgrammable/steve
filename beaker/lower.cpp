@@ -122,7 +122,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Output_inport* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Output_egress* s) const { return lower.lower(s); }
   Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
@@ -320,6 +320,8 @@ Lowerer::lower(Expr* e)
 }
 
 
+// Lowering a port expr returns the identifier to the
+// global variable created for that port.
 Expr*
 Lowerer::lower(Port_expr* e)
 {
@@ -332,7 +334,7 @@ Lowerer::lower(Port_expr* e)
 
   e->decl = p;
 
-  return e;
+  return id(p);
 }
 
 
@@ -1649,14 +1651,9 @@ Lowerer::lower(Output* s)
   assert(cxt);
 
   // Acquire the port.
-  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
-  ovl = unqualified_lookup(port_name);
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
-
+  Expr* port = lower(s->port());
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), id(port));
+  Expr* output = builtin.call_output(decl_id(cxt), port);
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.
@@ -1671,7 +1668,7 @@ Lowerer::lower(Output* s)
 
 
 Stmt_seq
-Lowerer::lower(Output_inport* s)
+Lowerer::lower(Output_egress* s)
 {
   // get the context variable which should Always
   // be within the scope of a decoder body
@@ -1688,10 +1685,10 @@ Lowerer::lower(Output_inport* s)
   Decl* self = ovl->back();
   assert(self);
 
-  Expr* inport = builtin.call_get_flow_inport(decl_id(self));
+  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
 
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), inport);
+  Expr* output = builtin.call_output(decl_id(cxt), egress);
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.

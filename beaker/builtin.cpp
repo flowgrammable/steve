@@ -422,11 +422,11 @@ Builtin::get_port()
 
 // Retrieves the inport value from a Flow structure.
 //
-//    void get_flow_inport(Flow*);
+//    void get_flow_egress(Flow*);
 Function_decl*
-Builtin::get_flow_inport()
+Builtin::get_flow_egress()
 {
-  Symbol const* fn_name = get_identifier(__get_flow_inport);
+  Symbol const* fn_name = get_identifier(__get_flow_egress);
 
   Type const* flow_ref = get_opaque_type()->ref();
   Type const* port_type = get_port_type();
@@ -741,7 +741,7 @@ Builtin::init_builtins()
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
-    {__get_flow_inport, get_flow_inport()},
+    {__get_flow_egress, get_flow_egress()},
     {__drop, drop()},
     {__flood, flood()},
     {__output, output()},
@@ -941,9 +941,9 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 
 
 Expr*
-Builtin::call_get_flow_inport(Expr* flow)
+Builtin::call_get_flow_egress(Expr* flow)
 {
-  Function_decl* fn = builtin_fn.find(__get_flow_inport)->second;
+  Function_decl* fn = builtin_fn.find(__get_flow_egress)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {flow});

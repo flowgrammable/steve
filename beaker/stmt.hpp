@@ -46,7 +46,7 @@ struct Stmt::Visitor
   virtual void visit(Action const*) = 0;
   virtual void visit(Drop const*) = 0;
   virtual void visit(Output const*) = 0;
-  virtual void visit(Output_inport const*) = 0;
+  virtual void visit(Output_egress const*) = 0;
   virtual void visit(Flood const*) = 0;
   virtual void visit(Clear const*) = 0;
   virtual void visit(Set_field const*) = 0;
@@ -83,7 +83,7 @@ struct Stmt::Mutator
   virtual void visit(Action*) = 0;
   virtual void visit(Drop*) = 0;
   virtual void visit(Output*) = 0;
-  virtual void visit(Output_inport*) = 0;
+  virtual void visit(Output_egress*) = 0;
   virtual void visit(Flood*) = 0;
   virtual void visit(Clear*) = 0;
   virtual void visit(Set_field*) = 0;
@@ -402,7 +402,7 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Action const* d) { this->invoke(d); };
   void visit(Drop const* d) { this->invoke(d); };
   void visit(Output const* d) { this->invoke(d); };
-  void visit(Output_inport const* d) { this->invoke(d); };
+  void visit(Output_egress const* d) { this->invoke(d); };
   void visit(Flood const* d) { this->invoke(d); };
   void visit(Clear const* d) { this->invoke(d); };
   void visit(Set_field const* d) { this->invoke(d); };
@@ -455,7 +455,7 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Action* d) { this->invoke(d); };
   void visit(Drop* d) { this->invoke(d); };
   void visit(Output* d) { this->invoke(d); };
-  void visit(Output_inport* d) { this->invoke(d); };
+  void visit(Output_egress* d) { this->invoke(d); };
   void visit(Flood* d) { this->invoke(d); };
   void visit(Clear* d) { this->invoke(d); };
   void visit(Set_field* d) { this->invoke(d); };

@@ -2465,7 +2465,7 @@ Parser::on_output(Expr* e)
 Stmt*
 Parser::on_output_inport()
 {
-  return new Output_inport();
+  return new Output_egress();
 }
 
 

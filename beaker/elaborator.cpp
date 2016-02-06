@@ -2941,7 +2941,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Output_inport* d) { return elab.elaborate(d); }
+    Stmt* operator()(Output_egress* d) { return elab.elaborate(d); }
     Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
@@ -3343,7 +3343,7 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
-Elaborator::elaborate(Output_inport* s)
+Elaborator::elaborate(Output_egress* s)
 {
   // This is special since it can only occur within the context of flows.
   if (!is<Flow_decl>(stack.context())) {
