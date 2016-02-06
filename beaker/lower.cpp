@@ -121,7 +121,7 @@ struct Lower_stmt_fn
 
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
-  Stmt_seq operator()( s) const { return lower.lower(s); }
+  Stmt_seq operator()(Output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output_inport* s) const { return lower.lower(s); }
   Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
@@ -129,7 +129,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Write_ s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
@@ -1639,7 +1639,7 @@ Lowerer::lower(Drop* s)
 
 
 Stmt_seq
-Lowerer::lower( s)
+Lowerer::lower(Output* s)
 {
   // get the context variable which should Always
   // be within the scope of a decoder body
@@ -1971,9 +1971,9 @@ Lowerer::lower(Write_drop* w)
 // longer valid). This is easier to enforce in immediate action rather than
 // written actions which is currently not enforced in.
 Stmt_seq
-Lowerer::lower(Write_ w)
+Lowerer::lower(Write_output* w)
 {
-   s = w->output();
+  Output* s = w->output();
   assert(s);
 
   // get the context variable which should Always
