@@ -401,10 +401,11 @@ struct Key_decl : Decl
 struct Flow_properties
 {
   Flow_properties()
-    : timeout(nullptr)
+    : timeout(nullptr), egress(nullptr)
   { }
 
   Expr* timeout;
+  Expr* egress;
 };
 
 
@@ -434,6 +435,7 @@ struct Flow_decl : Decl
   Stmt*           instructions() const { return instructions_; }
   bool            miss_case() const { return miss_; }
   Table_decl*     table() const { return table_; }
+  Properties      properties() const { return prop_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }

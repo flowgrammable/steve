@@ -15,12 +15,12 @@ decoder start eth_d(eth)
   goto learn;
 }
 
+Port p1 = ":5000";
 
 event learn_mac
 	requires(eth.src)
 {
 	add
-	[timeout = 1000]
 	{ eth.src } ->
 	{
 		// puts("Using learned in learn.");
@@ -30,6 +30,7 @@ event learn_mac
 
 
 	add
+	[timeout = 1000, egress = in_port]
 	{ eth.src } ->
 	{
 		// puts("Using learned in switch.");
@@ -41,7 +42,6 @@ event learn_mac
 
 exact_table learn(eth.src)
 {
-	[timeout = 1000]
   miss ->
   {
 		// puts("LEARN MISS");
@@ -53,6 +53,7 @@ exact_table learn(eth.src)
 
 exact_table switch(eth.dst)
 {
+	[timeout = 1000, egress = p1]
   miss ->
   {
 		// puts("Flood, miss.");

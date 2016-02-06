@@ -1764,7 +1764,7 @@ Elaborator::elaborate(Inport_expr* e)
 {
   Decl* context = stack.context();
   if (!is_valid_pipeline_context(context)) {
-    throw Type_error(locate(e), "in_port occuring outside a pipeline declaration.");
+    throw Type_error(locate(e), "in_port occuring outside a decoder, flow, or event.");
   }
   return e;
 }
@@ -1775,7 +1775,7 @@ Elaborator::elaborate(Inphysport_expr* e)
 {
   Decl* context = stack.context();
   if (!is_valid_pipeline_context(context)) {
-    throw Type_error(locate(e), "in_phys_port occuring outside a pipeline declaration.");
+    throw Type_error(locate(e), "in_phys_port occuring outside a decoder, flow, or event.");
   }
   return e;
 }
@@ -2005,6 +2005,8 @@ bool
 Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
 {
   // NOTE: Always check that the property doesn't exist.
+
+  // Timeout property.
   if (pname == "timeout") {
     if (p.timeout) {
       throw Type_error(locate(val), "Duplicate property 'timeout'.");
@@ -2012,12 +2014,29 @@ Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
     }
 
     Expr* e = elaborate(val);
-    if (!is<Integer_type>(e->type())) {
+    if (!is<Integer_type>(e->type()->nonref())) {
       throw Type_error(locate(val), "Property 'timeout' must be an integer.");
       return false;
     }
 
     p.timeout = e;
+    return true;
+  }
+
+  // Egress property.
+  if (pname == "egress") {
+    if (p.egress) {
+      throw Type_error(locate(val), "Duplicate property 'egress.'");
+      return false;
+    }
+
+    Expr* e = elaborate(val);
+    if (!is<Port_type>(e->type()->nonref())) {
+      throw Type_error(locate(val), "Property 'egress' must be a port.");
+      return false;
+    }
+
+    p.egress = e;
     return true;
   }
 
@@ -2102,14 +2121,6 @@ Elaborator::elaborate(Flow_decl* d)
   Type_seq types;
   for (auto expr : d->keys()) {
     Expr* key = elaborate(expr);
-
-    // For now we only support literal expressions here.
-    // if (!is<Literal_expr>(key)) {
-    //   std::stringstream ss;
-    //   ss << "Key value must be a literal. Found: " << *key;
-    //   throw Type_error(locate(d), ss.str());
-    // }
-
     types.push_back(key->type());
   }
 
@@ -2864,16 +2875,16 @@ Elaborator::elaborate_def(Table_decl* d)
     elaborate(flow);
   }
 
+  // check the miss case
+  if (d->miss_)
+    d->miss_ = elaborate(d->miss_);
+
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
     ss << "Invalid entry in table: " << *d->name();
     throw Type_error({}, ss.str());
   }
-
-  // check the miss case
-  if (d->miss_)
-    d->miss_ = elaborate(d->miss_);
 
   return d;
 }
@@ -3370,12 +3381,18 @@ Elaborator::elaborate(Output* s)
 Stmt*
 Elaborator::elaborate(Output_egress* s)
 {
+  Flow_decl* flow = as<Flow_decl>(stack.context());
   // This is special since it can only occur within the context of flows.
-  if (!is<Flow_decl>(stack.context())) {
+  if (!flow) {
     std::stringstream ss;
-    ss << "\'output inport\' occuring outside a flow declaration.";
+    ss << "\'output egress\' occuring outside a flow declaration.";
     throw Type_error(locate(s), ss.str());
   }
+
+  // Now check that the flow's egress property is set.
+  if (!flow->properties().egress)
+    throw Type_error(locate(s), "\'output egress\' "
+                                "occuring without 'egress' flow property set.");
 
   return s;
 }

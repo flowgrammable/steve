@@ -1009,8 +1009,14 @@ Parser::flow_properties()
     while (lookahead() != rbrack_tok) {
       // Match a series of assignments to properties.
       // prop '=' val ';'
-      Token tok = match(identifier_tok);
-      Expr* prop = on_id(tok);
+      Expr* prop = nullptr;
+
+      // A property can be any identifier or the keyword egress.
+      if (Token tok = match_if(identifier_tok))
+        prop = on_id(tok);
+      if (Token tok = match_if(egress_kw))
+        prop = on_id(tok);
+
       match(equal_tok);
       Expr* val = expr();
 
@@ -1040,7 +1046,6 @@ Parser::flow_decl()
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    Stmt_seq properties = flow_properties();
     return on_flow_miss(body, properties);
   }
 
