@@ -33,7 +33,7 @@ event learn_mac
 	{ eth.src } ->
 	{
 		// puts("Using learned in switch.");
-		output inport;
+		output egress;
 	}
 	into switch;
 }

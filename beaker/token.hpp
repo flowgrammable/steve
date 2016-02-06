@@ -112,7 +112,8 @@ enum Token_kind
   raise_kw,
   properties_kw,
   inport_kw,
-  pktinport_kw,
+  inphysport_kw,
+  egress_kw,
 
   // Multi-valued tokens
   boolean_tok,      // true | false

@@ -1720,8 +1720,8 @@ Elaborator::elaborate(Field_access_expr* e)
   if (!binding) {
     std::stringstream ss;
     ss << *e
-       << " used but not extracted in this path OR\n";
-       << " used but not valid in this context."
+       << " used but not extracted in this path OR\n"
+       << " used but not valid in this context.";
     throw Type_error(locate(e), ss.str());
   }
 

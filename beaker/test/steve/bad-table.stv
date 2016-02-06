@@ -21,7 +21,7 @@ var bad_var : uint(48) = 0;
 
 exact_table switch(eth.dst, eth.type)
 {
-  { bad_var, 800 } ->
+  { eth.dst, 800 } ->
   {
     output p1;
   }

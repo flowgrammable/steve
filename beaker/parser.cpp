@@ -909,11 +909,13 @@ Parser::decode_decl()
 
 
 // Parse a key decl
-//    key-decl -> id.id
-//                key-decl.id
+//    key-decl -> field-name-expr
+//              | 'inport'
+//              | 'inphyport'
 Decl*
 Parser::key_decl()
 {
+  // A
   // Use postfix parsing hoping for a dot expr.
   Expr* key = expr();
   return on_key(key);
@@ -1456,20 +1458,20 @@ Parser::flood_stmt()
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
-//                 | 'output' 'inport'
-//                 | 'output' 'pktinport'
+//                 | 'output' 'egress'
+//                 | 'output' 'in_port'
+//                 | 'output' 'in_phys_port'
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
 
   // If its a special output statement.
-  if (match_if(inport_kw)) {
+  if (match_if(egress_kw)) {
     match(semicolon_tok);
+    // FIXME: Change the name to output egress.
     return on_output_inport();
   }
-  // else if (match_if(pktinport_kw))
-  //   return on_output_pktinport();
 
   // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
