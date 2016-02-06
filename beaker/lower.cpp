@@ -1956,11 +1956,6 @@ Lowerer::lower(Insert_flow* s)
   Decl* tblptr = ovl->back();
   assert(tblptr);
 
-  ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
   // Get the key values needed for the flow.
   Flow_decl* flow = as<Flow_decl>(s->flow());
   assert(flow);
@@ -1981,9 +1976,13 @@ Lowerer::lower(Insert_flow* s)
   // Construct the flow function and add it into the module.
   Decl* flow_fn = construct_added_flow(table, flow);
 
+  // Handle the properties.
+  Flow_properties prop = lower_flow_properties(flow);
+
   // Make a call to fp_add_flow
   Expr* add_flow =
-    builtin.call_add_new_flow(decl_id(tblptr), decl_id(flow_fn), vcast, decl_id(cxt));
+    builtin.call_add_new_flow(decl_id(tblptr), decl_id(flow_fn), vcast,
+                              prop.timeout, prop.egress);
 
   return {
     statement(temp),

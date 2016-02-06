@@ -247,7 +247,8 @@ Builtin::add_new_flow()
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_ref),
     new Parameter_decl(get_identifier("key_buf"), buffer_type),
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -951,12 +952,12 @@ Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Exp
 
 
 Expr*
-Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* cxt)
+Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_new_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, cxt});
+  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 

@@ -345,7 +345,7 @@ struct Builtin
   Expr* call_advance(Expr_seq const& args);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_init_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
-  Expr* call_add_new_flow(Expr*, Expr*, Expr*, Expr*);
+  Expr* call_add_new_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_remove_flow(Expr*, Expr*);
   Expr* call_add_miss(Expr*, Expr*, Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
