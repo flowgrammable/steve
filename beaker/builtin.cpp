@@ -179,7 +179,7 @@ Builtin::get_table()
 
 // Add an initial flow entry to the table.
 //
-//    void add_init_flow(Table*, Flow*, i8* key)
+//    void add_init_flow(Table*, Flow*, i8* key, int timeout, Port::ID egress)
 Function_decl*
 Builtin::add_init_flow()
 {
@@ -204,7 +204,9 @@ Builtin::add_init_flow()
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_ref),
-    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+    new Parameter_decl(get_identifier("key_buf"), buffer_type),
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -314,6 +316,8 @@ Builtin::add_miss()
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_fn_ref),
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -937,12 +941,12 @@ Builtin::call_advance(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key)
+Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_init_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key});
+  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
@@ -967,12 +971,12 @@ Builtin::call_remove_flow(Expr* table, Expr* key)
 
 
 Expr*
-Builtin::call_add_miss(Expr* tbl, Expr* flow)
+Builtin::call_add_miss(Expr* tbl, Expr* flow, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_miss)->second;
   assert(fn);
 
-  return new Add_miss(decl_id(fn), {tbl, flow});
+  return new Add_miss(decl_id(fn), {tbl, flow, t_out, egress});
 }
 
 

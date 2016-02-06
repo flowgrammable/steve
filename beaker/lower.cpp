@@ -7,6 +7,7 @@
 #include "beaker/mangle.hpp"
 #include "beaker/gather.hpp"
 #include "beaker/evaluator.hpp"
+#include "beaker/convert.hpp"
 
 #include <iostream>
 
@@ -339,7 +340,8 @@ Lowerer::lower(Port_expr* e)
 
   e->decl = p;
 
-  return id(p);
+  Expr* i = id(p);
+  return elab.elaborate(i);
 }
 
 
@@ -905,6 +907,44 @@ Lowerer::lower_miss_case(Table_decl* d)
 }
 
 
+Flow_properties
+Lowerer::lower_flow_properties(Flow_decl* f)
+{
+  auto p = f->properties();
+
+  // Lower the expressions comprising each property.
+  // If that property was not set, set it to the default
+  // vaulue associated with that property.
+
+  // Handle the timeout property.
+  // The default value for timeout is 0.
+  // NOTE: We should make the runtime timeout flows at 1 so we can
+  // reserve 0 for the "never timeout" value.
+  if (!p.timeout)
+    p.timeout = zero();
+  else {
+    p.timeout = elab.elaborate(lower(p.timeout));
+    p.timeout = convert_to_value(p.timeout);
+  }
+
+  // Handle the egress property.
+  // The default port id for egress is 0 which is a non-existant port
+  // but it should be impossible to call output egress without setting the
+  // egress property to a valid port, so this shouldn't matter.
+  if (!p.egress)
+    p.egress = zero();
+  else {
+    p.egress = elab.elaborate(lower(p.egress));
+    p.egress = convert_to_value(p.egress);
+  }
+
+  // Update the flow properties.
+  f->prop_ = p;
+
+  return p;
+}
+
+
 // 'table' is a global variable declaration which retains the pointer to the
 // table received via the runtime.
 //
@@ -941,7 +981,7 @@ Lowerer::add_init_flows(Table_decl* table)
     declare(flow_fn);
     module_decls.push_back(flow_fn);
 
-    // Form a call.
+    // Form a call to construct the key during runtime.
     Expr_seq keys;
     // Lower all keys first.
     for (auto e : flow->keys()) {
@@ -950,13 +990,18 @@ Lowerer::add_init_flows(Table_decl* table)
     Expr* call = new Call_expr(id(key_fn), keys);
     elab.elaborate(call);
     Variable_decl* temp = temp_var(elab.syms, call->type(), call);
-
-    // Void cast the result
+    // Void cast the result of forming the key.
     Expr* vcast = new Void_cast(decl_id(temp));
 
-    // Make a call to fp_add_flow
+    // Produce the properties parameters.
+    Flow_properties prop = lower_flow_properties(flow);
+
+    // Make a call to fp_add_flow.
+    // NOTE: that function pointers don't actually work so this skips
+    // re-elaboration.
     Expr* add_flow =
-      builtin.call_add_init_flow(decl_id(tblptr), decl_id(flow_fn), vcast);
+      builtin.call_add_init_flow(decl_id(tblptr), decl_id(flow_fn), vcast,
+                                 prop.timeout, prop.egress);
 
     // elab.elaborate(add_flow);
     load_body.push_back(statement(temp));
@@ -968,7 +1013,14 @@ Lowerer::add_init_flows(Table_decl* table)
   if (miss) {
     declare(miss);
     module_decls.push_back(miss);
-    Expr* add_miss = builtin.call_add_miss(decl_id(tblptr), decl_id(miss));
+    // Produce the properties parameters.
+    Flow_properties prop =
+      lower_flow_properties(as<Flow_decl>(table->miss_case()));
+
+    Expr* add_miss =
+      builtin.call_add_miss(decl_id(tblptr), decl_id(miss),
+                            prop.timeout, prop.egress);
+
     load_body.push_back(statement(add_miss));
   }
 }
