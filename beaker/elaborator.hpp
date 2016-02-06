@@ -126,6 +126,8 @@ public:
   Expr* elaborate(Void_cast* e);
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
+  Expr* elaborate(Inport_expr* e);
+  Expr* elaborate(Inphysport_expr* e);
 
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);

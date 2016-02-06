@@ -90,6 +90,8 @@ struct Expr::Visitor
   virtual void visit(Create_table const*) = 0;
   virtual void visit(Get_dataplane const*) = 0;
   virtual void visit(Port_expr const*) = 0;
+  virtual void visit(Inport_expr const*) = 0;
+  virtual void visit(Inphysport_expr const*) = 0;
 };
 
 
@@ -144,6 +146,8 @@ struct Expr::Mutator
   virtual void visit(Create_table*) = 0;
   virtual void visit(Get_dataplane*) = 0;
   virtual void visit(Port_expr*) = 0;
+  virtual void visit(Inport_expr*) = 0;
+  virtual void visit(Inphysport_expr*) = 0;
 };
 
 
@@ -613,6 +617,27 @@ struct Inport_expr : Expr
   Inport_expr(Type const* t)
     : Expr(t)
   { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression allows access the the in_port field of the context.
+//
+// Inport_expr always resolves into an integer id asigned the port by the runtime
+// so that it can be used as part of a table key. However, inport cannot be
+// used in arithmetic situations.
+//
+// Inport should always have port type.
+struct Inphysport_expr : Expr
+{
+  Inphysport_expr(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 
@@ -960,6 +985,8 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Create_table const* e) { this->invoke(e); }
   void visit(Get_dataplane const* e) { this->invoke(e); }
   void visit(Port_expr const* e) { this->invoke(e); }
+  void visit(Inport_expr const* e) { this->invoke(e); }
+  void visit(Inphysport_expr const* e) { this->invoke(e); }
 };
 
 
@@ -1030,6 +1057,8 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Create_table* e) { this->invoke(e); }
   void visit(Get_dataplane* e) { this->invoke(e); }
   void visit(Port_expr* e) { this->invoke(e); }
+  void visit(Inport_expr* e) { this->invoke(e); }
+  void visit(Inphysport_expr* e) { this->invoke(e); }
 };
 
 

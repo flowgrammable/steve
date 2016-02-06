@@ -76,6 +76,8 @@ struct Copy_init;
 struct Reference_init;
 struct Field_name_expr;
 struct Field_access_expr;
+struct Inport_expr;
+struct Inphysport_expr;
 
 struct Type;
 struct Id_type;

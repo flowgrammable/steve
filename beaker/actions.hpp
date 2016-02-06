@@ -360,4 +360,13 @@ is_valid_action_context(Stmt* s)
 }
 
 
+inline bool
+is_valid_pipeline_context(Decl* d)
+{
+  return is<Decode_decl>(d)
+      || is<Flow_decl>(d)
+      || is<Event_decl>(d);
+}
+
+
 #endif

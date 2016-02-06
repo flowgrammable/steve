@@ -125,6 +125,8 @@ std::ostream& operator<<(std::ostream&, Void_cast const&);
 std::ostream& operator<<(std::ostream&, Get_port const&);
 std::ostream& operator<<(std::ostream&, Create_table const&);
 std::ostream& operator<<(std::ostream&, Get_dataplane const&);
+std::ostream& operator<<(std::ostream&, Inport_expr const&);
+std::ostream& operator<<(std::ostream&, Inphysport_expr const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);

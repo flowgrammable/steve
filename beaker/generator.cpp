@@ -307,11 +307,13 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reinterpret_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Field_name_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
     llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});

@@ -433,6 +433,8 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Create_table* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
+    Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -1753,6 +1755,29 @@ Elaborator::elaborate_field_access(Dot_expr* e)
   elaborate(f);
 
   return f;
+}
+
+
+// Inport expr must occur in the correct context.
+Expr*
+Elaborator::elaborate(Inport_expr* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "in_port occuring outside a pipeline declaration.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Inphysport_expr* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "in_phys_port occuring outside a pipeline declaration.");
+  }
+  return e;
 }
 
 

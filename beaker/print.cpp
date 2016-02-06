@@ -656,6 +656,8 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
     void operator()(Get_dataplane const* e) { os << *e; }
+    void operator()(Inport_expr const* e) { os << *e; }
+    void operator()(Inphysport_expr const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -1021,4 +1023,16 @@ std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
 {
   os << "get_dp";
   return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inport_expr const&)
+{
+  return os << "in_port";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inphysport_expr const&)
+{
+  return os << "in_phys_port";
 }
