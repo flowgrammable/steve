@@ -52,6 +52,7 @@ Evaluator::eval(Expr const* e)
     Value operator()(Promotion_conv const* e) { return ev.eval(e); }
     Value operator()(Demotion_conv const* e) { return ev.eval(e); }
     Value operator()(Sign_conv const* e) { return ev.eval(e); }
+    Value operator()(Integer_conv const* e) { return ev.eval(e); }
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
@@ -445,6 +446,14 @@ Evaluator::eval(Demotion_conv const* e)
 // of the underlying integer.
 Value
 Evaluator::eval(Sign_conv const* e)
+{
+  Value v = eval(e->source());
+  return v.get_integer();
+}
+
+
+Value
+Evaluator::eval(Integer_conv const* e)
 {
   Value v = eval(e->source());
   return v.get_integer();

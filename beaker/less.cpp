@@ -27,6 +27,14 @@ is_less(int a, int b)
 }
 
 
+// Symbols are unqieu and should have unique pointers.
+inline bool
+is_less(Symbol const* a, Symbol const* b)
+{
+  return a < b;
+}
+
+
 // -------------------------------------------------------------------------- //
 // Generic comparisons
 
@@ -121,9 +129,15 @@ is_less(Table_type const* a, Table_type const* b)
   // Compare the types.
   Type_seq const& a_types = a->field_types();
   Type_seq const& b_types = b->field_types();
-  auto cmp = [](Type const* x, Type const* y) { return is_less(x, y); };
+  Decl_seq const& a_names = a->field_names();
+  Decl_seq const& b_names = b->field_names();
+  auto cmp_type = [](Type const* x, Type const* y) { return is_less(x, y); };
+  auto cmp_name = [](Decl const* x, Decl const* y) { return is_less(x->name(), y->name()); };
   return std::lexicographical_compare(a_types.begin(), a_types.end(),
-                                      b_types.begin(), b_types.end(), cmp);
+                                      b_types.begin(), b_types.end(), cmp_type)
+         &
+         std::lexicographical_compare(a_names.begin(), a_names.end(),
+                                      b_names.begin(), b_names.end(), cmp_name);
 }
 
 
@@ -282,6 +296,7 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Promotion_conv const* a) { lingo_unreachable(); }
     bool operator()(Demotion_conv const* a) { lingo_unreachable(); }
     bool operator()(Sign_conv const* a) { lingo_unreachable(); }
+    bool operator()(Integer_conv const* a) { lingo_unreachable(); }
     bool operator()(Default_init const* a) { lingo_unreachable(); }
     bool operator()(Copy_init const* a) { lingo_unreachable(); }
     bool operator()(Reference_init const* a) { lingo_unreachable(); }

@@ -47,7 +47,7 @@ decoder ipv4_d(ipv4)
 
 
 exact_table static_routing(ipv4.dst, ipv4.len)
-  requires(ipv4.dst, ipv4.ttl, ipv4.len)
+  requires(ipv4.dst, ipv4.ttl, ipv4.protocol)
 {
   {0b_11111111_11111111_11111111_11111011, 10} ->
   {

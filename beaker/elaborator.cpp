@@ -423,6 +423,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Promotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Integer_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -651,7 +652,8 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
       new_key.push_back(e);
     else {
       std::stringstream ss;
-      ss << "Failed type conversion in flow field key " << i
+      ss << "Failed type conversion in flow " << *flow->name()
+         << " field index " << i
          << " of table " << *table->name() << '.';
       throw Type_error({}, ss.str());
     }
@@ -1448,6 +1450,13 @@ Elaborator::elaborate(Sign_conv* e)
 }
 
 
+Expr*
+Elaborator::elaborate(Integer_conv* e)
+{
+  return e;
+}
+
+
 // TODO: I probably need to elaborate the type.
 Expr*
 Elaborator::elaborate(Default_init* e)
@@ -1834,6 +1843,8 @@ Elaborator::elaborate(Decl* d)
     Decl* operator()(Decode_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Table_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Key_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Inport_key_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Inphysport_key_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Flow_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Port_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Extracts_decl* d) const { return elab.elaborate(d); }
@@ -1980,7 +1991,7 @@ Elaborator::elaborate(Key_decl* d)
   // Field has to be a dot-expr.
   Dot_expr* f = as<Dot_expr>(d->field());
   if (!f)
-    throw Type_error(locate(d->field()), "Invalid field for key declaration.");
+    throw Type_error(locate(d), "Invalid field for key declaration.");
 
   Decl_seq p;
   Expr_seq ids;
@@ -1994,6 +2005,22 @@ Elaborator::elaborate(Key_decl* d)
   d->type_  = last->type();
   d->name_  = name;
 
+  return d;
+}
+
+
+Decl*
+Elaborator::elaborate(Inport_key_decl* d)
+{
+  assert(is<Port_type>(d->type()));
+  return d;
+}
+
+
+Decl*
+Elaborator::elaborate(Inphysport_key_decl* d)
+{
+  assert(is<Port_type>(d->type()));
   return d;
 }
 
@@ -2521,7 +2548,7 @@ Elaborator::elaborate_decl(Table_decl* d)
   // construct the table type
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
-      elaborate(field);
+      elaborate(subkey);
 
       assert(field);
       assert(field->type());
@@ -2879,7 +2906,7 @@ Elaborator::elaborate_def(Table_decl* d)
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
     ss << "Invalid entry in table: " << *d->name();
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
 
   return d;

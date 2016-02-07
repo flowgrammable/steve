@@ -176,6 +176,8 @@ private:
   Decl* on_rebind(Expr*, Expr*);
   Decl* on_exact_table(Token, Decl_seq&, Expr_seq&, Decl_seq&, Decl*);
   Decl* on_key(Expr*);
+  Decl* on_inport_key(Token);
+  Decl* on_inphysport_key(Token);
   Decl* on_flow(Expr_seq const&, Stmt*, Stmt_seq const&);
   Decl* on_flow_miss(Stmt*, Stmt_seq const&);
   Decl* on_port(Token, Expr*);

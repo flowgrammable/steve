@@ -305,6 +305,18 @@ void mangle(std::ostream& os, Key_decl const* d)
 }
 
 
+void mangle(std::ostream& os, Inport_key_decl const*)
+{
+  os << "_Finport";
+}
+
+
+void mangle(std::ostream& os, Inphysport_key_decl const*)
+{
+  os << "_Finphysport";
+}
+
+
 void mangle(std::ostream& os, Flow_decl const* d)
 {
   // never get here
@@ -359,6 +371,8 @@ mangle(std::ostream& os, Decl const* d)
     void operator()(Decode_decl const* d) { mangle(os, d); }
     void operator()(Table_decl const* d) { mangle(os, d); }
     void operator()(Key_decl const* d) { mangle(os, d); }
+    void operator()(Inport_key_decl const* d) { mangle(os, d); }
+    void operator()(Inphysport_key_decl const* d) { mangle(os, d); }
     void operator()(Flow_decl const* d) { mangle(os, d); }
     void operator()(Port_decl const* d) { mangle(os, d); }
     void operator()(Extracts_decl const* d) { mangle(os, d); }

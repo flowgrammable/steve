@@ -302,6 +302,7 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Promotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Demotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Sign_conv const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Integer_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Default_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
@@ -733,6 +734,14 @@ Generator::gen(Sign_conv const* e)
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
   return build.CreateIntCast(v, t, int_t->is_signed());
+}
+
+
+// FIXME: Everything is already an integer in llvm, does this really do anything?
+llvm::Value*
+Generator::gen(Integer_conv const* e)
+{
+  return gen(e->source());
 }
 
 

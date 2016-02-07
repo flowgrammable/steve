@@ -924,10 +924,12 @@ Decl*
 Parser::key_decl()
 {
   if (lookahead() == inport_kw) {
-    lingo_unreachable();
+    Token tok = match(inport_kw);
+    return on_inport_key(tok);
   }
   else if (lookahead() == inphysport_kw) {
-    lingo_unreachable();
+    Token tok = match(inphysport_kw);
+    return on_inphysport_key(tok);
   }
 
   // Otherwise its a field key decl.
@@ -2183,7 +2185,21 @@ Decl*
 Parser::on_key(Expr* e)
 {
   // Symbol const* sym = get_qualified_name(e);
-  return new Key_decl(e, nullptr);
+  return init<Key_decl>(locate(e), e, nullptr);
+}
+
+
+Decl*
+Parser::on_inport_key(Token tok)
+{
+  return init<Inport_key_decl>(tok.location(), get_port_type(), tok.symbol());
+}
+
+
+Decl*
+Parser::on_inphysport_key(Token tok)
+{
+  return init<Inphysport_key_decl>(tok.location(), get_port_type(), tok.symbol());
 }
 
 

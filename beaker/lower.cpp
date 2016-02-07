@@ -567,7 +567,7 @@ Lowerer::produce_key_function(Table_decl* d)
   for (auto f : table_type->field_names()) {
     // Create the parameter.
     // The parameters have the same respective types as the keys.
-    parms.push_back(new Parameter_decl(f->name(), f->type()));
+    parms.push_back(new Parameter_decl(get_identifier(mangle(f)), f->type()));
 
     // Add to the precision of the return type.
     ret_p += precision(f->type());

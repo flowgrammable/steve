@@ -119,6 +119,7 @@ public:
   Expr* elaborate(Promotion_conv* e);
   Expr* elaborate(Demotion_conv* e);
   Expr* elaborate(Sign_conv* e);
+  Expr* elaborate(Integer_conv* e);
   Expr* elaborate(Default_init* e);
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);
@@ -147,6 +148,8 @@ public:
   Decl* elaborate(Decode_decl*);
   Decl* elaborate(Table_decl*);
   Decl* elaborate(Key_decl*);
+  Decl* elaborate(Inport_key_decl*);
+  Decl* elaborate(Inphysport_key_decl*);
   Decl* elaborate(Flow_decl*);
   Decl* elaborate(Port_decl*);
   Decl* elaborate(Extracts_decl*);

@@ -645,6 +645,7 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Promotion_conv const* e) { os << *e; }
     void operator()(Demotion_conv const* e) { os << *e; }
     void operator()(Sign_conv const* e) { os << *e; }
+    void operator()(Integer_conv const* e) { os << *e; }
     void operator()(Default_init const* e) { os << *e; }
     void operator()(Copy_init const* e) { os << *e; }
     void operator()(Reference_init const* e) { os << *e; }
@@ -925,6 +926,15 @@ std::ostream&
 operator<<(std::ostream& os, Sign_conv const& e)
 {
   return os << "__sign("
+            << *e.source() << ','
+            << *e.target() << ')';
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Integer_conv const& e)
+{
+  return os << "__to_int("
             << *e.source() << ','
             << *e.target() << ')';
 }

@@ -601,7 +601,13 @@ Pipeline_checker::get_requirements(Table_decl const* d)
   Sym_set requirements;
   for (auto subkey : d->keys()) {
     assert(subkey->name());
-    requirements.insert(subkey->name());
+
+    // NOTE: Exclude in_port and in_phys_port from ever entering requirements.
+    if (subkey->name()->spelling() != "in_port" &&
+        subkey->name()->spelling() != "in_phys_port")
+    {
+        requirements.insert(subkey->name());
+    }
   }
 
   for (auto req : d->requirements()) {

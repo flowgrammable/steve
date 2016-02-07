@@ -66,6 +66,8 @@ struct Decl::Visitor
   virtual void visit(Decode_decl const*) = 0;
   virtual void visit(Table_decl const*) = 0;
   virtual void visit(Key_decl const*) = 0;
+  virtual void visit(Inport_key_decl const*) = 0;
+  virtual void visit(Inphysport_key_decl const*) = 0;
   virtual void visit(Flow_decl const*) = 0;
   virtual void visit(Port_decl const*) = 0;
   virtual void visit(Extracts_decl const*) = 0;
@@ -90,6 +92,8 @@ struct Decl::Mutator
   virtual void visit(Decode_decl*) = 0;
   virtual void visit(Table_decl*) = 0;
   virtual void visit(Key_decl*) = 0;
+  virtual void visit(Inport_key_decl*) = 0;
+  virtual void visit(Inphysport_key_decl*) = 0;
   virtual void visit(Flow_decl*) = 0;
   virtual void visit(Port_decl*) = 0;
   virtual void visit(Extracts_decl*) = 0;
@@ -384,6 +388,10 @@ struct Key_decl : Decl
     : Decl(n, nullptr), field_(e)
   { }
 
+  Key_decl(Type const* t, Expr* e, Symbol const* n)
+    : Decl(n, t), field_(e)
+  { }
+
   Expr*    field() const { return field_; }
   Decl_seq const& declarations() const { return decls_; }
   Expr_seq const& identifiers()  const { return ids_; }
@@ -403,8 +411,8 @@ struct Key_decl : Decl
 // Allow in_port as a valid key.
 struct Inport_key_decl : Key_decl
 {
-  Inport_key_decl(Symbol const* n)
-    : Key_decl(nullptr, n)
+  Inport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
   { }
 
   void accept(Visitor& v) const { v.visit(this); }
@@ -415,8 +423,8 @@ struct Inport_key_decl : Key_decl
 // Allow in_phys_port as a valid key.
 struct Inphysport_key_decl : Key_decl
 {
-  Inphysport_key_decl(Symbol const* n)
-    : Key_decl(nullptr, n)
+  Inphysport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
   { }
 
   void accept(Visitor& v) const { v.visit(this); }
@@ -646,6 +654,8 @@ struct Generic_decl_visitor : Decl::Visitor, lingo::Generic_visitor<F, T>
   void visit(Decode_decl const* d) { this->invoke(d); }
   void visit(Table_decl const* d) { this->invoke(d); }
   void visit(Key_decl const* d) { this->invoke(d); }
+  void visit(Inport_key_decl const* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl const* d) { this->invoke(d); }
   void visit(Flow_decl const* d) { this->invoke(d); }
   void visit(Port_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
@@ -684,6 +694,8 @@ struct Generic_decl_mutator : Decl::Mutator, lingo::Generic_mutator<F, T>
   void visit(Decode_decl* d) { this->invoke(d); }
   void visit(Table_decl* d) { this->invoke(d); }
   void visit(Key_decl* d) { this->invoke(d); }
+  void visit(Inport_key_decl* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl* d) { this->invoke(d); }
   void visit(Flow_decl* d) { this->invoke(d); }
   void visit(Port_decl* d) { this->invoke(d); }
   void visit(Extracts_decl* d) { this->invoke(d); }

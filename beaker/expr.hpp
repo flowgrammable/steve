@@ -78,6 +78,7 @@ struct Expr::Visitor
   virtual void visit(Promotion_conv const*) = 0;
   virtual void visit(Demotion_conv const*) = 0;
   virtual void visit(Sign_conv const*) = 0;
+  virtual void visit(Integer_conv const*) = 0;
   virtual void visit(Default_init const*) = 0;
   virtual void visit(Copy_init const*) = 0;
   virtual void visit(Reference_init const*) = 0;
@@ -134,6 +135,7 @@ struct Expr::Mutator
   virtual void visit(Promotion_conv*) = 0;
   virtual void visit(Demotion_conv*) = 0;
   virtual void visit(Sign_conv*) = 0;
+  virtual void visit(Integer_conv*) = 0;
   virtual void visit(Default_init*) = 0;
   virtual void visit(Copy_init*) = 0;
   virtual void visit(Reference_init*) = 0;
@@ -815,6 +817,17 @@ struct Block_conv : Conv
 };
 
 
+// To integer conversion. Allows for certain other expressions to be
+// converted into an integer type.
+struct Integer_conv : Conv
+{
+  using Conv::Conv;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
 // -------------------------------------------------------------------------- //
 // Initializers
 
@@ -973,6 +986,7 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Promotion_conv const* e) { this->invoke(e); }
   void visit(Demotion_conv const* e) { this->invoke(e); }
   void visit(Sign_conv const* e) { this->invoke(e); }
+  void visit(Integer_conv const* e) { this->invoke(e); }
   void visit(Default_init const* e) { this->invoke(e); }
   void visit(Copy_init const* e) { this->invoke(e); }
   void visit(Reference_init const* e) { this->invoke(e); }
@@ -1045,6 +1059,7 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Promotion_conv* e) { this->invoke(e); }
   void visit(Demotion_conv* e) { this->invoke(e); }
   void visit(Sign_conv* e) { this->invoke(e); }
+  void visit(Integer_conv* e) { this->invoke(e); }
   void visit(Default_init* e) { this->invoke(e); }
   void visit(Copy_init* e) { this->invoke(e); }
   void visit(Reference_init* e) { this->invoke(e); }
