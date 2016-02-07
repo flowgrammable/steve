@@ -741,7 +741,10 @@ Generator::gen(Sign_conv const* e)
 llvm::Value*
 Generator::gen(Integer_conv const* e)
 {
-  return gen(e->source());
+  Integer_type const* int_t = as<Integer_type>(e->target());
+  llvm::Type* t = get_type(e->target());
+  llvm::Value* v = gen(e->source());
+  return build.CreateIntCast(v, t, int_t->is_signed());
 }
 
 
