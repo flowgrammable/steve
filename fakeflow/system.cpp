@@ -194,29 +194,23 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 // Port and table operations
 
 // Returns the port matching the given name.
-fp::Port*
+fp::Port::Id
 fp_get_port_by_name(char const* name)
 {
   // std::cout << "GETTING PORT\n";
   fp::Port* p = fp::port_table.find(name);
   // std::cout << "FOUND PORT\n";
   assert(p);
-  return p;
-}
-
-fp::Port*
-fp_get_port_by_id(unsigned int id)
-{
-  fp::Port* p = fp::port_table.find(id);
-  assert(p);
-  return p;
+  return p->id();
 }
 
 
 // Outputs the contexts packet on the port with the matching name.
 void
-fp_output_port(fp::Context* cxt, fp::Port* p)
+fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
+  std::cout << "ID: " << id << '\n';
+  fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
 
@@ -249,6 +243,19 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   }
 
   return fp::Key(buf, key_width);
+}
+
+fp::Port::Id
+fp_get_packet_in_port(fp::Context* c)
+{
+  return c->in_port;
+}
+
+
+fp::Port::Id
+fp_get_packet_in_phys_port(fp::Context* c)
+{
+  return c->in_phy_port;
 }
 
 
@@ -285,8 +292,10 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 
 // Creates a new flow rule from the given key and function pointer
 // and adds it to the given table.
+//
+// FIXME: Currently ignoring timeout.
 void
-fp_add_init_flow(fp::Table* tbl, void* fn, void* key)
+fp_add_init_flow(fp::Table* tbl, void* fn, void* key, unsigned int timeout, unsigned int egress)
 {
   // std::cout << "Adding flow to " << tbl->id() << '\n';
   //
@@ -299,14 +308,15 @@ fp_add_init_flow(fp::Table* tbl, void* fn, void* key)
   fp::Key k(buf, key_size);
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
-  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
 
   tbl->add(k, flow);
 }
 
 
+// FIXME: Ignoring timeouts.
 void
-fp_add_new_flow(fp::Table* tbl, void* fn, void* key, fp::Context* c)
+fp_add_new_flow(fp::Table* tbl, void* fn, void* key, unsigned int timeout, unsigned int egress)
 {
   int key_size = tbl->key_size();
   // cast the key to Byte*
@@ -315,31 +325,30 @@ fp_add_new_flow(fp::Table* tbl, void* fn, void* key, fp::Context* c)
   fp::Key k(buf, key_size);
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
-  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, c->in_port);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
 
   tbl->add(k, flow);
 }
 
 
-fp::Port*
-fp_get_flow_in_port(fp::Flow* f)
+fp::Port::Id
+fp_get_flow_egress(fp::Flow* f)
 {
   assert(f);
-  assert(f->in_port_ > 0);
-  if (f->in_port_ > 0)
-    return fp_get_port_by_id(f->in_port_);
-  // Otherwise you're trying to get a non-existent port.
-  return nullptr;
+  assert(f->egress_ > 0);
+  return f->egress_;
 }
 
 
 // Adds the miss case for the table.
+//
+// FIXME: Ignoring timeout value.
 void
-fp_add_miss(fp::Table* tbl, void* fn)
+fp_add_miss(fp::Table* tbl, void* fn, unsigned int timeout, unsigned int egress)
 {
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
-  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
   tbl->insert_miss(flow);
 }
 

@@ -15,6 +15,9 @@ int main(int argc, char* argv[])
     fp::Port* p1 = fp::create_port(fp::Port::Type::tcp, ":5000", "p1");
     std::cerr << "Created port 'p1' with id '" << p1->id() << "'\n";
 
+    fp::Port* p2 = fp::create_port(fp::Port::Type::tcp, ":5001", "p2");
+    std::cerr << "Created port 'p2' with id '" << p2->id() << "'\n";
+
     assert(p1);
 
     // Load the application library

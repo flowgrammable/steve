@@ -40,19 +40,19 @@ struct Flow
 {
   Flow()
     : pri_(0), count_(), instr_(Drop_miss), time_(), cookie_(0), flags_(0),
-      in_port_(0)
+      egress_(0)
   { }
 
   Flow(std::size_t pri, Flow_counters count, Flow_instructions instr,
        Flow_timeouts time, std::size_t cookie, std::size_t flags)
     : pri_(pri), count_(count), instr_(instr), time_(time), cookie_(cookie),
-      flags_(flags), in_port_(0)
+      flags_(flags), egress_(0)
   { }
 
   Flow(std::size_t pri, Flow_counters count, Flow_instructions instr,
-       Flow_timeouts time, std::size_t cookie, std::size_t flags, unsigned int inport)
+       Flow_timeouts time, std::size_t cookie, std::size_t flags, unsigned int egress)
     : pri_(pri), count_(count), instr_(instr), time_(time), cookie_(cookie),
-      flags_(flags), in_port_(inport)
+      flags_(flags), egress_(egress)
   { }
 
   std::size_t       pri_;
@@ -63,7 +63,7 @@ struct Flow
   std::size_t       flags_;
   // Maintain the port of the packet which caused this flow to be installed.
   // 0 if this was a default initialized flow.
-  unsigned int      in_port_;
+  unsigned int      egress_;
 };
 
 
