@@ -1538,6 +1538,25 @@ Lowerer::lower(Declaration_stmt* s)
 }
 
 
+// If there is an explicit advance attached to decode or goto.
+// Advance by the value given in 'len'
+Expr*
+Lowerer::lower_advance_clause(Expr* len)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  Expr* advance = builtin.call_advance({ id(cxt), lower(len) });
+  elab.elaborate(advance);
+
+  return advance;
+}
+
+
 Stmt_seq
 Lowerer::lower(Decode_stmt* s)
 {
@@ -1556,21 +1575,28 @@ Lowerer::lower(Decode_stmt* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // Form an advance based on the length of the header.
-  //
-  // NOTE: This will only occur if within the context of a decode
-  // declaration because this implicit header variable used to recover
-  // the header information only gets declared within decoder declarations.
-  ovl = unqualified_lookup(get_identifier(__header));
-  if (ovl) {
-    Decl* header = ovl->back();
-    Expr* length = get_length(header->type());
-    Expr* advance = builtin.call_advance({ id(cxt), length });
-    elab.elaborate(advance);
 
+  // If their is an explicit advance it takes precedence.
+  if (s->advance()) {
+    Expr* advance = lower_advance_clause(s->advance());
     stmts.push_back(statement(advance));
   }
+  else {
+    // Form an advance based on the length of the header.
+    //
+    // NOTE: This will only occur if within the context of a decode
+    // declaration because this implicit header variable used to recover
+    // the header information only gets declared within decoder declarations.
+    ovl = unqualified_lookup(get_identifier(__header));
+    if (ovl) {
+      Decl* header = ovl->back();
+      Expr* length = get_length(header->type());
+      Expr* advance = builtin.call_advance({ id(cxt), length });
+      elab.elaborate(advance);
 
+      stmts.push_back(statement(advance));
+    }
+  }
 
   // form a call to the decoder
   Call_expr* call =
@@ -1639,12 +1665,6 @@ Lowerer::goto_match(Goto_stmt* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // get the key variable
-  // ovl = unqualified_lookup(get_identifier("key"));
-  // assert(ovl);
-  // Decl* key = ovl->back();
-  // assert(key);
-
   // produce the set of fields needed by the table.
   Table_decl const* t = as<Table_decl>(s->table());
   assert(t);
@@ -1687,9 +1707,14 @@ Stmt_seq
 Lowerer::lower(Goto_stmt* s)
 {
   Stmt_seq stmts;
-  // produce an advance if its in a decoder
+  // If their is an explicit advance it takes precedence.
+  if (s->advance()) {
+    Expr* advance = lower_advance_clause(s->advance());
+    stmts.push_back(statement(advance));
+  }
+  // Produce an advance if its in a decoder
   // otherwise no advance is necessary
-  if (is<Decode_decl>(s->context())) {
+  else if (is<Decode_decl>(s->context())) {
     stmts.push_back(goto_advance(s->context()));
   }
 

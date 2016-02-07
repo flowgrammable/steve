@@ -88,7 +88,7 @@ spelling(Token_kind k)
     case clear_kw: return "clear";
     case set_kw: return "set";
     case copy_kw: return "copy";
-    case add_kw: return "add";
+    case insert_kw: return "insert";
     case rmv_kw: return "remove";
     case into_kw: return "into";
     case from_kw: return "from";
@@ -98,6 +98,7 @@ spelling(Token_kind k)
     case inport_kw: return "in_port";
     case inphysport_kw: return "in_phys_port";
     case egress_kw: return "egress";
+    case advance_kw: return "advance";
 
     default: return "<unspecified>";
   }
@@ -189,7 +190,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("clear", clear_kw);
   syms.put<Symbol>("set", set_kw);
   syms.put<Symbol>("copy", copy_kw);
-  syms.put<Symbol>("add", add_kw);
+  syms.put<Symbol>("insert", insert_kw);
   syms.put<Symbol>("remove", rmv_kw);
   syms.put<Symbol>("into", into_kw);
   syms.put<Symbol>("from", from_kw);
@@ -199,6 +200,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("in_port", inport_kw);
   syms.put<Symbol>("in_phys_port", inphysport_kw);
   syms.put<Symbol>("egress", egress_kw);
+  syms.put<Symbol>("advance", advance_kw);
 
   // Reserved names.
   syms.put<Boolean_sym>("true", boolean_tok, true);

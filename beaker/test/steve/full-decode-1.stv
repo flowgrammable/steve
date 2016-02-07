@@ -40,7 +40,7 @@ decoder start eth_d(eth)
   extract eth.type;
   match(eth.type)
   {
-    case 800: decode ipv4_d;
+    case 0x800: decode ipv4_d;
   }
 
 	drop;
@@ -58,11 +58,7 @@ decoder ipv4_d(ipv4)
   extract ipv4.src;
   extract ipv4.dst;
 
-  match(ipv4.protocol) {
-    case 0: decode udp_d;
-  }
-
-	drop;
+	decode udp_d advance ipv4.len;
 }
 
 
@@ -72,7 +68,7 @@ decoder udp_d(udp)
 	extract udp.dst;
   extract udp.len;
 	extract udp.checksum;
-  goto route;
+  goto route advance udp.len;
 }
 
 

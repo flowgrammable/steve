@@ -1423,31 +1423,39 @@ Parser::match_stmt()
 
 // Parse a decode stmt
 //
-//    stmt -> decode 'decode-id'
+//    stmt -> decode 'decode-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::decode_stmt()
 {
   match(decode_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_decode(e);
+  return on_decode(e, adv);
 }
 
 
 // Parse a goto stmt
 //
-//    stmt -> goto 'table-id'
+//    stmt -> goto 'table-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::goto_stmt()
 {
   match(goto_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_goto(e);
+  return on_goto(e, adv);
 }
 
 
@@ -1588,12 +1596,12 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'add' flow-decl 'into' table-id
+//    add-flow-stmt -> 'insert' flow-decl 'into' table-id
 //
 Stmt*
 Parser::add_flow_stmt()
 {
-  match(add_kw);
+  match(insert_kw);
   Decl* flow = flow_decl();
   match(into_kw);
   Expr* table = expr();
@@ -1712,7 +1720,7 @@ Parser::stmt()
     case write_kw:
       return write_stmt();
 
-    case add_kw:
+    case insert_kw:
       return add_flow_stmt();
 
     case rmv_kw:
@@ -2471,16 +2479,16 @@ Parser::on_match(Expr* cond, Stmt_seq& cases, Stmt* miss)
 
 
 Stmt*
-Parser::on_decode(Expr* e)
+Parser::on_decode(Expr* e, Expr* a)
 {
-  return new Decode_stmt(e);
+  return new Decode_stmt(e, a);
 }
 
 
 Stmt*
-Parser::on_goto(Expr* e)
+Parser::on_goto(Expr* e, Expr* a)
 {
-  return new Goto_stmt(e);
+  return new Goto_stmt(e, a);
 }
 
 

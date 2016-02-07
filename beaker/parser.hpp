@@ -199,8 +199,8 @@ private:
 
   Stmt* on_case(Expr*, Stmt*);
   Stmt* on_match(Expr*, Stmt_seq&, Stmt*);
-  Stmt* on_decode(Expr*);
-  Stmt* on_goto(Expr*);
+  Stmt* on_decode(Expr*, Expr*);
+  Stmt* on_goto(Expr*, Expr*);
   Stmt* on_drop();
   Stmt* on_flood();
   Stmt* on_clear();

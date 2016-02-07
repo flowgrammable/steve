@@ -104,7 +104,7 @@ enum Token_kind
   set_kw,
   copy_kw,
   get_kw,
-  add_kw,
+  insert_kw,
   rmv_kw,
   into_kw,
   from_kw,
@@ -114,6 +114,7 @@ enum Token_kind
   inport_kw,
   inphysport_kw,
   egress_kw,
+  advance_kw,
 
   // Multi-valued tokens
   boolean_tok,      // true | false

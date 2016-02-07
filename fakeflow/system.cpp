@@ -209,7 +209,7 @@ fp_get_port_by_name(char const* name)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  std::cout << "ID: " << id << '\n';
+  // std::cout << "ID: " << id << '\n';
   fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
@@ -418,6 +418,7 @@ fp_raise_event(fp::Context* cxt, void* handler)
 void
 fp_advance_header(fp::Context* cxt, std::uint16_t n)
 {
+  // std::cout << "ADV: " << n << std::endl;
   cxt->advance(n);
 }
 

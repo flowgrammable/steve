@@ -3308,6 +3308,19 @@ Elaborator::elaborate(Decode_stmt* s)
     throw Type_error({}, ss.str());
   }
 
+  if (s->advance()) {
+    Expr* a = elaborate(s->advance());
+    a = require_value(*this, a);
+
+    if (!a)
+      throw Type_error(locate(s->advance()), "advance requires a value.");
+
+    if (!is<Integer_type>(a->type()))
+      throw Type_error(locate(s->advance()), "advance requires an integer value.");
+
+    s->advance_ = a;
+  }
+
   s->decoder_identifier_ = target_id;
   s->decoder_ = target_id->declaration();
 
@@ -3340,6 +3353,19 @@ Elaborator::elaborate(Goto_stmt* s)
     std::stringstream ss;
     ss << "invalid table identifier: " << *s->table_identifier();
     throw Type_error({}, ss.str());
+  }
+
+  if (s->advance()) {
+    Expr* a = elaborate(s->advance());
+    a = require_value(*this, a);
+
+    if (!a)
+      throw Type_error(locate(s->advance()), "advance requires a value.");
+
+    if (!is<Integer_type>(a->type()))
+      throw Type_error(locate(s->advance()), "advance requires an integer value.");
+
+    s->advance_ = a;
   }
 
   return s;

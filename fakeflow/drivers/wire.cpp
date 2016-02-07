@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
           // dscp ecn
           0,
           // len
-          0, 0x0a,
+          0, 0x14,
           // id
           0, 0,
           // frag
@@ -87,12 +87,21 @@ int main(int argc, char* argv[])
           // src
           0b11111111, 0b11111111, 0b11111111, 0b11111111,
           // dst
-          0b11111111, 0b11111111, 0b11111111, 0b11111011
+          0b11111111, 0b11111111, 0b11111111, 0b11111011,
+
+          // udp src
+          0, 0,
+          // udp dst
+          0, 0,
+          // udp len
+          0x00, 0x0b,
+          // checksum
+          0, 0
         };
 
         Packet* pkt2 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p1, pkt2);
+        dp->process(p2, pkt2);
         ++i;
       }
       // timer dtor should print time here

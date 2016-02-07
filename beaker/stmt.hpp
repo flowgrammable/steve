@@ -338,18 +338,20 @@ struct Case_stmt : Stmt
 // FIXME: This should be migrated to an action.
 struct Decode_stmt : Stmt
 {
-  Decode_stmt(Expr* e)
-    : decoder_identifier_(e), decoder_(nullptr)
+  Decode_stmt(Expr* e, Expr* a)
+    : decoder_identifier_(e), decoder_(nullptr), advance_(a)
   { }
 
   Expr* decoder_identifier() const { return decoder_identifier_; }
   Decl const* decoder() const { return decoder_; }
+  Expr* advance() const { return advance_; }
 
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 
   Expr* decoder_identifier_;
   Decl const* decoder_;
+  Expr* advance_;
 };
 
 
@@ -357,18 +359,20 @@ struct Decode_stmt : Stmt
 // FIXME: This should be migrated to an action.
 struct Goto_stmt : Stmt
 {
-  Goto_stmt(Expr* e)
-    : table_identifier_(e), table_(nullptr)
+  Goto_stmt(Expr* e, Expr* a)
+    : table_identifier_(e), table_(nullptr), advance_(a)
   { }
 
   Expr* table_identifier() const { return table_identifier_; }
   Decl const* table() const { return table_; }
+  Expr* advance() const { return advance_; }
 
   void accept(Visitor& v) const { return v.visit(this); }
   void accept(Mutator& v)       { return v.visit(this); }
 
   Expr* table_identifier_;
   Decl const* table_;
+  Expr* advance_;
 };
 
 
