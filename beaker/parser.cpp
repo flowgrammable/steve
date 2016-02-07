@@ -923,7 +923,14 @@ Parser::decode_decl()
 Decl*
 Parser::key_decl()
 {
-  // A
+  if (lookahead() == inport_kw) {
+    lingo_unreachable();
+  }
+  else if (lookahead() == inphysport_kw) {
+    lingo_unreachable();
+  }
+
+  // Otherwise its a field key decl.
   // Use postfix parsing hoping for a dot expr.
   Expr* key = expr();
   return on_key(key);

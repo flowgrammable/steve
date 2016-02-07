@@ -380,20 +380,47 @@ struct Table_decl : Decl
 // set of subkeys
 struct Key_decl : Decl
 {
-  Key_decl(Expr* const& e, Symbol const* n)
+  Key_decl(Expr* e, Symbol const* n)
     : Decl(n, nullptr), field_(e)
   { }
 
-  Expr* const&    field() const { return field_; }
+  Expr*    field() const { return field_; }
   Decl_seq const& declarations() const { return decls_; }
   Expr_seq const& identifiers()  const { return ids_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
+  // Linearizing the dot expr into a sequence if ids and decls.
   Decl_seq decls_;
   Expr_seq ids_;
+
+  // Field name expr
   Expr* field_;
+};
+
+
+// Allow in_port as a valid key.
+struct Inport_key_decl : Key_decl
+{
+  Inport_key_decl(Symbol const* n)
+    : Key_decl(nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// Allow in_phys_port as a valid key.
+struct Inphysport_key_decl : Key_decl
+{
+  Inphysport_key_decl(Symbol const* n)
+    : Key_decl(nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 

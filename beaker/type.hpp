@@ -300,6 +300,7 @@ struct Table_type : Type
     : names_(d), types_(t)
   { }
 
+  // Maintain the key decls needed by the table.
   Decl_seq const& field_names() const { return names_; }
   Type_seq const& field_types() const { return types_; }
 

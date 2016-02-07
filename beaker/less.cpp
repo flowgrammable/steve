@@ -118,12 +118,12 @@ is_less(Layout_type const* a, Layout_type const* b)
 inline bool
 is_less(Table_type const* a, Table_type const* b)
 {
-  Decl_seq const& a_fields = a->field_names();
-  Decl_seq const& b_fields = b->field_names();
-
-  auto cmp = [](Decl const* x, Decl const* y) { return is_less(x->type(), y->type()); };
-  return std::lexicographical_compare(a_fields.begin(), a_fields.end(),
-                                      b_fields.begin(), b_fields.end(), cmp);
+  // Compare the types.
+  Type_seq const& a_types = a->field_types();
+  Type_seq const& b_types = b->field_types();
+  auto cmp = [](Type const* x, Type const* y) { return is_less(x, y); };
+  return std::lexicographical_compare(a_types.begin(), a_types.end(),
+                                      b_types.begin(), b_types.end(), cmp);
 }
 
 

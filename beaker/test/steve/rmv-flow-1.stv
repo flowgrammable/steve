@@ -19,6 +19,7 @@ decoder start eth_d(eth)
 
 exact_table switch(eth.dst, eth.type)
 {
+	// This should cause alternating miss and using prints.
   miss ->
   {
 		puts("Miss...adding flow now.");
@@ -26,6 +27,7 @@ exact_table switch(eth.dst, eth.type)
     add
     { eth.dst, eth.type } ->
     {
+			puts("Using adding flow now.");
 			remove { eth.dst, eth.type } from switch;
       output p1;
     }

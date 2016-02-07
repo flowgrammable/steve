@@ -2523,17 +2523,13 @@ Elaborator::elaborate_decl(Table_decl* d)
     if (Key_decl* field = as<Key_decl>(subkey)) {
       elaborate(field);
 
-      // Get the final declaration in the key path specifier.
-      // This shall provide the type needed for the field.
-      Decl* field_decl = field->declarations().back();
-
-      assert(field_decl);
-      assert(field_decl->type());
+      assert(field);
+      assert(field->type());
 
       // save the field decl
-      field_decls.push_back(field_decl);
+      field_decls.push_back(field);
       // save the type of the field decl
-      types.push_back(field_decl->type());
+      types.push_back(field->type());
     }
   }
   Type const* type = get_table_type(field_decls, types);

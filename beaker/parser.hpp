@@ -66,6 +66,8 @@ public:
   Decl* decode_decl();
   Decl* exact_table_decl();
   Decl* key_decl();
+  Decl* inport_key_decl();
+  Decl* inphysport_key_decl();
   Decl* flow_decl();
   Decl* port_decl();
   Decl* extract_decl();
