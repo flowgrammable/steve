@@ -764,6 +764,9 @@ Generator::gen(Default_init const* e)
   if (is_aggregate(t))
     return llvm::ConstantAggregateZero::get(type);
 
+  if (is<Port_type>(t))
+    return llvm::ConstantInt::get(type, 0);
+
   throw std::runtime_error("unhahndled default initializer");
 }
 

@@ -229,16 +229,39 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   int j = 0;
   while (i < n) {
     int f = va_arg(args, int);
-    // Lookup the field in the context.
-    fp::Binding b = cxt->get_field_binding(f);
-    fp::Byte* p = cxt->get_field(b.offset);
+    fp::Binding b;
+    fp::Byte* p = nullptr;
 
-    // Copy the field into the buffer.
-    std::copy(p, p + b.length, &buf[j]);
-    // Then reverse the field in place.
-    fp::network_to_native_order(&buf[j], b.length);
+    // Check for "Special fields"
+    switch (f) {
+      // Looking for "in_port"
+      case 255:
+        p = reinterpret_cast<fp::Byte*>(&cxt->in_port);
+        // Copy the field into the buffer.
+        std::copy(p, p + sizeof(cxt->in_port), &buf[j]);
+        j += sizeof(cxt->in_port);
+        break;
 
-    j += b.length;
+      // Looking for "in_phys_port"
+      case 256:
+        p = reinterpret_cast<fp::Byte*>(&cxt->in_phy_port);
+        // Copy the field into the buffer.
+        std::copy(p, p + sizeof(cxt->in_phy_port), &buf[j]);
+        j += sizeof(cxt->in_phy_port);
+        break;
+
+      // Regular fields
+      default:
+        // Lookup the field in the context.
+        b = cxt->get_field_binding(f);
+        p = cxt->get_field(b.offset);
+        // Copy the field into the buffer.
+        std::copy(p, p + b.length, &buf[j]);
+        // Then reverse the field in place.
+        fp::network_to_native_order(&buf[j], b.length);
+        j += b.length;
+        break;
+    }
     ++i;
   }
 

@@ -73,6 +73,7 @@ struct Lower_expr_fn
   Expr* operator()(Promotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Demotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Sign_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Integer_conv* e) const { return lower.lower_unary_expr(e); }
 
   // Field access expr becomes an id_expr whose declaration is
   // resolved against a variable created by lowering the extracts decl.
@@ -1649,7 +1650,15 @@ Lowerer::goto_match(Goto_stmt* s)
   assert(t);
   Expr_seq key_mappings;
   for (auto subkey : t->keys()) {
-    int mapping = checker.get_field_mapping(subkey->name());
+    int mapping = -1;
+    // Reserving 255+ for "special fields"
+    if (subkey->name()->spelling() == "in_port")
+      mapping = 255;
+    else if (subkey->name()->spelling() == "in_phys_port")
+      mapping = 256;
+    else
+      mapping = checker.get_field_mapping(subkey->name());
+
     key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
   }
 
