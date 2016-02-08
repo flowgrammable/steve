@@ -46,6 +46,7 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Insert_flow const* s) { os << *s; }
     void operator()(Remove_flow const* s) { os << *s; }
     void operator()(Write_drop const* s) { os << *s; }
+    void operator()(Raise const* s) { os << *s; }
   };
 
   apply(&s, Fn{os});
@@ -215,6 +216,12 @@ std::ostream& operator<<(std::ostream& os, Write_drop const& s)
 }
 
 
+std::ostream& operator<<(std::ostream& os, Raise const& s)
+{
+  return os << "raise " << *s.event_identifier();
+}
+
+
 
 // -------------------------------------------------------------------------- //
 // Declarations
@@ -241,6 +248,7 @@ operator<<(std::ostream& os, Decl const& d)
     void operator()(Port_decl const* d) { os << *d; };
     void operator()(Extracts_decl const* d) { os << *d; };
     void operator()(Rebind_decl const* d) { os << *d; };
+    void operator()(Event_decl const* d) { os << *d; };
   };
 
   apply(&d, Fn{os});
@@ -361,19 +369,7 @@ operator<<(std::ostream& os, Table_decl const& d)
 
 std::ostream& operator<<(std::ostream& os, Key_decl const& d)
 {
-  for (auto expr : d.identifiers())
-    os << *expr << "::";
-
-  os << '(';
-
-  if (d.type())
-    os << *d.type();
-  else
-    os << "<unknown type>";
-
-  os << ')';
-
-  return os;
+  return os << *d.field();
 }
 
 
@@ -381,7 +377,7 @@ std::ostream& operator<<(std::ostream& os, Key_decl const& d)
 std::ostream&
 operator<<(std::ostream& os, Flow_decl const& d)
 {
-  os << "flow: ";
+  os << d.name()->spelling();
   for (auto k : d.keys()) {
     os << *k << ' ';
   }
@@ -409,6 +405,19 @@ operator<<(std::ostream& os, Extracts_decl const& d)
 std::ostream&
 operator<<(std::ostream& os, Rebind_decl const& d)
 {
+  return os;
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Event_decl const& d)
+{
+  os << "event " << d.name()->spelling() << '(';
+  for (auto k : d.requirements()) {
+    os << *k << ' ';
+  }
+  os << ')' << *d.body();
+
   return os;
 }
 
@@ -636,6 +645,7 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Promotion_conv const* e) { os << *e; }
     void operator()(Demotion_conv const* e) { os << *e; }
     void operator()(Sign_conv const* e) { os << *e; }
+    void operator()(Integer_conv const* e) { os << *e; }
     void operator()(Default_init const* e) { os << *e; }
     void operator()(Copy_init const* e) { os << *e; }
     void operator()(Reference_init const* e) { os << *e; }
@@ -647,6 +657,8 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
     void operator()(Get_dataplane const* e) { os << *e; }
+    void operator()(Inport_expr const* e) { os << *e; }
+    void operator()(Inphysport_expr const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -920,6 +932,15 @@ operator<<(std::ostream& os, Sign_conv const& e)
 
 
 std::ostream&
+operator<<(std::ostream& os, Integer_conv const& e)
+{
+  return os << "__to_int("
+            << *e.source() << ','
+            << *e.target() << ')';
+}
+
+
+std::ostream&
 operator<<(std::ostream& os, Default_init const& e)
 {
   return os << "__default_init(" << *e.type() << ")";
@@ -1012,4 +1033,16 @@ std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
 {
   os << "get_dp";
   return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inport_expr const&)
+{
+  return os << "in_port";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inphysport_expr const&)
+{
+  return os << "in_phys_port";
 }

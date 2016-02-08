@@ -1,2 +1,15 @@
 Port p1 = ":5000";
 Port p2 = ":5001";
+
+layout eth
+{
+  a : int;
+}
+
+decoder start eth_d(eth)
+{
+  p1;
+  // Should not be able to assign to ports.
+  // p1 = p2;
+  output p1;
+}

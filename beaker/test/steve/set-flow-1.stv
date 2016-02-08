@@ -12,17 +12,21 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
+
+  set eth.dst = 0x11_11_11_11_11_00;
+  set eth.type = 13;
+
   goto switch;
 }
 
-var bad_var : uint(48) = 0;
 
-exact_table switch(eth::dst, eth::type)
+exact_table switch(eth.dst, eth.type)
 {
-  { bad_var, 800 } ->
+  { 0x11_11_11_11_11_00, 13 } ->
   {
+		puts("hit");
     output p1;
   }
 

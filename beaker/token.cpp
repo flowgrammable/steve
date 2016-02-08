@@ -76,6 +76,7 @@ spelling(Token_kind k)
     case exact_table_kw: return "exact_table";
     case prefix_table_kw: return "prefix_table";
     case wild_table_kw: return "wildcard_table";
+    case requires_kw: return "requires";
     case miss_kw: return "miss";
     case action_kw: return "action_set";
     case port_kw: return "Port";
@@ -87,10 +88,17 @@ spelling(Token_kind k)
     case clear_kw: return "clear";
     case set_kw: return "set";
     case copy_kw: return "copy";
-    case add_kw: return "add";
+    case insert_kw: return "insert";
     case rmv_kw: return "remove";
     case into_kw: return "into";
     case from_kw: return "from";
+    case event_kw: return "event";
+    case raise_kw: return "raise";
+    case properties_kw: return "properies";
+    case inport_kw: return "in_port";
+    case inphysport_kw: return "in_phys_port";
+    case egress_kw: return "egress";
+    case advance_kw: return "advance";
 
     default: return "<unspecified>";
   }
@@ -171,6 +179,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("exact_table", exact_table_kw);
   syms.put<Symbol>("prefix_table", prefix_table_kw);
   syms.put<Symbol>("wildcard_table", wild_table_kw);
+  syms.put<Symbol>("requires", requires_kw);
   syms.put<Symbol>("miss", miss_kw);
   syms.put<Symbol>("Port", port_kw);
   syms.put<Symbol>("goto", goto_kw);
@@ -181,10 +190,17 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("clear", clear_kw);
   syms.put<Symbol>("set", set_kw);
   syms.put<Symbol>("copy", copy_kw);
-  syms.put<Symbol>("add", add_kw);
+  syms.put<Symbol>("insert", insert_kw);
   syms.put<Symbol>("remove", rmv_kw);
   syms.put<Symbol>("into", into_kw);
   syms.put<Symbol>("from", from_kw);
+  syms.put<Symbol>("event", event_kw);
+  syms.put<Symbol>("raise", raise_kw);
+  syms.put<Symbol>("properties", properties_kw);
+  syms.put<Symbol>("in_port", inport_kw);
+  syms.put<Symbol>("in_phys_port", inphysport_kw);
+  syms.put<Symbol>("egress", egress_kw);
+  syms.put<Symbol>("advance", advance_kw);
 
   // Reserved names.
   syms.put<Boolean_sym>("true", boolean_tok, true);

@@ -78,6 +78,7 @@ public:
   Value eval(Promotion_conv const*);
   Value eval(Demotion_conv const*);
   Value eval(Sign_conv const*);
+  Value eval(Integer_conv const*);
   Value eval(Default_init const*);
   Value eval(Copy_init const*);
   Value eval(Reference_init const*);
@@ -100,6 +101,7 @@ public:
   void eval(Port_decl const*);
   void eval(Extracts_decl const*);
   void eval(Rebind_decl const*);
+  void eval(Event_decl const*);
 
 
   Control eval(Stmt const*, Value&);

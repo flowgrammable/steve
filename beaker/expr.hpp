@@ -78,6 +78,7 @@ struct Expr::Visitor
   virtual void visit(Promotion_conv const*) = 0;
   virtual void visit(Demotion_conv const*) = 0;
   virtual void visit(Sign_conv const*) = 0;
+  virtual void visit(Integer_conv const*) = 0;
   virtual void visit(Default_init const*) = 0;
   virtual void visit(Copy_init const*) = 0;
   virtual void visit(Reference_init const*) = 0;
@@ -89,6 +90,9 @@ struct Expr::Visitor
   virtual void visit(Get_port const*) = 0;
   virtual void visit(Create_table const*) = 0;
   virtual void visit(Get_dataplane const*) = 0;
+  virtual void visit(Port_expr const*) = 0;
+  virtual void visit(Inport_expr const*) = 0;
+  virtual void visit(Inphysport_expr const*) = 0;
 };
 
 
@@ -131,6 +135,7 @@ struct Expr::Mutator
   virtual void visit(Promotion_conv*) = 0;
   virtual void visit(Demotion_conv*) = 0;
   virtual void visit(Sign_conv*) = 0;
+  virtual void visit(Integer_conv*) = 0;
   virtual void visit(Default_init*) = 0;
   virtual void visit(Copy_init*) = 0;
   virtual void visit(Reference_init*) = 0;
@@ -142,6 +147,9 @@ struct Expr::Mutator
   virtual void visit(Get_port*) = 0;
   virtual void visit(Create_table*) = 0;
   virtual void visit(Get_dataplane*) = 0;
+  virtual void visit(Port_expr*) = 0;
+  virtual void visit(Inport_expr*) = 0;
+  virtual void visit(Inphysport_expr*) = 0;
 };
 
 
@@ -198,6 +206,19 @@ struct Decl_expr : Id_expr
   Decl*         declaration() const { return decl; }
 
   Decl* decl;
+};
+
+
+// A reference to a port. These are produced similar to
+// decl-expr when an id resolves into a port name.
+struct Port_expr : Decl_expr
+{
+  Port_expr(Type const* t, Decl* d)
+    : Decl_expr(t, d)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 
@@ -537,8 +558,8 @@ struct Void_cast : Expr
 //
 struct Field_name_expr : Expr
 {
-  Field_name_expr(Expr_seq const& e, Symbol const* n)
-    : Expr(nullptr), identifiers_(e), name_(n)
+  Field_name_expr(Type const* t, Decl_seq const& d, Expr_seq const& e, Symbol const* n)
+    : Expr(t), decls_(d), identifiers_(e), name_(n)
   { }
 
   Expr_seq const& identifiers() const { return identifiers_; }
@@ -561,8 +582,8 @@ struct Field_name_expr : Expr
 // which refers to the usage of an extracted field.
 struct Field_access_expr : Expr
 {
-  Field_access_expr(Expr_seq const& e, Symbol const* n)
-    : Expr(nullptr), identifiers_(e), name_(n)
+  Field_access_expr(Type const* t, Decl_seq const& d, Expr_seq const& e, Symbol const* n)
+    : Expr(t), decls_(d), identifiers_(e), name_(n)
   { }
 
   Expr_seq const& identifiers() const { return identifiers_; }
@@ -591,8 +612,34 @@ struct Field_access_expr : Expr
 //    output inport;
 // Output inport is a special statement which says to output to the inport of
 // the packet.
+//
+// Inport should always have port type.
 struct Inport_expr : Expr
 {
+  Inport_expr(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression allows access the the in_port field of the context.
+//
+// Inport_expr always resolves into an integer id asigned the port by the runtime
+// so that it can be used as part of a table key. However, inport cannot be
+// used in arithmetic situations.
+//
+// Inport should always have port type.
+struct Inphysport_expr : Expr
+{
+  Inphysport_expr(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 
@@ -770,6 +817,17 @@ struct Block_conv : Conv
 };
 
 
+// To integer conversion. Allows for certain other expressions to be
+// converted into an integer type.
+struct Integer_conv : Conv
+{
+  using Conv::Conv;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
 // -------------------------------------------------------------------------- //
 // Initializers
 
@@ -865,6 +923,24 @@ struct Reference_init : Init
 bool is_callable(Expr const*);
 
 
+// Returns true iff the declaration is a constant one.
+//
+// Identifiers to ports and tables.
+inline bool
+is_constant_expr(Expr const* e)
+{
+  if (Decl_expr const* id = as<Decl_expr>(e)) {
+    if (is<Table_decl>(id->declaration()))
+      return true;
+    if (is<Port_decl>(id->declaration()))
+      return true;
+  }
+
+  return false;
+}
+
+
+
 // -------------------------------------------------------------------------- //
 // Generic visitor
 
@@ -910,17 +986,21 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Promotion_conv const* e) { this->invoke(e); }
   void visit(Demotion_conv const* e) { this->invoke(e); }
   void visit(Sign_conv const* e) { this->invoke(e); }
+  void visit(Integer_conv const* e) { this->invoke(e); }
   void visit(Default_init const* e) { this->invoke(e); }
   void visit(Copy_init const* e) { this->invoke(e); }
   void visit(Reference_init const* e) { this->invoke(e); }
-  void visit(Field_name_expr const* e) { this->invoke(e); }
-  void visit(Field_access_expr const* e) { this->invoke(e); }
   void visit(Reinterpret_cast const* e) { this->invoke(e); }
   void visit(Void_cast const* e) { this->invoke(e); }
 
+  void visit(Field_name_expr const* e) { this->invoke(e); }
+  void visit(Field_access_expr const* e) { this->invoke(e); }
   void visit(Get_port const* e) { this->invoke(e); }
   void visit(Create_table const* e) { this->invoke(e); }
   void visit(Get_dataplane const* e) { this->invoke(e); }
+  void visit(Port_expr const* e) { this->invoke(e); }
+  void visit(Inport_expr const* e) { this->invoke(e); }
+  void visit(Inphysport_expr const* e) { this->invoke(e); }
 };
 
 
@@ -979,17 +1059,21 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Promotion_conv* e) { this->invoke(e); }
   void visit(Demotion_conv* e) { this->invoke(e); }
   void visit(Sign_conv* e) { this->invoke(e); }
+  void visit(Integer_conv* e) { this->invoke(e); }
   void visit(Default_init* e) { this->invoke(e); }
   void visit(Copy_init* e) { this->invoke(e); }
   void visit(Reference_init* e) { this->invoke(e); }
-  void visit(Field_name_expr* e) { this->invoke(e); }
-  void visit(Field_access_expr* e) { this->invoke(e); }
   void visit(Reinterpret_cast* e) { this->invoke(e); }
   void visit(Void_cast* e) { this->invoke(e); }
 
+  void visit(Field_name_expr* e) { this->invoke(e); }
+  void visit(Field_access_expr* e) { this->invoke(e); }
   void visit(Get_port* e) { this->invoke(e); }
   void visit(Create_table* e) { this->invoke(e); }
   void visit(Get_dataplane* e) { this->invoke(e); }
+  void visit(Port_expr* e) { this->invoke(e); }
+  void visit(Inport_expr* e) { this->invoke(e); }
+  void visit(Inphysport_expr* e) { this->invoke(e); }
 };
 
 

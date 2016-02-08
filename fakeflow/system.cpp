@@ -5,6 +5,7 @@
 #include "system.hpp"
 #include "port_table.hpp"
 #include "application.hpp"
+#include "endian.hpp"
 
 
 namespace fp
@@ -167,9 +168,15 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
   va_start(args, n);
   fp::Key key = fp_gather(cxt, tbl->key_size(), n, args);
   va_end(args);
-  fp::Flow const& flow = tbl->search(key);
+
+  // std::cout << "KEY: ";
+  // for (int i = 0; i < tbl->key_size(); ++i)
+  //   std::cout << std::hex << (int) key.data[i];
+  // std::cout << '\n';
+
+  fp::Flow flow = tbl->search(key);
   // execute the flow function
-  flow.instr_(tbl, cxt);
+  flow.instr_(&flow, tbl, cxt);
 
   // testing find times
   // static fp::Byte b[fp::key_size];
@@ -187,21 +194,23 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 // Port and table operations
 
 // Returns the port matching the given name.
-fp::Port*
-fp_get_port(char const* name)
+fp::Port::Id
+fp_get_port_by_name(char const* name)
 {
   // std::cout << "GETTING PORT\n";
   fp::Port* p = fp::port_table.find(name);
   // std::cout << "FOUND PORT\n";
   assert(p);
-  return p;
+  return p->id();
 }
 
 
 // Outputs the contexts packet on the port with the matching name.
 void
-fp_output_port(fp::Context* cxt, fp::Port* p)
+fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
+  // std::cout << "ID: " << id << '\n';
+  fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
 
@@ -220,16 +229,56 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   int j = 0;
   while (i < n) {
     int f = va_arg(args, int);
-    // Lookup the field in the context.
-    fp::Binding b = cxt->get_field_binding(f);
-    fp::Byte* p = cxt->get_field(b.offset);
-    // Copy the field into the buffer.
-    std::copy(p, p + b.length, &buf[j]);
-    j += b.length;
+    fp::Binding b;
+    fp::Byte* p = nullptr;
+
+    // Check for "Special fields"
+    switch (f) {
+      // Looking for "in_port"
+      case 255:
+        p = reinterpret_cast<fp::Byte*>(&cxt->in_port);
+        // Copy the field into the buffer.
+        std::copy(p, p + sizeof(cxt->in_port), &buf[j]);
+        j += sizeof(cxt->in_port);
+        break;
+
+      // Looking for "in_phys_port"
+      case 256:
+        p = reinterpret_cast<fp::Byte*>(&cxt->in_phy_port);
+        // Copy the field into the buffer.
+        std::copy(p, p + sizeof(cxt->in_phy_port), &buf[j]);
+        j += sizeof(cxt->in_phy_port);
+        break;
+
+      // Regular fields
+      default:
+        // Lookup the field in the context.
+        b = cxt->get_field_binding(f);
+        p = cxt->get_field(b.offset);
+        // Copy the field into the buffer.
+        std::copy(p, p + b.length, &buf[j]);
+        // Then reverse the field in place.
+        fp::network_to_native_order(&buf[j], b.length);
+        j += b.length;
+        break;
+    }
     ++i;
   }
 
   return fp::Key(buf, key_width);
+}
+
+fp::Port::Id
+fp_get_packet_in_port(fp::Context* c)
+{
+  return c->in_port;
+}
+
+
+fp::Port::Id
+fp_get_packet_in_phys_port(fp::Context* c)
+{
+  return c->in_phy_port;
 }
 
 
@@ -266,8 +315,10 @@ fp_create_table(fp::Dataplane* dp, int id, int key_width, int size, fp::Table::T
 
 // Creates a new flow rule from the given key and function pointer
 // and adds it to the given table.
+//
+// FIXME: Currently ignoring timeout.
 void
-fp_add_flow(fp::Table* tbl, void* fn, void* key)
+fp_add_init_flow(fp::Table* tbl, void* fn, void* key, unsigned int timeout, unsigned int egress)
 {
   // std::cout << "Adding flow to " << tbl->id() << '\n';
   //
@@ -280,19 +331,47 @@ fp_add_flow(fp::Table* tbl, void* fn, void* key)
   fp::Key k(buf, key_size);
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
-  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
 
   tbl->add(k, flow);
 }
 
 
-// Adds the miss case for the table.
+// FIXME: Ignoring timeouts.
 void
-fp_add_miss(fp::Table* tbl, void* fn)
+fp_add_new_flow(fp::Table* tbl, void* fn, void* key, unsigned int timeout, unsigned int egress)
+{
+  int key_size = tbl->key_size();
+  // cast the key to Byte*
+  fp::Byte* buf = reinterpret_cast<fp::Byte*>(key);
+  // construct a key object
+  fp::Key k(buf, key_size);
+  // cast the flow into a flow instruction
+  fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
+
+  tbl->add(k, flow);
+}
+
+
+fp::Port::Id
+fp_get_flow_egress(fp::Flow* f)
+{
+  assert(f);
+  assert(f->egress_ > 0);
+  return f->egress_;
+}
+
+
+// Adds the miss case for the table.
+//
+// FIXME: Ignoring timeout value.
+void
+fp_add_miss(fp::Table* tbl, void* fn, unsigned int timeout, unsigned int egress)
 {
   // cast the flow into a flow instruction
   fp::Flow_instructions instr = reinterpret_cast<fp::Flow_instructions>(fn);
-  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0);
+  fp::Flow flow(0, fp::Flow_counters(), instr, fp::Flow_timeouts(), 0, 0, egress);
   tbl->insert_miss(flow);
 }
 
@@ -312,6 +391,24 @@ fp_del_flow(fp::Table* tbl, void* key)
 }
 
 
+// Raise an event.
+// TODO: Make this asynchronous on another thread.
+void
+fp_raise_event(fp::Context* cxt, void* handler)
+{
+  // Cast the handler back to its appropriate function type
+  // of void (*)(Context*)
+  void (*event)(fp::Context*);
+  event = (void (*)(fp::Context*)) (handler);
+  // Invoke the event.
+  // FIXME: This should produce a copy of the context and process it
+  // seperately.
+  //
+  // FIXME: Pass it to a thread instead.
+  event(cxt);
+}
+
+
 // -------------------------------------------------------------------------- //
 // Header and field bindings
 
@@ -321,6 +418,7 @@ fp_del_flow(fp::Table* tbl, void* key)
 void
 fp_advance_header(fp::Context* cxt, std::uint16_t n)
 {
+  // std::cout << "ADV: " << n << std::endl;
   cxt->advance(n);
 }
 
@@ -338,7 +436,7 @@ fp_bind_header(fp::Context* cxt, int id)
 // length we can grab exactly what we need.
 //
 // Returns the pointer to the byte at that specific location
-fp::Byte*
+void
 fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
 {
   // std::cout << "BINDING FIELD\n";
@@ -351,18 +449,41 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
   // FIXME: There needs to be a way to store the relative offset instead of the
   // absolute offset.
   cxt->bind_field(id, abs_off, len);
-  return cxt->get_field(abs_off);
 }
 
 
+// Bind twice: once with the original field and again with its aliased name.
+void
+fp_alias_bind(fp::Context* cxt, int original, int alias,
+              std::uint16_t off, std::uint16_t len)
+{
+  // Get field requires an absolute offset which is the context's current offset
+  // plus the relative offset passed to this function.
+  int abs_off = cxt->offset() + off;
+  // We bind fields using their absolute offset since this is the only way we
+  // can recover the absolute offset when we need to look up the binding later.
+  //
+  // FIXME: There needs to be a way to store the relative offset instead of the
+  // absolute offset.
+  cxt->bind_field(original, abs_off, len);
+  cxt->bind_field(alias, abs_off, len);
+}
+
+
+
 fp::Byte*
-fp_read_field(fp::Context* cxt, int fld)
+fp_read_field(fp::Context* cxt, int fld, fp::Byte* ret)
 {
   // std::cout << "READING FIELD";
   // Lookup the field in the context.
   fp::Binding b = cxt->get_field_binding(fld);
   fp::Byte* p = cxt->get_field(b.offset);
-  return p;
+  // Convert to native byte ordering.
+  // Copy the value to a temporary.
+  std::copy(p, p + b.length, ret);
+  fp::network_to_native_order(ret, b.length);
+
+  return ret;
 }
 
 
@@ -373,8 +494,9 @@ fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
 
   // Copy the new data into the packet at the appropriate location.
   fp::Byte* p = cxt->get_field(b.offset);
+  // Convert native to network order after copying.
   std::copy(val, val + len, p);
-
+  fp::native_to_network_order(p, len);
   // Update the length if it changed (which it shouldn't).
   b.length = len;
 }

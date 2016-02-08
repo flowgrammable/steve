@@ -1,0 +1,62 @@
+foreign def puts(char[]) -> int;
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+	extract eth.src;
+  extract eth.dst;
+  goto learn;
+}
+
+Port p1 = ":5000";
+
+event learn_mac
+	requires(eth.src)
+{
+	add
+	{ eth.src } ->
+	{
+		// puts("Using learned in learn.");
+		goto switch;
+	}
+	into learn;
+
+
+	add
+	[timeout = 1000, egress = in_port]
+	{ eth.src } ->
+	{
+		// puts("Using learned in switch.");
+		output egress;
+	}
+	into switch;
+}
+
+
+exact_table learn(eth.src)
+{
+  miss ->
+  {
+		// puts("LEARN MISS");
+		raise learn_mac;
+    goto switch;
+  }
+}
+
+
+exact_table switch(eth.dst)
+{
+	[timeout = 1000, egress = p1]
+  miss ->
+  {
+		// puts("Flood, miss.");
+    flood;
+  }
+}

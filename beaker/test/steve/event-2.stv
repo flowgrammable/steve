@@ -1,7 +1,5 @@
 foreign def puts(char[]) -> int;
 
-Port p1 = ":5000";
-
 layout eth
 {
 	src : uint(48);
@@ -14,32 +12,43 @@ decoder start eth_d(eth)
 {
 	extract eth.src;
   extract eth.dst;
+	extract eth.type;
   goto learn;
 }
 
 
+event switch_learn
+	requires(eth.src, eth.type)
+{
+	add
+	{ eth.src } ->
+	{
+		set eth.dst = 1;
+		drop;
+	}
+	into switch;
+
+	set eth.type = 1111;
+
+  goto switch;
+}
+
+
 exact_table learn(eth.src)
+	requires(eth.type)
 {
   miss ->
   {
-		puts("Learning eth src.");
-
-    add
-    { eth.src } ->
-    {
-      output p1;
-    }
-    into switch;
-
-    goto switch;
+    raise switch_learn;
+		goto switch;
   }
 }
+
 
 exact_table switch(eth.dst)
 {
   miss ->
   {
-		puts("missed...flooding...");
     flood;
   }
 }

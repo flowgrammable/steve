@@ -202,8 +202,9 @@ Lexer::on_hexadecimal_integer()
 {
   String str = build_.take();
 
-  // number of bits needed is the length of the string * 4
-  std::size_t bits = str.size() * 4;
+  // number of bits needed is the length of the string * 4 - 2
+  // -2 (for the leading 0x)
+  std::size_t bits = str.size() * 4 -2;
   Symbol* sym = syms_.put<Hexadecimal_sym>(str, hexadecimal_tok,
                                            str.c_str(), bits);
 
@@ -218,7 +219,8 @@ Lexer::on_binary_integer()
   String str = build_.take();
 
   // number of bits needed is the str len
-  std::size_t bits = str.size();
+  // -2 (for the leading 0x)
+  std::size_t bits = str.size() - 2;
   Symbol* sym = syms_.put<Binary_sym>(str, binary_tok, str.c_str(), bits);
   return Token(loc_, binary_tok, sym);
 }

@@ -10,6 +10,7 @@
 #include "beaker/mangle.hpp"
 #include "beaker/evaluator.hpp"
 #include "beaker/builtin.hpp"
+#include "beaker/error.hpp"
 
 #include "llvm/IR/Type.h"
 #include "llvm/IR/GlobalVariable.h"
@@ -237,11 +238,11 @@ Generator::get_type(Flow_type const*)
 }
 
 
-// Produces and opaque type
+// Produces a port id type which is an unsigned 32-bit integer.
 llvm::Type*
 Generator::get_type(Port_type const* t)
 {
-  static llvm::Type* port_type = llvm::StructType::create(cxt, "Port");
+  auto port_type = build.getInt32Ty();
   return port_type;
 }
 
@@ -301,16 +302,19 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Promotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Demotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Sign_conv const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Integer_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Default_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reinterpret_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Field_name_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
     llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});
@@ -383,8 +387,9 @@ Generator::gen(Decl_expr const* e)
   // Fetch the value from a reference declaration.
   Decl const* decl = bind->first;
 
-  if (is_reference(decl))
+  if (is_reference(decl)) {
     return build.CreateLoad(result);
+  }
 
   return result;
 }
@@ -732,6 +737,17 @@ Generator::gen(Sign_conv const* e)
 }
 
 
+// FIXME: Everything is already an integer in llvm, does this really do anything?
+llvm::Value*
+Generator::gen(Integer_conv const* e)
+{
+  Integer_type const* int_t = as<Integer_type>(e->target());
+  llvm::Type* t = get_type(e->target());
+  llvm::Value* v = gen(e->source());
+  return build.CreateIntCast(v, t, int_t->is_signed());
+}
+
+
 // TODO: Return the value or store it?
 llvm::Value*
 Generator::gen(Default_init const* e)
@@ -750,6 +766,9 @@ Generator::gen(Default_init const* e)
   // should be memberwise default initialized.
   if (is_aggregate(t))
     return llvm::ConstantAggregateZero::get(type);
+
+  if (is<Port_type>(t))
+    return llvm::ConstantInt::get(type, 0);
 
   throw std::runtime_error("unhahndled default initializer");
 }
@@ -894,11 +913,13 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { lingo_unreachable(); }
     void operator()(Drop const* s) { lingo_unreachable(); }
     void operator()(Output const* s) { lingo_unreachable(); }
+    void operator()(Output_egress const* s) { lingo_unreachable(); }
     void operator()(Flood const* s) { lingo_unreachable(); }
     void operator()(Clear const* s) { lingo_unreachable(); }
     void operator()(Set_field const* s) { lingo_unreachable(); }
     void operator()(Insert_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_flow const* s) { lingo_unreachable(); }
+    void operator()(Raise const* s) { lingo_unreachable(); }
     void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
     void operator()(Write_flood const* s) { lingo_unreachable(); }
@@ -1104,9 +1125,9 @@ Generator::gen(Match_stmt const* s)
 
   // Block for each case
   std::vector<llvm::BasicBlock> cases;
-  // block to merge back into
   llvm::BasicBlock* done = llvm::BasicBlock::Create(cxt, "switch.done", fn);
-  llvm::SwitchInst* switch_ = build.CreateSwitch(cond, done);
+  llvm::SwitchInst* switch_ = build.CreateSwitch(cond, nullptr);
+  build.SetInsertPoint(switch_);
 
   for (auto stmt : s->cases()) {
     assert(is<Case_stmt>(stmt));
@@ -1124,13 +1145,21 @@ Generator::gen(Match_stmt const* s)
     switch_->addCase(as<llvm::ConstantInt>(label), c1);
   }
 
+  if (s->has_miss()) {
+    llvm::BasicBlock* def = llvm::BasicBlock::Create(cxt, "switch.default", fn);
+    switch_->setDefaultDest(def);
+    // handle the default case
+    build.SetInsertPoint(def);
+    gen(s->miss());
+    if (!def->getTerminator())
+      build.CreateBr(done);
+  }
+  else {
+    switch_->setDefaultDest(done);
+  }
+
   // generate the merging block
   build.SetInsertPoint(done);
-
-  // handle the default case
-  if (s->has_miss()) {
-    gen(s->miss());
-  }
 }
 
 
@@ -1180,6 +1209,7 @@ Generator::gen(Decl const* d)
     void operator()(Port_decl const* d) { return g.gen(d); }
     void operator()(Extracts_decl const* d) { return g.gen(d); }
     void operator()(Rebind_decl const* d) { return g.gen(d); }
+    void operator()(Event_decl const* d) { return g.gen(d); }
   };
   return apply(d, Fn{*this});
 }
@@ -1478,7 +1508,7 @@ Generator::gen(Layout_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Decode_decl const* d)
 {
@@ -1486,7 +1516,7 @@ Generator::gen(Decode_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Table_decl const* d)
 {
@@ -1494,7 +1524,7 @@ Generator::gen(Table_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Key_decl const* d)
 {
@@ -1502,7 +1532,7 @@ Generator::gen(Key_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Flow_decl const* d)
 {
@@ -1510,7 +1540,7 @@ Generator::gen(Flow_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Port_decl const* d)
 {
@@ -1518,7 +1548,7 @@ Generator::gen(Port_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Extracts_decl const* d)
 {
@@ -1526,11 +1556,18 @@ Generator::gen(Extracts_decl const* d)
 }
 
 
-// TODO: implement me
+// Lowering removes these from the AST.
 void
 Generator::gen(Rebind_decl const* d)
 {
   throw std::runtime_error("unreachable rebind");
+}
+
+
+void
+Generator::gen(Event_decl const* d)
+{
+  throw std::runtime_error("unreachable event");
 }
 
 

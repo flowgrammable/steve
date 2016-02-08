@@ -18,12 +18,15 @@ struct Lowerer
   { }
 
   Expr* lower(Expr*);
+  Expr* lower(Port_expr*);
   Expr* lower(Value_conv* e);
   Expr* lower(Promotion_conv* e);
   Expr* lower(Demotion_conv* e);
   Expr* lower(Sign_conv* e);
   Expr* lower(Call_expr* e);
   Expr* lower(Field_access_expr* e);
+  Expr* lower(Inport_expr* e);
+  Expr* lower(Inphysport_expr* e);
 
   template <typename T>
   Expr* lower_unary_expr(T*);
@@ -35,11 +38,13 @@ struct Lowerer
   Decl* lower_global_decl(Decode_decl*);
   Decl* lower_global_decl(Table_decl*);
   Decl* lower_global_decl(Port_decl*);
+  Decl* lower_global_decl(Event_decl*);
 
   Decl* lower_global_def(Decl*);
   Decl* lower_global_def(Decode_decl*);
   Decl* lower_global_def(Table_decl*);
   Decl* lower_global_def(Port_decl*);
+  Decl* lower_global_def(Event_decl*);
 
   Decl* lower(Decl*);
   Decl* lower(Module_decl*);
@@ -53,15 +58,17 @@ struct Lowerer
   Decl* lower(Flow_decl*);
   Decl* lower(Port_decl*);
 
-  void     add_flows(Decl*, Decl_seq const&, Decl*, Expr_seq const&);
+  Flow_properties lower_flow_properties(Flow_decl*);
+  Function_decl*  lower_init_flow(Table_decl*, Flow_decl*);
+  void     add_init_flows(Table_decl*);
   Expr_seq lower_flow_keys(Decl_seq const&);
   Stmt*    lower_flow_body(Table_decl*, Stmt*);
-  Decl_seq lower_table_flows(Table_decl*);
   Decl*    lower_miss_case(Table_decl*);
   Stmt_seq lower_extracts_decl(Extracts_decl*);
   Stmt_seq lower_rebind_decl(Rebind_decl*);
   void     produce_key_function(Table_decl*);
   Decl*    construct_added_flow(Table_decl*, Flow_decl*);
+  Expr*    lower_advance_clause(Expr*);
 
   Stmt_seq lower(Stmt*);
   Stmt_seq lower(Assign_stmt*);
@@ -85,11 +92,13 @@ struct Lowerer
   Stmt_seq lower(Action*);
   Stmt_seq lower(Drop*);
   Stmt_seq lower(Output*);
+  Stmt_seq lower(Output_egress*);
   Stmt_seq lower(Flood*);
   Stmt_seq lower(Clear*);
   Stmt_seq lower(Set_field*);
   Stmt_seq lower(Insert_flow*);
   Stmt_seq lower(Remove_flow*);
+  Stmt_seq lower(Raise*);
   Stmt_seq lower(Write_drop*);
   Stmt_seq lower(Write_output*);
   Stmt_seq lower(Write_flood*);

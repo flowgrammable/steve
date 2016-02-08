@@ -15,6 +15,7 @@
 
 struct Pipeline;
 struct Lowerer;
+struct Flow_properties;
 
 // Maintains a sequence of declarations
 // which comprise a pipeline and retain
@@ -86,6 +87,7 @@ public:
   Expr* elaborate(Literal_expr*);
   Expr* elaborate(Id_expr*);
   Expr* elaborate(Decl_expr*);
+  Expr* elaborate(Port_expr*);
   Expr* elaborate(Add_expr* e);
   Expr* elaborate(Sub_expr* e);
   Expr* elaborate(Mul_expr* e);
@@ -117,6 +119,7 @@ public:
   Expr* elaborate(Promotion_conv* e);
   Expr* elaborate(Demotion_conv* e);
   Expr* elaborate(Sign_conv* e);
+  Expr* elaborate(Integer_conv* e);
   Expr* elaborate(Default_init* e);
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);
@@ -124,6 +127,8 @@ public:
   Expr* elaborate(Void_cast* e);
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
+  Expr* elaborate(Inport_expr* e);
+  Expr* elaborate(Inphysport_expr* e);
 
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
@@ -143,10 +148,13 @@ public:
   Decl* elaborate(Decode_decl*);
   Decl* elaborate(Table_decl*);
   Decl* elaborate(Key_decl*);
+  Decl* elaborate(Inport_key_decl*);
+  Decl* elaborate(Inphysport_key_decl*);
   Decl* elaborate(Flow_decl*);
   Decl* elaborate(Port_decl*);
   Decl* elaborate(Extracts_decl*);
   Decl* elaborate(Rebind_decl*);
+  Decl* elaborate(Event_decl*);
 
   // Support for two-phase elaboration.
   Decl* elaborate_decl(Decl*);
@@ -161,6 +169,7 @@ public:
   Decl* elaborate_decl(Port_decl*);
   Decl* elaborate_decl(Decode_decl*);
   Decl* elaborate_decl(Table_decl*);
+  Decl* elaborate_decl(Event_decl*);
   Decl* elaborate_decl(Module_decl*);
 
   Decl* elaborate_def(Decl*);
@@ -175,6 +184,7 @@ public:
   Decl* elaborate_def(Port_decl*);
   Decl* elaborate_def(Decode_decl*);
   Decl* elaborate_def(Table_decl*);
+  Decl* elaborate_def(Event_decl*);
   Decl* elaborate_def(Module_decl*);
 
   Stmt* elaborate(Stmt*);
@@ -198,17 +208,29 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
+  Stmt* elaborate(Output_egress*);
   Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);
   Stmt* elaborate(Remove_flow*);
+  Stmt* elaborate(Raise*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
   Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
-  Decl* elaborate_added_flow(Flow_decl*, Table_decl*);
+  // Helper functions.
+  Decl*                 elaborate_added_flow_body(Flow_decl*, Table_decl*);
+  Decl*                 elaborate_added_flow_decl(Flow_decl*, Table_decl*);
+  std::string           build_field_name(Dot_expr*);
+  Symbol const*         get_field_name(Dot_expr*);
+  bool                  is_field_access(Dot_expr*);
+  Decl*                 check_field_path(Dot_expr*, Decl_seq&, Expr_seq&);
+  Field_name_expr*      elaborate_field_name(Dot_expr*);
+  Field_access_expr*    elaborate_field_access(Dot_expr*);
+  Flow_properties       elaborate_flow_properties(Flow_decl*);
+  bool                  is_valid_property(String, Expr*, Flow_properties&);
 
   void declare(Decl*);
   void redeclare(Decl*);
@@ -221,7 +243,10 @@ public:
   Overload* qualified_lookup(Scope*, Symbol const*);
   Overload* member_lookup(Record_decl*, Symbol const*);
 
+  Symbol const* get_qualified_name(Expr_seq const&);
+
   // Diagnostics
+  void check_valid_action_context(Stmt*);
   void on_call_error(Expr_seq const&, Expr_seq const&, Type_seq const&);
   void locate(void const*, Location);
   Location locate(void const*);
@@ -237,6 +262,8 @@ private:
 
   // maintain a list of pipeline decls per module
   Pipeline_stack pipelines;
+  // Maintain added flows.
+  std::vector<Flow_decl*> added_flows_;
 
   Scope_stack   stack;
   Decl_set      defined;

@@ -37,7 +37,7 @@ public:
   Expr* logical_and_expr();
   Expr* logical_or_expr();
   Expr* field_name_expr();
-  Expr* field_access_expr(Token);
+  Expr* field_access_expr();
   Expr* expr();
 
   // Postfix expr
@@ -66,10 +66,13 @@ public:
   Decl* decode_decl();
   Decl* exact_table_decl();
   Decl* key_decl();
+  Decl* inport_key_decl();
+  Decl* inphysport_key_decl();
   Decl* flow_decl();
   Decl* port_decl();
   Decl* extract_decl();
   Decl* rebind_decl();
+  Decl* event_decl();
 
   // Statement parsers
   Stmt* stmt();
@@ -96,6 +99,7 @@ public:
   Stmt* write_stmt();
   Stmt* add_flow_stmt();
   Stmt* rmv_flow_stmt();
+  Stmt* raise_stmt();
 
   // Top-level.
   Decl* module(Module_decl*);
@@ -103,6 +107,7 @@ public:
   // Helpers
   Expr_seq parse_colon_seperated(Token tok);
   Symbol const* get_qualified_name(Expr_seq const&);
+  Stmt_seq flow_properties();
 
   // Parse state
   bool ok() const { return errs_ == 0; }
@@ -151,6 +156,8 @@ private:
   Expr* on_dot(Expr*, Expr*);
   Expr* on_field_name(Expr_seq const&);
   Expr* on_field_access(Expr_seq const&);
+  Expr* on_inport(Token);
+  Expr* on_inphysport(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);
@@ -167,11 +174,14 @@ private:
   Decl* on_decoder(Token, Type const*, Stmt*, bool);
   Decl* on_extract(Expr*);
   Decl* on_rebind(Expr*, Expr*);
-  Decl* on_exact_table(Token, Decl_seq&, Decl_seq&, Decl*);
-  Decl* on_key(Expr_seq const&);
-  Decl* on_flow(Expr_seq&, Stmt*);
-  Decl* on_flow_miss(Stmt*);
+  Decl* on_exact_table(Token, Decl_seq&, Expr_seq&, Decl_seq&, Decl*);
+  Decl* on_key(Expr*);
+  Decl* on_inport_key(Token);
+  Decl* on_inphysport_key(Token);
+  Decl* on_flow(Expr_seq const&, Stmt*, Stmt_seq const&);
+  Decl* on_flow_miss(Stmt*, Stmt_seq const&);
   Decl* on_port(Token, Expr*);
+  Decl* on_event(Token, Expr_seq const&, Stmt*);
 
 
   // FIXME: Remove _stmt from handlers.
@@ -189,17 +199,19 @@ private:
 
   Stmt* on_case(Expr*, Stmt*);
   Stmt* on_match(Expr*, Stmt_seq&, Stmt*);
-  Stmt* on_decode(Expr*);
-  Stmt* on_goto(Expr*);
+  Stmt* on_decode(Expr*, Expr*);
+  Stmt* on_goto(Expr*, Expr*);
   Stmt* on_drop();
   Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
+  Stmt* on_output_egress();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);
   Stmt* on_add_flow(Decl*, Expr*);
   Stmt* on_rmv_flow(Expr_seq const&, Expr*);
+  Stmt* on_raise(Expr*);
 
   // Parsing support
   Token_kind lookahead() const;
@@ -218,6 +230,7 @@ private:
 
   // Location management
   void locate(void*, Location);
+  Location locate(void*);
 
   template<typename T, typename... Args>
   T* init(Location, Args&&...);
@@ -269,6 +282,17 @@ inline void
 Parser::locate(void* p, Location l)
 {
   locs_->emplace(p, l);
+}
+
+
+inline Location
+Parser::locate(void* p)
+{
+  auto iter = locs_->find(p);
+  if (iter != locs_->end())
+    return iter->second;
+  else
+    return {};
 }
 
 

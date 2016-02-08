@@ -1,5 +1,8 @@
+var y : int = 0;
+
 def main() -> int
 {
   var x : int = 0;
+  x = y + 1;
   return 0;
 }

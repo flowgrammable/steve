@@ -52,13 +52,16 @@ Evaluator::eval(Expr const* e)
     Value operator()(Promotion_conv const* e) { return ev.eval(e); }
     Value operator()(Demotion_conv const* e) { return ev.eval(e); }
     Value operator()(Sign_conv const* e) { return ev.eval(e); }
+    Value operator()(Integer_conv const* e) { return ev.eval(e); }
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
     Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
     Value operator()(Void_cast const* e) { lingo_unimplemented(); }
-    Value operator()(Field_name_expr const* e) { return ev.eval(e); }
+    Value operator()(Field_name_expr const* e) { lingo_unimplemented(); }
     Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
+    Value operator()(Inport_expr const* e) { lingo_unimplemented(); }
+    Value operator()(Inphysport_expr const* e) { lingo_unimplemented(); }
 
     Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
@@ -449,6 +452,14 @@ Evaluator::eval(Sign_conv const* e)
 }
 
 
+Value
+Evaluator::eval(Integer_conv const* e)
+{
+  Value v = eval(e->source());
+  return v.get_integer();
+}
+
+
 // FIXME: This is wrong. We should be calling a function
 // that default initializes the created object.
 Value
@@ -507,6 +518,7 @@ Evaluator::eval(Decl const* d)
     void operator()(Port_decl const* d) { ev.eval(d); }
     void operator()(Extracts_decl const* d) { ev.eval(d); }
     void operator()(Rebind_decl const* d) { ev.eval(d); }
+    void operator()(Event_decl const* d) { ev.eval(d); }
 
   };
 
@@ -671,23 +683,21 @@ Evaluator::eval(Module_decl const* d)
 void
 Evaluator::eval(Layout_decl const*)
 {
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Decode_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Table_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
@@ -695,42 +705,43 @@ Evaluator::eval(Table_decl const* d)
 void
 Evaluator::eval(Key_decl const* d)
 {
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Flow_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Port_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Extracts_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
 void
 Evaluator::eval(Rebind_decl const* d)
 {
-  // FIXME: i don't believe these ever get called
-  return;
+  lingo_unreachable();
 }
 
 
+void
+Evaluator::eval(Event_decl const* d)
+{
+  lingo_unreachable();
+}
 
 
 // -------------------------------------------------------------------------- //
@@ -769,11 +780,13 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Action const* s) { lingo_unreachable(); }
     Control operator()(Drop const* s) { lingo_unreachable(); }
     Control operator()(Output const* s) { lingo_unreachable(); }
+    Control operator()(Output_egress const* s) { lingo_unreachable(); }
     Control operator()(Flood const* s) { lingo_unreachable(); }
     Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
     Control operator()(Insert_flow const* s) { lingo_unreachable(); }
     Control operator()(Remove_flow const* s) { lingo_unreachable(); }
+    Control operator()(Raise const* s) { lingo_unreachable(); }
     Control operator()(Write_drop const* s) { lingo_unreachable(); }
     Control operator()(Write_output const* s) { lingo_unreachable(); }
     Control operator()(Write_flood const* s) { lingo_unreachable(); }

@@ -9,31 +9,19 @@ layout eth
 
 decoder start eth_d(eth)
 {
-	extract eth::dst;
-	extract eth::src;
-  extract eth::type;
-	set eth::type = eth::type + 80;
-  // set eth::type = 800;
+	extract eth.dst;
+	extract eth.src;
+  extract eth.type;
+	set eth.type = eth.type + 80;
+  set eth.dst = 880;
 	clear;
-  // copy eth::type = eth::src;
+  // copy eth.type = eth.src;
   write drop;
 	write flood;
-  write output p1;
-  write set eth::type = 0x800;
-  // write copy eth::type = eth::src;
-	add {eth::src} -> { drop; } into t1;
-	remove {eth::src} from t1;
+	write output p1;
+  write set eth.type = 0x800;
+  // write copy eth.type = eth.src;
 
 	flood;
 	// drop;
-}
-
-
-exact_table t1(eth::src)
-{
-	miss ->
-	{
-		add {eth::src} -> { output p1; } into t1;
-		output p1;
-	}
 }

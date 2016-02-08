@@ -21,8 +21,8 @@ layout h3 {
 
 decoder start d1(h1)
 {
-  extract h1::src;
-  match (h1::src) {
+  extract h1.src;
+  match (h1.src) {
     case 0: decode d2;
 		case 1: decode d3;
 		// case 3: goto t1;
@@ -32,8 +32,8 @@ decoder start d1(h1)
 
 decoder d2(h2)
 {
-  extract h2::dst;
-  match (h2::dst) {
+  extract h2.dst;
+  match (h2.dst) {
     // case 0: decode d3;
 		case 1: decode d2;
 		case 2: decode d4;
@@ -43,8 +43,8 @@ decoder d2(h2)
 
 decoder d3(h3)
 {
-	extract h3::stuff;
-	match (h3::stuff) {
+	extract h3.stuff;
+	match (h3.stuff) {
 		case 0: decode d3;
 		case 1: decode d4;
 	}
@@ -52,11 +52,11 @@ decoder d3(h3)
 
 decoder d4(h1)
 {
-	extract h1::src;
+	extract h1.src;
 	goto t1;
 }
 
-exact_table t1(h1::src, h2::dst, h3::stuff)
+exact_table t1(h1.src, h2.dst, h3.stuff)
 {
   {0, 1, 2} -> {  }
 	{1, 2, 3} -> {  }

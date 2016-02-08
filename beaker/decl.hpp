@@ -66,10 +66,13 @@ struct Decl::Visitor
   virtual void visit(Decode_decl const*) = 0;
   virtual void visit(Table_decl const*) = 0;
   virtual void visit(Key_decl const*) = 0;
+  virtual void visit(Inport_key_decl const*) = 0;
+  virtual void visit(Inphysport_key_decl const*) = 0;
   virtual void visit(Flow_decl const*) = 0;
   virtual void visit(Port_decl const*) = 0;
   virtual void visit(Extracts_decl const*) = 0;
   virtual void visit(Rebind_decl const*) = 0;
+  virtual void visit(Event_decl const*) = 0;
 };
 
 
@@ -89,10 +92,13 @@ struct Decl::Mutator
   virtual void visit(Decode_decl*) = 0;
   virtual void visit(Table_decl*) = 0;
   virtual void visit(Key_decl*) = 0;
+  virtual void visit(Inport_key_decl*) = 0;
+  virtual void visit(Inphysport_key_decl*) = 0;
   virtual void visit(Flow_decl*) = 0;
   virtual void visit(Port_decl*) = 0;
   virtual void visit(Extracts_decl*) = 0;
   virtual void visit(Rebind_decl*) = 0;
+  virtual void visit(Event_decl*) = 0;
 };
 
 
@@ -328,17 +334,17 @@ struct Table_decl : Decl
   };
 
   // Default exact table
-  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init, Decl* miss)
-    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& key,
+             Expr_seq& reqs, Decl_seq& init, Decl* miss)
+    : Decl(n, t), num(num), keys_(key), reqs_(reqs), body_(init), miss_(miss),
       start_(false), kind_(exact_table), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
   }
 
-  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& conds,
-             Decl_seq& init, Decl* miss, Table_kind k)
-    : Decl(n, t), num(num), keys_(conds), body_(init), miss_(miss),
+  Table_decl(Symbol const* n, Type const* t, int num, Decl_seq& key,
+             Expr_seq& reqs, Decl_seq& init, Decl* miss, Table_kind k)
+    : Decl(n, t), num(num), keys_(key), reqs_(reqs), body_(init), miss_(miss),
       start_(false), kind_(k), flow_count_(0)
   {
     spec_ |= foreign_spec; // mark as foreign
@@ -347,6 +353,7 @@ struct Table_decl : Decl
 
   int             number()    const { return num; }
   Decl_seq const& keys()      const { return keys_; }
+  Expr_seq const& requirements() const { return reqs_; }
   Decl_seq const& body()      const { return body_; }
   Decl*           miss_case() const { return miss_; }
   Table_kind      kind()      const { return kind_; }
@@ -358,6 +365,7 @@ struct Table_decl : Decl
 
   int      num;
   Decl_seq keys_;
+  Expr_seq reqs_;
   Decl_seq body_;
   Decl* miss_;
   bool start_;
@@ -376,23 +384,63 @@ struct Table_decl : Decl
 // set of subkeys
 struct Key_decl : Decl
 {
-  Key_decl(Expr_seq const& e, Symbol const* n)
-    : Decl(n, nullptr), identifiers_(e), name_(n)
+  Key_decl(Expr* e, Symbol const* n)
+    : Decl(n, nullptr), field_(e)
   { }
 
-  Expr_seq const& identifiers() const { return identifiers_; }
-  Decl_seq const& declarations() const { return decls_; }
+  Key_decl(Type const* t, Expr* e, Symbol const* n)
+    : Decl(n, t), field_(e)
+  { }
 
-  Symbol const* name() const { return name_; }
-  String const& spelling() const { return name_->spelling(); }
+  Expr*    field() const { return field_; }
+  Decl_seq const& declarations() const { return decls_; }
+  Expr_seq const& identifiers()  const { return ids_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
+  // Linearizing the dot expr into a sequence if ids and decls.
   Decl_seq decls_;
-  Expr_seq identifiers_;
+  Expr_seq ids_;
 
-  Symbol const* name_;
+  // Field name expr
+  Expr* field_;
+};
+
+
+// Allow in_port as a valid key.
+struct Inport_key_decl : Key_decl
+{
+  Inport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// Allow in_phys_port as a valid key.
+struct Inphysport_key_decl : Key_decl
+{
+  Inphysport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// Flows also maintain a set of configurable properties.
+struct Flow_properties
+{
+  Flow_properties()
+    : timeout(nullptr), egress(nullptr)
+  { }
+
+  Expr* timeout;
+  Expr* egress;
 };
 
 
@@ -401,22 +449,28 @@ struct Key_decl : Decl
 // FIXME: We should check during compile time that the
 // length of the subkey does not exceed the maximum key
 // size of the table.
+//
+// NOTE: All flows maintain a pointer back to their table.
 struct Flow_decl : Decl
 {
-  Flow_decl(Symbol const* n, Expr_seq& conds, int prio, Stmt* i)
+  using Properties = Flow_properties;
+
+  Flow_decl(Symbol const* n, Expr_seq const& conds, int prio, Stmt* i, Stmt_seq const& p)
     : Decl(n, nullptr), prio_(prio), keys_(conds), instructions_(i),
-      miss_(false)
+      miss_(false), prop_block_(p)
   { }
 
-  Flow_decl(Symbol const* n, int prio, Stmt* i, bool miss = true)
+  Flow_decl(Symbol const* n, int prio, Stmt* i, Stmt_seq const& p, bool miss = true)
     : Decl(n, nullptr), prio_(prio), keys_{}, instructions_(i),
-      miss_(miss)
+      miss_(miss), prop_block_(p)
   { }
 
   int             priority() const { return prio_; }
   Expr_seq const& keys() const { return keys_; }
   Stmt*           instructions() const { return instructions_; }
   bool            miss_case() const { return miss_; }
+  Table_decl*     table() const { return table_; }
+  Properties      properties() const { return prop_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -427,6 +481,9 @@ struct Flow_decl : Decl
   Expr_seq keys_;
   Stmt* instructions_;
   bool miss_;
+  Properties prop_;
+  Stmt_seq prop_block_;
+  Table_decl* table_;
 };
 
 
@@ -482,6 +539,31 @@ struct Port_decl : Decl
   void accept(Mutator& v)       { v.visit(this); }
 
   Expr* first;
+};
+
+
+// Declares an event stage and its associated function handler.
+//
+// Events have requirements just like decode stages to ensure
+// that fields needed by the event have been decoded.
+//
+// Events are just another stage of processing, except there behavior may or
+// may not be asynchronous depending on the runtime configuration for event
+// handling.
+struct Event_decl : Decl
+{
+  Event_decl(Symbol const* n, Expr_seq const& req, Stmt* body)
+    : Decl(n, nullptr), requirements_(req), body_(body)
+  { }
+
+  Expr_seq const& requirements() const { return requirements_; }
+  Stmt*           body()         const { return body_; }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+
+  Expr_seq requirements_;
+  Stmt* body_;
 };
 
 
@@ -572,10 +654,13 @@ struct Generic_decl_visitor : Decl::Visitor, lingo::Generic_visitor<F, T>
   void visit(Decode_decl const* d) { this->invoke(d); }
   void visit(Table_decl const* d) { this->invoke(d); }
   void visit(Key_decl const* d) { this->invoke(d); }
+  void visit(Inport_key_decl const* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl const* d) { this->invoke(d); }
   void visit(Flow_decl const* d) { this->invoke(d); }
   void visit(Port_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
   void visit(Rebind_decl const* d) { this->invoke(d); }
+  void visit(Event_decl const* d) { this->invoke(d); }
 };
 
 
@@ -609,10 +694,13 @@ struct Generic_decl_mutator : Decl::Mutator, lingo::Generic_mutator<F, T>
   void visit(Decode_decl* d) { this->invoke(d); }
   void visit(Table_decl* d) { this->invoke(d); }
   void visit(Key_decl* d) { this->invoke(d); }
+  void visit(Inport_key_decl* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl* d) { this->invoke(d); }
   void visit(Flow_decl* d) { this->invoke(d); }
   void visit(Port_decl* d) { this->invoke(d); }
   void visit(Extracts_decl* d) { this->invoke(d); }
   void visit(Rebind_decl* d) { this->invoke(d); }
+  void visit(Event_decl* d) { this->invoke(d); }
 };
 
 

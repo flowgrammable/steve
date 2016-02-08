@@ -13,5 +13,5 @@ layout ipv4
 
 decoder start eth_d(eth)
 {
-	extract ipv4::type;
+	extract ipv4.type;
 }

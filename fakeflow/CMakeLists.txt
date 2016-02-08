@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 project(flowpath-rt CXX)
 
 # C++ build flags.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -pthread -O3")
 
 # Require Boost C++ Libraries.
 find_package(Boost 1.55.0 REQUIRED)
@@ -34,6 +34,7 @@ add_library(flowpath-rt SHARED
     system.cpp
     table.cpp
     types.cpp
+    endian.cpp
     # thread.cpp
     # queue.cpp
     )

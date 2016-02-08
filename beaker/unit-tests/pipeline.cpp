@@ -48,7 +48,6 @@ main(int argc, char* argv[])
     Decl* m = parse.module(&mod);
     if (!parse)
       return -1;
-
     // Perform semantic analysis.
     //
     // TODO: Implement a parse-only phase.

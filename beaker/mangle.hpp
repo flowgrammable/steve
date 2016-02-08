@@ -10,6 +10,7 @@
 #include <beaker/prelude.hpp>
 
 String mangle(Field_access_expr const*);
+String mangle(Field_name_expr const*);
 String mangle(Table_decl const*, Flow_decl const*);
 String mangle(Type const*);
 String mangle(Decl const*);
@@ -49,9 +50,12 @@ void mangle(std::ostream&, Layout_decl const*);
 void mangle(std::ostream&, Decode_decl const*);
 void mangle(std::ostream&, Table_decl const*);
 void mangle(std::ostream&, Key_decl const*);
+void mangle(std::ostream&, Inport_key_decl const*);
+void mangle(std::ostream&, Inphysport_key_decl const*);
 void mangle(std::ostream&, Flow_decl const*);
 void mangle(std::ostream&, Port_decl const*);
 void mangle(std::ostream&, Extracts_decl const*);
 void mangle(std::ostream&, Rebind_decl const*);
+void mangle(std::ostream&, Event_decl const*);
 
 #endif

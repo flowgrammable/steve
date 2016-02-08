@@ -11,9 +11,9 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-	extract eth::src as eth::alias;
-	match (eth::alias) {
+  extract eth.dst;
+	extract eth.src as eth.alias;
+	match (eth.alias) {
 		case 0: decode eth_d2;
 	}
 
@@ -22,11 +22,11 @@ decoder start eth_d(eth)
 
 decoder eth_d2(eth)
 {
-	extract eth::type;
+	extract eth.type;
 	goto t1;
 }
 
-exact_table t1(eth::dst, eth::type)
+exact_table t1(eth.dst, eth.type)
 {
 	// flow 1
 	{ 0x12_34_56_78_90_ab, 800 } ->

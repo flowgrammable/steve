@@ -35,12 +35,12 @@ layout udp
 
 decoder start eth_d(eth)
 {
-  extract eth::src;
-  extract eth::dst;
-  extract eth::type;
-  match(eth::type)
+  extract eth.src;
+  extract eth.dst;
+  extract eth.type;
+  match(eth.type)
   {
-    case 800: decode ipv4_d;
+    case 0x800: decode ipv4_d;
   }
 
 	drop;
@@ -49,37 +49,35 @@ decoder start eth_d(eth)
 
 decoder ipv4_d(ipv4)
 {
-	extract ipv4::ttl;
-	extract ipv4::version_ihl;
-	extract ipv4::dscp_ecn;
-	extract ipv4::checksum;
-	extract ipv4::protocol;
-	extract ipv4::len;
-  extract ipv4::src;
-  extract ipv4::dst;
+	extract ipv4.ttl;
+	extract ipv4.version_ihl;
+	extract ipv4.dscp_ecn;
+	extract ipv4.checksum;
+	extract ipv4.protocol;
+	extract ipv4.len;
+  extract ipv4.src;
+  extract ipv4.dst;
 
-  match(ipv4::protocol) {
-    case 0: decode udp_d;
-  }
-
-	drop;
+	decode udp_d advance ipv4.len;
 }
 
 
 decoder udp_d(udp)
 {
-	extract udp::src;
-	extract udp::dst;
-  extract udp::len;
-	extract udp::checksum;
-  goto route;
+	extract udp.src;
+	extract udp.dst;
+  extract udp.len;
+	extract udp.checksum;
+  goto route advance udp.len;
 }
 
 
-exact_table route(ipv4::dst, ipv4::protocol)
+exact_table route(ipv4.dst, ipv4.protocol)
+	requires(ipv4.dst, ipv4.ttl)
 {
 	{0b0000_0000_0000_0000, 0} ->
 	{
+		set ipv4.ttl = ipv4.ttl - 1;
 		output p1;
 	}
 

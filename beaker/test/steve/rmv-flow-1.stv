@@ -12,23 +12,23 @@ layout eth
 
 decoder start eth_d(eth)
 {
-  extract eth::dst;
-  extract eth::type;
+  extract eth.dst;
+  extract eth.type;
   goto switch;
 }
 
-exact_table switch(eth::dst, eth::type)
+exact_table switch(eth.dst, eth.type)
 {
+	// This should cause alternating miss and using prints.
   miss ->
   {
 		puts("Miss...adding flow now.");
 
     add
-    { eth::dst, eth::type } ->
+    { eth.dst, eth.type } ->
     {
-			puts("Hit added flow....Now removing.");
-			remove { eth::dst, eth::type } from switch;
-
+			puts("Using adding flow now.");
+			remove { eth.dst, eth.type } from switch;
       output p1;
     }
     into switch;

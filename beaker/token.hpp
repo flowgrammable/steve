@@ -91,6 +91,7 @@ enum Token_kind
   exact_table_kw,
   prefix_table_kw,
   wild_table_kw,
+  requires_kw,
   miss_kw,
   action_kw,
   port_kw,
@@ -103,10 +104,17 @@ enum Token_kind
   set_kw,
   copy_kw,
   get_kw,
-  add_kw,
+  insert_kw,
   rmv_kw,
   into_kw,
   from_kw,
+  event_kw,
+  raise_kw,
+  properties_kw,
+  inport_kw,
+  inphysport_kw,
+  egress_kw,
+  advance_kw,
 
   // Multi-valued tokens
   boolean_tok,      // true | false

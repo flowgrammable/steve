@@ -1,0 +1,12 @@
+layout eth
+{
+  src : uint(48);
+  dst : uint(48);
+  type: uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  flood;
+}

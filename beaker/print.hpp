@@ -33,6 +33,7 @@ std::ostream& operator<<(std::ostream& os, Flood const&);
 std::ostream& operator<<(std::ostream& os, Insert_flow const&);
 std::ostream& operator<<(std::ostream& os, Remove_flow const&);
 std::ostream& operator<<(std::ostream& os, Write_drop const&);
+std::ostream& operator<<(std::ostream& os, Raise const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);
@@ -51,6 +52,7 @@ std::ostream& operator<<(std::ostream&, Flow_decl const&);
 std::ostream& operator<<(std::ostream&, Port_decl const&);
 std::ostream& operator<<(std::ostream&, Extracts_decl const&);
 std::ostream& operator<<(std::ostream&, Rebind_decl const&);
+std::ostream& operator<<(std::ostream&, Event_decl const&);
 
 
 std::ostream& operator<<(std::ostream&, Type const&);
@@ -111,6 +113,7 @@ std::ostream& operator<<(std::ostream&, Block_conv const&);
 std::ostream& operator<<(std::ostream&, Promotion_conv const&);
 std::ostream& operator<<(std::ostream&, Demotion_conv const&);
 std::ostream& operator<<(std::ostream&, Sign_conv const&);
+std::ostream& operator<<(std::ostream&, Integer_conv const&);
 std::ostream& operator<<(std::ostream&, Default_init const&);
 std::ostream& operator<<(std::ostream&, Copy_init const&);
 std::ostream& operator<<(std::ostream&, Dot_expr const&);
@@ -123,6 +126,8 @@ std::ostream& operator<<(std::ostream&, Void_cast const&);
 std::ostream& operator<<(std::ostream&, Get_port const&);
 std::ostream& operator<<(std::ostream&, Create_table const&);
 std::ostream& operator<<(std::ostream&, Get_dataplane const&);
+std::ostream& operator<<(std::ostream&, Inport_expr const&);
+std::ostream& operator<<(std::ostream&, Inphysport_expr const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);

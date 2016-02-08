@@ -108,6 +108,7 @@ struct Generator
   llvm::Value* gen(Promotion_conv const*);
   llvm::Value* gen(Demotion_conv const*);
   llvm::Value* gen(Sign_conv const*);
+  llvm::Value* gen(Integer_conv const*);
   llvm::Value* gen(Default_init const*);
   llvm::Value* gen(Copy_init const*);
   llvm::Value* gen(Reference_init const*);
@@ -156,6 +157,7 @@ struct Generator
   void gen(Port_decl const*);
   void gen(Extracts_decl const*);
   void gen(Rebind_decl const*);
+  void gen(Event_decl const*);
 
   void gen_local(Variable_decl const*);
   void gen_global(Variable_decl const*);

@@ -44,49 +44,30 @@ Parser::parse_colon_seperated(Token tok)
 }
 
 
-Symbol const*
-Parser::get_qualified_name(Expr_seq const& e)
-{
-  std::stringstream ss;
-
-  for (auto expr = e.begin(); expr != e.end(); ++expr) {
-    if (Id_expr* id = as<Id_expr>(*expr)) {
-      ss << id->spelling();
-      if (expr != e.end() - 1)
-        ss << "::";
-    }
-  }
-
-  Symbol const* sym = syms_.put<Identifier_sym>(ss.str(), identifier_tok);
-
-  return sym;
-}
-
 // -------------------------------------------------------------------------- //
 // Expression parsing
 
 // Parse a field name expression
+// NOTE: Currently relying on dot expr parsing.
 //
-//    field-name-expr  -> identifier '::' identifier
-//                        field-name-expr '::' identifier
+//    field-name-expr  -> identifier '.' identifier
+//                        field-name-expr '.' identifier
 Expr*
 Parser::field_name_expr()
 {
-  Token tok = match(identifier_tok);
-  Expr_seq identifiers = parse_colon_seperated(tok);
-  return on_field_name(identifiers);
+  return expr();
 }
 
 
 // Parse a field access expression
+// NOTE: Currently relying on dot expr parsing.
 //
-//    field-access-expr  -> identifier '::' identifier
-//                          field-access-expr '::' identifier
+//    field-access-expr  -> identifier '.' identifier
+//                          field-access-expr '.' identifier
 Expr*
-Parser::field_access_expr(Token tok)
+Parser::field_access_expr()
 {
-  Expr_seq identifiers = parse_colon_seperated(tok);
-  return on_field_access(identifiers);
+  return expr();
 }
 
 
@@ -102,12 +83,8 @@ Expr*
 Parser::primary_expr()
 {
   // identifier
-  if (Token tok = match_if(identifier_tok)) {
-    if (lookahead() == scope_tok)
-      return field_access_expr(tok);
-    else
-      return on_id(tok);
-  }
+  if (Token tok = match_if(identifier_tok))
+    return on_id(tok);
 
   // boolean-literal
   if (Token tok = match_if(boolean_tok))
@@ -132,6 +109,14 @@ Parser::primary_expr()
   // string-literal
   if (Token tok = match_if(string_tok))
     return on_str(tok);
+
+  // inport expr
+  if (Token tok = match_if(inport_kw))
+    return on_inport(tok);
+
+  // inport expr
+  if (Token tok = match_if(inphysport_kw))
+    return on_inphysport(tok);
 
   // paren-expr
   if (match_if(lparen_tok)) {
@@ -932,14 +917,25 @@ Parser::decode_decl()
 
 
 // Parse a key decl
-//    key-decl -> id::id
-//                key-decl::id
+//    key-decl -> field-name-expr
+//              | 'inport'
+//              | 'inphyport'
 Decl*
 Parser::key_decl()
 {
-  Token id = match(identifier_tok);
-  Expr_seq identifiers = parse_colon_seperated(id);
-  return on_key(identifiers);
+  if (lookahead() == inport_kw) {
+    Token tok = match(inport_kw);
+    return on_inport_key(tok);
+  }
+  else if (lookahead() == inphysport_kw) {
+    Token tok = match(inphysport_kw);
+    return on_inphysport_key(tok);
+  }
+
+  // Otherwise its a field key decl.
+  // Use postfix parsing hoping for a dot expr.
+  Expr* key = expr();
+  return on_key(key);
 }
 
 
@@ -951,9 +947,9 @@ Parser::exact_table_decl()
 
   Token name = require(identifier_tok);
 
+  // Parse the key sequence.
   match(lparen_tok);
   Decl_seq key;
-
   while (lookahead() != rparen_tok) {
     // parse a sequence of key_decl
     Decl* subkey = key_decl();
@@ -968,38 +964,98 @@ Parser::exact_table_decl()
   }
   match(rparen_tok);
 
+  // Parse the optional 'requires' clause as a series of field name expr.
+  Expr_seq reqs;
+  if (match_if(requires_kw)) {
+    match(lparen_tok);
+    while (lookahead() != rparen_tok) {
+      // Parse the field names followed by commas.
+      Expr* f = field_name_expr();
+      reqs.push_back(f);
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rparen_tok);
+  }
 
+  // Parse the flow bodies.
   match(lbrace_tok);
   Decl_seq flows;
-  Decl* miss;
+  Decl* miss = nullptr;
   while (lookahead() != rbrace_tok) {
     Decl* d = flow_decl();
     Flow_decl* flow = as<Flow_decl>(d);
     if (flow) {
       // handle the miss case
       // there should only ever be one miss case
-      if (flow->miss_case() && !miss)
-        miss = flow;
+      if (flow->miss_case()) {
+        if (!miss)
+          miss = flow;
+        else
+          error("Multiple miss cases.");
+      }
       else
         flows.push_back(flow);
     }
   }
   match(rbrace_tok);
 
-  return on_exact_table(name, key, flows, miss);
+  return on_exact_table(name, key, reqs, flows, miss);
 }
 
 
+// Parse flow properties.
+//
+//    '[' assign-stmt-seq ']'
+Stmt_seq
+Parser::flow_properties()
+{
+  // Optional properties block following the body.
+  Stmt_seq properties;
+  if (match_if(lbrack_tok)) {
+    while (lookahead() != rbrack_tok) {
+      // Match a series of assignments to properties.
+      // prop '=' val ';'
+      Expr* prop = nullptr;
+
+      // A property can be any identifier or the keyword egress.
+      if (Token tok = match_if(identifier_tok))
+        prop = on_id(tok);
+      if (Token tok = match_if(egress_kw))
+        prop = on_id(tok);
+
+      match(equal_tok);
+      Expr* val = expr();
+
+      Stmt* a = on_assign(prop, val);
+      properties.push_back(a);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rbrack_tok);
+  }
+
+  return properties;
+}
+
 // Parse a flow decl
 //
-// Parsing function takes the name of the table it belongs to.
+//    flow-decl -> '[' (optional) properties-seq ']'
+//                  { expr-seq } -> { action-seq }
 Decl*
 Parser::flow_decl()
 {
+  Stmt_seq properties = flow_properties();
+
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    return on_flow_miss(body);
+    return on_flow_miss(body, properties);
   }
 
   match(lbrace_tok);
@@ -1018,7 +1074,7 @@ Parser::flow_decl()
   match(arrow_tok);
   Stmt* body = block_stmt();
 
-  return on_flow(keys, body);
+  return on_flow(keys, body, properties);
 }
 
 
@@ -1062,6 +1118,40 @@ Parser::extract_decl()
 }
 
 
+// Parse an event declaration.
+//
+//    event-decl -> 'event' name
+//                    'requires ''(' field-name-expr-seq ')'
+//                    '{' [stmt-seq] '}'
+//
+Decl*
+Parser::event_decl()
+{
+  match(event_kw);
+  Token name = require(identifier_tok);
+  // Check for the optional requires.
+  Expr_seq reqs;
+  if (match_if(requires_kw)) {
+    match(lparen_tok);
+    while (lookahead() != rparen_tok) {
+      Expr* f = field_name_expr();
+      if (f)
+        reqs.push_back(f);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rparen_tok);
+  }
+
+  Stmt* b = block_stmt();
+
+  return on_event(name, reqs, b);
+}
+
+
 // Parse a declaration.
 //
 //    decl -> [specifier-seq] entity-decl
@@ -1092,6 +1182,8 @@ Parser::decl()
       return exact_table_decl();
     case port_kw:
       return port_decl();
+    case event_kw:
+      return event_decl();
 
     default:
       // TODO: Is this a recoverable error?
@@ -1331,31 +1423,39 @@ Parser::match_stmt()
 
 // Parse a decode stmt
 //
-//    stmt -> decode 'decode-id'
+//    stmt -> decode 'decode-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::decode_stmt()
 {
   match(decode_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_decode(e);
+  return on_decode(e, adv);
 }
 
 
 // Parse a goto stmt
 //
-//    stmt -> goto 'table-id'
+//    stmt -> goto 'table-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::goto_stmt()
 {
   match(goto_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_goto(e);
+  return on_goto(e, adv);
 }
 
 
@@ -1388,10 +1488,22 @@ Parser::flood_stmt()
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
+//                 | 'output' 'egress'
+//                 | 'output' 'in_port'
+//                 | 'output' 'in_phys_port'
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
+
+  // If its a special output statement.
+  if (match_if(egress_kw)) {
+    match(semicolon_tok);
+    // FIXME: Change the name to output egress.
+    return on_output_egress();
+  }
+
+  // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
   match(semicolon_tok);
 
@@ -1414,14 +1526,13 @@ Parser::clear_stmt()
 
 // Set a field to a given value
 //
-//  set-stmt -> 'set' field-name-expr '=' expr ';'
+//  set-stmt -> 'set' field-access-expr '=' expr ';'
 //
 Stmt*
 Parser::set_stmt()
 {
   match(set_kw);
-  Token tok = match(identifier_tok);
-  Expr* f = field_access_expr(tok);
+  Expr* f = field_access_expr();
   match(equal_tok);
   Expr* v = expr();
   match(semicolon_tok);
@@ -1432,14 +1543,13 @@ Parser::set_stmt()
 
 // Copy a field to a given space.
 //
-//  copy-stmt -> 'copy' field-name-expr '->' expr
+//  copy-stmt -> 'copy' field-access-expr '->' expr
 //
 Stmt*
 Parser::copy_stmt()
 {
   match(copy_kw);
-  Token tok = match(identifier_tok);
-  Expr* f = field_access_expr(tok);
+  Expr* f = field_access_expr();
   match(equal_tok);
   Expr* v = expr();
   match(semicolon_tok);
@@ -1486,12 +1596,12 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'add' flow-decl 'into' table-id
+//    add-flow-stmt -> 'insert' flow-decl 'into' table-id
 //
 Stmt*
 Parser::add_flow_stmt()
 {
-  match(add_kw);
+  match(insert_kw);
   Decl* flow = flow_decl();
   match(into_kw);
   Expr* table = expr();
@@ -1527,6 +1637,20 @@ Parser::rmv_flow_stmt()
   match(semicolon_tok);
 
   return on_rmv_flow(keys, table);
+}
+
+
+// Parse a raise action.
+//
+//    raise-stmt -> 'raise' event-id ';'
+//
+Stmt*
+Parser::raise_stmt()
+{
+  match(raise_kw);
+  Expr* id = expr();
+  match(semicolon_tok);
+  return on_raise(id);
 }
 
 
@@ -1596,11 +1720,14 @@ Parser::stmt()
     case write_kw:
       return write_stmt();
 
-    case add_kw:
+    case insert_kw:
       return add_flow_stmt();
 
     case rmv_kw:
       return rmv_flow_stmt();
+
+    case raise_kw:
+      return raise_stmt();
 
     default:
       return expression_stmt();
@@ -1811,7 +1938,7 @@ Parser::on_hex(Token tok)
   Hexadecimal_sym const* hex = tok.hexadecimal_symbol();
   Type const* t = get_integer_type(hex->precision(), unsigned_int, native_order);
   // construct an integer value using string and base 16 (hex)
-  Integer_value i(hex->value(), 16);
+  Integer_value i(hex->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -1822,7 +1949,7 @@ Parser::on_binary(Token tok)
   Binary_sym const* bin = tok.binary_symbol();
   Type const* t = get_integer_type(bin->precision(), unsigned_int, native_order);
   // construct an intger value using string and base 2(binary)
-  Integer_value i(bin->value(), 2);
+  Integer_value i(bin->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -2025,31 +2152,62 @@ Parser::on_index(Expr* e1, Expr* e2)
 Expr*
 Parser::on_dot(Expr* e1, Expr* e2)
 {
-  return new Dot_expr(e1, e2);
+  Location loc = locate(e1);
+  return init<Dot_expr>(loc, e1, e2);
 }
 
 
 Expr*
 Parser::on_field_name(Expr_seq const& e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Field_name_expr(e, sym);
+  // Symbol const* sym = get_qualified_name(e);
+  // return new Field_name_expr(e, nullptr);
+  lingo_unreachable();
 }
 
 
 Expr*
 Parser::on_field_access(Expr_seq const& e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Field_access_expr(e, sym);;
+  // Symbol const* sym = get_qualified_name(e);
+  // return new Field_access_expr(e, nu);;
+  lingo_unreachable();
+}
+
+
+Expr*
+Parser::on_inport(Token tok)
+{
+  return init<Inport_expr>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_inphysport(Token tok)
+{
+  return init<Inphysport_expr>(tok.location(), get_port_type());
 }
 
 
 Decl*
-Parser::on_key(Expr_seq const& e)
+Parser::on_key(Expr* e)
 {
-  Symbol const* sym = get_qualified_name(e);
-  return new Key_decl(e, sym);
+  // Symbol const* sym = get_qualified_name(e);
+  return init<Key_decl>(locate(e), e, nullptr);
+}
+
+
+Decl*
+Parser::on_inport_key(Token tok)
+{
+  return init<Inport_key_decl>(tok.location(), get_port_type(), tok.symbol());
+}
+
+
+Decl*
+Parser::on_inphysport_key(Token tok)
+{
+  return init<Inphysport_key_decl>(tok.location(), get_port_type(), tok.symbol());
 }
 
 
@@ -2191,28 +2349,28 @@ Parser::on_rebind(Expr* field, Expr* alias)
 
 
 Decl*
-Parser::on_exact_table(Token name, Decl_seq& keys, Decl_seq& flows, Decl* miss)
+Parser::on_exact_table(Token name, Decl_seq& keys, Expr_seq& reqs, Decl_seq& flows, Decl* miss)
 {
   // maintain a count of tables
   static int count = 0;
 
-  return new Table_decl(name.symbol(), nullptr, ++count, keys, flows, miss);
+  return new Table_decl(name.symbol(), nullptr, ++count, keys, reqs, flows, miss);
 }
 
 
 // TODO: handle priorities
 Decl*
-Parser::on_flow(Expr_seq& keys, Stmt* body)
+Parser::on_flow(Expr_seq const& keys, Stmt* body, Stmt_seq const& prop)
 {
-  return new Flow_decl(nullptr, keys, 0, body);
+  return new Flow_decl(nullptr, keys, 0, body, prop);
 }
 
 
 Decl*
-Parser::on_flow_miss(Stmt* body)
+Parser::on_flow_miss(Stmt* body, Stmt_seq const& prop)
 {
   // No key given
-  return new Flow_decl(nullptr, 0, body, true);
+  return new Flow_decl(nullptr, 0, body, prop, true);
 }
 
 
@@ -2220,6 +2378,13 @@ Decl*
 Parser::on_port(Token tok, Expr* e)
 {
   return new Port_decl(tok.symbol(), get_port_type(), e);
+}
+
+
+Decl*
+Parser::on_event(Token tok, Expr_seq const& req, Stmt* s)
+{
+  return new Event_decl(tok.symbol(), req, s);
 }
 
 
@@ -2314,16 +2479,16 @@ Parser::on_match(Expr* cond, Stmt_seq& cases, Stmt* miss)
 
 
 Stmt*
-Parser::on_decode(Expr* e)
+Parser::on_decode(Expr* e, Expr* a)
 {
-  return new Decode_stmt(e);
+  return new Decode_stmt(e, a);
 }
 
 
 Stmt*
-Parser::on_goto(Expr* e)
+Parser::on_goto(Expr* e, Expr* a)
 {
-  return new Goto_stmt(e);
+  return new Goto_stmt(e, a);
 }
 
 
@@ -2352,6 +2517,13 @@ Stmt*
 Parser::on_output(Expr* e)
 {
   return new Output(e);
+}
+
+
+Stmt*
+Parser::on_output_egress()
+{
+  return new Output_egress();
 }
 
 
@@ -2397,4 +2569,11 @@ Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
   return new Remove_flow(keys, table);
+}
+
+
+Stmt*
+Parser::on_raise(Expr* e)
+{
+  return new Raise(e);
 }

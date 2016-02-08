@@ -129,6 +129,16 @@ expr_to_void_block(Expr* v)
   return cast;
 }
 
+// Value conversion
+inline Value_conv*
+value_conv(Type* t, Expr* e)
+{
+  return new Value_conv(t, e);
+}
+
+// ----------------------------------------------------- //
+//      Decl building
+
 
 inline Variable_decl*
 temp_var(Symbol_table& syms, Type const* t, Expr* init)
@@ -137,6 +147,13 @@ temp_var(Symbol_table& syms, Type const* t, Expr* init)
   std::string s = "reserved." + std::to_string(count++);
   Symbol const* name = syms.put<Identifier_sym>(s, identifier_tok);
   return new Variable_decl(name, t, new Copy_init(t, init));
+}
+
+
+inline Variable_decl*
+var(Symbol const* n, Type const* t, Expr* init)
+{
+  return new Variable_decl(n, t, new Copy_init(t, init));
 }
 
 

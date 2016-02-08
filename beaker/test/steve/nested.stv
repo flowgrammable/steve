@@ -12,11 +12,34 @@ layout eth
 
 layout nested
 {
-  nest : uint;
+  nest : nested2;
+  v : int(16);
+}
+
+
+layout nested2
+{
+  n : uint;
 }
 
 decoder start eth_d(eth)
 {
-  extract eth::n::nest;
-  extract eth::m;
+  extract eth.n.v;
+  extract eth.n.nest.n;
+
+  eth.n.v;
+  eth.n.nest.n;
+
+  var x : int = eth.n.v;
+  var y : int = eth.n.nest.n;
+
+  drop;
+}
+
+exact_table t1(eth.n.v, eth.n.nest.n)
+{
+  {0, 0} ->
+  {
+    drop;
+  }
 }

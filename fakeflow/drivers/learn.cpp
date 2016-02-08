@@ -14,11 +14,11 @@ int main(int argc, char* argv[])
     // Goes somewhere, IDC where.
     fp::Port* p1 = fp::create_port(fp::Port::Type::tcp, ":5000", "p1");
     std::cerr << "Created port 'p1' with id '" << p1->id() << "'\n";
-
     fp::Port* p2 = fp::create_port(fp::Port::Type::tcp, ":5001", "p2");
     std::cerr << "Created port 'p2' with id '" << p2->id() << "'\n";
 
     assert(p1);
+    assert(p2);
 
     // Load the application library
     fp::load_application(argv[1]);
@@ -31,11 +31,12 @@ int main(int argc, char* argv[])
     // Add all ports
     dp->add_port(p1);
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
+    dp->add_port(p2);
+    std::cerr << "Added port 'p2' to data plane 'dp1'\n";
 
     // Configure the data plane based on the applications needs.
     dp->configure();
     std::cerr << "Data plane configured\n";
-
 
     dp->up();
     std::cerr << "Data plane is up\n";
@@ -47,13 +48,14 @@ int main(int argc, char* argv[])
       long long i = 0;
       Timer t;
 
+      // Send this to make the table learn this ones src and inport
       Byte* data1 = new Byte[64]{
         // src bytes
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
         // dst bytes
-        0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // type bytes
-        0x08, 0x80
+        0x08, 0x80, 0, 0, 0
       };
 
       Packet* pkt1 = packet_create(data1, 1500, 0, nullptr, FP_BUF_ALLOC);
@@ -61,42 +63,14 @@ int main(int argc, char* argv[])
 
       while(i < pkt_no) {
 
+        // The dst address for this packet should be learned by now.
         Byte* data2 = new Byte[64]{
           // src bytes
-          0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
           // dst bytes
           0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
           // type bytes
-          0x08, 0x00,
-          // version IHL bytes
-          0,
-          // dscp ecn
-          0,
-          // len
-          0, 0x14,
-          // id
-          0, 0,
-          // frag
-          0, 0,
-          // ttl,
-          0x0a,
-          // protocol
-          0,
-          // checksum
-          0, 0,
-          // src
-          0b11111111, 0b11111111, 0b11111111, 0b11111111,
-          // dst
-          0b11111111, 0b11111111, 0b11111111, 0b11111011,
-
-          // udp src
-          0, 0,
-          // udp dst
-          0, 0,
-          // udp len
-          0x00, 0x0b,
-          // checksum
-          0, 0
+          0x08, 0x80, 0, 0, 0
         };
 
         Packet* pkt2 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
@@ -104,6 +78,20 @@ int main(int argc, char* argv[])
         dp->process(p2, pkt2);
         ++i;
       }
+
+      // Send a second copy of the first packet to confirm the second packet
+      // caused the first src to have been learned.
+      data1 = new Byte[64]{
+        // src bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // dst bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // type bytes
+        0x08, 0x80, 0, 0, 0
+      };
+
+      pkt1 = packet_create(data1, 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, pkt1);
       // timer dtor should print time here
 
     } // block

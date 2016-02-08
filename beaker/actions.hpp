@@ -48,6 +48,23 @@ struct Output : Action
 };
 
 
+// Output inport is special because it can only occur within the context
+// of a flow. When we say output inport, we mean that inport of the Context
+// used when installing the flow.
+//
+// The inport is implicitly resolved at runtime when executing this action
+// by requesting that a flow provide the inport.
+struct Output_egress : Output
+{
+  Output_egress()
+    : Output(nullptr)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+};
+
+
 // Clear the set of actions stored within the packet.
 struct Clear : Action
 {
@@ -154,6 +171,24 @@ Remove_flow::table() const
   assert(is<Decl_expr>(table_id_));
   return as<Decl_expr>(table_id_)->declaration();
 }
+
+
+// Raise an event.
+struct Raise : Action
+{
+  Raise(Expr* e)
+    : event_id_(e)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Expr* event_identifier() const { return event_id_; }
+  Decl* event()            const { return event_; }
+
+  Expr* event_id_;
+  Decl* event_;
+};
 
 
 // Goto a group table
@@ -264,6 +299,11 @@ is_terminator(Stmt* s)
       || is<Drop>(s)
       || is<Flood>(s)
       || is<Output>(s);
+      // FIXME: Is raise a terminating action? I don't think it is.
+      // Raise should cause a copy of the context to be passed to an
+      // asynchronous event handler and allow the continuation of processing
+      // on the current packet.
+      // || is<Raise>(s);
 }
 
 
@@ -293,6 +333,39 @@ has_multiple_terminators(Stmt_seq const& body)
   }
 
   return (c > 1) ? true : false;
+}
+
+
+// Returns true iff a statement is an action.
+inline bool
+is_action(Stmt* s)
+{
+  // FIXME: Get rid of this once Decode_stmt and Goto_stmt are made actions.
+  return is<Action>(s)
+      || is<Decode_stmt>(s)
+      || is<Goto_stmt>(s)
+      // FIXME: Remove this, currently for debugging purposes only.
+      || is<Stmt>(s);
+}
+
+
+// Returns true iff an action occurs within the context of a
+// decoder, flow, or event.
+inline bool
+is_valid_action_context(Stmt* s)
+{
+  return is<Decode_decl>(s->context())
+      || is<Flow_decl>(s->context())
+      || is<Event_decl>(s->context());
+}
+
+
+inline bool
+is_valid_pipeline_context(Decl* d)
+{
+  return is<Decode_decl>(d)
+      || is<Flow_decl>(d)
+      || is<Event_decl>(d);
 }
 
 
