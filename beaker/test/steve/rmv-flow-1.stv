@@ -24,7 +24,7 @@ exact_table switch(eth.dst, eth.type)
   {
 		puts("Miss...adding flow now.");
 
-    add
+    insert
     { eth.dst, eth.type } ->
     {
 			puts("Using adding flow now.");

@@ -23,7 +23,7 @@ exact_table switch(eth.dst, eth.type)
   {
 		puts("Miss");
 
-    add
+    insert
     { eth.dst, eth.type } ->
     {
       output p1;

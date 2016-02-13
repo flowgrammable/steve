@@ -22,7 +22,7 @@ exact_table t1(eth.dst, eth.type)
 {
   miss ->
   {
-    add
+    insert
     { eth.dst, eth.type } ->
     {
       decode eth_d;

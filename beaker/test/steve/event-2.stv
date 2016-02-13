@@ -20,7 +20,7 @@ decoder start eth_d(eth)
 event switch_learn
 	requires(eth.src, eth.type)
 {
-	add
+	insert
 	{ eth.src } ->
 	{
 		set eth.dst = 1;
