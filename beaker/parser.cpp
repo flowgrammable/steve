@@ -1098,14 +1098,14 @@ Parser::port_decl()
 
   Token tok = match(identifier_tok);
 
-  match(equal_tok);
-
-  // expect a string literal
-  Expr* address = expr();
-
+  Expr* args = nullptr;
+  if (match_if(equal_tok)) {
+    // expect a string literal
+    args = expr();
+  }
   match(semicolon_tok);
-
-  return on_port(tok, address);
+  
+  return on_port(tok, args);
 }
 
 

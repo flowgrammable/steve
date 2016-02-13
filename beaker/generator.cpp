@@ -385,6 +385,14 @@ llvm::Value*
 Generator::gen(Decl_expr const* e)
 {
   auto const* bind = stack.lookup(e->declaration());
+
+  // Sanity check...
+  if (!bind) {
+    std::stringstream ss;
+    ss << *e << " does not refer to a valid declaration.\n";
+    throw std::runtime_error(ss.str());
+  }
+
   llvm::Value* result = bind->second;
 
   // Fetch the value from a reference declaration.

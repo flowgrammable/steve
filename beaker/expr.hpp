@@ -976,8 +976,9 @@ is_constant_expr(Expr const* e)
   if (Decl_expr const* id = as<Decl_expr>(e)) {
     if (is<Table_decl>(id->declaration()))
       return true;
-    if (is<Port_decl>(id->declaration()))
-      return true;
+    // TODO: Right now we allow assignment to ports.
+    // if (is<Port_decl>(id->declaration()))
+    //   return true;
   }
 
   return false;

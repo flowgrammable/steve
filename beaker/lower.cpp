@@ -38,11 +38,11 @@ struct Lower_expr_fn
   // Unary expressions
   Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Pos_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(And_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(Or_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Not_expr* e) const { return lower.lower_unary_expr(e); }
 
   // Binary Expressions
+  Expr* operator()(And_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Or_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Add_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Sub_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Mul_expr* e) const { return lower.lower_binary_expr(e); }
@@ -1312,7 +1312,9 @@ Lowerer::lower(Stmt* s)
 Stmt_seq
 Lowerer::lower(Assign_stmt* s)
 {
+  s->first = lower(s->object());
   s->second = lower(s->value());
+  assert(s->first);
   assert(s->second);
   return { s };
 }

@@ -2857,17 +2857,22 @@ Elaborator::elaborate_def(Layout_decl* d)
 Decl*
 Elaborator::elaborate_def(Port_decl* d)
 {
-  d->first = elaborate(d->address());
+  if (d->address()) {
+    d->first = elaborate(d->address());
 
-  // check that the expression following '='
-  // is a string literal
-  if (Array_type const* t = as<Array_type>(d->address()->type()))
-    if (is<Character_type>(t->type()))
-      return d;
+    // check that the expression following '='
+    // is a string literal
+    if (Array_type const* t = as<Array_type>(d->address()->type()))
+      if (is<Character_type>(t->type()))
+        return d;
 
-  std::stringstream ss;
-  ss << "Invalid port address " << d->address() << ". Expected string literal.";
-  throw Type_error(locate(d), ss.str());
+    std::stringstream ss;
+    ss << "Invalid port address " << d->address() << ". Expected string literal.";
+    throw Type_error(locate(d), ss.str());
+  }
+
+  // Otherwise just assume its a defualt init invalid port.
+  return d;
 }
 
 
@@ -2884,8 +2889,15 @@ Elaborator::elaborate_def(Decode_decl* d)
 {
   Scope_sentinel scope(*this, d);
 
-  if (d->header())
+  if (d->header()) {
     d->header_ = elaborate(d->header());
+    // Check that a header is what's being decoded.
+    if (!is<Layout_type>(d->header())) {
+      std::stringstream ss;
+      ss << *d->header() << " is not a layout.";
+      throw Type_error(locate(d), ss.str());
+    }
+  }
 
   // Enter a scope since a decode body is
   // basically a special function body
