@@ -27,6 +27,9 @@ struct Lowerer
   Expr* lower(Field_access_expr* e);
   Expr* lower(Inport_expr* e);
   Expr* lower(Inphysport_expr* e);
+  Expr* lower(All_port* e);
+  Expr* lower(Controller_port* e);
+  Expr* lower(Reflow_port* e);
 
   template <typename T>
   Expr* lower_unary_expr(T*);

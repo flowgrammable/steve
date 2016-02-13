@@ -119,7 +119,16 @@ Parser::primary_expr()
     return on_inphysport(tok);
 
   // all port expr
-  
+  if (Token tok = match_if(all_kw))
+    return on_all_port(tok);
+
+  // controller port expr
+  if (Token tok = match_if(controller_kw))
+    return on_controller_port(tok);
+
+  // reflow expr
+  if (Token tok = match_if(reflow_kw))
+    return on_reflow_port(tok);
 
   // paren-expr
   if (match_if(lparen_tok)) {
@@ -2189,6 +2198,27 @@ Expr*
 Parser::on_inphysport(Token tok)
 {
   return init<Inphysport_expr>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_all_port(Token tok)
+{
+  return init<All_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_controller_port(Token tok)
+{
+  return init<Controller_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_reflow_port(Token tok)
+{
+  return init<Reflow_port>(tok.location(), get_port_type());
 }
 
 

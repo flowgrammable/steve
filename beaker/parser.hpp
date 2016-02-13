@@ -158,6 +158,9 @@ private:
   Expr* on_field_access(Expr_seq const&);
   Expr* on_inport(Token);
   Expr* on_inphysport(Token);
+  Expr* on_all_port(Token);
+  Expr* on_controller_port(Token);
+  Expr* on_reflow_port(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);

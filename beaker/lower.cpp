@@ -83,6 +83,9 @@ struct Lower_expr_fn
   // the context.
   Expr* operator()(Inport_expr* e) const { return lower.lower(e); }
   Expr* operator()(Inphysport_expr* e) const { return lower.lower(e); }
+  Expr* operator()(All_port* e) const { return lower.lower(e); }
+  Expr* operator()(Controller_port* e) const { return lower.lower(e); }
+  Expr* operator()(Reflow_port* e) const { return lower.lower(e); }
 };
 
 
@@ -501,6 +504,42 @@ Lowerer::lower(Inphysport_expr* e)
 
   // Make a call to get_in_port
   Expr* port = builtin.call_get_in_phys_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an all port requests that port from the runtime.
+Expr*
+Lowerer::lower(All_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_all_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a controller port requests that port from the runtime.
+Expr*
+Lowerer::lower(Controller_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_controller_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a reflow port requests the reflow port from the runtime.
+Expr*
+Lowerer::lower(Reflow_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_reflow_port();
   elab.elaborate(port);
 
   return port;
