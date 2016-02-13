@@ -137,6 +137,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
@@ -2119,6 +2120,44 @@ Lowerer::lower(Write_output* w)
   };
 }
 
+
+// FIXME: Writing an output for later has some questionable semantics.
+// Upon applying the output, all actions afterward should not be executed
+// (since the outputing of a packet causes its context to be deleted and no
+// longer valid). This is easier to enforce in immediate action rather than
+// written actions which is currently not enforced in.
+Stmt_seq
+Lowerer::lower(Write_output_egress* w)
+{
+  Output* s = w->output();
+  assert(s);
+
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  // Make a call to the flow to get its inport field and resolve it into
+  // a Port*.
+  ovl = unqualified_lookup(get_identifier(__flow_self));
+  assert(ovl);
+  Decl* self = ovl->back();
+  assert(self);
+
+  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
+
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), egress);
+  elab.elaborate(output);
+
+  return
+  {
+    statement(output),
+  };
+}
 
 // Raise passes a task to a hypothetical asynchronous thread in the runtime
 // system with a context.

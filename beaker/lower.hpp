@@ -101,6 +101,7 @@ struct Lowerer
   Stmt_seq lower(Raise*);
   Stmt_seq lower(Write_drop*);
   Stmt_seq lower(Write_output*);
+  Stmt_seq lower(Write_output_egress*);
   Stmt_seq lower(Write_flood*);
   Stmt_seq lower(Write_set_field*);
 

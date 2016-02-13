@@ -25,3 +25,13 @@ decoder start eth_d(eth)
 	flood;
 	// drop;
 }
+
+exact_table t1(in_port)
+{
+	[egress = p1]
+	{ p1 } ->
+	{
+		write output egress;
+		drop;
+	}
+}

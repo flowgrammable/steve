@@ -643,6 +643,44 @@ struct Inphysport_expr : Expr
 };
 
 
+// This expression refers to the "ALL" port. The "ALL" port is a port used
+// to forward to every valid port on the system.
+struct All_port : Expr
+{
+  All_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "CONTROLLER" port. This port is used to
+// interface with some controller hooked in the system.
+struct Controller_port : Expr
+{
+  Controller_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "REFLOW" port. This port is used to reflow a
+// packet back through the pipeline.
+struct Reflow_port : Expr
+{
+  Reflow_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+}
+
 
 // The expression e1.e2. This is an unresolved
 // expression.

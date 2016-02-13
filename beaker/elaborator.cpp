@@ -3010,6 +3010,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_output_egress* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
@@ -3713,7 +3714,19 @@ Elaborator::elaborate(Write_output* s)
   check_valid_action_context(s);
 
   assert(s->output());
-  // Elaborate the drop action.
+  // Elaborate the output action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_output_egress* s)
+{
+  check_valid_action_context(s);
+
+  assert(s->output());
+  // Elaborate the output action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3725,7 +3738,7 @@ Elaborator::elaborate(Write_flood* s)
   check_valid_action_context(s);
 
   assert(s->flood());
-  // Elaborate the drop action.
+  // Elaborate the flood action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3737,7 +3750,7 @@ Elaborator::elaborate(Write_set_field* s)
   check_valid_action_context(s);
 
   assert(s->set_field());
-  // Elaborate the drop action.
+  // Elaborate the set field action.
   s->first = elaborate(s->first);
   return s;
 }

@@ -2546,6 +2546,8 @@ Parser::on_write(Stmt* s)
 {
   if (is<Drop>(s))
     return new Write_drop(s);
+  else if (is<Output_egress>(s))
+    return new Write_output_egress(s);
   else if (is<Output>(s))
     return new Write_output(s);
   else if (is<Flood>(s))

@@ -217,6 +217,7 @@ public:
   Stmt* elaborate(Raise*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
+  Stmt* elaborate(Write_output_egress*);
   Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
