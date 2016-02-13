@@ -93,6 +93,9 @@ struct Expr::Visitor
   virtual void visit(Port_expr const*) = 0;
   virtual void visit(Inport_expr const*) = 0;
   virtual void visit(Inphysport_expr const*) = 0;
+  virtual void visit(All_port const*) = 0;
+  virtual void visit(Controller_port const*) = 0;
+  virtual void visit(Reflow_port const*) = 0;
 };
 
 
@@ -150,6 +153,9 @@ struct Expr::Mutator
   virtual void visit(Port_expr*) = 0;
   virtual void visit(Inport_expr*) = 0;
   virtual void visit(Inphysport_expr*) = 0;
+  virtual void visit(All_port*) = 0;
+  virtual void visit(Controller_port*) = 0;
+  virtual void visit(Reflow_port*) = 0;
 };
 
 
@@ -679,7 +685,7 @@ struct Reflow_port : Expr
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
-}
+};
 
 
 // The expression e1.e2. This is an unresolved
@@ -1039,6 +1045,9 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Port_expr const* e) { this->invoke(e); }
   void visit(Inport_expr const* e) { this->invoke(e); }
   void visit(Inphysport_expr const* e) { this->invoke(e); }
+  void visit(All_port const* e) { this->invoke(e); }
+  void visit(Controller_port const* e) { this->invoke(e); }
+  void visit(Reflow_port const* e) { this->invoke(e); }
 };
 
 
@@ -1112,6 +1121,9 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Port_expr* e) { this->invoke(e); }
   void visit(Inport_expr* e) { this->invoke(e); }
   void visit(Inphysport_expr* e) { this->invoke(e); }
+  void visit(All_port* e) { this->invoke(e); }
+  void visit(Controller_port* e) { this->invoke(e); }
+  void visit(Reflow_port* e) { this->invoke(e); }
 };
 
 

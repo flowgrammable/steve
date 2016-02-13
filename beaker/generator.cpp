@@ -315,6 +315,9 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
     llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Controller_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Reflow_port const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});

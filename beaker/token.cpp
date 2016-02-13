@@ -97,6 +97,9 @@ spelling(Token_kind k)
     case properties_kw: return "properies";
     case inport_kw: return "in_port";
     case inphysport_kw: return "in_phys_port";
+    case all_kw: return "all";
+    case controller_kw: return "controller";
+    case reflow_kw: return "reflow";
     case egress_kw: return "egress";
     case advance_kw: return "advance";
 
@@ -199,6 +202,9 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("properties", properties_kw);
   syms.put<Symbol>("in_port", inport_kw);
   syms.put<Symbol>("in_phys_port", inphysport_kw);
+  syms.put<Symbol>("all", all_kw);
+  syms.put<Symbol>("controller", controller_kw);
+  syms.put<Symbol>("reflow", reflow_kw);
   syms.put<Symbol>("egress", egress_kw);
   syms.put<Symbol>("advance", advance_kw);
 

@@ -79,6 +79,9 @@ struct Field_name_expr;
 struct Field_access_expr;
 struct Inport_expr;
 struct Inphysport_expr;
+struct All_port;
+struct Controller_port;
+struct Reflow_port;
 
 struct Type;
 struct Id_type;

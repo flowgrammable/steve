@@ -129,6 +129,9 @@ public:
   Expr* elaborate(Field_access_expr* e);
   Expr* elaborate(Inport_expr* e);
   Expr* elaborate(Inphysport_expr* e);
+  Expr* elaborate(All_port* e);
+  Expr* elaborate(Controller_port* e);
+  Expr* elaborate(Reflow_port* e);
 
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);

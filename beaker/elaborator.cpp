@@ -436,6 +436,9 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
     Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(All_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Controller_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Reflow_port* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -1785,6 +1788,39 @@ Elaborator::elaborate(Inphysport_expr* e)
   Decl* context = stack.context();
   if (!is_valid_pipeline_context(context)) {
     throw Type_error(locate(e), "in_phys_port occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(All_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'all' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Controller_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'controller' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Reflow_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'reflow' occuring outside a decoder, flow, or event.");
   }
   return e;
 }
