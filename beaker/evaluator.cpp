@@ -58,11 +58,14 @@ Evaluator::eval(Expr const* e)
     Value operator()(Reference_init const* e) { return ev.eval(e); }
     Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
     Value operator()(Void_cast const* e) { lingo_unimplemented(); }
+
     Value operator()(Field_name_expr const* e) { lingo_unimplemented(); }
     Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
     Value operator()(Inport_expr const* e) { lingo_unimplemented(); }
     Value operator()(Inphysport_expr const* e) { lingo_unimplemented(); }
-
+    Value operator()(All_port const* e) { lingo_unimplemented(); }
+    Value operator()(Controller_port const* e) { lingo_unimplemented(); }
+    Value operator()(Reflow_port const* e) { lingo_unimplemented(); }
     Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
 
@@ -789,6 +792,7 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Raise const* s) { lingo_unreachable(); }
     Control operator()(Write_drop const* s) { lingo_unreachable(); }
     Control operator()(Write_output const* s) { lingo_unreachable(); }
+    Control operator()(Write_output_egress const* s) { lingo_unreachable(); }
     Control operator()(Write_flood const* s) { lingo_unreachable(); }
     Control operator()(Write_set_field const* s) { lingo_unreachable(); }
   };

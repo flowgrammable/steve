@@ -308,6 +308,9 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Get_dataplane const* a) { lingo_unreachable(); }
     bool operator()(Inport_expr const* a) { lingo_unreachable(); }
     bool operator()(Inphysport_expr const* a) { lingo_unreachable(); }
+    bool operator()(All_port const* a) { lingo_unreachable(); }
+    bool operator()(Controller_port const* a) { lingo_unreachable(); }
+    bool operator()(Reflow_port const* a) { lingo_unreachable(); }
   };
 
   std::type_index t1 = typeid(*a);

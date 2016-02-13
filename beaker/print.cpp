@@ -659,6 +659,9 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Get_dataplane const* e) { os << *e; }
     void operator()(Inport_expr const* e) { os << *e; }
     void operator()(Inphysport_expr const* e) { os << *e; }
+    void operator()(All_port const* e) { os << *e; }
+    void operator()(Controller_port const* e) { os << *e; }
+    void operator()(Reflow_port const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -1045,4 +1048,22 @@ std::ostream& operator<<(std::ostream& os, Inport_expr const&)
 std::ostream& operator<<(std::ostream& os, Inphysport_expr const&)
 {
   return os << "in_phys_port";
+}
+
+
+std::ostream& operator<<(std::ostream& os, All_port const&)
+{
+  return os << "all";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Controller_port const&)
+{
+  return os << "controller";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Reflow_port const&)
+{
+  return os << "reflow";
 }

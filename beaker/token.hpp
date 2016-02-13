@@ -113,6 +113,9 @@ enum Token_kind
   properties_kw,
   inport_kw,
   inphysport_kw,
+  all_kw,
+  controller_kw,
+  reflow_kw,
   egress_kw,
   advance_kw,
 

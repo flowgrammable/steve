@@ -38,11 +38,11 @@ struct Lower_expr_fn
   // Unary expressions
   Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Pos_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(And_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(Or_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Not_expr* e) const { return lower.lower_unary_expr(e); }
 
   // Binary Expressions
+  Expr* operator()(And_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Or_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Add_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Sub_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Mul_expr* e) const { return lower.lower_binary_expr(e); }
@@ -83,6 +83,9 @@ struct Lower_expr_fn
   // the context.
   Expr* operator()(Inport_expr* e) const { return lower.lower(e); }
   Expr* operator()(Inphysport_expr* e) const { return lower.lower(e); }
+  Expr* operator()(All_port* e) const { return lower.lower(e); }
+  Expr* operator()(Controller_port* e) const { return lower.lower(e); }
+  Expr* operator()(Reflow_port* e) const { return lower.lower(e); }
 };
 
 
@@ -137,6 +140,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
@@ -500,6 +504,42 @@ Lowerer::lower(Inphysport_expr* e)
 
   // Make a call to get_in_port
   Expr* port = builtin.call_get_in_phys_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an all port requests that port from the runtime.
+Expr*
+Lowerer::lower(All_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_all_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a controller port requests that port from the runtime.
+Expr*
+Lowerer::lower(Controller_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_controller_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a reflow port requests the reflow port from the runtime.
+Expr*
+Lowerer::lower(Reflow_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_reflow_port();
   elab.elaborate(port);
 
   return port;
@@ -1272,7 +1312,9 @@ Lowerer::lower(Stmt* s)
 Stmt_seq
 Lowerer::lower(Assign_stmt* s)
 {
+  s->first = lower(s->object());
   s->second = lower(s->value());
+  assert(s->first);
   assert(s->second);
   return { s };
 }
@@ -2107,14 +2149,10 @@ Lowerer::lower(Write_output* w)
   assert(cxt);
 
   // Acquire the port.
-  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
-  ovl = unqualified_lookup(port_name);
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
+  Expr* port = lower(s->port());
 
-  // make a call to the drop function
-  Expr* output = builtin.call_write_output(decl_id(cxt), id(port));
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), port);
   elab.elaborate(output);
 
   return
@@ -2123,6 +2161,44 @@ Lowerer::lower(Write_output* w)
   };
 }
 
+
+// FIXME: Writing an output for later has some questionable semantics.
+// Upon applying the output, all actions afterward should not be executed
+// (since the outputing of a packet causes its context to be deleted and no
+// longer valid). This is easier to enforce in immediate action rather than
+// written actions which is currently not enforced in.
+Stmt_seq
+Lowerer::lower(Write_output_egress* w)
+{
+  Output* s = w->output();
+  assert(s);
+
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  // Make a call to the flow to get its inport field and resolve it into
+  // a Port*.
+  ovl = unqualified_lookup(get_identifier(__flow_self));
+  assert(ovl);
+  Decl* self = ovl->back();
+  assert(self);
+
+  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
+
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), egress);
+  elab.elaborate(output);
+
+  return
+  {
+    statement(output),
+  };
+}
 
 // Raise passes a task to a hypothetical asynchronous thread in the runtime
 // system with a context.

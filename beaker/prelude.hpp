@@ -79,6 +79,9 @@ struct Field_name_expr;
 struct Field_access_expr;
 struct Inport_expr;
 struct Inphysport_expr;
+struct All_port;
+struct Controller_port;
+struct Reflow_port;
 
 struct Type;
 struct Id_type;
@@ -172,6 +175,7 @@ struct Remove_flow;
 struct Raise;
 struct Write_drop;
 struct Write_output;
+struct Write_output_egress;
 struct Write_flood;
 struct Write_set_field;
 struct Write_copy_field;

@@ -20,7 +20,7 @@ Port p1 = ":5000";
 event learn_mac
 	requires(eth.src)
 {
-	add
+	insert
 	{ eth.src } ->
 	{
 		// puts("Using learned in learn.");
@@ -29,7 +29,7 @@ event learn_mac
 	into learn;
 
 
-	add
+	insert
 	[timeout = 1000, egress = in_port]
 	{ eth.src } ->
 	{

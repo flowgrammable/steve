@@ -475,6 +475,66 @@ Builtin::get_in_phys_port()
 }
 
 
+// Get the reserved ALL port.
+Function_decl*
+Builtin::get_all_port()
+{
+  Symbol const* fn_name = get_identifier(__get_all_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved CONTROLLER port.
+Function_decl*
+Builtin::get_controller_port()
+{
+  Symbol const* fn_name = get_identifier(__get_controller_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved CONTROLLER port.
+Function_decl*
+Builtin::get_reflow_port()
+{
+  Symbol const* fn_name = get_identifier(__get_reflow_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // Retrieves the inport value from a Flow structure.
 //
 //    void get_flow_egress(Flow*);
@@ -798,6 +858,9 @@ Builtin::init_builtins()
     {__get_port, get_port()},
     {__get_inport, get_in_port()},
     {__get_inphysport, get_in_phys_port()},
+    {__get_all_port, get_all_port()},
+    {__get_controller_port, get_controller_port()},
+    {__get_reflow_port, get_reflow_port()},
     {__get_flow_egress, get_flow_egress()},
     {__drop, drop()},
     {__flood, flood()},
@@ -1014,6 +1077,36 @@ Builtin::call_get_in_phys_port(Expr* cxt)
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_get_all_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_all_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
+}
+
+
+Expr*
+Builtin::call_get_controller_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_controller_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
+}
+
+
+Expr*
+Builtin::call_get_reflow_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_reflow_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
 }
 
 

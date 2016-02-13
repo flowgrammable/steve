@@ -93,6 +93,9 @@ struct Expr::Visitor
   virtual void visit(Port_expr const*) = 0;
   virtual void visit(Inport_expr const*) = 0;
   virtual void visit(Inphysport_expr const*) = 0;
+  virtual void visit(All_port const*) = 0;
+  virtual void visit(Controller_port const*) = 0;
+  virtual void visit(Reflow_port const*) = 0;
 };
 
 
@@ -150,6 +153,9 @@ struct Expr::Mutator
   virtual void visit(Port_expr*) = 0;
   virtual void visit(Inport_expr*) = 0;
   virtual void visit(Inphysport_expr*) = 0;
+  virtual void visit(All_port*) = 0;
+  virtual void visit(Controller_port*) = 0;
+  virtual void visit(Reflow_port*) = 0;
 };
 
 
@@ -643,6 +649,44 @@ struct Inphysport_expr : Expr
 };
 
 
+// This expression refers to the "ALL" port. The "ALL" port is a port used
+// to forward to every valid port on the system.
+struct All_port : Expr
+{
+  All_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "CONTROLLER" port. This port is used to
+// interface with some controller hooked in the system.
+struct Controller_port : Expr
+{
+  Controller_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "REFLOW" port. This port is used to reflow a
+// packet back through the pipeline.
+struct Reflow_port : Expr
+{
+  Reflow_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
 
 // The expression e1.e2. This is an unresolved
 // expression.
@@ -932,8 +976,9 @@ is_constant_expr(Expr const* e)
   if (Decl_expr const* id = as<Decl_expr>(e)) {
     if (is<Table_decl>(id->declaration()))
       return true;
-    if (is<Port_decl>(id->declaration()))
-      return true;
+    // TODO: Right now we allow assignment to ports.
+    // if (is<Port_decl>(id->declaration()))
+    //   return true;
   }
 
   return false;
@@ -1001,6 +1046,9 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Port_expr const* e) { this->invoke(e); }
   void visit(Inport_expr const* e) { this->invoke(e); }
   void visit(Inphysport_expr const* e) { this->invoke(e); }
+  void visit(All_port const* e) { this->invoke(e); }
+  void visit(Controller_port const* e) { this->invoke(e); }
+  void visit(Reflow_port const* e) { this->invoke(e); }
 };
 
 
@@ -1074,6 +1122,9 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Port_expr* e) { this->invoke(e); }
   void visit(Inport_expr* e) { this->invoke(e); }
   void visit(Inphysport_expr* e) { this->invoke(e); }
+  void visit(All_port* e) { this->invoke(e); }
+  void visit(Controller_port* e) { this->invoke(e); }
+  void visit(Reflow_port* e) { this->invoke(e); }
 };
 
 

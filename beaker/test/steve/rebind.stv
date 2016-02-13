@@ -1,0 +1,48 @@
+foreign def puts(char[]) ->int;
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+layout vlan
+{
+	tci : uint(16);
+	ethertype : uint(16);
+}
+
+decoder start eth_d(eth)
+{
+	extract eth.src;
+	extract eth.dst;
+	extract eth.type;
+
+	// Need special testing packet to confirm this works.
+	if (eth.type == 0x8100) {
+		decode vlan_d;
+	}
+
+	drop;
+}
+
+decoder vlan_d(vlan)
+{
+	extract vlan.tci;
+	extract vlan.ethertype as eth.type;
+	goto t1;
+}
+
+exact_table t1(eth.type)
+{
+	{0} -> {
+		puts("hit 1");
+		drop;
+	}
+
+	miss -> {
+		puts("miss");
+		drop;
+	}
+}

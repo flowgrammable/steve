@@ -436,6 +436,9 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
     Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(All_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Controller_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Reflow_port* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -1790,6 +1793,39 @@ Elaborator::elaborate(Inphysport_expr* e)
 }
 
 
+Expr*
+Elaborator::elaborate(All_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'all' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Controller_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'controller' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Reflow_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'reflow' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
 // -------------------------------------------------------------------------- //
 // Elaboration of builtins
 
@@ -2821,17 +2857,22 @@ Elaborator::elaborate_def(Layout_decl* d)
 Decl*
 Elaborator::elaborate_def(Port_decl* d)
 {
-  d->first = elaborate(d->address());
+  if (d->address()) {
+    d->first = elaborate(d->address());
 
-  // check that the expression following '='
-  // is a string literal
-  if (Array_type const* t = as<Array_type>(d->address()->type()))
-    if (is<Character_type>(t->type()))
-      return d;
+    // check that the expression following '='
+    // is a string literal
+    if (Array_type const* t = as<Array_type>(d->address()->type()))
+      if (is<Character_type>(t->type()))
+        return d;
 
-  std::stringstream ss;
-  ss << "Invalid port address " << d->address() << ". Expected string literal.";
-  throw Type_error(locate(d), ss.str());
+    std::stringstream ss;
+    ss << "Invalid port address " << d->address() << ". Expected string literal.";
+    throw Type_error(locate(d), ss.str());
+  }
+
+  // Otherwise just assume its a defualt init invalid port.
+  return d;
 }
 
 
@@ -2848,8 +2889,15 @@ Elaborator::elaborate_def(Decode_decl* d)
 {
   Scope_sentinel scope(*this, d);
 
-  if (d->header())
+  if (d->header()) {
     d->header_ = elaborate(d->header());
+    // Check that a header is what's being decoded.
+    if (!is<Layout_type>(d->header())) {
+      std::stringstream ss;
+      ss << *d->header() << " is not a layout.";
+      throw Type_error(locate(d), ss.str());
+    }
+  }
 
   // Enter a scope since a decode body is
   // basically a special function body
@@ -3010,6 +3058,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_output_egress* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
@@ -3713,7 +3762,19 @@ Elaborator::elaborate(Write_output* s)
   check_valid_action_context(s);
 
   assert(s->output());
-  // Elaborate the drop action.
+  // Elaborate the output action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_output_egress* s)
+{
+  check_valid_action_context(s);
+
+  assert(s->output());
+  // Elaborate the output action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3725,7 +3786,7 @@ Elaborator::elaborate(Write_flood* s)
   check_valid_action_context(s);
 
   assert(s->flood());
-  // Elaborate the drop action.
+  // Elaborate the flood action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3737,7 +3798,7 @@ Elaborator::elaborate(Write_set_field* s)
   check_valid_action_context(s);
 
   assert(s->set_field());
-  // Elaborate the drop action.
+  // Elaborate the set field action.
   s->first = elaborate(s->first);
   return s;
 }

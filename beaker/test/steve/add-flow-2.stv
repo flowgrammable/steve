@@ -24,7 +24,7 @@ exact_table learn(eth.src)
   {
 		puts("Learning eth src.");
 
-    add
+    insert
     { eth.src } ->
     {
       output p1;

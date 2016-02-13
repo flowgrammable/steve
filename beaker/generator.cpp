@@ -315,6 +315,9 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
     llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Controller_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Reflow_port const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});
@@ -382,6 +385,14 @@ llvm::Value*
 Generator::gen(Decl_expr const* e)
 {
   auto const* bind = stack.lookup(e->declaration());
+
+  // Sanity check...
+  if (!bind) {
+    std::stringstream ss;
+    ss << *e << " does not refer to a valid declaration.\n";
+    throw std::runtime_error(ss.str());
+  }
+
   llvm::Value* result = bind->second;
 
   // Fetch the value from a reference declaration.
@@ -922,6 +933,7 @@ Generator::gen(Stmt const* s)
     void operator()(Raise const* s) { lingo_unreachable(); }
     void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
+    void operator()(Write_output_egress const* s) { lingo_unreachable(); }
     void operator()(Write_flood const* s) { lingo_unreachable(); }
     void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };

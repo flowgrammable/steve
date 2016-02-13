@@ -230,6 +230,22 @@ struct Write_output : Action
 };
 
 
+// Write output egress action to context.
+struct Write_output_egress : Action
+{
+  Write_output_egress(Stmt* a)
+    : first(a)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Output_egress* output() const { return cast<Output_egress>(first); }
+
+  Stmt* first;
+};
+
+
 // Write a flood action to context.
 struct Write_flood : Action
 {

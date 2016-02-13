@@ -17,19 +17,17 @@ decoder start eth_d(eth)
   goto switch;
 }
 
-exact_table switch(eth.dst, eth.type)
+var bad_var : uint(48) = 0;
+
+exact_table switch(eth.src, eth.type)
 {
+  { 0, 800 } ->
+  {
+    output p1;
+  }
+
   miss ->
   {
-		puts("Miss");
-
-    insert
-    { eth.dst, eth.type } ->
-    {
-      output p1;
-    }
-    into switch;
-
     output p1;
   }
 }
