@@ -2107,14 +2107,10 @@ Lowerer::lower(Write_output* w)
   assert(cxt);
 
   // Acquire the port.
-  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
-  ovl = unqualified_lookup(port_name);
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
+  Expr* port = lower(s->port());
 
-  // make a call to the drop function
-  Expr* output = builtin.call_write_output(decl_id(cxt), id(port));
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), port);
   elab.elaborate(output);
 
   return
