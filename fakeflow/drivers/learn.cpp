@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
 
       // Send this to make the table learn this ones src and inport
       Byte* data1 = new Byte[64]{
-        // src bytes
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
         // dst bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // src bytes
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // type bytes
         0x08, 0x80, 0, 0, 0
@@ -65,9 +65,9 @@ int main(int argc, char* argv[])
 
         // The dst address for this packet should be learned by now.
         Byte* data2 = new Byte[64]{
-          // src bytes
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
           // dst bytes
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // src bytes
           0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
           // type bytes
           0x08, 0x00, 0, 0, 0
@@ -82,9 +82,9 @@ int main(int argc, char* argv[])
       // Send a second copy of the first packet to confirm the second packet
       // caused the first src to have been learned.
       data1 = new Byte[64]{
-        // src bytes
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
         // dst bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // src bytes
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // type bytes
         0x08, 0x80, 0, 0, 0

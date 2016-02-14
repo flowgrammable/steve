@@ -2,8 +2,8 @@ foreign def puts(char[]) -> int;
 
 layout eth
 {
-	src : uint(48);
 	dst : uint(48);
+	src : uint(48);
 	type : uint(16);
 }
 
@@ -14,8 +14,6 @@ decoder start eth_d(eth)
   extract eth.dst;
   goto learn;
 }
-
-Port p1 = ":5000";
 
 event learn_mac
 	requires(eth.src)
@@ -53,7 +51,6 @@ exact_table learn(eth.src)
 
 exact_table switch(eth.dst)
 {
-	[timeout = 1000, egress = p1]
   miss ->
   {
 		// puts("Flood, miss.");
