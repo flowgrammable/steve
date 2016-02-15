@@ -418,7 +418,7 @@ fp_raise_event(fp::Context* cxt, void* handler)
 void
 fp_advance_header(fp::Context* cxt, std::uint16_t n)
 {
-  // std::cout << "ADV: " << n << std::endl;
+  std::cout << "ADV: " << n << std::endl;
   cxt->advance(n);
 }
 
