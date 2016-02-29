@@ -3656,6 +3656,11 @@ Elaborator::elaborate(Insert_flow* s)
   // Save the flow declaration to be elaborated later.
   added_flows_.push_back(as<Flow_decl>(s->flow()));
 
+  // Avoid key checking on miss cases.
+  if (as<Flow_decl>(s->flow())->miss_case())
+    return s;
+
+  // Check keys if not miss case.
   if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
     return s;
   }
