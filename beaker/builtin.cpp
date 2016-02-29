@@ -331,6 +331,35 @@ Builtin::add_miss()
 }
 
 
+// Remove a flow entry miss case from a table.
+//
+//    void del_miss(Table*)
+Function_decl*
+Builtin::remove_miss()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* void_type = get_void_type();
+
+  Symbol const* fn_name = get_identifier(__rmv_miss);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // Gather keys from certain fields. This has the form:
 //
 //    Key gather(Context*, int fld_cnt, ...)
@@ -852,6 +881,7 @@ Builtin::init_builtins()
     {__add_init_flow, add_init_flow()},
     {__add_new_flow, add_new_flow()},
     {__rmv_flow, remove_flow()},
+    {__rmv_miss, remove_miss()},
     {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
@@ -1041,6 +1071,16 @@ Builtin::call_add_miss(Expr* tbl, Expr* flow, Expr* t_out, Expr* egress)
   assert(fn);
 
   return new Add_miss(decl_id(fn), {tbl, flow, t_out, egress});
+}
+
+
+Expr*
+Builtin::call_remove_miss(Expr* table)
+{
+  Function_decl* fn = builtin_fn.find(__rmv_miss)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {table});
 }
 
 

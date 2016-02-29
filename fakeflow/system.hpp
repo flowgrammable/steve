@@ -42,7 +42,8 @@ void           fp_delete_table(fp::Dataplane*, fp::Table*);
 void           fp_add_init_flow(fp::Table*, void*, void*, unsigned int, unsigned int);
 void           fp_add_new_flow(fp::Table*, void*, void*, unsigned int, unsigned int);
 void           fp_add_miss(fp::Table*, void*, unsigned int, unsigned int);
-void           fp_remove_flow(fp::Table*, void*);
+void           fp_del_flow(fp::Table*, void*);
+void           fp_del_miss(fp::Table*);
 
 // Header tracking.
 void           fp_advance_header(fp::Context*, std::uint16_t);

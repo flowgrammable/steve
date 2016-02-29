@@ -1104,7 +1104,7 @@ Parser::port_decl()
     args = expr();
   }
   match(semicolon_tok);
-  
+
   return on_port(tok, args);
 }
 
@@ -1631,6 +1631,17 @@ Stmt*
 Parser::rmv_flow_stmt()
 {
   match(rmv_kw);
+
+  // If we're removing the miss case.
+  if (lookahead() == miss_kw) {
+    match(miss_kw);
+    match(from_kw);
+    Expr* table = expr();
+    match(semicolon_tok);
+    return on_rmv_miss(table);
+  }
+
+  // For regular flow entries.
   match(lbrace_tok);
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
@@ -1647,7 +1658,6 @@ Parser::rmv_flow_stmt()
   match(from_kw);
   Expr* table = expr();
   match(semicolon_tok);
-
   return on_rmv_flow(keys, table);
 }
 
@@ -2604,6 +2614,13 @@ Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
   return new Remove_flow(keys, table);
+}
+
+
+Stmt*
+Parser::on_rmv_miss(Expr* table)
+{
+  return new Remove_miss(table);
 }
 
 

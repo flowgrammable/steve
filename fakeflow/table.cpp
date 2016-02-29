@@ -62,4 +62,12 @@ Hash_table::rmv(Key const& k)
   erase(k);
 }
 
+
+// Resets the miss case to default.
+inline void
+Hash_table::rmv_miss()
+{
+  miss_ = Flow();
+}
+
 } // namespace fp

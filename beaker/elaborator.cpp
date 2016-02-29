@@ -3054,6 +3054,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
@@ -3636,8 +3637,15 @@ Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
   check_valid_action_context(s);
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
 
-  s->table_id_ = elaborate(s->table_identifier());
+  s->table_id_ = e;
 
   // We need to specially elaborate this flow because it doesn't follow the
   // exact same semantics as initializing flows.
@@ -3679,7 +3687,15 @@ Elaborator::elaborate(Remove_flow* s)
 {
   check_valid_action_context(s);
 
-  s->table_id_ = elaborate(s->table_identifier());
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   Table_decl* table = as<Table_decl>(s->table());
 
   // Confirm that every key has a matching type in the table decl
@@ -3718,6 +3734,22 @@ Elaborator::elaborate(Remove_flow* s)
   }
 
   s->keys_ = new_key;
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Remove_miss* s)
+{
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   return s;
 }
 

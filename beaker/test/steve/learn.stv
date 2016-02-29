@@ -2,8 +2,8 @@ foreign def puts(char[]) -> int;
 
 layout eth
 {
-	dst : char;
-	src : char;
+	dst : uint(48);
+	src : uint(48);
 	type : uint(16);
 }
 

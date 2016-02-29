@@ -18,6 +18,7 @@ constexpr char const* __add_init_flow   = "fp_add_init_flow";
 constexpr char const* __add_new_flow    = "fp_add_new_flow";
 constexpr char const* __rmv_flow        = "fp_del_flow";
 constexpr char const* __add_miss        = "fp_add_miss";
+constexpr char const* __rmv_miss        = "fp_del_miss";
 constexpr char const* __match           = "fp_goto_table";
 constexpr char const* __set_field       = "fp_set_field";
 constexpr char const* __get_port        = "fp_get_port_by_name";
@@ -350,6 +351,7 @@ struct Builtin
   Expr* call_add_init_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_new_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_remove_flow(Expr*, Expr*);
+  Expr* call_remove_miss(Expr*);
   Expr* call_add_miss(Expr*, Expr*, Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr*, Expr*);
@@ -395,6 +397,7 @@ private:
   Function_decl* add_init_flow();
   Function_decl* add_new_flow();
   Function_decl* remove_flow();
+  Function_decl* remove_miss();
   Function_decl* add_miss();
   Function_decl* gather();
   Function_decl* match();

@@ -138,6 +138,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Remove_miss* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
@@ -2117,6 +2118,25 @@ Lowerer::lower(Remove_flow* s)
   return {
     statement(temp),
     statement(rmv_flow),
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Remove_miss* s)
+{
+  Table_decl* table = as<Table_decl>(s->table());
+  assert(table);
+
+  Overload* ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
+
+  Expr* rmv_miss = builtin.call_remove_miss(decl_id(tblptr));
+
+  return {
+    statement(rmv_miss)
   };
 }
 

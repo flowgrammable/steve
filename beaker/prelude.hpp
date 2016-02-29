@@ -172,6 +172,7 @@ struct Set_field;
 struct Copy_field;
 struct Insert_flow;
 struct Remove_flow;
+struct Remove_miss;
 struct Raise;
 struct Write_drop;
 struct Write_output;

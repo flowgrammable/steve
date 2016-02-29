@@ -390,6 +390,14 @@ fp_del_flow(fp::Table* tbl, void* key)
   tbl->rmv(k);
 }
 
+// Removes the miss case from the given table and replaces
+// it with the default.
+void
+fp_del_miss(fp::Table* tbl)
+{
+  tbl->rmv_miss();
+}
+
 
 // Raise an event.
 // TODO: Make this asynchronous on another thread.

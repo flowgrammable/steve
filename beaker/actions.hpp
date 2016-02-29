@@ -173,6 +173,31 @@ Remove_flow::table() const
 }
 
 
+// Remove miss case.
+struct Remove_miss : Action
+{
+  Remove_miss(Expr* t)
+    : table_id_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Decl* table() const;
+  Expr* table_identifier() const { return table_id_; }
+
+  Expr* table_id_;
+};
+
+
+inline Decl*
+Remove_miss::table() const
+{
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
+}
+
+
 // Raise an event.
 struct Raise : Action
 {
