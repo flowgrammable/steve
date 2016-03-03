@@ -15,6 +15,9 @@ int main(int argc, char* argv[])
     fp::Port* p1 = fp::create_port(fp::Port::Type::tcp, ":5000", "p1");
     std::cerr << "Created port 'p1' with id '" << p1->id() << "'\n";
 
+    fp::Port* p2 = fp::create_port(fp::Port::Type::tcp, ":5001", "p2");
+    std::cerr << "Created port 'p2' with id '" << p2->id() << "'\n";
+
     assert(p1);
 
     // Load the application library
@@ -44,13 +47,13 @@ int main(int argc, char* argv[])
       long long i = 0;
       Timer t;
 
-      Byte* data1 = new Byte[64]{
-        // src bytes
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+      Byte* data1 = new Byte[1500]{
         // dst bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // src bytes
         0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
         // type bytes
-        0x08, 0x80, 0, 0, 0
+        0x08, 0x80
       };
 
       Packet* pkt1 = packet_create(data1, 1500, 0, nullptr, FP_BUF_ALLOC);
@@ -58,18 +61,49 @@ int main(int argc, char* argv[])
 
       while(i < pkt_no) {
 
-        Byte* data2 = new Byte[64]{
-          // src bytes
-          0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
+        Byte* data2 = new Byte[1500]{
           // dst bytes
+          0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
+          // src bytes
           0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
           // type bytes
-          0x08, 0x00, 0, 0, 0
+          0x08, 0x00,
+          // version IHL bytes
+          // version: 4
+          // ihl: 5
+          0x45,
+          // dscp ecn
+          0,
+          // len
+          0, 0x40,
+          // id
+          0, 0,
+          // frag
+          0, 0,
+          // ttl,
+          0x0a,
+          // protocol
+          0,
+          // checksum
+          0, 0,
+          // src
+          0b11111111, 0b11111111, 0b11111111, 0b11111111,
+          // dst
+          0b11111111, 0b11111111, 0b11111111, 0b11111011,
+
+          // udp src
+          0, 0,
+          // udp dst
+          0, 0,
+          // udp len
+          0x00, 0x0b,
+          // checksum
+          0, 0
         };
 
         Packet* pkt2 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p1, pkt2);
+        dp->process(p2, pkt2);
         ++i;
       }
       // timer dtor should print time here

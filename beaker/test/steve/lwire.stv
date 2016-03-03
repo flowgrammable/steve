@@ -1,0 +1,75 @@
+layout eth
+{
+  src : uint(48);
+  dst : uint(48);
+  type: uint(48);
+}
+
+
+decoder start eth_d(eth)
+{
+  goto learn;
+}
+
+
+Port p1;
+Port p2;
+
+event learn_port
+{
+  // prevent more miss cases in the learn table.
+  insert
+  { in_port } ->
+  {
+    goto forward;
+  }
+  into learn;
+
+  // If neither p1 nor p2 is set, then we assume this packet is coming off p1.
+  // Note: The assumption is that port 0 is an invalid port since the runtime
+  // begins numbering ports at 1.
+  if (p1 == 0 && p2 == 0)
+  {
+    p1 = in_port;
+  }
+
+  // If p1 is learned and this packet is not from p1, then this is from p2.
+  // At this point we would have both ports learned so we can add the flows
+  // into the learn table at the same time.
+  else if (p1 > 0 && p1 != in_port)
+  {
+    p2 = in_port;
+
+    insert
+    { p1 } ->
+    {
+      output p2;
+    }
+    into forward;
+
+    insert
+    { p2 } ->
+    {
+      output p1;
+    }
+    into forward;
+  }
+}
+
+
+exact_table learn(in_port)
+{
+  miss -> {
+    raise learn_port;
+    goto forward;
+  }
+}
+
+
+exact_table forward(in_port)
+{
+  miss ->
+  {
+    drop;
+  }
+}

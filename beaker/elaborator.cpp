@@ -423,6 +423,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Promotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Integer_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -433,6 +434,11 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Create_table* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
+    Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
+    Expr* operator()(All_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Controller_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Reflow_port* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -649,7 +655,8 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
       new_key.push_back(e);
     else {
       std::stringstream ss;
-      ss << "Failed type conversion in flow field key " << i
+      ss << "Failed type conversion in flow " << *flow->name()
+         << " field index " << i
          << " of table " << *table->name() << '.';
       throw Type_error({}, ss.str());
     }
@@ -1446,6 +1453,13 @@ Elaborator::elaborate(Sign_conv* e)
 }
 
 
+Expr*
+Elaborator::elaborate(Integer_conv* e)
+{
+  return e;
+}
+
+
 // TODO: I probably need to elaborate the type.
 Expr*
 Elaborator::elaborate(Default_init* e)
@@ -1719,7 +1733,9 @@ Elaborator::elaborate(Field_access_expr* e)
 
   if (!binding) {
     std::stringstream ss;
-    ss << *e << " used but not extracted in this path.";
+    ss << *e
+       << " used but not extracted in this path OR\n"
+       << " used but not valid in this context.";
     throw Type_error(locate(e), ss.str());
   }
 
@@ -1751,6 +1767,62 @@ Elaborator::elaborate_field_access(Dot_expr* e)
   elaborate(f);
 
   return f;
+}
+
+
+// Inport expr must occur in the correct context.
+Expr*
+Elaborator::elaborate(Inport_expr* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "in_port occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Inphysport_expr* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "in_phys_port occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(All_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'all' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Controller_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'controller' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Reflow_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'reflow' occuring outside a decoder, flow, or event.");
+  }
+  return e;
 }
 
 
@@ -1807,6 +1879,8 @@ Elaborator::elaborate(Decl* d)
     Decl* operator()(Decode_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Table_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Key_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Inport_key_decl* d) const { return elab.elaborate(d); }
+    Decl* operator()(Inphysport_key_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Flow_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Port_decl* d) const { return elab.elaborate(d); }
     Decl* operator()(Extracts_decl* d) const { return elab.elaborate(d); }
@@ -1953,7 +2027,7 @@ Elaborator::elaborate(Key_decl* d)
   // Field has to be a dot-expr.
   Dot_expr* f = as<Dot_expr>(d->field());
   if (!f)
-    throw Type_error(locate(d->field()), "Invalid field for key declaration.");
+    throw Type_error(locate(d), "Invalid field for key declaration.");
 
   Decl_seq p;
   Expr_seq ids;
@@ -1971,12 +2045,31 @@ Elaborator::elaborate(Key_decl* d)
 }
 
 
+Decl*
+Elaborator::elaborate(Inport_key_decl* d)
+{
+  assert(is<Port_type>(d->type()));
+  return d;
+}
+
+
+Decl*
+Elaborator::elaborate(Inphysport_key_decl* d)
+{
+  assert(is<Port_type>(d->type()));
+  return d;
+}
+
+
 // Current valid properties:
 //      timeout
+//      egress
 bool
 Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
 {
   // NOTE: Always check that the property doesn't exist.
+
+  // Timeout property.
   if (pname == "timeout") {
     if (p.timeout) {
       throw Type_error(locate(val), "Duplicate property 'timeout'.");
@@ -1984,12 +2077,29 @@ Elaborator::is_valid_property(String pname, Expr* val, Flow_properties& p)
     }
 
     Expr* e = elaborate(val);
-    if (!is<Integer_type>(e->type())) {
+    if (!is<Integer_type>(e->type()->nonref())) {
       throw Type_error(locate(val), "Property 'timeout' must be an integer.");
       return false;
     }
 
     p.timeout = e;
+    return true;
+  }
+
+  // Egress property.
+  if (pname == "egress") {
+    if (p.egress) {
+      throw Type_error(locate(val), "Duplicate property 'egress.'");
+      return false;
+    }
+
+    Expr* e = elaborate(val);
+    if (!is<Port_type>(e->type()->nonref())) {
+      throw Type_error(locate(val), "Property 'egress' must be a port.");
+      return false;
+    }
+
+    p.egress = e;
     return true;
   }
 
@@ -2074,14 +2184,6 @@ Elaborator::elaborate(Flow_decl* d)
   Type_seq types;
   for (auto expr : d->keys()) {
     Expr* key = elaborate(expr);
-
-    // For now we only support literal expressions here.
-    if (!is<Literal_expr>(key)) {
-      std::stringstream ss;
-      ss << "Key value must be a literal. Found: " << *key;
-      throw Type_error(locate(d), ss.str());
-    }
-
     types.push_back(key->type());
   }
 
@@ -2104,6 +2206,16 @@ Elaborator::elaborate(Flow_decl* d)
       ss << *block;
 
       throw Type_error(locate(block), ss.str());
+    }
+
+    for (auto s : block->statements()) {
+      if (!is_action(s)) {
+        std::stringstream ss;
+        ss << "Non-action found inside the body of a flow.\n";
+        ss << *s;
+
+        throw Type_error(locate(s), ss.str());
+      }
     }
   }
 
@@ -2477,19 +2589,15 @@ Elaborator::elaborate_decl(Table_decl* d)
   // construct the table type
   for (auto subkey : d->keys()) {
     if (Key_decl* field = as<Key_decl>(subkey)) {
-      elaborate(field);
+      elaborate(subkey);
 
-      // Get the final declaration in the key path specifier.
-      // This shall provide the type needed for the field.
-      Decl* field_decl = field->declarations().back();
-
-      assert(field_decl);
-      assert(field_decl->type());
+      assert(field);
+      assert(field->type());
 
       // save the field decl
-      field_decls.push_back(field_decl);
+      field_decls.push_back(field);
       // save the type of the field decl
-      types.push_back(field_decl->type());
+      types.push_back(field->type());
     }
   }
   Type const* type = get_table_type(field_decls, types);
@@ -2754,17 +2862,22 @@ Elaborator::elaborate_def(Layout_decl* d)
 Decl*
 Elaborator::elaborate_def(Port_decl* d)
 {
-  d->first = elaborate(d->address());
+  if (d->address()) {
+    d->first = elaborate(d->address());
 
-  // check that the expression following '='
-  // is a string literal
-  if (Array_type const* t = as<Array_type>(d->address()->type()))
-    if (is<Character_type>(t->type()))
-      return d;
+    // check that the expression following '='
+    // is a string literal
+    if (Array_type const* t = as<Array_type>(d->address()->type()))
+      if (is<Character_type>(t->type()))
+        return d;
 
-  std::stringstream ss;
-  ss << "Invalid port address " << d->address() << ". Expected string literal.";
-  throw Type_error(locate(d), ss.str());
+    std::stringstream ss;
+    ss << "Invalid port address " << d->address() << ". Expected string literal.";
+    throw Type_error(locate(d), ss.str());
+  }
+
+  // Otherwise just assume its a defualt init invalid port.
+  return d;
 }
 
 
@@ -2781,8 +2894,15 @@ Elaborator::elaborate_def(Decode_decl* d)
 {
   Scope_sentinel scope(*this, d);
 
-  if (d->header())
+  if (d->header()) {
     d->header_ = elaborate(d->header());
+    // Check that a header is what's being decoded.
+    if (!is<Layout_type>(d->header())) {
+      std::stringstream ss;
+      ss << *d->header() << " is not a layout.";
+      throw Type_error(locate(d), ss.str());
+    }
+  }
 
   // Enter a scope since a decode body is
   // basically a special function body
@@ -2831,16 +2951,16 @@ Elaborator::elaborate_def(Table_decl* d)
     elaborate(flow);
   }
 
+  // check the miss case
+  if (d->miss_)
+    d->miss_ = elaborate(d->miss_);
+
   // check initializing flows for type equivalence
   if (!check_table_initializer(*this, d)) {
     std::stringstream ss;
     ss << "Invalid entry in table: " << *d->name();
-    throw Type_error({}, ss.str());
+    throw Type_error(locate(d), ss.str());
   }
-
-  // check the miss case
-  if (d->miss_)
-    d->miss_ = elaborate(d->miss_);
 
   return d;
 }
@@ -2933,16 +3053,18 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Output_inport* d) { return elab.elaborate(d); }
+    Stmt* operator()(Output_egress* d) { return elab.elaborate(d); }
     Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Write_output_egress* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
@@ -3241,6 +3363,19 @@ Elaborator::elaborate(Decode_stmt* s)
     throw Type_error({}, ss.str());
   }
 
+  if (s->advance()) {
+    Expr* a = elaborate(s->advance());
+    a = require_value(*this, a);
+
+    if (!a)
+      throw Type_error(locate(s->advance()), "advance requires a value.");
+
+    if (!is<Integer_type>(a->type()))
+      throw Type_error(locate(s->advance()), "advance requires an integer value.");
+
+    s->advance_ = a;
+  }
+
   s->decoder_identifier_ = target_id;
   s->decoder_ = target_id->declaration();
 
@@ -3273,6 +3408,19 @@ Elaborator::elaborate(Goto_stmt* s)
     std::stringstream ss;
     ss << "invalid table identifier: " << *s->table_identifier();
     throw Type_error({}, ss.str());
+  }
+
+  if (s->advance()) {
+    Expr* a = elaborate(s->advance());
+    a = require_value(*this, a);
+
+    if (!a)
+      throw Type_error(locate(s->advance()), "advance requires a value.");
+
+    if (!is<Integer_type>(a->type()))
+      throw Type_error(locate(s->advance()), "advance requires an integer value.");
+
+    s->advance_ = a;
   }
 
   return s;
@@ -3335,14 +3483,20 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
-Elaborator::elaborate(Output_inport* s)
+Elaborator::elaborate(Output_egress* s)
 {
+  Flow_decl* flow = as<Flow_decl>(stack.context());
   // This is special since it can only occur within the context of flows.
-  if (!is<Flow_decl>(stack.context())) {
+  if (!flow) {
     std::stringstream ss;
-    ss << "\'output inport\' occuring outside a flow declaration.";
+    ss << "\'output egress\' occuring outside a flow declaration.";
     throw Type_error(locate(s), ss.str());
   }
+
+  // Now check that the flow's egress property is set.
+  if (!flow->properties().egress)
+    throw Type_error(locate(s), "\'output egress\' "
+                                "occuring without 'egress' flow property set.");
 
   return s;
 }
@@ -3488,8 +3642,15 @@ Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
   check_valid_action_context(s);
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
 
-  s->table_id_ = elaborate(s->table_identifier());
+  s->table_id_ = e;
 
   // We need to specially elaborate this flow because it doesn't follow the
   // exact same semantics as initializing flows.
@@ -3508,6 +3669,11 @@ Elaborator::elaborate(Insert_flow* s)
   // Save the flow declaration to be elaborated later.
   added_flows_.push_back(as<Flow_decl>(s->flow()));
 
+  // Avoid key checking on miss cases.
+  if (as<Flow_decl>(s->flow())->miss_case())
+    return s;
+
+  // Check keys if not miss case.
   if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
     return s;
   }
@@ -3526,7 +3692,15 @@ Elaborator::elaborate(Remove_flow* s)
 {
   check_valid_action_context(s);
 
-  s->table_id_ = elaborate(s->table_identifier());
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   Table_decl* table = as<Table_decl>(s->table());
 
   // Confirm that every key has a matching type in the table decl
@@ -3565,6 +3739,22 @@ Elaborator::elaborate(Remove_flow* s)
   }
 
   s->keys_ = new_key;
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Remove_miss* s)
+{
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   return s;
 }
 
@@ -3614,7 +3804,19 @@ Elaborator::elaborate(Write_output* s)
   check_valid_action_context(s);
 
   assert(s->output());
-  // Elaborate the drop action.
+  // Elaborate the output action.
+  s->first = elaborate(s->first);
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Write_output_egress* s)
+{
+  check_valid_action_context(s);
+
+  assert(s->output());
+  // Elaborate the output action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3626,7 +3828,7 @@ Elaborator::elaborate(Write_flood* s)
   check_valid_action_context(s);
 
   assert(s->flood());
-  // Elaborate the drop action.
+  // Elaborate the flood action.
   s->first = elaborate(s->first);
   return s;
 }
@@ -3638,7 +3840,7 @@ Elaborator::elaborate(Write_set_field* s)
   check_valid_action_context(s);
 
   assert(s->set_field());
-  // Elaborate the drop action.
+  // Elaborate the set field action.
   s->first = elaborate(s->first);
   return s;
 }

@@ -78,6 +78,7 @@ struct Expr::Visitor
   virtual void visit(Promotion_conv const*) = 0;
   virtual void visit(Demotion_conv const*) = 0;
   virtual void visit(Sign_conv const*) = 0;
+  virtual void visit(Integer_conv const*) = 0;
   virtual void visit(Default_init const*) = 0;
   virtual void visit(Copy_init const*) = 0;
   virtual void visit(Reference_init const*) = 0;
@@ -90,6 +91,11 @@ struct Expr::Visitor
   virtual void visit(Create_table const*) = 0;
   virtual void visit(Get_dataplane const*) = 0;
   virtual void visit(Port_expr const*) = 0;
+  virtual void visit(Inport_expr const*) = 0;
+  virtual void visit(Inphysport_expr const*) = 0;
+  virtual void visit(All_port const*) = 0;
+  virtual void visit(Controller_port const*) = 0;
+  virtual void visit(Reflow_port const*) = 0;
 };
 
 
@@ -132,6 +138,7 @@ struct Expr::Mutator
   virtual void visit(Promotion_conv*) = 0;
   virtual void visit(Demotion_conv*) = 0;
   virtual void visit(Sign_conv*) = 0;
+  virtual void visit(Integer_conv*) = 0;
   virtual void visit(Default_init*) = 0;
   virtual void visit(Copy_init*) = 0;
   virtual void visit(Reference_init*) = 0;
@@ -144,6 +151,11 @@ struct Expr::Mutator
   virtual void visit(Create_table*) = 0;
   virtual void visit(Get_dataplane*) = 0;
   virtual void visit(Port_expr*) = 0;
+  virtual void visit(Inport_expr*) = 0;
+  virtual void visit(Inphysport_expr*) = 0;
+  virtual void visit(All_port*) = 0;
+  virtual void visit(Controller_port*) = 0;
+  virtual void visit(Reflow_port*) = 0;
 };
 
 
@@ -613,8 +625,67 @@ struct Inport_expr : Expr
   Inport_expr(Type const* t)
     : Expr(t)
   { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
+
+// This expression allows access the the in_port field of the context.
+//
+// Inport_expr always resolves into an integer id asigned the port by the runtime
+// so that it can be used as part of a table key. However, inport cannot be
+// used in arithmetic situations.
+//
+// Inport should always have port type.
+struct Inphysport_expr : Expr
+{
+  Inphysport_expr(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "ALL" port. The "ALL" port is a port used
+// to forward to every valid port on the system.
+struct All_port : Expr
+{
+  All_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "CONTROLLER" port. This port is used to
+// interface with some controller hooked in the system.
+struct Controller_port : Expr
+{
+  Controller_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "REFLOW" port. This port is used to reflow a
+// packet back through the pipeline.
+struct Reflow_port : Expr
+{
+  Reflow_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
 
 
 // The expression e1.e2. This is an unresolved
@@ -790,6 +861,17 @@ struct Block_conv : Conv
 };
 
 
+// To integer conversion. Allows for certain other expressions to be
+// converted into an integer type.
+struct Integer_conv : Conv
+{
+  using Conv::Conv;
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
 // -------------------------------------------------------------------------- //
 // Initializers
 
@@ -894,8 +976,9 @@ is_constant_expr(Expr const* e)
   if (Decl_expr const* id = as<Decl_expr>(e)) {
     if (is<Table_decl>(id->declaration()))
       return true;
-    if (is<Port_decl>(id->declaration()))
-      return true;
+    // TODO: Right now we allow assignment to ports.
+    // if (is<Port_decl>(id->declaration()))
+    //   return true;
   }
 
   return false;
@@ -948,6 +1031,7 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Promotion_conv const* e) { this->invoke(e); }
   void visit(Demotion_conv const* e) { this->invoke(e); }
   void visit(Sign_conv const* e) { this->invoke(e); }
+  void visit(Integer_conv const* e) { this->invoke(e); }
   void visit(Default_init const* e) { this->invoke(e); }
   void visit(Copy_init const* e) { this->invoke(e); }
   void visit(Reference_init const* e) { this->invoke(e); }
@@ -960,6 +1044,11 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Create_table const* e) { this->invoke(e); }
   void visit(Get_dataplane const* e) { this->invoke(e); }
   void visit(Port_expr const* e) { this->invoke(e); }
+  void visit(Inport_expr const* e) { this->invoke(e); }
+  void visit(Inphysport_expr const* e) { this->invoke(e); }
+  void visit(All_port const* e) { this->invoke(e); }
+  void visit(Controller_port const* e) { this->invoke(e); }
+  void visit(Reflow_port const* e) { this->invoke(e); }
 };
 
 
@@ -1018,6 +1107,7 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Promotion_conv* e) { this->invoke(e); }
   void visit(Demotion_conv* e) { this->invoke(e); }
   void visit(Sign_conv* e) { this->invoke(e); }
+  void visit(Integer_conv* e) { this->invoke(e); }
   void visit(Default_init* e) { this->invoke(e); }
   void visit(Copy_init* e) { this->invoke(e); }
   void visit(Reference_init* e) { this->invoke(e); }
@@ -1030,6 +1120,11 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Create_table* e) { this->invoke(e); }
   void visit(Get_dataplane* e) { this->invoke(e); }
   void visit(Port_expr* e) { this->invoke(e); }
+  void visit(Inport_expr* e) { this->invoke(e); }
+  void visit(Inphysport_expr* e) { this->invoke(e); }
+  void visit(All_port* e) { this->invoke(e); }
+  void visit(Controller_port* e) { this->invoke(e); }
+  void visit(Reflow_port* e) { this->invoke(e); }
 };
 
 

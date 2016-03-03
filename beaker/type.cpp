@@ -201,7 +201,7 @@ Type const*
 get_opaque_type()
 {
   static Opaque_type t;
-  return &t; 
+  return &t;
 }
 
 

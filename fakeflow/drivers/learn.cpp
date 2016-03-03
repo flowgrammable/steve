@@ -48,10 +48,11 @@ int main(int argc, char* argv[])
       long long i = 0;
       Timer t;
 
-      Byte* data1 = new Byte[64]{
-        // src bytes
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+      // Send this to make the table learn this ones src and inport
+      Byte* data1 = new Byte[1500]{
         // dst bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // src bytes
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // type bytes
         0x08, 0x80, 0, 0, 0
@@ -62,13 +63,14 @@ int main(int argc, char* argv[])
 
       while(i < pkt_no) {
 
-        Byte* data2 = new Byte[64]{
-          // src bytes
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // The dst address for this packet should be learned by now.
+        Byte* data2 = new Byte[1500]{
           // dst bytes
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // src bytes
           0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
           // type bytes
-          0x08, 0x80, 0, 0, 0
+          0x08, 0x00, 0, 0, 0
         };
 
         Packet* pkt2 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
@@ -76,6 +78,20 @@ int main(int argc, char* argv[])
         dp->process(p2, pkt2);
         ++i;
       }
+
+      // Send a second copy of the first packet to confirm the second packet
+      // caused the first src to have been learned.
+      data1 = new Byte[1500]{
+        // dst bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // src bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // type bytes
+        0x08, 0x80, 0, 0, 0
+      };
+
+      pkt1 = packet_create(data1, 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, pkt1);
       // timer dtor should print time here
 
     } // block

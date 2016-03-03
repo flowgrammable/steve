@@ -54,9 +54,9 @@ struct Output : Action
 //
 // The inport is implicitly resolved at runtime when executing this action
 // by requesting that a flow provide the inport.
-struct Output_inport : Output
+struct Output_egress : Output
 {
-  Output_inport()
+  Output_egress()
     : Output(nullptr)
   { }
 
@@ -173,6 +173,31 @@ Remove_flow::table() const
 }
 
 
+// Remove miss case.
+struct Remove_miss : Action
+{
+  Remove_miss(Expr* t)
+    : table_id_(t)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Decl* table() const;
+  Expr* table_identifier() const { return table_id_; }
+
+  Expr* table_id_;
+};
+
+
+inline Decl*
+Remove_miss::table() const
+{
+  assert(is<Decl_expr>(table_id_));
+  return as<Decl_expr>(table_id_)->declaration();
+}
+
+
 // Raise an event.
 struct Raise : Action
 {
@@ -225,6 +250,22 @@ struct Write_output : Action
   void accept(Mutator& v)       { return v.visit(this); }
 
   Output* output() const { return cast<Output>(first); }
+
+  Stmt* first;
+};
+
+
+// Write output egress action to context.
+struct Write_output_egress : Action
+{
+  Write_output_egress(Stmt* a)
+    : first(a)
+  { }
+
+  void accept(Visitor& v) const { return v.visit(this); }
+  void accept(Mutator& v)       { return v.visit(this); }
+
+  Output_egress* output() const { return cast<Output_egress>(first); }
 
   Stmt* first;
 };
@@ -345,7 +386,7 @@ is_action(Stmt* s)
       || is<Decode_stmt>(s)
       || is<Goto_stmt>(s)
       // FIXME: Remove this, currently for debugging purposes only.
-      || is<Expression_stmt>(s);
+      || is<Stmt>(s);
 }
 
 
@@ -357,6 +398,15 @@ is_valid_action_context(Stmt* s)
   return is<Decode_decl>(s->context())
       || is<Flow_decl>(s->context())
       || is<Event_decl>(s->context());
+}
+
+
+inline bool
+is_valid_pipeline_context(Decl* d)
+{
+  return is<Decode_decl>(d)
+      || is<Flow_decl>(d)
+      || is<Event_decl>(d);
 }
 
 

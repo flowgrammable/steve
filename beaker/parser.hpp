@@ -66,6 +66,8 @@ public:
   Decl* decode_decl();
   Decl* exact_table_decl();
   Decl* key_decl();
+  Decl* inport_key_decl();
+  Decl* inphysport_key_decl();
   Decl* flow_decl();
   Decl* port_decl();
   Decl* extract_decl();
@@ -154,6 +156,11 @@ private:
   Expr* on_dot(Expr*, Expr*);
   Expr* on_field_name(Expr_seq const&);
   Expr* on_field_access(Expr_seq const&);
+  Expr* on_inport(Token);
+  Expr* on_inphysport(Token);
+  Expr* on_all_port(Token);
+  Expr* on_controller_port(Token);
+  Expr* on_reflow_port(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);
@@ -172,6 +179,8 @@ private:
   Decl* on_rebind(Expr*, Expr*);
   Decl* on_exact_table(Token, Decl_seq&, Expr_seq&, Decl_seq&, Decl*);
   Decl* on_key(Expr*);
+  Decl* on_inport_key(Token);
+  Decl* on_inphysport_key(Token);
   Decl* on_flow(Expr_seq const&, Stmt*, Stmt_seq const&);
   Decl* on_flow_miss(Stmt*, Stmt_seq const&);
   Decl* on_port(Token, Expr*);
@@ -193,18 +202,19 @@ private:
 
   Stmt* on_case(Expr*, Stmt*);
   Stmt* on_match(Expr*, Stmt_seq&, Stmt*);
-  Stmt* on_decode(Expr*);
-  Stmt* on_goto(Expr*);
+  Stmt* on_decode(Expr*, Expr*);
+  Stmt* on_goto(Expr*, Expr*);
   Stmt* on_drop();
   Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
-  Stmt* on_output_inport();
+  Stmt* on_output_egress();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);
   Stmt* on_add_flow(Decl*, Expr*);
   Stmt* on_rmv_flow(Expr_seq const&, Expr*);
+  Stmt* on_rmv_miss(Expr*);
   Stmt* on_raise(Expr*);
 
   // Parsing support

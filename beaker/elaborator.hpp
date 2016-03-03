@@ -119,6 +119,7 @@ public:
   Expr* elaborate(Promotion_conv* e);
   Expr* elaborate(Demotion_conv* e);
   Expr* elaborate(Sign_conv* e);
+  Expr* elaborate(Integer_conv* e);
   Expr* elaborate(Default_init* e);
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);
@@ -126,6 +127,11 @@ public:
   Expr* elaborate(Void_cast* e);
   Expr* elaborate(Field_name_expr* e);
   Expr* elaborate(Field_access_expr* e);
+  Expr* elaborate(Inport_expr* e);
+  Expr* elaborate(Inphysport_expr* e);
+  Expr* elaborate(All_port* e);
+  Expr* elaborate(Controller_port* e);
+  Expr* elaborate(Reflow_port* e);
 
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);
@@ -145,6 +151,8 @@ public:
   Decl* elaborate(Decode_decl*);
   Decl* elaborate(Table_decl*);
   Decl* elaborate(Key_decl*);
+  Decl* elaborate(Inport_key_decl*);
+  Decl* elaborate(Inphysport_key_decl*);
   Decl* elaborate(Flow_decl*);
   Decl* elaborate(Port_decl*);
   Decl* elaborate(Extracts_decl*);
@@ -203,15 +211,17 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
-  Stmt* elaborate(Output_inport*);
+  Stmt* elaborate(Output_egress*);
   Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);
   Stmt* elaborate(Remove_flow*);
+  Stmt* elaborate(Remove_miss*);
   Stmt* elaborate(Raise*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
+  Stmt* elaborate(Write_output_egress*);
   Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 

@@ -302,16 +302,22 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Promotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Demotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Sign_conv const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Integer_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Default_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reinterpret_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Field_name_expr const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
     llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Controller_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Reflow_port const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});
@@ -379,13 +385,22 @@ llvm::Value*
 Generator::gen(Decl_expr const* e)
 {
   auto const* bind = stack.lookup(e->declaration());
+
+  // Sanity check...
+  if (!bind) {
+    std::stringstream ss;
+    ss << *e << " does not refer to a valid declaration.\n";
+    throw std::runtime_error(ss.str());
+  }
+
   llvm::Value* result = bind->second;
 
   // Fetch the value from a reference declaration.
   Decl const* decl = bind->first;
 
-  if (is_reference(decl))
+  if (is_reference(decl)) {
     return build.CreateLoad(result);
+  }
 
   return result;
 }
@@ -733,6 +748,17 @@ Generator::gen(Sign_conv const* e)
 }
 
 
+// FIXME: Everything is already an integer in llvm, does this really do anything?
+llvm::Value*
+Generator::gen(Integer_conv const* e)
+{
+  Integer_type const* int_t = as<Integer_type>(e->target());
+  llvm::Type* t = get_type(e->target());
+  llvm::Value* v = gen(e->source());
+  return build.CreateIntCast(v, t, int_t->is_signed());
+}
+
+
 // TODO: Return the value or store it?
 llvm::Value*
 Generator::gen(Default_init const* e)
@@ -751,6 +777,9 @@ Generator::gen(Default_init const* e)
   // should be memberwise default initialized.
   if (is_aggregate(t))
     return llvm::ConstantAggregateZero::get(type);
+
+  if (is<Port_type>(t))
+    return llvm::ConstantInt::get(type, 0);
 
   throw std::runtime_error("unhahndled default initializer");
 }
@@ -895,15 +924,17 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { lingo_unreachable(); }
     void operator()(Drop const* s) { lingo_unreachable(); }
     void operator()(Output const* s) { lingo_unreachable(); }
-    void operator()(Output_inport const* s) { lingo_unreachable(); }
+    void operator()(Output_egress const* s) { lingo_unreachable(); }
     void operator()(Flood const* s) { lingo_unreachable(); }
     void operator()(Clear const* s) { lingo_unreachable(); }
     void operator()(Set_field const* s) { lingo_unreachable(); }
     void operator()(Insert_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_flow const* s) { lingo_unreachable(); }
+    void operator()(Remove_miss const* s) { lingo_unreachable(); }
     void operator()(Raise const* s) { lingo_unreachable(); }
     void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
+    void operator()(Write_output_egress const* s) { lingo_unreachable(); }
     void operator()(Write_flood const* s) { lingo_unreachable(); }
     void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };

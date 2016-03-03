@@ -645,6 +645,7 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Promotion_conv const* e) { os << *e; }
     void operator()(Demotion_conv const* e) { os << *e; }
     void operator()(Sign_conv const* e) { os << *e; }
+    void operator()(Integer_conv const* e) { os << *e; }
     void operator()(Default_init const* e) { os << *e; }
     void operator()(Copy_init const* e) { os << *e; }
     void operator()(Reference_init const* e) { os << *e; }
@@ -656,6 +657,11 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Get_port const* e) { os << *e; }
     void operator()(Create_table const* e) { os << *e; }
     void operator()(Get_dataplane const* e) { os << *e; }
+    void operator()(Inport_expr const* e) { os << *e; }
+    void operator()(Inphysport_expr const* e) { os << *e; }
+    void operator()(All_port const* e) { os << *e; }
+    void operator()(Controller_port const* e) { os << *e; }
+    void operator()(Reflow_port const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -929,6 +935,15 @@ operator<<(std::ostream& os, Sign_conv const& e)
 
 
 std::ostream&
+operator<<(std::ostream& os, Integer_conv const& e)
+{
+  return os << "__to_int("
+            << *e.source() << ','
+            << *e.target() << ')';
+}
+
+
+std::ostream&
 operator<<(std::ostream& os, Default_init const& e)
 {
   return os << "__default_init(" << *e.type() << ")";
@@ -1021,4 +1036,34 @@ std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
 {
   os << "get_dp";
   return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inport_expr const&)
+{
+  return os << "in_port";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Inphysport_expr const&)
+{
+  return os << "in_phys_port";
+}
+
+
+std::ostream& operator<<(std::ostream& os, All_port const&)
+{
+  return os << "all";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Controller_port const&)
+{
+  return os << "controller";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Reflow_port const&)
+{
+  return os << "reflow";
 }

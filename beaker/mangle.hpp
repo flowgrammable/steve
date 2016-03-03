@@ -50,6 +50,8 @@ void mangle(std::ostream&, Layout_decl const*);
 void mangle(std::ostream&, Decode_decl const*);
 void mangle(std::ostream&, Table_decl const*);
 void mangle(std::ostream&, Key_decl const*);
+void mangle(std::ostream&, Inport_key_decl const*);
+void mangle(std::ostream&, Inphysport_key_decl const*);
 void mangle(std::ostream&, Flow_decl const*);
 void mangle(std::ostream&, Port_decl const*);
 void mangle(std::ostream&, Extracts_decl const*);

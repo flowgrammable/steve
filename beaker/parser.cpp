@@ -110,6 +110,26 @@ Parser::primary_expr()
   if (Token tok = match_if(string_tok))
     return on_str(tok);
 
+  // inport expr
+  if (Token tok = match_if(inport_kw))
+    return on_inport(tok);
+
+  // inport expr
+  if (Token tok = match_if(inphysport_kw))
+    return on_inphysport(tok);
+
+  // all port expr
+  if (Token tok = match_if(all_kw))
+    return on_all_port(tok);
+
+  // controller port expr
+  if (Token tok = match_if(controller_kw))
+    return on_controller_port(tok);
+
+  // reflow expr
+  if (Token tok = match_if(reflow_kw))
+    return on_reflow_port(tok);
+
   // paren-expr
   if (match_if(lparen_tok)) {
     Expr* e = expr();
@@ -909,11 +929,22 @@ Parser::decode_decl()
 
 
 // Parse a key decl
-//    key-decl -> id.id
-//                key-decl.id
+//    key-decl -> field-name-expr
+//              | 'inport'
+//              | 'inphyport'
 Decl*
 Parser::key_decl()
 {
+  if (lookahead() == inport_kw) {
+    Token tok = match(inport_kw);
+    return on_inport_key(tok);
+  }
+  else if (lookahead() == inphysport_kw) {
+    Token tok = match(inphysport_kw);
+    return on_inphysport_key(tok);
+  }
+
+  // Otherwise its a field key decl.
   // Use postfix parsing hoping for a dot expr.
   Expr* key = expr();
   return on_key(key);
@@ -989,26 +1020,36 @@ Parser::exact_table_decl()
 
 // Parse flow properties.
 //
-//    'properties' { [assign-stmt]+ }
+//    '[' assign-stmt-seq ']'
 Stmt_seq
 Parser::flow_properties()
 {
   // Optional properties block following the body.
   Stmt_seq properties;
-  if (match_if(properties_kw)) {
-    match(lbrace_tok);
-    while (lookahead() != rbrace_tok) {
+  if (match_if(lbrack_tok)) {
+    while (lookahead() != rbrack_tok) {
       // Match a series of assignments to properties.
       // prop '=' val ';'
-      Token tok = match(identifier_tok);
-      Expr* prop = on_id(tok);
+      Expr* prop = nullptr;
+
+      // A property can be any identifier or the keyword egress.
+      if (Token tok = match_if(identifier_tok))
+        prop = on_id(tok);
+      if (Token tok = match_if(egress_kw))
+        prop = on_id(tok);
+
       match(equal_tok);
       Expr* val = expr();
+
       Stmt* a = on_assign(prop, val);
-      match(semicolon_tok);
       properties.push_back(a);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
     }
-    match(rbrace_tok);
+    match(rbrack_tok);
   }
 
   return properties;
@@ -1016,14 +1057,16 @@ Parser::flow_properties()
 
 // Parse a flow decl
 //
-//    flow-decl -> { expr-seq } -> { action-seq } (optional) properties
+//    flow-decl -> '[' (optional) properties-seq ']'
+//                  { expr-seq } -> { action-seq }
 Decl*
 Parser::flow_decl()
 {
+  Stmt_seq properties = flow_properties();
+
   if (match_if(miss_kw)) {
     match(arrow_tok);
     Stmt* body = block_stmt();
-    Stmt_seq properties = flow_properties();
     return on_flow_miss(body, properties);
   }
 
@@ -1042,7 +1085,6 @@ Parser::flow_decl()
   match(rbrace_tok);
   match(arrow_tok);
   Stmt* body = block_stmt();
-  Stmt_seq properties = flow_properties();
 
   return on_flow(keys, body, properties);
 }
@@ -1056,14 +1098,14 @@ Parser::port_decl()
 
   Token tok = match(identifier_tok);
 
-  match(equal_tok);
-
-  // expect a string literal
-  Expr* address = expr();
-
+  Expr* args = nullptr;
+  if (match_if(equal_tok)) {
+    // expect a string literal
+    args = expr();
+  }
   match(semicolon_tok);
 
-  return on_port(tok, address);
+  return on_port(tok, args);
 }
 
 
@@ -1393,31 +1435,39 @@ Parser::match_stmt()
 
 // Parse a decode stmt
 //
-//    stmt -> decode 'decode-id'
+//    stmt -> decode 'decode-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::decode_stmt()
 {
   match(decode_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_decode(e);
+  return on_decode(e, adv);
 }
 
 
 // Parse a goto stmt
 //
-//    stmt -> goto 'table-id'
+//    stmt -> goto 'table-id' (optional) 'advance' expr ';'
 //
 Stmt*
 Parser::goto_stmt()
 {
   match(goto_kw);
   Expr* e = expr();
+  Expr* adv = nullptr;
+  if (match_if(advance_kw)) {
+    adv = expr();
+  }
   match(semicolon_tok);
 
-  return on_goto(e);
+  return on_goto(e, adv);
 }
 
 
@@ -1450,20 +1500,20 @@ Parser::flood_stmt()
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
-//                 | 'output' 'inport'
-//                 | 'output' 'pktinport'
+//                 | 'output' 'egress'
+//                 | 'output' 'in_port'
+//                 | 'output' 'in_phys_port'
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
 
   // If its a special output statement.
-  if (match_if(inport_kw)) {
+  if (match_if(egress_kw)) {
     match(semicolon_tok);
-    return on_output_inport();
+    // FIXME: Change the name to output egress.
+    return on_output_egress();
   }
-  // else if (match_if(pktinport_kw))
-  //   return on_output_pktinport();
 
   // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
@@ -1558,12 +1608,12 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'add' flow-decl 'into' table-id
+//    add-flow-stmt -> 'insert' flow-decl 'into' table-id
 //
 Stmt*
 Parser::add_flow_stmt()
 {
-  match(add_kw);
+  match(insert_kw);
   Decl* flow = flow_decl();
   match(into_kw);
   Expr* table = expr();
@@ -1581,6 +1631,17 @@ Stmt*
 Parser::rmv_flow_stmt()
 {
   match(rmv_kw);
+
+  // If we're removing the miss case.
+  if (lookahead() == miss_kw) {
+    match(miss_kw);
+    match(from_kw);
+    Expr* table = expr();
+    match(semicolon_tok);
+    return on_rmv_miss(table);
+  }
+
+  // For regular flow entries.
   match(lbrace_tok);
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
@@ -1597,7 +1658,6 @@ Parser::rmv_flow_stmt()
   match(from_kw);
   Expr* table = expr();
   match(semicolon_tok);
-
   return on_rmv_flow(keys, table);
 }
 
@@ -1682,7 +1742,7 @@ Parser::stmt()
     case write_kw:
       return write_stmt();
 
-    case add_kw:
+    case insert_kw:
       return add_flow_stmt();
 
     case rmv_kw:
@@ -1900,7 +1960,7 @@ Parser::on_hex(Token tok)
   Hexadecimal_sym const* hex = tok.hexadecimal_symbol();
   Type const* t = get_integer_type(hex->precision(), unsigned_int, native_order);
   // construct an integer value using string and base 16 (hex)
-  Integer_value i(hex->value(), 16);
+  Integer_value i(hex->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -1911,7 +1971,7 @@ Parser::on_binary(Token tok)
   Binary_sym const* bin = tok.binary_symbol();
   Type const* t = get_integer_type(bin->precision(), unsigned_int, native_order);
   // construct an intger value using string and base 2(binary)
-  Integer_value i(bin->value(), 2);
+  Integer_value i(bin->value(), 0);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -2137,11 +2197,60 @@ Parser::on_field_access(Expr_seq const& e)
 }
 
 
+Expr*
+Parser::on_inport(Token tok)
+{
+  return init<Inport_expr>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_inphysport(Token tok)
+{
+  return init<Inphysport_expr>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_all_port(Token tok)
+{
+  return init<All_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_controller_port(Token tok)
+{
+  return init<Controller_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_reflow_port(Token tok)
+{
+  return init<Reflow_port>(tok.location(), get_port_type());
+}
+
+
 Decl*
 Parser::on_key(Expr* e)
 {
   // Symbol const* sym = get_qualified_name(e);
-  return new Key_decl(e, nullptr);
+  return init<Key_decl>(locate(e), e, nullptr);
+}
+
+
+Decl*
+Parser::on_inport_key(Token tok)
+{
+  return init<Inport_key_decl>(tok.location(), get_port_type(), tok.symbol());
+}
+
+
+Decl*
+Parser::on_inphysport_key(Token tok)
+{
+  return init<Inphysport_key_decl>(tok.location(), get_port_type(), tok.symbol());
 }
 
 
@@ -2413,16 +2522,16 @@ Parser::on_match(Expr* cond, Stmt_seq& cases, Stmt* miss)
 
 
 Stmt*
-Parser::on_decode(Expr* e)
+Parser::on_decode(Expr* e, Expr* a)
 {
-  return new Decode_stmt(e);
+  return new Decode_stmt(e, a);
 }
 
 
 Stmt*
-Parser::on_goto(Expr* e)
+Parser::on_goto(Expr* e, Expr* a)
 {
-  return new Goto_stmt(e);
+  return new Goto_stmt(e, a);
 }
 
 
@@ -2455,9 +2564,9 @@ Parser::on_output(Expr* e)
 
 
 Stmt*
-Parser::on_output_inport()
+Parser::on_output_egress()
 {
-  return new Output_inport();
+  return new Output_egress();
 }
 
 
@@ -2480,6 +2589,8 @@ Parser::on_write(Stmt* s)
 {
   if (is<Drop>(s))
     return new Write_drop(s);
+  else if (is<Output_egress>(s))
+    return new Write_output_egress(s);
   else if (is<Output>(s))
     return new Write_output(s);
   else if (is<Flood>(s))
@@ -2503,6 +2614,13 @@ Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
   return new Remove_flow(keys, table);
+}
+
+
+Stmt*
+Parser::on_rmv_miss(Expr* table)
+{
+  return new Remove_miss(table);
 }
 
 

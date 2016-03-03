@@ -179,7 +179,7 @@ Builtin::get_table()
 
 // Add an initial flow entry to the table.
 //
-//    void add_init_flow(Table*, Flow*, i8* key)
+//    void add_init_flow(Table*, Flow*, i8* key, int timeout, Port::ID egress)
 Function_decl*
 Builtin::add_init_flow()
 {
@@ -204,7 +204,9 @@ Builtin::add_init_flow()
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_ref),
-    new Parameter_decl(get_identifier("key_buf"), buffer_type)
+    new Parameter_decl(get_identifier("key_buf"), buffer_type),
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -245,7 +247,8 @@ Builtin::add_new_flow()
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_ref),
     new Parameter_decl(get_identifier("key_buf"), buffer_type),
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -314,6 +317,37 @@ Builtin::add_miss()
   {
     new Parameter_decl(get_identifier("table"), tbl_ref),
     new Parameter_decl(get_identifier("flow"), flow_fn_ref),
+    new Parameter_decl(get_identifier("timeout"), get_integer_type()),
+    new Parameter_decl(get_identifier("egr"), get_port_type()),
+  };
+
+  Type const* fn_type = get_function_type(parms, void_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, parms, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Remove a flow entry miss case from a table.
+//
+//    void del_miss(Table*)
+Function_decl*
+Builtin::remove_miss()
+{
+  // Table types are entirely opaque during code generation
+  // so what the actual table type is doesnt matter as long
+  // as it is a table type.
+  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* void_type = get_void_type();
+
+  Symbol const* fn_name = get_identifier(__rmv_miss);
+
+  Decl_seq parms =
+  {
+    new Parameter_decl(get_identifier("table"), tbl_ref)
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -420,13 +454,123 @@ Builtin::get_port()
 }
 
 
+// This function call gets the in_port of a context.
+//
+//    Port::ID get_packet_in_port(Context*);
+Function_decl*
+Builtin::get_in_port()
+{
+  Symbol const* fn_name = get_identifier(__get_inport);
+
+  Type const* port_type = get_port_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__context), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// This function call gets the in_phys_port of a context.
+//
+//    Port::ID get_packet_in_phys_port(Context*);
+Function_decl*
+Builtin::get_in_phys_port()
+{
+  Symbol const* fn_name = get_identifier(__get_inphysport);
+
+  Type const* port_type = get_port_type();
+  Type const* cxt_ref = get_context_type()->ref();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier(__context), cxt_ref)
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved ALL port.
+Function_decl*
+Builtin::get_all_port()
+{
+  Symbol const* fn_name = get_identifier(__get_all_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved CONTROLLER port.
+Function_decl*
+Builtin::get_controller_port()
+{
+  Symbol const* fn_name = get_identifier(__get_controller_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved CONTROLLER port.
+Function_decl*
+Builtin::get_reflow_port()
+{
+  Symbol const* fn_name = get_identifier(__get_reflow_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {};
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // Retrieves the inport value from a Flow structure.
 //
-//    void get_flow_inport(Flow*);
+//    void get_flow_egress(Flow*);
 Function_decl*
-Builtin::get_flow_inport()
+Builtin::get_flow_egress()
 {
-  Symbol const* fn_name = get_identifier(__get_flow_inport);
+  Symbol const* fn_name = get_identifier(__get_flow_egress);
 
   Type const* flow_ref = get_opaque_type()->ref();
   Type const* port_type = get_port_type();
@@ -737,11 +881,17 @@ Builtin::init_builtins()
     {__add_init_flow, add_init_flow()},
     {__add_new_flow, add_new_flow()},
     {__rmv_flow, remove_flow()},
+    {__rmv_miss, remove_miss()},
     {__add_miss, add_miss()},
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
-    {__get_flow_inport, get_flow_inport()},
+    {__get_inport, get_in_port()},
+    {__get_inphysport, get_in_phys_port()},
+    {__get_all_port, get_all_port()},
+    {__get_controller_port, get_controller_port()},
+    {__get_reflow_port, get_reflow_port()},
+    {__get_flow_egress, get_flow_egress()},
     {__drop, drop()},
     {__flood, flood()},
     {__output, output()},
@@ -885,22 +1035,22 @@ Builtin::call_advance(Expr_seq const& args)
 
 
 Expr*
-Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key)
+Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_init_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key});
+  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
 Expr*
-Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* cxt)
+Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_new_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, cxt});
+  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
@@ -915,12 +1065,22 @@ Builtin::call_remove_flow(Expr* table, Expr* key)
 
 
 Expr*
-Builtin::call_add_miss(Expr* tbl, Expr* flow)
+Builtin::call_add_miss(Expr* tbl, Expr* flow, Expr* t_out, Expr* egress)
 {
   Function_decl* fn = builtin_fn.find(__add_miss)->second;
   assert(fn);
 
-  return new Add_miss(decl_id(fn), {tbl, flow});
+  return new Add_miss(decl_id(fn), {tbl, flow, t_out, egress});
+}
+
+
+Expr*
+Builtin::call_remove_miss(Expr* table)
+{
+  Function_decl* fn = builtin_fn.find(__rmv_miss)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {table});
 }
 
 
@@ -941,9 +1101,59 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 
 
 Expr*
-Builtin::call_get_flow_inport(Expr* flow)
+Builtin::call_get_in_port(Expr* cxt)
 {
-  Function_decl* fn = builtin_fn.find(__get_flow_inport)->second;
+  Function_decl* fn = builtin_fn.find(__get_inport)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_get_in_phys_port(Expr* cxt)
+{
+  Function_decl* fn = builtin_fn.find(__get_inphysport)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {cxt});
+}
+
+
+Expr*
+Builtin::call_get_all_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_all_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
+}
+
+
+Expr*
+Builtin::call_get_controller_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_controller_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
+}
+
+
+Expr*
+Builtin::call_get_reflow_port()
+{
+  Function_decl* fn = builtin_fn.find(__get_reflow_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {});
+}
+
+
+Expr*
+Builtin::call_get_flow_egress(Expr* flow)
+{
+  Function_decl* fn = builtin_fn.find(__get_flow_egress)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {flow});

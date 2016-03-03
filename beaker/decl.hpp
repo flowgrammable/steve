@@ -66,6 +66,8 @@ struct Decl::Visitor
   virtual void visit(Decode_decl const*) = 0;
   virtual void visit(Table_decl const*) = 0;
   virtual void visit(Key_decl const*) = 0;
+  virtual void visit(Inport_key_decl const*) = 0;
+  virtual void visit(Inphysport_key_decl const*) = 0;
   virtual void visit(Flow_decl const*) = 0;
   virtual void visit(Port_decl const*) = 0;
   virtual void visit(Extracts_decl const*) = 0;
@@ -90,6 +92,8 @@ struct Decl::Mutator
   virtual void visit(Decode_decl*) = 0;
   virtual void visit(Table_decl*) = 0;
   virtual void visit(Key_decl*) = 0;
+  virtual void visit(Inport_key_decl*) = 0;
+  virtual void visit(Inphysport_key_decl*) = 0;
   virtual void visit(Flow_decl*) = 0;
   virtual void visit(Port_decl*) = 0;
   virtual void visit(Extracts_decl*) = 0;
@@ -380,20 +384,51 @@ struct Table_decl : Decl
 // set of subkeys
 struct Key_decl : Decl
 {
-  Key_decl(Expr* const& e, Symbol const* n)
+  Key_decl(Expr* e, Symbol const* n)
     : Decl(n, nullptr), field_(e)
   { }
 
-  Expr* const&    field() const { return field_; }
+  Key_decl(Type const* t, Expr* e, Symbol const* n)
+    : Decl(n, t), field_(e)
+  { }
+
+  Expr*    field() const { return field_; }
   Decl_seq const& declarations() const { return decls_; }
   Expr_seq const& identifiers()  const { return ids_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
 
+  // Linearizing the dot expr into a sequence if ids and decls.
   Decl_seq decls_;
   Expr_seq ids_;
+
+  // Field name expr
   Expr* field_;
+};
+
+
+// Allow in_port as a valid key.
+struct Inport_key_decl : Key_decl
+{
+  Inport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// Allow in_phys_port as a valid key.
+struct Inphysport_key_decl : Key_decl
+{
+  Inphysport_key_decl(Type const* t, Symbol const* n)
+    : Key_decl(t, nullptr, n)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
 };
 
 
@@ -401,10 +436,11 @@ struct Key_decl : Decl
 struct Flow_properties
 {
   Flow_properties()
-    : timeout(nullptr)
+    : timeout(nullptr), egress(nullptr)
   { }
 
   Expr* timeout;
+  Expr* egress;
 };
 
 
@@ -434,6 +470,7 @@ struct Flow_decl : Decl
   Stmt*           instructions() const { return instructions_; }
   bool            miss_case() const { return miss_; }
   Table_decl*     table() const { return table_; }
+  Properties      properties() const { return prop_; }
 
   void accept(Visitor& v) const { v.visit(this); }
   void accept(Mutator& v)       { v.visit(this); }
@@ -617,6 +654,8 @@ struct Generic_decl_visitor : Decl::Visitor, lingo::Generic_visitor<F, T>
   void visit(Decode_decl const* d) { this->invoke(d); }
   void visit(Table_decl const* d) { this->invoke(d); }
   void visit(Key_decl const* d) { this->invoke(d); }
+  void visit(Inport_key_decl const* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl const* d) { this->invoke(d); }
   void visit(Flow_decl const* d) { this->invoke(d); }
   void visit(Port_decl const* d) { this->invoke(d); }
   void visit(Extracts_decl const* d) { this->invoke(d); }
@@ -655,6 +694,8 @@ struct Generic_decl_mutator : Decl::Mutator, lingo::Generic_mutator<F, T>
   void visit(Decode_decl* d) { this->invoke(d); }
   void visit(Table_decl* d) { this->invoke(d); }
   void visit(Key_decl* d) { this->invoke(d); }
+  void visit(Inport_key_decl* d) { this->invoke(d); }
+  void visit(Inphysport_key_decl* d) { this->invoke(d); }
   void visit(Flow_decl* d) { this->invoke(d); }
   void visit(Port_decl* d) { this->invoke(d); }
   void visit(Extracts_decl* d) { this->invoke(d); }

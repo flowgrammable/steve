@@ -3,8 +3,8 @@ Port p2 = ":5001";
 
 layout eth
 {
-	src : int;
 	dst : int;
+	src : int;
 	type : int;
 }
 

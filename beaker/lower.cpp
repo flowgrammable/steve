@@ -7,6 +7,7 @@
 #include "beaker/mangle.hpp"
 #include "beaker/gather.hpp"
 #include "beaker/evaluator.hpp"
+#include "beaker/convert.hpp"
 
 #include <iostream>
 
@@ -37,11 +38,11 @@ struct Lower_expr_fn
   // Unary expressions
   Expr* operator()(Neg_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Pos_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(And_expr* e) const { return lower.lower_unary_expr(e); }
-  Expr* operator()(Or_expr* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Not_expr* e) const { return lower.lower_unary_expr(e); }
 
   // Binary Expressions
+  Expr* operator()(And_expr* e) const { return lower.lower_binary_expr(e); }
+  Expr* operator()(Or_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Add_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Sub_expr* e) const { return lower.lower_binary_expr(e); }
   Expr* operator()(Mul_expr* e) const { return lower.lower_binary_expr(e); }
@@ -72,10 +73,19 @@ struct Lower_expr_fn
   Expr* operator()(Promotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Demotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Sign_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Integer_conv* e) const { return lower.lower_unary_expr(e); }
 
   // Field access expr becomes an id_expr whose declaration is
   // resolved against a variable created by lowering the extracts decl.
   Expr* operator()(Field_access_expr* e) const { return lower.lower(e); }
+
+  // Inport and inphys port turn into calls to fetch those fields out of
+  // the context.
+  Expr* operator()(Inport_expr* e) const { return lower.lower(e); }
+  Expr* operator()(Inphysport_expr* e) const { return lower.lower(e); }
+  Expr* operator()(All_port* e) const { return lower.lower(e); }
+  Expr* operator()(Controller_port* e) const { return lower.lower(e); }
+  Expr* operator()(Reflow_port* e) const { return lower.lower(e); }
 };
 
 
@@ -122,14 +132,16 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Output_inport* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Output_egress* s) const { return lower.lower(s); }
   Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Remove_miss* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
@@ -320,6 +332,8 @@ Lowerer::lower(Expr* e)
 }
 
 
+// Lowering a port expr returns the identifier to the
+// global variable created for that port.
 Expr*
 Lowerer::lower(Port_expr* e)
 {
@@ -332,7 +346,8 @@ Lowerer::lower(Port_expr* e)
 
   e->decl = p;
 
-  return e;
+  Expr* i = id(p);
+  return elab.elaborate(i);
 }
 
 
@@ -460,6 +475,78 @@ Lowerer::lower(Field_access_expr* e)
 }
 
 
+// Lowering an inport passes the context to a runtime and requests back
+// the inport id.
+Expr*
+Lowerer::lower(Inport_expr* e)
+{
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Make a call to get_in_port
+  Expr* port = builtin.call_get_in_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an inphysport passes the context to a runtime and requests back
+// the inphysport id.
+Expr*
+Lowerer::lower(Inphysport_expr* e)
+{
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Make a call to get_in_port
+  Expr* port = builtin.call_get_in_phys_port(id(cxt));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an all port requests that port from the runtime.
+Expr*
+Lowerer::lower(All_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_all_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a controller port requests that port from the runtime.
+Expr*
+Lowerer::lower(Controller_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_controller_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering a reflow port requests the reflow port from the runtime.
+Expr*
+Lowerer::lower(Reflow_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_reflow_port();
+  elab.elaborate(port);
+
+  return port;
+}
+
+
 // ------------------------------------------------------------------------- //
 //                    Lower Declarations
 
@@ -522,7 +609,7 @@ Lowerer::produce_key_function(Table_decl* d)
   for (auto f : table_type->field_names()) {
     // Create the parameter.
     // The parameters have the same respective types as the keys.
-    parms.push_back(new Parameter_decl(f->name(), f->type()));
+    parms.push_back(new Parameter_decl(get_identifier(mangle(f)), f->type()));
 
     // Add to the precision of the return type.
     ret_p += precision(f->type());
@@ -862,6 +949,44 @@ Lowerer::lower_miss_case(Table_decl* d)
 }
 
 
+Flow_properties
+Lowerer::lower_flow_properties(Flow_decl* f)
+{
+  auto p = f->properties();
+
+  // Lower the expressions comprising each property.
+  // If that property was not set, set it to the default
+  // vaulue associated with that property.
+
+  // Handle the timeout property.
+  // The default value for timeout is 0.
+  // NOTE: We should make the runtime timeout flows at 1 so we can
+  // reserve 0 for the "never timeout" value.
+  if (!p.timeout)
+    p.timeout = zero();
+  else {
+    p.timeout = elab.elaborate(lower(p.timeout));
+    p.timeout = convert_to_value(p.timeout);
+  }
+
+  // Handle the egress property.
+  // The default port id for egress is 0 which is a non-existant port
+  // but it should be impossible to call output egress without setting the
+  // egress property to a valid port, so this shouldn't matter.
+  if (!p.egress)
+    p.egress = zero();
+  else {
+    p.egress = elab.elaborate(lower(p.egress));
+    p.egress = convert_to_value(p.egress);
+  }
+
+  // Update the flow properties.
+  f->prop_ = p;
+
+  return p;
+}
+
+
 // 'table' is a global variable declaration which retains the pointer to the
 // table received via the runtime.
 //
@@ -898,7 +1023,7 @@ Lowerer::add_init_flows(Table_decl* table)
     declare(flow_fn);
     module_decls.push_back(flow_fn);
 
-    // Form a call.
+    // Form a call to construct the key during runtime.
     Expr_seq keys;
     // Lower all keys first.
     for (auto e : flow->keys()) {
@@ -907,13 +1032,18 @@ Lowerer::add_init_flows(Table_decl* table)
     Expr* call = new Call_expr(id(key_fn), keys);
     elab.elaborate(call);
     Variable_decl* temp = temp_var(elab.syms, call->type(), call);
-
-    // Void cast the result
+    // Void cast the result of forming the key.
     Expr* vcast = new Void_cast(decl_id(temp));
 
-    // Make a call to fp_add_flow
+    // Produce the properties parameters.
+    Flow_properties prop = lower_flow_properties(flow);
+
+    // Make a call to fp_add_flow.
+    // NOTE: that function pointers don't actually work so this skips
+    // re-elaboration.
     Expr* add_flow =
-      builtin.call_add_init_flow(decl_id(tblptr), decl_id(flow_fn), vcast);
+      builtin.call_add_init_flow(decl_id(tblptr), decl_id(flow_fn), vcast,
+                                 prop.timeout, prop.egress);
 
     // elab.elaborate(add_flow);
     load_body.push_back(statement(temp));
@@ -925,7 +1055,14 @@ Lowerer::add_init_flows(Table_decl* table)
   if (miss) {
     declare(miss);
     module_decls.push_back(miss);
-    Expr* add_miss = builtin.call_add_miss(decl_id(tblptr), decl_id(miss));
+    // Produce the properties parameters.
+    Flow_properties prop =
+      lower_flow_properties(as<Flow_decl>(table->miss_case()));
+
+    Expr* add_miss =
+      builtin.call_add_miss(decl_id(tblptr), decl_id(miss),
+                            prop.timeout, prop.egress);
+
     load_body.push_back(statement(add_miss));
   }
 }
@@ -1176,7 +1313,9 @@ Lowerer::lower(Stmt* s)
 Stmt_seq
 Lowerer::lower(Assign_stmt* s)
 {
+  s->first = lower(s->object());
   s->second = lower(s->value());
+  assert(s->first);
   assert(s->second);
   return { s };
 }
@@ -1442,6 +1581,25 @@ Lowerer::lower(Declaration_stmt* s)
 }
 
 
+// If there is an explicit advance attached to decode or goto.
+// Advance by the value given in 'len'
+Expr*
+Lowerer::lower_advance_clause(Expr* len)
+{
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  Expr* advance = builtin.call_advance({ id(cxt), lower(len) });
+  elab.elaborate(advance);
+
+  return advance;
+}
+
+
 Stmt_seq
 Lowerer::lower(Decode_stmt* s)
 {
@@ -1460,21 +1618,28 @@ Lowerer::lower(Decode_stmt* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // Form an advance based on the length of the header.
-  //
-  // NOTE: This will only occur if within the context of a decode
-  // declaration because this implicit header variable used to recover
-  // the header information only gets declared within decoder declarations.
-  ovl = unqualified_lookup(get_identifier(__header));
-  if (ovl) {
-    Decl* header = ovl->back();
-    Expr* length = get_length(header->type());
-    Expr* advance = builtin.call_advance({ id(cxt), length });
-    elab.elaborate(advance);
 
+  // If their is an explicit advance it takes precedence.
+  if (s->advance()) {
+    Expr* advance = lower_advance_clause(s->advance());
     stmts.push_back(statement(advance));
   }
+  else {
+    // Form an advance based on the length of the header.
+    //
+    // NOTE: This will only occur if within the context of a decode
+    // declaration because this implicit header variable used to recover
+    // the header information only gets declared within decoder declarations.
+    ovl = unqualified_lookup(get_identifier(__header));
+    if (ovl) {
+      Decl* header = ovl->back();
+      Expr* length = get_length(header->type());
+      Expr* advance = builtin.call_advance({ id(cxt), length });
+      elab.elaborate(advance);
 
+      stmts.push_back(statement(advance));
+    }
+  }
 
   // form a call to the decoder
   Call_expr* call =
@@ -1543,18 +1708,20 @@ Lowerer::goto_match(Goto_stmt* s)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  // get the key variable
-  // ovl = unqualified_lookup(get_identifier("key"));
-  // assert(ovl);
-  // Decl* key = ovl->back();
-  // assert(key);
-
   // produce the set of fields needed by the table.
   Table_decl const* t = as<Table_decl>(s->table());
   assert(t);
   Expr_seq key_mappings;
   for (auto subkey : t->keys()) {
-    int mapping = checker.get_field_mapping(subkey->name());
+    int mapping = -1;
+    // Reserving 255+ for "special fields"
+    if (subkey->name()->spelling() == "in_port")
+      mapping = 255;
+    else if (subkey->name()->spelling() == "in_phys_port")
+      mapping = 256;
+    else
+      mapping = checker.get_field_mapping(subkey->name());
+
     key_mappings.push_back(new Literal_expr(get_integer_type(), mapping));
   }
 
@@ -1583,9 +1750,14 @@ Stmt_seq
 Lowerer::lower(Goto_stmt* s)
 {
   Stmt_seq stmts;
-  // produce an advance if its in a decoder
+  // If their is an explicit advance it takes precedence.
+  if (s->advance()) {
+    Expr* advance = lower_advance_clause(s->advance());
+    stmts.push_back(statement(advance));
+  }
+  // Produce an advance if its in a decoder
   // otherwise no advance is necessary
-  if (is<Decode_decl>(s->context())) {
+  else if (is<Decode_decl>(s->context())) {
     stmts.push_back(goto_advance(s->context()));
   }
 
@@ -1649,14 +1821,9 @@ Lowerer::lower(Output* s)
   assert(cxt);
 
   // Acquire the port.
-  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
-  ovl = unqualified_lookup(port_name);
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
-
+  Expr* port = lower(s->port());
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), id(port));
+  Expr* output = builtin.call_output(decl_id(cxt), port);
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.
@@ -1671,7 +1838,7 @@ Lowerer::lower(Output* s)
 
 
 Stmt_seq
-Lowerer::lower(Output_inport* s)
+Lowerer::lower(Output_egress* s)
 {
   // get the context variable which should Always
   // be within the scope of a decoder body
@@ -1688,10 +1855,10 @@ Lowerer::lower(Output_inport* s)
   Decl* self = ovl->back();
   assert(self);
 
-  Expr* inport = builtin.call_get_flow_inport(decl_id(self));
+  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
 
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), inport);
+  Expr* output = builtin.call_output(decl_id(cxt), egress);
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.
@@ -1866,16 +2033,29 @@ Lowerer::lower(Insert_flow* s)
   Decl* tblptr = ovl->back();
   assert(tblptr);
 
-  ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
   // Get the key values needed for the flow.
   Flow_decl* flow = as<Flow_decl>(s->flow());
   assert(flow);
 
-  // Form a call.
+  // Construct the flow function and add it into the module.
+  Decl* flow_fn = construct_added_flow(table, flow);
+
+  // Handle the properties.
+  Flow_properties prop = lower_flow_properties(flow);
+
+  // If we're adding a miss case instead of a regular flow.
+  // Make a call to add_miss.
+  if (flow->miss_case()) {
+    Expr* add_miss =
+      builtin.call_add_miss(decl_id(tblptr), decl_id(flow_fn),
+                            prop.timeout, prop.egress);
+
+      return {
+        statement(add_miss),
+      };
+  }
+
+  // Form a call to key forming function.
   Expr_seq keys;
   // Lower all keys first.
   for (auto e : flow->keys()) {
@@ -1888,12 +2068,10 @@ Lowerer::lower(Insert_flow* s)
   // Void cast the result
   Expr* vcast = new Void_cast(decl_id(temp));
 
-  // Construct the flow function and add it into the module.
-  Decl* flow_fn = construct_added_flow(table, flow);
-
   // Make a call to fp_add_flow
   Expr* add_flow =
-    builtin.call_add_new_flow(decl_id(tblptr), decl_id(flow_fn), vcast, decl_id(cxt));
+    builtin.call_add_new_flow(decl_id(tblptr), decl_id(flow_fn), vcast,
+                              prop.timeout, prop.egress);
 
   return {
     statement(temp),
@@ -1945,6 +2123,25 @@ Lowerer::lower(Remove_flow* s)
 
 
 Stmt_seq
+Lowerer::lower(Remove_miss* s)
+{
+  Table_decl* table = as<Table_decl>(s->table());
+  assert(table);
+
+  Overload* ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
+
+  Expr* rmv_miss = builtin.call_remove_miss(decl_id(tblptr));
+
+  return {
+    statement(rmv_miss)
+  };
+}
+
+
+Stmt_seq
 Lowerer::lower(Write_drop* w)
 {
   // get the context variable which should Always
@@ -1984,14 +2181,10 @@ Lowerer::lower(Write_output* w)
   assert(cxt);
 
   // Acquire the port.
-  Symbol const* port_name = as<Decl_expr>(s->port())->declaration()->name();
-  ovl = unqualified_lookup(port_name);
-  assert(ovl);
-  Decl* port = ovl->back();
-  assert(port);
+  Expr* port = lower(s->port());
 
-  // make a call to the drop function
-  Expr* output = builtin.call_write_output(decl_id(cxt), id(port));
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), port);
   elab.elaborate(output);
 
   return
@@ -2000,6 +2193,44 @@ Lowerer::lower(Write_output* w)
   };
 }
 
+
+// FIXME: Writing an output for later has some questionable semantics.
+// Upon applying the output, all actions afterward should not be executed
+// (since the outputing of a packet causes its context to be deleted and no
+// longer valid). This is easier to enforce in immediate action rather than
+// written actions which is currently not enforced in.
+Stmt_seq
+Lowerer::lower(Write_output_egress* w)
+{
+  Output* s = w->output();
+  assert(s);
+
+  // get the context variable which should Always
+  // be within the scope of a decoder body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  // Make a call to the flow to get its inport field and resolve it into
+  // a Port*.
+  ovl = unqualified_lookup(get_identifier(__flow_self));
+  assert(ovl);
+  Decl* self = ovl->back();
+  assert(self);
+
+  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
+
+  // make a call to the output function
+  Expr* output = builtin.call_write_output(decl_id(cxt), egress);
+  elab.elaborate(output);
+
+  return
+  {
+    statement(output),
+  };
+}
 
 // Raise passes a task to a hypothetical asynchronous thread in the runtime
 // system with a context.

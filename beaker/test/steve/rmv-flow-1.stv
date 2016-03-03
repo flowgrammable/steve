@@ -4,8 +4,8 @@ Port p1 = ":5000";
 
 layout eth
 {
-	src : uint(48);
 	dst : uint(48);
+	src : uint(48);
 	type : uint(16);
 }
 
@@ -19,13 +19,15 @@ decoder start eth_d(eth)
 
 exact_table switch(eth.dst, eth.type)
 {
+	// This should cause alternating miss and using prints.
   miss ->
   {
 		puts("Miss...adding flow now.");
 
-    add
+    insert
     { eth.dst, eth.type } ->
     {
+			puts("Using adding flow now.");
 			remove { eth.dst, eth.type } from switch;
       output p1;
     }

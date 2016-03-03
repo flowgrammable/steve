@@ -19,9 +19,25 @@ decoder start eth_d(eth)
   write drop;
 	write flood;
 	write output p1;
+	write output all;
+	write output controller;
+	write output reflow;
   write set eth.type = 0x800;
   // write copy eth.type = eth.src;
 
-	flood;
+	// flood;
 	// drop;
+	// output all;
+	// output controller;
+	output reflow;
+}
+
+exact_table t1(in_port)
+{
+	[egress = p1]
+	{ p1 } ->
+	{
+		write output egress;
+		drop;
+	}
 }

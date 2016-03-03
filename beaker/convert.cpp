@@ -82,6 +82,15 @@ convert_integer_type(Expr* e, Integer_type const* dst)
 }
 
 
+// Converting ports to integer types allows us to form keys using port
+// identifiers.
+Expr*
+convert_to_integer_type(Expr* e, Integer_type const* dst)
+{
+  return new Integer_conv(dst, e);
+}
+
+
 // Find a conversion from e to t. If no such
 // conversion exists, return nullptr. Diagnostics
 // a better handled in the calling context.
@@ -107,6 +116,13 @@ convert(Expr* e, Type const* t)
   }
 
   // Type conversions
+
+  if (is<Port_type>(c->type()) && is<Integer_type>(t)) {
+    c = convert_to_integer_type(c, as<Integer_type>(t));
+
+    if (c->type() == t)
+      return c;
+  }
 
   // Integer conversions
   if (is<Integer_type>(c->type()) && is<Integer_type>(t)) {

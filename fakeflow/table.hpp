@@ -22,12 +22,6 @@
 namespace fp
 {
 
-inline void
-test()
-{
-  std::tr1::unordered_map<std::string, std::string> myHashTable;
-}
-
 struct Flow;
 
 // Determines the maximum size of the key.
@@ -87,6 +81,7 @@ struct Table
   // virtual Flow const search(Key const&) const = 0;
   virtual void add(Key const&, Flow const&) = 0;
   virtual void rmv(Key const&) = 0;
+  virtual void rmv_miss() = 0;
   void insert_miss(Flow const& f) { miss_ = f; }
 
   Type type()     const { return type_; }
@@ -127,6 +122,7 @@ struct Hash_table : Table, std::tr1::unordered_map<Key, Flow, Key_hash>
 
   void add(Key const&, Flow const&);
   void rmv(Key const&);
+  void rmv_miss();
 };
 
 

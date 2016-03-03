@@ -88,15 +88,20 @@ spelling(Token_kind k)
     case clear_kw: return "clear";
     case set_kw: return "set";
     case copy_kw: return "copy";
-    case add_kw: return "add";
+    case insert_kw: return "insert";
     case rmv_kw: return "remove";
     case into_kw: return "into";
     case from_kw: return "from";
     case event_kw: return "event";
     case raise_kw: return "raise";
     case properties_kw: return "properies";
-    case inport_kw: return "inport";
-    case pktinport_kw: return "pktinport";
+    case inport_kw: return "in_port";
+    case inphysport_kw: return "in_phys_port";
+    case all_kw: return "all";
+    case controller_kw: return "controller";
+    case reflow_kw: return "reflow";
+    case egress_kw: return "egress";
+    case advance_kw: return "advance";
 
     default: return "<unspecified>";
   }
@@ -188,15 +193,20 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>("clear", clear_kw);
   syms.put<Symbol>("set", set_kw);
   syms.put<Symbol>("copy", copy_kw);
-  syms.put<Symbol>("add", add_kw);
+  syms.put<Symbol>("insert", insert_kw);
   syms.put<Symbol>("remove", rmv_kw);
   syms.put<Symbol>("into", into_kw);
   syms.put<Symbol>("from", from_kw);
   syms.put<Symbol>("event", event_kw);
   syms.put<Symbol>("raise", raise_kw);
   syms.put<Symbol>("properties", properties_kw);
-  syms.put<Symbol>("inport", inport_kw);
-  syms.put<Symbol>("pktinport", pktinport_kw);
+  syms.put<Symbol>("in_port", inport_kw);
+  syms.put<Symbol>("in_phys_port", inphysport_kw);
+  syms.put<Symbol>("all", all_kw);
+  syms.put<Symbol>("controller", controller_kw);
+  syms.put<Symbol>("reflow", reflow_kw);
+  syms.put<Symbol>("egress", egress_kw);
+  syms.put<Symbol>("advance", advance_kw);
 
   // Reserved names.
   syms.put<Boolean_sym>("true", boolean_tok, true);

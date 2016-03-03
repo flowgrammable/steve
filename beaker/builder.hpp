@@ -129,6 +129,16 @@ expr_to_void_block(Expr* v)
   return cast;
 }
 
+// Value conversion
+inline Value_conv*
+value_conv(Type* t, Expr* e)
+{
+  return new Value_conv(t, e);
+}
+
+// ----------------------------------------------------- //
+//      Decl building
+
 
 inline Variable_decl*
 temp_var(Symbol_table& syms, Type const* t, Expr* init)

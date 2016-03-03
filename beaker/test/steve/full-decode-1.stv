@@ -40,7 +40,7 @@ decoder start eth_d(eth)
   extract eth.type;
   match(eth.type)
   {
-    case 800: decode ipv4_d;
+    case 0x800: decode ipv4_d;
   }
 
 	drop;
@@ -58,11 +58,9 @@ decoder ipv4_d(ipv4)
   extract ipv4.src;
   extract ipv4.dst;
 
-  match(ipv4.protocol) {
-    case 0: decode udp_d;
-  }
+	var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
 
-	drop;
+	decode udp_d advance hdr_len;
 }
 
 
