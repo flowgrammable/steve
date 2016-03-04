@@ -18,13 +18,9 @@ decoder start eth_d(eth)
 	extract eth.src;
 	extract eth.dst;
 	extract eth.type;
+	// extract eth.type as eth.src;
 
-	// Need special testing packet to confirm this works.
-	if (eth.type == 0x8100) {
-		decode vlan_d;
-	}
-
-	drop;
+	decode vlan_d;
 }
 
 decoder vlan_d(vlan)

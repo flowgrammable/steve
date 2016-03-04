@@ -2383,7 +2383,12 @@ Elaborator::elaborate(Rebind_decl* d)
     throw Type_error(locate(d), ss.str());
   }
 
-  // the name of a rebind declaration is the name of its alias
+  // Bind the rebind decl FIRST with the original field name.
+  d->name_ = origin->name();
+  declare(d);
+
+  // NOTE: We bind it a SECOND time using the alias name.
+  // The name of a rebind declaration becomes the name of its alias
   d->name_ = alias->name();
   // save its original name as well
   d->original_ = origin->name();

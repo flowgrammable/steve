@@ -1960,7 +1960,9 @@ Parser::on_hex(Token tok)
   Hexadecimal_sym const* hex = tok.hexadecimal_symbol();
   Type const* t = get_integer_type(hex->precision(), unsigned_int, native_order);
   // construct an integer value using string and base 16 (hex)
-  Integer_value i(hex->value(), 0);
+  // Remove the "0x"
+  String s = hex->value();
+  Integer_value i(s.erase(0, 2), 16);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -1971,7 +1973,9 @@ Parser::on_binary(Token tok)
   Binary_sym const* bin = tok.binary_symbol();
   Type const* t = get_integer_type(bin->precision(), unsigned_int, native_order);
   // construct an intger value using string and base 2(binary)
-  Integer_value i(bin->value(), 0);
+  // remove the "0b"
+  String s = bin->value();
+  Integer_value i(s.erase(0, 2), 2);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
