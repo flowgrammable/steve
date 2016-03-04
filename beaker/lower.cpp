@@ -1527,18 +1527,26 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
                                               length);
   bind_field = elab.elaborate(bind_field);
 
-  // Mangle the name of the variable from the name of the
-  // extracted field. Declare it as a new variable.
-  Symbol const* field_name = get_identifier(mangle(d));
-  Variable_decl* load_var = new Variable_decl(field_name,
-                                              d->type(),
-                                              new Default_init(d->type()));
+  // Mangle the alias field name and produce a variable for it.
+  Symbol const* alias_name = get_identifier(mangle(d));
+  Variable_decl* load_var1 = new Variable_decl(alias_name,
+                                               d->type(),
+                                               new Default_init(d->type()));
+  // Mangle the original field name and also have it as a variable.
+  Extracts_decl* orig = new Extracts_decl(d->field());
+  orig->name_ = d->original();
+  Symbol const* orig_name = get_identifier(mangle(orig));
+  Variable_decl* load_var2 = new Variable_decl(orig_name,
+                                               d->type(),
+                                               new Default_init(d->type()));
 
-  declare(load_var);
+  declare(load_var1);
+  declare(load_var2);
 
   Stmt_seq stmts {
     statement(bind_field),
-    statement(load_var)
+    statement(load_var1),
+    statement(load_var2)
   };
 
   return stmts;
