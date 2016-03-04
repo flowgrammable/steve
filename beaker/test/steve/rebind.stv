@@ -18,6 +18,7 @@ decoder start eth_d(eth)
 	extract eth.src;
 	extract eth.dst;
 	extract eth.type;
+	// extract eth.type as eth.src;
 
 	decode vlan_d;
 }

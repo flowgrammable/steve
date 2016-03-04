@@ -108,6 +108,49 @@ int main(int argc, char* argv[])
       }
       // timer dtor should print time here
 
+      Byte* data2 = new Byte[1500]{
+        // dst bytes
+        0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
+        // src bytes
+        0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
+        // type bytes
+        0x08, 0x00,
+        // version IHL bytes
+        // version: 4
+        // ihl: 5
+        0x45,
+        // dscp ecn
+        0,
+        // len
+        0, 0x40,
+        // id
+        0, 0,
+        // frag
+        0, 0,
+        // ttl,
+        0x0a,
+        // protocol
+        0,
+        // checksum
+        0, 0,
+        // src
+        0b11111111, 0b11111111, 0b11111111, 0b11111011,
+        // dst
+        0b11111111, 0b11111111, 0b11111111, 0b11111111,
+
+        // udp src
+        0, 0,
+        // udp dst
+        0, 0,
+        // udp len
+        0x00, 0x0b,
+        // checksum
+        0, 0
+      };
+      Packet* pkt3 = packet_create(data2, 1500, 0, nullptr, FP_BUF_ALLOC);
+
+      dp->process(p2, pkt3);
+
     } // block
   }
   catch(std::string s)
