@@ -12,6 +12,7 @@ layout eth
 
 decoder start eth_d(eth)
 {
+	extract eth.src;
   extract eth.dst;
   extract eth.type;
   goto switch;
@@ -21,10 +22,15 @@ var bad_var : uint(48) = 0;
 
 exact_table switch(eth.src, eth.type)
 {
-  { 0, 800 } ->
+  { 0, 0x800 } ->
   {
     output p1;
   }
+
+	{ 0, 0x800 } ->
+	{
+		output p1;
+	}
 
   miss ->
   {

@@ -667,6 +667,35 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
 }
 
 
+// Confirm that all flows within a table initializer have
+// unique match fields.
+bool
+check_unique_fields(Table_decl* d)
+{
+  for (auto f1 : d->body()) {
+    assert(is<Flow_decl>(f1));
+    Flow_decl* flow1 = as<Flow_decl>(f1);
+
+    for (auto f2 : d->body()) {
+      assert(is<Flow_decl>(f2));
+      Flow_decl* flow2 = as<Flow_decl>(f2);
+
+      if (f1 != f2)
+        if (flow1->keys() == flow2->keys()) {
+          std::stringstream ss;
+          ss << "Duplicate keys found in " << *d->name()
+             << " between " << *f1->name() << " and " << *f2->name();
+          throw Type_error({}, ss.str());
+
+          return false;
+        }
+    }
+  }
+
+  return true;
+}
+
+
 // Check all flows within a table initializer
 // to confirm that the keys given are of the
 // correct type.
@@ -685,6 +714,10 @@ check_table_initializer(Elaborator& elab, Table_decl* d)
     if (!check_table_flow(elab, d, flow))
       return false;
   }
+
+  // Confirm the uniqueness of initial flows entry match fields.
+  if (!check_unique_fields(d))
+    return false;
 
   return true;
 }
