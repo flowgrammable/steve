@@ -1130,14 +1130,17 @@ Lowerer::lower_global_def(Port_decl* d)
   Decl* var = ovl->back();
   assert(var);
 
-  // Construct a call to get port
-  Expr* get_port = builtin.call_get_port_by_id(d->address());
+  // Only if it has an initializer.
+  if (d->address()) {
+    // Construct a call to get port
+    Expr* get_port = builtin.call_get_port_by_id(d->address());
 
-  // Construct the assigment.
-  Assign_stmt* a = new Assign_stmt(id(var), get_port);
-  elab.elaborate(a);
+    // Construct the assigment.
+    Assign_stmt* a = new Assign_stmt(id(var), get_port);
+    elab.elaborate(a);
 
-  load_body.push_back(a);
+    load_body.push_back(a);
+  }
 
   return var;
 }

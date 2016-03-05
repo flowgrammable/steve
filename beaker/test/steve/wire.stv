@@ -7,7 +7,7 @@ layout eth
   type : uint(16);
 }
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 decoder start eth_d(eth)
 {

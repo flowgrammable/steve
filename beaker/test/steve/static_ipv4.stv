@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
-Port p1 = ":5000";
-Port p2 = ":5000";
+Port p1 = 1;
+Port p2 = 2;
 
 layout eth
 {
