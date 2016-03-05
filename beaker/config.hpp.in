@@ -58,11 +58,20 @@
 #define BEAKER_ARCHIVE_PRE    "@CMAKE_STATIC_LIBRARY_PREFIX@"
 #define BEAKER_ARCHIVE_EXT    "@CMAKE_STATIC_LIBRARY_SUFFIX@"
 
+#define CLANG_COMPILER        "clang-3.6"
+
 
 inline char const*
 llvm_compiler()
 {
   return BEAKER_LLVM_IR_COMPILER;
+}
+
+
+inline char const*
+clang_compiler()
+{
+  return CLANG_COMPILER;
 }
 
 

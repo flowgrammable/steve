@@ -17,6 +17,8 @@ get_file_kind(Path const& p)
   Path ext = p.extension();
   if (ext == ".bkr")
     return beaker_file;
+  if (ext == ".stv")
+    return steve_file;
   if (ext == ".ll")
     return ir_file;
   if (ext == ".bc")
@@ -34,5 +36,5 @@ get_file_kind(Path const& p)
   if (ext == ".out")
     return program_file;
   else
-    return unspecified_file; 
+    return unspecified_file;
 }

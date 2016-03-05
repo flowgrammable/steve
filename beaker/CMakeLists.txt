@@ -67,7 +67,6 @@ target_link_libraries(beaker-compile beaker)
 # The runtime interpreter executes a parsed beaker
 # program without compiling to native code.
 add_executable(beaker-interpret interpreter.cpp)
-
-add_subdirectory(unit-tests)
-
 target_link_libraries(beaker-interpret beaker)
+
+add_subdirectory(steve-compiler)
