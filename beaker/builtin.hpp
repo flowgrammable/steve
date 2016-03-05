@@ -22,6 +22,7 @@ constexpr char const* __rmv_miss        = "fp_del_miss";
 constexpr char const* __match           = "fp_goto_table";
 constexpr char const* __set_field       = "fp_set_field";
 constexpr char const* __get_port        = "fp_get_port_by_name";
+constexpr char const* __get_port_id     = "fp_get_port_by_id";
 constexpr char const* __gather          = "fp_gather";
 constexpr char const* __output          = "fp_output_port";
 constexpr char const* __dataplane       = "fp_dataplane";
@@ -355,6 +356,7 @@ struct Builtin
   Expr* call_add_miss(Expr*, Expr*, Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr*, Expr*);
+  Expr* call_get_port_by_id(Expr*);
   Expr* call_get_in_port(Expr*);
   Expr* call_get_in_phys_port(Expr*);
   Expr* call_get_flow_egress(Expr*);
@@ -402,6 +404,7 @@ private:
   Function_decl* gather();
   Function_decl* match();
   Function_decl* get_port();
+  Function_decl* get_port_by_id();
   Function_decl* get_in_port();
   Function_decl* get_in_phys_port();
   Function_decl* get_flow_egress();

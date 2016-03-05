@@ -1131,8 +1131,7 @@ Lowerer::lower_global_def(Port_decl* d)
   assert(var);
 
   // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var,
-    make_cstr(d->name()->spelling().c_str()), d->address());
+  Expr* get_port = builtin.call_get_port_by_id(d->address());
 
   // Construct the assigment.
   Assign_stmt* a = new Assign_stmt(id(var), get_port);

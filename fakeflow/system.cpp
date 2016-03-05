@@ -205,6 +205,18 @@ fp_get_port_by_name(char const* name)
 }
 
 
+// Returns the port matching the given id or error otherwise.
+fp::Port::Id
+fp_get_port_by_id(unsigned int id)
+{
+  // std::cout << "GETTING PORT\n";
+  fp::Port* p = fp::port_table.find(id);
+  // std::cout << "FOUND PORT\n";
+  assert(p);
+  return id;
+}
+
+
 // Outputs the contexts packet on the port with the matching name.
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)

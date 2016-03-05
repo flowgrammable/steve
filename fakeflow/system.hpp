@@ -31,6 +31,7 @@ void           fp_write(fp::Context*, fp::Action);
 // System queries.
 fp::Dataplane* fp_get_dataplane(std::string const&);
 fp::Port::Id   fp_get_port_by_name(char const*);
+fp::Port::Id   fp_get_port_by_id(unsigned int);
 fp::Key        fp_gather(fp::Context*, int, int, va_list);
 fp::Port::Id   fp_get_flow_egress(fp::Flow*);
 fp::Port::Id   fp_get_packet_in_port(fp::Context*);

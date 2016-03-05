@@ -1100,7 +1100,7 @@ Parser::port_decl()
 
   Expr* args = nullptr;
   if (match_if(equal_tok)) {
-    // expect a string literal
+    // expect an integer literal
     args = expr();
   }
   match(semicolon_tok);

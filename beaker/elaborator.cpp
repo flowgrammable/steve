@@ -2897,15 +2897,23 @@ Elaborator::elaborate_def(Port_decl* d)
 {
   if (d->address()) {
     d->first = elaborate(d->address());
+    if (!d->first) {
+      std::stringstream ss;
+      ss << "Invalid port address " << *d->address() << ".";
+      throw Type_error(locate(d), ss.str());
+    }
 
-    // check that the expression following '='
-    // is a string literal
-    if (Array_type const* t = as<Array_type>(d->address()->type()))
-      if (is<Character_type>(t->type()))
-        return d;
+    // // check that the expression following '='
+    // // is a string literal
+    // if (Array_type const* t = as<Array_type>(d->address()->type()))
+    //   if (is<Character_type>(t->type()))
+    //     return d;
+
+    if (is<Integer_type>(d->address()->type()))
+      return d;
 
     std::stringstream ss;
-    ss << "Invalid port address " << d->address() << ". Expected string literal.";
+    ss << "Invalid port address " << *d->address() << ".";
     throw Type_error(locate(d), ss.str());
   }
 

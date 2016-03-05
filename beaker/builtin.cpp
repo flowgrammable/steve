@@ -427,6 +427,8 @@ Builtin::match()
 }
 
 
+// TODO: Rename this to get_port_by_name
+//
 // This function call gets a port with a specific name from the runtime system.
 //
 //    Port::ID get_port(char*, char*);
@@ -442,6 +444,33 @@ Builtin::get_port()
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("name"), get_block_type(get_character_type()))
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// This function call makes a call back to the runtime with an ID to confirm
+// that a port of that number actually exists. If it does, the returned ID will
+// be equal to the id parameter. Otherwise, an error should be thrown by the
+// runtime.
+//
+//    Port::ID get_port_by_id(Port::Id id)
+Function_decl*
+Builtin::get_port_by_id()
+{
+  Symbol const* fn_name = get_identifier(__get_port_id);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("id"), get_integer_type())
   };
 
   Type const* fn_type = get_function_type(parms, port_type);
@@ -886,6 +915,7 @@ Builtin::init_builtins()
     {__match, match()},
     {__gather, gather()},
     {__get_port, get_port()},
+    {__get_port_id, get_port_by_id()},
     {__get_inport, get_in_port()},
     {__get_inphysport, get_in_phys_port()},
     {__get_all_port, get_all_port()},
@@ -1096,6 +1126,17 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
   // e->port_ = d;
   Expr* e = new Call_expr(decl_id(fn), {name});
 
+  return e;
+}
+
+
+Expr*
+Builtin::call_get_port_by_id(Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__get_port_id)->second;
+  assert(fn);
+
+  Expr* e = new Call_expr(decl_id(fn), {id});
   return e;
 }
 
