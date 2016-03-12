@@ -54,7 +54,9 @@ static bool parse(Path_seq const&, Path const&, Config const&);
 // static bool assemble(Path const&, Path const&, Config const&);
 // static bool executable(Path_seq const&, Path const&, Config const&);
 // static bool module(Path_seq const&, Path const&, Config const&);
-static bool clang_make(Path_seq const&, Path const&, Config const&);
+static Path make_libsteve(Path const&);
+static bool link_libsteve(Path const&, Path const&, Path const&);
+static bool clang_compile(Path_seq const&, Path const&, Config const&);
 
 // Global resources.
 Location_map locs; // Source code locations
@@ -131,11 +133,19 @@ main(int argc, char* argv[])
   // Right now steve always compiles to modules.
   conf.target  = module_tgt;
 
+  // Convert to IR file
   Path ir = to_ir_file(output);
   if (!parse(inputs, ir, conf))
     return -1;
 
-  if (!clang_make({ir}, output, conf))
+  // Attempt to build steve-helper-lib using steve
+  Path libsteve = make_libsteve(libsteve_loc());
+
+  Path bc = to_bitcode_file(output);
+  if (!link_libsteve(libsteve, ir, bc))
+    return -1;
+
+  if (!clang_compile({bc}, output, conf))
     return -1;
 
   // Path as = to_asm_file(output);
@@ -229,9 +239,55 @@ module(Path_seq const& in, Path const& out, Config const& conf)
 }
 
 
+// Make the ll file for libsteve
+Path
+make_libsteve(Path const& libloc)
+{
+  // Generate the complete path to the interface file.
+  static char const* libsteve_file = "libsteve.cpp";
+  Path src = libloc;
+  src /= libsteve_file;
+
+  Path ir = fs::temp_directory_path() / to_ir_file(libsteve_file);
+
+  String_seq args;
+  args.push_back("-emit-llvm");
+  args.push_back("-femit-all-decls");
+  args.push_back("-S");
+  args.push_back("-std=c++11");
+  args.push_back(src.string());
+  args.push_back(format("-o {}", ir.string()));
+
+  // Build and run the job.
+  Job job(clang_compiler(), args);
+  if (job.run())
+    return ir;
+
+  throw std::runtime_error("Failed to compile libsteve.");
+}
+
+
+// Link libsteve with regular ll file.
+bool
+link_libsteve(Path const& lib, Path const& ir, Path const& out)
+{
+  String_seq args;
+  args.push_back(ir.string());
+  args.push_back(lib.string());
+  args.push_back(format("-o {}", out.string()));
+  Job job(llvm_linker(), args);
+
+  std::cout << llvm_linker() << " ";
+  for (auto a : args)
+    std::cout << a << " ";
+
+  return job.run();
+}
+
+
 // Make a shared object from an ll file
 bool
-clang_make(Path_seq const& in, Path const& out, Config const& conf)
+clang_compile(Path_seq const& in, Path const& out, Config const& conf)
 {
   // Build the argument list.
   String_seq args;
@@ -240,6 +296,7 @@ clang_make(Path_seq const& in, Path const& out, Config const& conf)
   if (conf.f_march)
     args.push_back("-target " + conf.march);
   args.push_back(format("-o {}", out.string()));
+  args.push_back("-O3"); // Complete optimization
   for (Path const& p : in)
     args.push_back(p.string());
 

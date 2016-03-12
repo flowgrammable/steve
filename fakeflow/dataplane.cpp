@@ -4,7 +4,7 @@
 #include "context.hpp"
 #include "timer.hpp"
 #include "system.hpp"
-#include "fakeapps.hpp"
+// #include "fakeapps.hpp"
 
 #include <iostream>
 #include <cassert>

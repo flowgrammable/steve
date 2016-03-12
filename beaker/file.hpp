@@ -115,4 +115,12 @@ to_so_file(Path p)
 }
 
 
+// To .bc file.
+inline Path
+to_bitcode_file(Path p)
+{
+  return p.replace_extension(".bc");
+}
+
+
 #endif

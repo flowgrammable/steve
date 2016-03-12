@@ -58,8 +58,9 @@
 #define BEAKER_ARCHIVE_PRE    "@CMAKE_STATIC_LIBRARY_PREFIX@"
 #define BEAKER_ARCHIVE_EXT    "@CMAKE_STATIC_LIBRARY_SUFFIX@"
 
-#define CLANG_COMPILER        "clang-3.6"
-
+#define CLANG_COMPILER        "@CLANG_COMPILER@"
+#define LLVM_LINKER           "@LLVM_LINKER@"
+#define LIBSTEVE_LOC          "@LIBSTEVE_LOC@" // relative libsteve location
 
 inline char const*
 llvm_compiler()
@@ -72,6 +73,20 @@ inline char const*
 clang_compiler()
 {
   return CLANG_COMPILER;
+}
+
+
+inline char const*
+libsteve_loc()
+{
+  return LIBSTEVE_LOC;
+}
+
+
+inline char const*
+llvm_linker()
+{
+  return LLVM_LINKER;
 }
 
 
