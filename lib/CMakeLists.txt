@@ -1,3 +1,5 @@
+set(CMAKE_CXX_FLAGS "-Wall -std=c++1y -fPIC")
+
 add_library(steve-helper STATIC
   action.cpp
   binding.cpp
