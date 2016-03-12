@@ -36,12 +36,13 @@ decoder start eth_d(eth)
 
 decoder ipv4_d(ipv4)
 {
+  extract ipv4.version_ihl;
 	extract ipv4.ttl;
 	extract ipv4.len;
   extract ipv4.src;
   extract ipv4.dst;
 
-	goto learn advance ipv4.len;
+	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
 }
 
 event learn_ip

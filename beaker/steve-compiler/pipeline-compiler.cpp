@@ -20,9 +20,10 @@
 #include <llvm/Support/raw_ostream.h>
 
 static void
-usage(std::ostream& os /*, po::options_description& desc*/)
+usage(std::ostream& os, po::options_description& desc)
 {
-  os << "usage: steve-compile input-file\n";
+  os << "usage: beaker-compile [options] input-file...\n";
+  os << desc << '\n';
 }
 
 
@@ -40,17 +41,19 @@ struct Config
   bool keep     = false;
   bool assemble = false;
   bool compile  = false;
+  bool f_march  = false; // if march is set
   Target target = program_tgt;
+  String march = "";
 };
 
 
 static bool parse(Path const&, Config const&);
 static bool parse(Path_seq const&, Path const&, Config const&);
 
-static bool lower(Path const&, Path const&, Config const&);
-static bool assemble(Path const&, Path const&, Config const&);
-static bool executable(Path_seq const&, Path const&, Config const&);
-static bool module(Path_seq const&, Path const&, Config const&);
+// static bool lower(Path const&, Path const&, Config const&);
+// static bool assemble(Path const&, Path const&, Config const&);
+// static bool executable(Path_seq const&, Path const&, Config const&);
+// static bool module(Path_seq const&, Path const&, Config const&);
 static bool clang_make(Path_seq const&, Path const&, Config const&);
 
 // Global resources.
@@ -68,17 +71,15 @@ main(int argc, char* argv[])
   common_opts.add_options()
     ("output,o",  po::value<String>(),      "Specify the output file.")
     ("input,i",   po::value<String_seq>(),  "Specify input files.")
-    ("keep,k",    po::bool_switch(),        "Keep temporary files.");
+    ("keep,k",    po::bool_switch(),        "Keep temporary files.")
+    ("architecture,target", po::value<String>(), "Specify target triple to build for."
+                                                  "Uses same -target option as clang.");
 
   po::positional_options_description positional_opts;
   positional_opts.add("input", -1);
 
   po::options_description all_opts;
   all_opts.add(common_opts);
-
-  // FIXME: Do this better.
-  if (argc != 2)
-    usage(std::cout);
 
   // Prepare the input buffer.
   //
@@ -101,14 +102,14 @@ main(int argc, char* argv[])
     po::notify(vm);
   } catch(std::exception& err) {
     std::cerr << "error: " << err.what() << "\n\n";
-    usage(std::cerr);
+    usage(std::cerr, all_opts);
     return -1;
   }
 
   // Validate the input files.
   if (!vm.count("input")) {
     std::cerr << "error: no input files\n\n";
-    usage(std::cerr);
+    usage(std::cerr, all_opts);
     return -1;
   }
 
@@ -121,6 +122,11 @@ main(int argc, char* argv[])
 
   if (vm.count("keep"))
     conf.keep = true;
+
+  if (vm.count("architecture")) {
+    conf.march = vm["architecture"].as<String>();
+    conf.f_march = true;
+  }
 
   // Right now steve always compiles to modules.
   conf.target  = module_tgt;
@@ -231,9 +237,15 @@ clang_make(Path_seq const& in, Path const& out, Config const& conf)
   String_seq args;
   args.push_back("-fPIC");
   args.push_back("-shared");
+  if (conf.f_march)
+    args.push_back("-target " + conf.march);
   args.push_back(format("-o {}", out.string()));
   for (Path const& p : in)
     args.push_back(p.string());
+
+  std::cout << clang_compiler() << " ";
+  for (auto a : args)
+    std::cout << a << " ";
 
   // Build and run the job.
   Job job(clang_compiler(), args);
@@ -298,29 +310,41 @@ parse(Path_seq const& in, Path const& out, Config const& conf)
   if (!ok)
     return false;
 
-  // Elaborate the parse result.static
-  Elaborator elab(locs, syms);
-  elab.elaborate(&mod);
+  try {
+    // Elaborate the parse result.static
+    Elaborator elab(locs, syms);
+    elab.elaborate(&mod);
 
-  // Perform pipeline checks
-  Pipeline_checker check(elab);
-  check.check_pipeline();
+    // Perform pipeline checks
+    Pipeline_checker check(elab);
+    check.check_pipeline();
 
-  // Lower the syntax into basic beaker language stuff.
-  Lowerer lowerer(elab, check);
-  Decl* lowered = lowerer.lower(&mod);
+    // Lower the syntax into basic beaker language stuff.
+    Lowerer lowerer(elab, check);
+    Decl* lowered = lowerer.lower(&mod);
 
-  // Translate to LLVM.
-  Generator gen;
-  llvm::Module* ir = gen(lowered);
+    // Translate to LLVM.
+    Generator gen;
+    llvm::Module* ir = gen(lowered);
 
-  // Write the output to an IR file, not the requested
-  // output. That happens later.
-  Path p = to_ir_file(out);
+    // Write the output to an IR file, not the requested
+    // output. That happens later.
+    Path p = to_ir_file(out);
 
-  // Write the result to the output file.
-  std::error_code err;
-  llvm::raw_fd_ostream ofs(p.string(), err, llvm::sys::fs::F_None);
-  ofs << *ir;
+    // Write the result to the output file.
+    std::error_code err;
+    llvm::raw_fd_ostream ofs(p.string(), err, llvm::sys::fs::F_None);
+    ofs << *ir;
+  }
+  // Diagnose uncaught translation errors and exit
+  // gracefully. All other uncaught exceptions are
+  // ICEs and we want those to fail noisily. Note
+  // that re-throwing does not re-establish the
+  // origin of the error for the purpose of debugging.
+  catch (Translation_error& err) {
+    diagnose(err);
+    return false;
+  }
+
   return true;
 }
