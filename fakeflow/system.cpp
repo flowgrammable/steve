@@ -144,7 +144,7 @@ fp_flood(fp::Context* cxt)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  std::cout << "ID: " << id << '\n';
+  // std::cout << "ID: " << id << '\n';
   //
   // for (auto s : cxt->strings_)
   //   std::cout << s << " ";
@@ -175,12 +175,12 @@ fp_write(fp::Context* cxt, fp::Action a)
 }
 
 
-// Clear the context's action list.
-void
-fp_clear(fp::Context* cxt)
-{
-  cxt->clear_actions();
-}
+// // Clear the context's action list.
+// void
+// fp_clear(fp::Context* cxt)
+// {
+//   cxt->clear_actions();
+// }
 
 
 // Dispatches the given context to the given table, if it exists.
@@ -442,8 +442,6 @@ fp_raise_event(fp::Context* cxt, void* handler)
   // Invoke the event.
   // FIXME: This should produce a copy of the context and process it
   // seperately.
-  //
-  // FIXME: Pass it to a thread instead.
   event(cxt);
 }
 

@@ -44,6 +44,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Sending " << pkt_no << " packets.\n";
 
+
     { // block
 
       long long i = 0;
@@ -59,8 +60,8 @@ int main(int argc, char* argv[])
         0x08, 0x80, 0, 0, 0
       };
 
-      Packet* pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
 
       while(i < pkt_no) {
 
@@ -74,16 +75,16 @@ int main(int argc, char* argv[])
           0x08, 0x00, 0, 0, 0
         };
 
-        Packet* pkt2 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+        Packet pkt2(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p2, pkt2);
+        dp->process(p2, &pkt2);
         ++i;
       }
 
       // Send a second copy of the first packet to confirm the second packet
       // caused the first src to have been learned.
-      pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      pkt1 = Packet(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
       // timer dtor should print time here
 
     } // block

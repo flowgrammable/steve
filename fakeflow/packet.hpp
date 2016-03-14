@@ -4,6 +4,7 @@
 #include "buffer.hpp"
 #include "types.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cassert>
 
@@ -37,6 +38,14 @@ struct Packet
     : Packet(buf, N)
   { }
 
+  Packet(Packet const&);
+
+  ~Packet()
+  {
+    if (buf_)
+      delete [] buf_;
+  }
+
   // Returns a pointer to the raw buffer.
   Byte const* data() const { return buf_; }
   Byte*       data()       { return buf_; }
@@ -58,21 +67,30 @@ struct Packet
 
 inline
 Packet::Packet(Byte* data, int size)
-	: buf_(data)
+	: buf_(new Byte[size])
   , size_(size)
   , timestamp_(0)
   , buf_handle_(nullptr)
   , buf_dev_(FP_BUF_ALLOC)
-{ }
+{
+  std::copy(data, data + size, buf_);
+}
 
 
 inline
 Packet::Packet(Byte* data, int size, uint64_t time, void* buf_handle, Buff_t buf_dev)
-	: buf_(data)
+	: buf_(new Byte[size])
   , size_(size)
   , timestamp_(time)
   , buf_handle_(buf_handle)
   , buf_dev_(buf_dev)
+{
+  std::copy(data, data + size, buf_);
+}
+
+inline
+Packet::Packet(Packet const& p)
+  : Packet(p.buf_, p.size_, p.timestamp_, p.buf_handle_, p.buf_dev_)
 { }
 
 

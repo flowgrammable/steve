@@ -59,8 +59,8 @@ int main(int argc, char* argv[])
         0x08, 0x80
       };
 
-      Packet* pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
 
       while(i < pkt_no) {
 
@@ -104,9 +104,9 @@ int main(int argc, char* argv[])
           0, 0
         };
 
-        Packet* pkt2 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+        Packet pkt2(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p2, pkt2);
+        dp->process(p2, &pkt2);
         ++i;
       }
       // timer dtor should print time here
@@ -150,9 +150,9 @@ int main(int argc, char* argv[])
         // checksum
         0, 0
       };
-      Packet* pkt3 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      Packet pkt3(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-      dp->process(p2, pkt3);
+      dp->process(p2, &pkt3);
 
     } // block
   }

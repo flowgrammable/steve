@@ -55,7 +55,7 @@ Dataplane::remove_port(Port* p)
 void
 Dataplane::add_drop_port()
 {
-  drop_ = new Port_udp(0xfffd, ":8673", "drop");
+  drop_ = new Port_udp(0xfffffff0, ":8673", "drop");
   ports_.push_back(drop_);
   portmap_.emplace(drop_->id(), drop_);
 }

@@ -41,7 +41,7 @@ Port_table::Port_table(int size)
   flood_port_ = new Port_flood(":8675");
   //flood_port_->thread_->assign(flood_port_->id_, flood);
   broad_port_ = new Port_udp(0xfffe, ":8674", "broadcast");
-  drop_port_ = new Port_udp(0xfffd, ":8673", "drop");
+  drop_port_ = new Port_udp(0xfffffff0, ":8673", "drop");
 }
 
 

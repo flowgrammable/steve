@@ -12,8 +12,8 @@ extern "C"
 // Apply actions.
 void           fp_drop(fp::Context*);
 void           fp_flood(fp::Context*);
-void           fp_set_field(fp::Context*, int, int, fp::Byte*);
-void           fp_clear(fp::Context*);
+// void           fp_set_field(fp::Context*, int, int, fp::Byte*);
+// void           fp_clear(fp::Context*);
 void           fp_goto_table(fp::Context*, fp::Table*, int, ...);
 void           fp_output_port(fp::Context*, fp::Port::Id);
 
