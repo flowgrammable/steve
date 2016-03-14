@@ -3,18 +3,6 @@
 namespace fp
 {
 
-Context::Context(Packet* p, uint32_t in, uint32_t in_phys, int tunn_id)
-	: packet_(p)
-  , metadata_()
-  , current_()
-  , in_port(in)
-  , in_phy_port(in_phys)
-  , tunnel_id(tunn_id)
-  , hdr_()
-  , fld_()
-{ }
-
-
 void
 Context::write_metadata(uint64_t meta)
 {
@@ -51,7 +39,7 @@ apply(Context& cxt, Copy_action a)
 inline void
 apply(Context& cxt, Output_action a)
 {
-  cxt.out_port = a.port;
+  // cxt.out_port = a.port;
 }
 
 

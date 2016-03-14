@@ -222,6 +222,10 @@ void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
   // std::cout << "ID: " << id << '\n';
+  //
+  // for (auto s : cxt->strings_)
+  //   std::cout << s << " ";
+
   fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
@@ -239,6 +243,8 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   // values into a byte buffer.
   int i = 0;
   int j = 0;
+  int in_port;
+  int in_phy_port;
   while (i < n) {
     int f = va_arg(args, int);
     fp::Binding b;
@@ -248,18 +254,20 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
     switch (f) {
       // Looking for "in_port"
       case 255:
-        p = reinterpret_cast<fp::Byte*>(&cxt->in_port);
+        in_port = cxt->in_port();
+        p = reinterpret_cast<fp::Byte*>(&in_port);
         // Copy the field into the buffer.
-        std::copy(p, p + sizeof(cxt->in_port), &buf[j]);
-        j += sizeof(cxt->in_port);
+        std::copy(p, p + sizeof(in_port), &buf[j]);
+        j += sizeof(in_port);
         break;
 
       // Looking for "in_phys_port"
       case 256:
-        p = reinterpret_cast<fp::Byte*>(&cxt->in_phy_port);
+        in_phy_port = cxt->in_phy_port();
+        p = reinterpret_cast<fp::Byte*>(&in_phy_port);
         // Copy the field into the buffer.
-        std::copy(p, p + sizeof(cxt->in_phy_port), &buf[j]);
-        j += sizeof(cxt->in_phy_port);
+        std::copy(p, p + sizeof(in_phy_port), &buf[j]);
+        j += sizeof(in_phy_port);
         break;
 
       // Regular fields
@@ -502,7 +510,7 @@ fp_raise_event(fp::Context* cxt, void* handler)
 //   // Copy the value to a temporary.
 //   std::copy(p, p + b.length, ret);
 //   fp::network_to_native_order(ret, b.length);
-// 
+//
 //   return ret;
 // }
 //

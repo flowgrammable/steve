@@ -12,9 +12,49 @@
 namespace fp
 {
 
+struct Dataplane;
 struct Table;
 struct Flow;
 class Port;
+
+
+// Stores information about the ingress of a packet
+// into a dataplane.
+//
+// TODO: Save the time stamp here?
+struct Ingress_info
+{
+  unsigned int in_port;
+  unsigned int in_phy_port;
+  int   tunnel_id;
+};
+
+
+// Maintains information about the control flow of a
+// context through a pipeline.
+//
+// FIXME: Am I actually using the table and flow?
+struct Control_info
+{
+  unsigned int out_port; // The selected output port.
+  Table* table;
+  Flow*  flow;
+};
+
+
+// Maintains information about the current decoding
+// of the packet.
+//
+// FIXME: These data structures should be required by
+// the application, since a) not every data application
+// needs full support for rebinding and b) making that
+// assumption will be an unfortunate pessimization.
+struct Decoding_info
+{
+  uint16_t pos;
+  Environment hdrs;
+  Environment flds;
+};
 
 
 // Packet metadata. This is an unstructured blob
@@ -25,15 +65,6 @@ class Port;
 struct Metadata
 {
   uint64_t data;
-};
-
-
-// FIXME: This is a terribly named class.
-struct Context_current
-{
-  uint16_t pos;  // The current header offset?
-  Table* table;
-  Flow*  flow;
 };
 
 
@@ -50,6 +81,9 @@ struct Header
 
 // A bounded stack of headers. This is the data structure
 // manipulated by push/pop operations.
+//
+// TODO: Multiple contexts can share a packet if none modify
+// it's buffer.
 //
 // TODO: Make this dynamically resizable?
 //
@@ -70,14 +104,26 @@ struct Header_stack
 //
 // TODO: The use of member functions may prevent optimizations
 // due to aliasing issues.
-struct Context
+class Context
 {
-  Context(Packet*, uint32_t, uint32_t, int);
-  ~Context() { }
+public:
+  // Iniitalize the context with a packet.
+  Context(Packet p, Dataplane* dp)
+    : input_(), ctrl_(), decode_(), packet_(p), dp_(dp)
+  { }
 
-  Packet const* packet() const { return packet_; }
-  Packet*       packet()       { return packet_; }
+  Context(Packet p, Dataplane* dp, unsigned int in, unsigned int in_phy, int tunnelid)
+    : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p)
+  { }
 
+  // Returns the packet owned by the context.
+  Packet const& packet() const { return packet_; }
+  Packet&       packet()       { return packet_; }
+
+  // Returns a pointer to the dataplane which created the context.
+  Dataplane const* dataplane() const { return dp_; }
+
+  // Returns the metadata owned by the context.
   Metadata const& metadata() const { return metadata_; }
   Metadata&       metadata()       { return metadata_; }
 
@@ -87,8 +133,20 @@ struct Context
   Byte const*   position() const;
   Byte*         position();
 
-  Table*   current_table() const { return current_.table; }
-  Flow*    current_flow() const  { return current_.flow; }
+  // Returns the input and output ports associated with
+  // the context.
+  // Port*   input_port() const          { return input_.in_port; }
+  // Port*   input_physical_port() const { return input_.in_phy_port; }
+  unsigned int output_port() const { return ctrl_.out_port; }
+  unsigned int in_port()     const { return input_.in_port; }
+  unsigned int in_phy_port() const { return input_.in_phy_port; }
+
+  // Sets the output port.
+  void set_output_port(unsigned int p) { ctrl_.out_port = p; }
+
+  // Returns the current
+  Table*   current_table() const { return ctrl_.table; }
+  Flow*    current_flow() const  { return ctrl_.flow; }
 
   void            write_metadata(uint64_t);
   Metadata const& read_metadata();
@@ -101,33 +159,27 @@ struct Context
 
   void bind_header(int);
   void bind_field(int, std::uint16_t, std::uint16_t);
-
   Byte const* get_field(std::uint16_t) const;
   Byte*       get_field(std::uint16_t);
 
   Binding const& get_field_binding(int) const;
   Binding&       get_field_binding(int);
 
-  Packet*         packet_;
-  Metadata        metadata_;
-  Context_current current_;
+  Ingress_info  input_;
+  Control_info  ctrl_;
+  Decoding_info decode_;
 
-  // Input context.
-  uint32_t in_port;
-  uint32_t in_phy_port;
-  int      tunnel_id;
-  uint32_t out_port;
+  // Packet data and context local data.
+  //
+  // TODO: I suspect that metadata should also be a pointer.
+  Packet   packet_;
+  Metadata metadata_;
 
-  // Actions
+  // The action set.
   Action_set actions_;
 
-  // Header and field bindings.
-  // FIXME: These data structures should be required by
-  // the applicaiton, since a) not every data application
-  // needs full support for rebinding and b) making that
-  // assumption will be an unfortunate pessimization.
-  Environment hdr_;
-  Environment fld_;
+  // A pointer to the dataplane which constructed the context.
+  Dataplane* dp_;
 };
 
 
@@ -135,7 +187,7 @@ struct Context
 inline void
 Context::advance(std::uint16_t n)
 {
-  current_.pos += n;
+  decode_.pos += n;
 }
 
 
@@ -143,7 +195,37 @@ Context::advance(std::uint16_t n)
 inline std::uint16_t
 Context::offset() const
 {
-  return current_.pos;
+  return decode_.pos;
+}
+
+
+inline void
+Context::bind_header(int id)
+{
+  decode_.hdrs.push(id, offset());
+}
+
+
+inline void
+Context::bind_field(int id, std::uint16_t off, std::uint16_t len)
+{
+  decode_.flds.push(id, {off, len});
+}
+
+
+// Returns a pointer to a given field at the absolute offset.
+inline Byte const*
+Context::get_field(std::uint16_t off) const
+{
+  return packet_.data() + off;
+}
+
+
+// Returns a pointer to a given field at the absolute offset.
+inline Byte*
+Context::get_field(std::uint16_t off)
+{
+  return packet_.data() + off;
 }
 
 
@@ -151,7 +233,7 @@ Context::offset() const
 inline Byte const*
 Context::position() const
 {
-  return packet_->data() + offset();
+  return packet_.data() + offset();
 }
 
 
@@ -159,7 +241,7 @@ Context::position() const
 inline Byte*
 Context::position()
 {
-  return packet_->data() + offset();
+  return packet_.data() + offset();
 }
 
 
@@ -170,6 +252,7 @@ Context::write_action(Action a)
 {
   actions_.push_back(a);
 }
+
 
 // Apply all of the saved actions.
 inline void
@@ -187,41 +270,12 @@ Context::clear_actions()
   actions_.clear();
 }
 
-inline void
-Context::bind_header(int id)
-{
-  hdr_.push(id, offset());
-}
-
-
-inline void
-Context::bind_field(int id, std::uint16_t off, std::uint16_t len)
-{
-  fld_.push(id, {off, len});
-}
-
-
-// Returns a pointer to a given field at the absolute offset.
-inline Byte const*
-Context::get_field(std::uint16_t off) const
-{
-  return packet_->data() + off;
-}
-
-
-// Returns a pointer to a given field at the absolute offset.
-inline Byte*
-Context::get_field(std::uint16_t off)
-{
-  return packet_->data() + off;
-}
-
 
 // Returns the binding for the given field.
 inline Binding const&
 Context::get_field_binding(int fld) const
 {
-  return fld_[fld].top();
+  return decode_.flds[fld].top();
 }
 
 
@@ -229,8 +283,9 @@ Context::get_field_binding(int fld) const
 inline Binding&
 Context::get_field_binding(int fld)
 {
-  return fld_[fld].top();
+  return decode_.flds[fld].top();
 }
+
 
 } // namespace fp
 

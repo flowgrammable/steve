@@ -24,7 +24,7 @@ struct Library
   using App_handle =  void*;
   using Pipeline_fn = void (*)(Context*);
   using Config_fn =   void (*)(Dataplane*);
-  using Port_fn =     void (*)(void*);
+  using Port_fn =     int (*)();
 
   // The user defined application functions.
   const std::string handles_[3] =

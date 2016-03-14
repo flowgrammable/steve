@@ -343,6 +343,10 @@ parse(Path const& in, Config const& conf)
     diagnose(err);
     return false;
   }
+  catch (...)
+  {
+    return false;
+  }
 }
 
 

@@ -3,14 +3,13 @@
 uint32_t
 fp_get_packet_in_port(fp::Context* c)
 {
-  return c->in_port;
+  return c->in_port();
 }
-
 
 uint32_t
 fp_get_packet_in_phys_port(fp::Context* c)
 {
-  return c->in_phy_port;
+  return c->in_phy_port();
 }
 
 // Advances the current header offset by 'n' bytes.

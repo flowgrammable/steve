@@ -87,8 +87,7 @@ Port::down()
 void
 Port::send(Context* cxt)
 {
-  // std::cout << "Sending packet on " << name_ << '\n';
-  packet_destroy(cxt->packet_);
+  // packet_destroy(cxt->packet_);
   delete cxt;
 }
 

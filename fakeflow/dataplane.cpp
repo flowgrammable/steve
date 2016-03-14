@@ -69,7 +69,7 @@ void
 Dataplane::process(Port* port, Packet* pkt)
 {
   // std::cout << "PROCESSING\n";
-  Context* c = new Context(pkt, port->id_, port->id_, 0);
+  Context* c = new Context(*pkt, this, port->id(), port->id(), 0);
   // thread_pool.assign(new Task("pipeline", c));
   app_->lib().exec("pipeline", c);
 

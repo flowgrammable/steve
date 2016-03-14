@@ -60,6 +60,8 @@ decoder ipv4_d(ipv4)
 
 	var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
 
+	puts("ipv4d");
+
 	decode udp_d advance hdr_len;
 }
 
@@ -70,6 +72,9 @@ decoder udp_d(udp)
 	extract udp.dst;
   extract udp.len;
 	extract udp.checksum;
+
+	puts("udpd");
+
   goto route;
 }
 

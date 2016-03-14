@@ -137,7 +137,7 @@ Parser::primary_expr()
     return e;
   }
 
-  // throw std::runtime_error("Failed to parse primary expression.");
+  throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
   error("expected primary expression");
