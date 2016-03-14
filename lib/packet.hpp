@@ -65,7 +65,7 @@ struct Packet
 
 inline
 Packet::Packet(Byte* data, int size)
-	: buf_(new Byte[size])
+	: buf_(data)
   , size_(size)
   , timestamp_(0)
   , buf_handle_(nullptr)
@@ -77,7 +77,7 @@ Packet::Packet(Byte* data, int size)
 
 inline
 Packet::Packet(Byte* data, int size, uint64_t time, void* buf_handle, Buff_t buf_dev)
-	: buf_(new Byte[size])
+	: buf_(data)
   , size_(size)
   , timestamp_(time)
   , buf_handle_(buf_handle)

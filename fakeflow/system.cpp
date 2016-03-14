@@ -155,7 +155,7 @@ fp_output_port(fp::Context* cxt, fp::Port::Id id)
   fp_context_set_output_port(cxt, p);
 
   // fp::Port* p = fp::port_table.find(id);
-  p->send(cxt);
+  // p->send(cxt);
 }
 
 

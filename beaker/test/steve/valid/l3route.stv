@@ -51,7 +51,7 @@ event learn_ip
 	insert
 	{ ipv4.src } ->
 	{
-		puts("Using learned in learn.");
+		// puts("Using learned in learn.");
 		goto route;
 	}
 	into learn;
@@ -61,7 +61,7 @@ event learn_ip
 	[timeout = 1000, egress = in_port]
 	{ ipv4.src } ->
 	{
-		puts("Using learned in route.");
+		// puts("Using learned in route.");
 		output egress;
 	}
 	into route;
@@ -72,7 +72,7 @@ exact_table learn(ipv4.src)
 {
   miss ->
   {
-		puts("miss");
+		// puts("miss");
 		raise learn_ip;
     goto route;
   }
@@ -83,7 +83,7 @@ exact_table route(ipv4.dst)
 {
   miss ->
   {
-		puts("flood");
+		// puts("flood");
     flood;
   }
 }
