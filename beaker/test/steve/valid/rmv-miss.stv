@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 layout eth
 {
@@ -20,7 +20,6 @@ decoder start eth_d(eth)
 
 exact_table t1(eth.type)
 {
-	// This should cause alternating miss and using prints.
   miss ->
   {
 		puts("Miss...in t1.");

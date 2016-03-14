@@ -32,6 +32,6 @@ exact_table switch(eth.dst, eth.type)
 
   miss ->
   {
-    output p1;
+    drop;
   }
 }
