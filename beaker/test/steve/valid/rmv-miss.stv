@@ -1,0 +1,29 @@
+foreign def puts(char[]) -> int;
+
+Port p1 = ":5000";
+
+layout eth
+{
+	dst : uint(48);
+	src : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.dst;
+  extract eth.type;
+  remove miss from t1;
+  goto t1;
+}
+
+exact_table t1(eth.type)
+{
+	// This should cause alternating miss and using prints.
+  miss ->
+  {
+		puts("Miss...in t1.");
+    drop;
+  }
+}

@@ -1,0 +1,29 @@
+foreign def puts(char[]) -> int;
+
+layout eth
+{
+	dst : uint(48);
+	src : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.dst;
+  extract eth.type;
+
+  insert
+  miss ->
+  {
+    puts("MISS");
+    drop;
+  }
+  into switch;
+
+  goto switch;
+}
+
+exact_table switch(eth.dst, eth.type)
+{
+}

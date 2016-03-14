@@ -17,13 +17,13 @@ void           fp_clear(fp::Context*);
 void           fp_goto_table(fp::Context*, fp::Table*, int, ...);
 void           fp_output_port(fp::Context*, fp::Port::Id);
 
-// Write actions.
-void           fp_write_drop(fp::Context*);
-void           fp_write_flood(fp::Context*);
-void           fp_write_set_field(fp::Context*, int, int, void*);
-void           fp_write_clear(fp::Context*);
-void           fp_write_goto(fp::Context*, fp::Table*);
-void           fp_write_output_port(fp::Context*, fp::Port::Id);
+// // Write actions.
+// void           fp_write_drop(fp::Context*);
+// void           fp_write_flood(fp::Context*);
+// void           fp_write_set_field(fp::Context*, int, int, fp::Byte*);
+// void           fp_write_clear(fp::Context*);
+// void           fp_write_goto(fp::Context*, fp::Table*);
+// void           fp_write_output_port(fp::Context*, fp::Port::Id);
 
 void           fp_apply(fp::Context*, fp::Action);
 void           fp_write(fp::Context*, fp::Action);

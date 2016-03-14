@@ -9,7 +9,6 @@ layout eth
 decoder start eth_d(eth)
 {
   p1;
-  // Should not be able to assign to ports.
   p1 = p2;
   output p1;
 }
