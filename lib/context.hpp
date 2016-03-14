@@ -113,7 +113,7 @@ public:
   { }
 
   Context(Packet p, Dataplane* dp, unsigned int in, unsigned int in_phy, int tunnelid)
-    : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p)
+    : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p), dp_(dp)
   { }
 
   // Returns the packet owned by the context.

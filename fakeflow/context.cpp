@@ -83,7 +83,13 @@ extern "C"
 {
 
 void
-fp_context_set_output_port(fp::Context* cxt, unsigned int p)
+fp_context_set_output_port(fp::Context* cxt, fp::Port* p)
+{
+  cxt->set_output_port(p->id());
+}
+
+void
+fp_context_set_output_port_id(fp::Context* cxt, unsigned int p)
 {
   cxt->set_output_port(p);
 }

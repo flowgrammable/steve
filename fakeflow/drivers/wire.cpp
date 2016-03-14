@@ -31,6 +31,9 @@ int main(int argc, char* argv[])
     // Add all ports
     dp->add_port(p1);
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
+    dp->add_port(p2);
+    std::cerr << "Added port 'p2' to data plane 'dp1'\n";
+    dp->add_drop_port();
 
     // Configure the data plane based on the applications needs.
     dp->configure();

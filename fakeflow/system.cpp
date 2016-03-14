@@ -120,7 +120,10 @@ extern "C"
 void
 fp_drop(fp::Context* cxt)
 {
-  fp::Port* drop = fp::port_table.drop_port();
+  fp::Port* drop = cxt->dataplane()->get_drop_port();
+  assert(drop);
+  fp_context_set_output_port(cxt, drop);
+  // fp::Port* drop = fp::port_table.drop_port();
   drop->send(cxt);
 }
 
@@ -128,9 +131,31 @@ fp_drop(fp::Context* cxt)
 void
 fp_flood(fp::Context* cxt)
 {
+  // FIXME: Make a flood port.
+  fp::Port* flood = cxt->dataplane()->get_drop_port();
+  fp_context_set_output_port(cxt, flood);
+  assert(flood);
   // Cache the drop port so the lookup doesn't happen every time.
-  fp::Port* flood = fp::port_table.flood_port();
+  // fp::Port* flood = fp::port_table.flood_port();
   flood->send(cxt);
+}
+
+// Outputs the contexts packet on the port with the matching name.
+void
+fp_output_port(fp::Context* cxt, fp::Port::Id id)
+{
+  std::cout << "ID: " << id << '\n';
+  //
+  // for (auto s : cxt->strings_)
+  //   std::cout << s << " ";
+  assert(cxt->dataplane());
+
+  fp::Port* p = cxt->dataplane()->get_port(id);
+  assert(p);
+  fp_context_set_output_port(cxt, p);
+
+  // fp::Port* p = fp::port_table.find(id);
+  p->send(cxt);
 }
 
 
@@ -214,20 +239,6 @@ fp_get_port_by_id(unsigned int id)
   // std::cout << "FOUND PORT\n";
   assert(p);
   return id;
-}
-
-
-// Outputs the contexts packet on the port with the matching name.
-void
-fp_output_port(fp::Context* cxt, fp::Port::Id id)
-{
-  // std::cout << "ID: " << id << '\n';
-  //
-  // for (auto s : cxt->strings_)
-  //   std::cout << s << " ";
-
-  fp::Port* p = fp::port_table.find(id);
-  p->send(cxt);
 }
 
 

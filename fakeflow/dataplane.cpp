@@ -4,6 +4,7 @@
 #include "context.hpp"
 #include "timer.hpp"
 #include "system.hpp"
+#include "port_table.hpp"
 // #include "fakeapps.hpp"
 
 #include <iostream>
@@ -16,7 +17,7 @@ extern Module_table module_table;
 
 // Data plane ctor.
 Dataplane::Dataplane(std::string const& name, std::string const& app_name)
-  : name_(name)
+  : name_(name), ports_(), portmap_()
 {
   auto app = module_table.find(app_name);
   if (app != module_table.end())
@@ -34,7 +35,8 @@ Dataplane::~Dataplane()
 void
 Dataplane::add_port(Port* p)
 {
-	// app_->add_port(p);
+  ports_.push_back(p);
+  portmap_.emplace(p->id(), p);
 }
 
 
@@ -42,7 +44,20 @@ Dataplane::add_port(Port* p)
 void
 Dataplane::remove_port(Port* p)
 {
-	// app_->remove_port(p);
+	auto iter = std::find(ports_.begin(), ports_.end(), p);
+  portmap_.erase(p->id());
+  ports_.erase(iter);
+  delete p;
+}
+
+
+// Add an explicit drop port to the dataplane.
+void
+Dataplane::add_drop_port()
+{
+  drop_ = new Port_udp(0xfffd, ":8673", "drop");
+  ports_.push_back(drop_);
+  portmap_.emplace(drop_->id(), drop_);
 }
 
 
@@ -70,6 +85,7 @@ Dataplane::process(Port* port, Packet* pkt)
 {
   // std::cout << "PROCESSING\n";
   Context* c = new Context(*pkt, this, port->id(), port->id(), 0);
+  assert(c->dataplane());
   // thread_pool.assign(new Task("pipeline", c));
   app_->lib().exec("pipeline", c);
 
