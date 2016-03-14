@@ -137,7 +137,7 @@ Parser::primary_expr()
     return e;
   }
 
-  // throw std::runtime_error("Failed to parse primary expression.");
+  throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
   error("expected primary expression");
@@ -1100,11 +1100,11 @@ Parser::port_decl()
 
   Expr* args = nullptr;
   if (match_if(equal_tok)) {
-    // expect a string literal
+    // expect an integer literal
     args = expr();
   }
   match(semicolon_tok);
-  
+
   return on_port(tok, args);
 }
 
@@ -1631,6 +1631,17 @@ Stmt*
 Parser::rmv_flow_stmt()
 {
   match(rmv_kw);
+
+  // If we're removing the miss case.
+  if (lookahead() == miss_kw) {
+    match(miss_kw);
+    match(from_kw);
+    Expr* table = expr();
+    match(semicolon_tok);
+    return on_rmv_miss(table);
+  }
+
+  // For regular flow entries.
   match(lbrace_tok);
   Expr_seq keys;
   while (lookahead() != rbrace_tok) {
@@ -1647,7 +1658,6 @@ Parser::rmv_flow_stmt()
   match(from_kw);
   Expr* table = expr();
   match(semicolon_tok);
-
   return on_rmv_flow(keys, table);
 }
 
@@ -1950,7 +1960,9 @@ Parser::on_hex(Token tok)
   Hexadecimal_sym const* hex = tok.hexadecimal_symbol();
   Type const* t = get_integer_type(hex->precision(), unsigned_int, native_order);
   // construct an integer value using string and base 16 (hex)
-  Integer_value i(hex->value(), 0);
+  // Remove the "0x"
+  String s = hex->value();
+  Integer_value i(s.erase(0, 2), 16);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -1961,7 +1973,9 @@ Parser::on_binary(Token tok)
   Binary_sym const* bin = tok.binary_symbol();
   Type const* t = get_integer_type(bin->precision(), unsigned_int, native_order);
   // construct an intger value using string and base 2(binary)
-  Integer_value i(bin->value(), 0);
+  // remove the "0b"
+  String s = bin->value();
+  Integer_value i(s.erase(0, 2), 2);
   return init<Literal_expr>(tok.location(), t, i);
 }
 
@@ -2604,6 +2618,13 @@ Stmt*
 Parser::on_rmv_flow(Expr_seq const& keys, Expr* table)
 {
   return new Remove_flow(keys, table);
+}
+
+
+Stmt*
+Parser::on_rmv_miss(Expr* table)
+{
+  return new Remove_miss(table);
 }
 
 

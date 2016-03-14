@@ -2,12 +2,12 @@ foreign def puts(char[]) -> int;
 
 layout eth
 {
-  src : uint(48);
   dst : uint(48);
+  src : uint(48);
   type : uint(16);
 }
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 decoder start eth_d(eth)
 {

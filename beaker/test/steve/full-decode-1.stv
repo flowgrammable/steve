@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 layout eth
 {
@@ -58,7 +58,11 @@ decoder ipv4_d(ipv4)
   extract ipv4.src;
   extract ipv4.dst;
 
-	decode udp_d advance ipv4.len;
+	var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
+
+	puts("ipv4d");
+
+	decode udp_d advance hdr_len;
 }
 
 
@@ -68,7 +72,10 @@ decoder udp_d(udp)
 	extract udp.dst;
   extract udp.len;
 	extract udp.checksum;
-  goto route advance udp.len;
+
+	puts("udpd");
+
+  goto route;
 }
 
 

@@ -1,3 +1,5 @@
+foreign def puts(char[]) -> int;
+
 layout eth
 {
 	src : uint(48);
@@ -34,12 +36,13 @@ decoder start eth_d(eth)
 
 decoder ipv4_d(ipv4)
 {
+  extract ipv4.version_ihl;
 	extract ipv4.ttl;
 	extract ipv4.len;
   extract ipv4.src;
   extract ipv4.dst;
 
-	goto learn advance ipv4.len;
+	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
 }
 
 event learn_ip
@@ -48,7 +51,7 @@ event learn_ip
 	insert
 	{ ipv4.src } ->
 	{
-		// puts("Using learned in learn.");
+		puts("Using learned in learn.");
 		goto route;
 	}
 	into learn;
@@ -58,6 +61,7 @@ event learn_ip
 	[timeout = 1000, egress = in_port]
 	{ ipv4.src } ->
 	{
+		puts("Using learned in route.");
 		output egress;
 	}
 	into route;
@@ -68,6 +72,7 @@ exact_table learn(ipv4.src)
 {
   miss ->
   {
+		puts("miss");
 		raise learn_ip;
     goto route;
   }
@@ -78,6 +83,7 @@ exact_table route(ipv4.dst)
 {
   miss ->
   {
+		puts("flood");
     flood;
   }
 }

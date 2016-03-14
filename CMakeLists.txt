@@ -25,6 +25,11 @@ set(BEAKER_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(BEAKER_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(BEAKER_VERSION_TWEAK ${PROJECT_VERSION_TWEAK})
 
+# Set the location where libsteve source files lies.
+set(CLANG_COMPILER "clang")
+set(LIBSTEVE_LOC "${CMAKE_CURRENT_LIST_DIR}/lib")
+set(LLVM_LINKER "llvm-link")
+
 # Boost dependencies
 find_package(Boost 1.55.0 REQUIRED COMPONENTS system filesystem program_options)
 
@@ -66,3 +71,4 @@ endif()
 add_subdirectory(lingo)
 add_subdirectory(beaker)
 add_subdirectory(fakeflow)
+add_subdirectory(lib)

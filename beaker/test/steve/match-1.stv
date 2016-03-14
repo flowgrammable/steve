@@ -7,11 +7,13 @@ layout eth
   type : uint(16);
 }
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 decoder start eth_d(eth)
 {
   extract eth.type;
+  extract eth.dst;
+
   match(eth.type) {
     case 0x0800: puts("Got ipv4");
     case 0x0880: puts("Got ipv6");

@@ -54,7 +54,6 @@ static bool assemble(Path const&, Path const&, Config const&);
 static bool executable(Path_seq const&, Path const&, Config const&);
 static bool module(Path_seq const&, Path const&, Config const&);
 
-
 // Global resources.
 Location_map locs; // Source code locations
 Symbol_table syms; // The symbol table
@@ -236,6 +235,8 @@ parse(Path_seq const& in, Path const& out, Config const& conf)
   bool ok = true;
   for (Path const& p : in) {
     if (get_file_kind(p) == beaker_file)
+      ok &= parse(p, conf);
+    if (get_file_kind(p) == steve_file)
       ok &= parse(p, conf);
     else {
       // FIXME: LLVM IR/BC or assembly could (should?) be

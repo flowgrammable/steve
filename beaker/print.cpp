@@ -184,7 +184,7 @@ std::ostream& operator<<(std::ostream& os, Flood const& s)
 
 std::ostream& operator<<(std::ostream& os, Output const& s)
 {
-  return os << "output " << s.port() << ';';
+  return os << "output " << *s.port() << ';';
 }
 
 

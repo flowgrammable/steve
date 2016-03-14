@@ -11,7 +11,7 @@ namespace fp
 Application::Application(std::string const& name)
   : name_(name), state_(NEW), lib_(get_app_handle(name)), num_ports_(0)
 {
-  lib_.exec("ports", &num_ports_);
+  // lib_.exec("ports", &num_ports_);
 }
 
 
@@ -116,7 +116,7 @@ Library::Library(App_handle app)
   app_ = app;
   pipeline_ = (void (*)(Context*))get_sym_handle(app, "pipeline");
   config_ = (void (*)(Dataplane*))get_sym_handle(app, "config");
-  port_ = (void (*)(void*))get_sym_handle(app, "ports");
+  port_ = (int (*)())get_sym_handle(app, "ports");
 }
 
 
@@ -133,8 +133,8 @@ Library::exec(std::string const& cmd, void* arg)
     pipeline_((Context*)arg);
   else if (cmd == "config")
     config_((Dataplane*)arg);
-  else if (cmd == "ports")
-    port_(arg);
+  // else if (cmd == "ports")
+  //   arg = (void*)&port_();
   else
     throw std::string("Application library error: Unknown command '" +
       cmd + "'");

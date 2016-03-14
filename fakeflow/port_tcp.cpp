@@ -83,46 +83,47 @@ Port_tcp::~Port_tcp()
 Context*
 Port_tcp::recv()
 {
-  if (config_.down)
-    throw std::string("Port down");
-
-  char buff[INIT_BUFF_SIZE];
-  // Receive data.
-  int bytes = read(io_fd_, buff, INIT_BUFF_SIZE);
-
-  if (bytes < 0) {
-    perror(std::string("port[" + std::to_string(id_) + "] recvfrom").c_str());
-    return nullptr;
-  }
-
-  // If we receive a 0-byte packet, the dest has closed.
-  // Set the port config to reflect this and return nullptr.
-  if (bytes == 0) {
-    config_.down = 1;
-    throw std::string("Connection closed");
-    return nullptr;
-  }
-
-  // Copy the buffer so that we guarantee that we don't
-  // accidentally overwrite it when we have multiple
-  // readers.
+  // if (config_.down)
+  //   throw std::string("Port down");
   //
-  // TODO: We should probably have a better buffer management
-  // framework so that we don't have to copy each time we
-  // create a packet.
-  Packet* pkt = packet_create((unsigned char*)buff, bytes, 0, nullptr, FP_BUF_ALLOC);
-  // TODO: We should call functions which ask the application
-  // for the maximum desired number of headers and fields
-  // that can be extracted so we can produce a context
-  // which takes up a minimal amount of space.
-  // And probably move these to become global values instead
-  // of locals to reduce function calls.
+  // char buff[INIT_BUFF_SIZE];
+  // // Receive data.
+  // int bytes = read(io_fd_, buff, INIT_BUFF_SIZE);
   //
-  // NOTE: This should be done in the config() function? Or it could just be done
-  // at link time when we are giving definitions to other unknowns.
-  int max_headers = 0;
-  int max_fields = 0;
-  return new Context(pkt, id_, id_, 0);
+  // if (bytes < 0) {
+  //   perror(std::string("port[" + std::to_string(id_) + "] recvfrom").c_str());
+  //   return nullptr;
+  // }
+  //
+  // // If we receive a 0-byte packet, the dest has closed.
+  // // Set the port config to reflect this and return nullptr.
+  // if (bytes == 0) {
+  //   config_.down = 1;
+  //   throw std::string("Connection closed");
+  //   return nullptr;
+  // }
+  //
+  // // Copy the buffer so that we guarantee that we don't
+  // // accidentally overwrite it when we have multiple
+  // // readers.
+  // //
+  // // TODO: We should probably have a better buffer management
+  // // framework so that we don't have to copy each time we
+  // // create a packet.
+  // Packet* pkt = packet_create((unsigned char*)buff, bytes, 0, nullptr, FP_BUF_ALLOC);
+  // // TODO: We should call functions which ask the application
+  // // for the maximum desired number of headers and fields
+  // // that can be extracted so we can produce a context
+  // // which takes up a minimal amount of space.
+  // // And probably move these to become global values instead
+  // // of locals to reduce function calls.
+  // //
+  // // NOTE: This should be done in the config() function? Or it could just be done
+  // // at link time when we are giving definitions to other unknowns.
+  // int max_headers = 0;
+  // int max_fields = 0;
+  // return new Context(pkt, id_, id_, 0);
+  return nullptr;
 }
 
 

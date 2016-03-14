@@ -205,11 +205,27 @@ fp_get_port_by_name(char const* name)
 }
 
 
+// Returns the port matching the given id or error otherwise.
+fp::Port::Id
+fp_get_port_by_id(unsigned int id)
+{
+  // std::cout << "GETTING PORT\n";
+  fp::Port* p = fp::port_table.find(id);
+  // std::cout << "FOUND PORT\n";
+  assert(p);
+  return id;
+}
+
+
 // Outputs the contexts packet on the port with the matching name.
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
   // std::cout << "ID: " << id << '\n';
+  //
+  // for (auto s : cxt->strings_)
+  //   std::cout << s << " ";
+
   fp::Port* p = fp::port_table.find(id);
   p->send(cxt);
 }
@@ -227,6 +243,8 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   // values into a byte buffer.
   int i = 0;
   int j = 0;
+  int in_port;
+  int in_phy_port;
   while (i < n) {
     int f = va_arg(args, int);
     fp::Binding b;
@@ -236,18 +254,20 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
     switch (f) {
       // Looking for "in_port"
       case 255:
-        p = reinterpret_cast<fp::Byte*>(&cxt->in_port);
+        in_port = cxt->in_port();
+        p = reinterpret_cast<fp::Byte*>(&in_port);
         // Copy the field into the buffer.
-        std::copy(p, p + sizeof(cxt->in_port), &buf[j]);
-        j += sizeof(cxt->in_port);
+        std::copy(p, p + sizeof(in_port), &buf[j]);
+        j += sizeof(in_port);
         break;
 
       // Looking for "in_phys_port"
       case 256:
-        p = reinterpret_cast<fp::Byte*>(&cxt->in_phy_port);
+        in_phy_port = cxt->in_phy_port();
+        p = reinterpret_cast<fp::Byte*>(&in_phy_port);
         // Copy the field into the buffer.
-        std::copy(p, p + sizeof(cxt->in_phy_port), &buf[j]);
-        j += sizeof(cxt->in_phy_port);
+        std::copy(p, p + sizeof(in_phy_port), &buf[j]);
+        j += sizeof(in_phy_port);
         break;
 
       // Regular fields
@@ -268,18 +288,18 @@ fp_gather(fp::Context* cxt, int key_width, int n, va_list args)
   return fp::Key(buf, key_width);
 }
 
-fp::Port::Id
-fp_get_packet_in_port(fp::Context* c)
-{
-  return c->in_port;
-}
-
-
-fp::Port::Id
-fp_get_packet_in_phys_port(fp::Context* c)
-{
-  return c->in_phy_port;
-}
+// fp::Port::Id
+// fp_get_packet_in_port(fp::Context* c)
+// {
+//   return c->in_port;
+// }
+//
+//
+// fp::Port::Id
+// fp_get_packet_in_phys_port(fp::Context* c)
+// {
+//   return c->in_phy_port;
+// }
 
 
 // Creates a new table in the given data plane with the given size,
@@ -390,6 +410,14 @@ fp_del_flow(fp::Table* tbl, void* key)
   tbl->rmv(k);
 }
 
+// Removes the miss case from the given table and replaces
+// it with the default.
+void
+fp_del_miss(fp::Table* tbl)
+{
+  tbl->rmv_miss();
+}
+
 
 // Raise an event.
 // TODO: Make this asynchronous on another thread.
@@ -414,91 +442,91 @@ fp_raise_event(fp::Context* cxt, void* handler)
 
 
 
-// Advances the current header offset by 'n' bytes.
-void
-fp_advance_header(fp::Context* cxt, std::uint16_t n)
-{
-  // std::cout << "ADV: " << n << std::endl;
-  cxt->advance(n);
-}
-
-
-// Binds the current header offset to given identifier.
-void
-fp_bind_header(fp::Context* cxt, int id)
-{
-  cxt->bind_header(id);
-}
-
-
-// Binds a given field index to a section in the packet contexts raw
-// packet data. Using the current cxt offset, relative field offset, and field
-// length we can grab exactly what we need.
+// // Advances the current header offset by 'n' bytes.
+// void
+// fp_advance_header(fp::Context* cxt, std::uint16_t n)
+// {
+//   // std::cout << "ADV: " << n << std::endl;
+//   cxt->advance(n);
+// }
 //
-// Returns the pointer to the byte at that specific location
-void
-fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
-{
-  // std::cout << "BINDING FIELD\n";
-  // Get field requires an absolute offset which is the context's current offset
-  // plus the relative offset passed to this function.
-  int abs_off = cxt->offset() + off;
-  // We bind fields using their absolute offset since this is the only way we
-  // can recover the absolute offset when we need to look up the binding later.
-  //
-  // FIXME: There needs to be a way to store the relative offset instead of the
-  // absolute offset.
-  cxt->bind_field(id, abs_off, len);
-}
-
-
-// Bind twice: once with the original field and again with its aliased name.
-void
-fp_alias_bind(fp::Context* cxt, int original, int alias,
-              std::uint16_t off, std::uint16_t len)
-{
-  // Get field requires an absolute offset which is the context's current offset
-  // plus the relative offset passed to this function.
-  int abs_off = cxt->offset() + off;
-  // We bind fields using their absolute offset since this is the only way we
-  // can recover the absolute offset when we need to look up the binding later.
-  //
-  // FIXME: There needs to be a way to store the relative offset instead of the
-  // absolute offset.
-  cxt->bind_field(original, abs_off, len);
-  cxt->bind_field(alias, abs_off, len);
-}
-
-
-
-fp::Byte*
-fp_read_field(fp::Context* cxt, int fld, fp::Byte* ret)
-{
-  // std::cout << "READING FIELD";
-  // Lookup the field in the context.
-  fp::Binding b = cxt->get_field_binding(fld);
-  fp::Byte* p = cxt->get_field(b.offset);
-  // Convert to native byte ordering.
-  // Copy the value to a temporary.
-  std::copy(p, p + b.length, ret);
-  fp::network_to_native_order(ret, b.length);
-
-  return ret;
-}
-
-
-void
-fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
-{
-  fp::Binding& b = cxt->get_field_binding(fld);
-
-  // Copy the new data into the packet at the appropriate location.
-  fp::Byte* p = cxt->get_field(b.offset);
-  // Convert native to network order after copying.
-  std::copy(val, val + len, p);
-  fp::native_to_network_order(p, len);
-  // Update the length if it changed (which it shouldn't).
-  b.length = len;
-}
-
+//
+// // Binds the current header offset to given identifier.
+// void
+// fp_bind_header(fp::Context* cxt, int id)
+// {
+//   cxt->bind_header(id);
+// }
+//
+//
+// // Binds a given field index to a section in the packet contexts raw
+// // packet data. Using the current cxt offset, relative field offset, and field
+// // length we can grab exactly what we need.
+// //
+// // Returns the pointer to the byte at that specific location
+// void
+// fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
+// {
+//   // std::cout << "BINDING FIELD\n";
+//   // Get field requires an absolute offset which is the context's current offset
+//   // plus the relative offset passed to this function.
+//   int abs_off = cxt->offset() + off;
+//   // We bind fields using their absolute offset since this is the only way we
+//   // can recover the absolute offset when we need to look up the binding later.
+//   //
+//   // FIXME: There needs to be a way to store the relative offset instead of the
+//   // absolute offset.
+//   cxt->bind_field(id, abs_off, len);
+// }
+//
+//
+// // Bind twice: once with the original field and again with its aliased name.
+// void
+// fp_alias_bind(fp::Context* cxt, int original, int alias,
+//               std::uint16_t off, std::uint16_t len)
+// {
+//   // Get field requires an absolute offset which is the context's current offset
+//   // plus the relative offset passed to this function.
+//   int abs_off = cxt->offset() + off;
+//   // We bind fields using their absolute offset since this is the only way we
+//   // can recover the absolute offset when we need to look up the binding later.
+//   //
+//   // FIXME: There needs to be a way to store the relative offset instead of the
+//   // absolute offset.
+//   cxt->bind_field(original, abs_off, len);
+//   cxt->bind_field(alias, abs_off, len);
+// }
+//
+//
+//
+// fp::Byte*
+// fp_read_field(fp::Context* cxt, int fld, fp::Byte* ret)
+// {
+//   // std::cout << "READING FIELD";
+//   // Lookup the field in the context.
+//   fp::Binding b = cxt->get_field_binding(fld);
+//   fp::Byte* p = cxt->get_field(b.offset);
+//   // Convert to native byte ordering.
+//   // Copy the value to a temporary.
+//   std::copy(p, p + b.length, ret);
+//   fp::network_to_native_order(ret, b.length);
+//
+//   return ret;
+// }
+//
+//
+// void
+// fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
+// {
+//   fp::Binding& b = cxt->get_field_binding(fld);
+//
+//   // Copy the new data into the packet at the appropriate location.
+//   fp::Byte* p = cxt->get_field(b.offset);
+//   // Convert native to network order after copying.
+//   std::copy(val, val + len, p);
+//   fp::native_to_network_order(p, len);
+//   // Update the length if it changed (which it shouldn't).
+//   b.length = len;
+// }
+//
 } // extern "C"

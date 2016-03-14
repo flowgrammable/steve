@@ -138,6 +138,7 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
+  Stmt_seq operator()(Remove_miss* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
@@ -1129,15 +1130,17 @@ Lowerer::lower_global_def(Port_decl* d)
   Decl* var = ovl->back();
   assert(var);
 
-  // Construct a call to get port
-  Expr* get_port = builtin.call_get_port(var,
-    make_cstr(d->name()->spelling().c_str()), d->address());
+  // Only if it has an initializer.
+  if (d->address()) {
+    // Construct a call to get port
+    Expr* get_port = builtin.call_get_port_by_id(d->address());
 
-  // Construct the assigment.
-  Assign_stmt* a = new Assign_stmt(id(var), get_port);
-  elab.elaborate(a);
+    // Construct the assigment.
+    Assign_stmt* a = new Assign_stmt(id(var), get_port);
+    elab.elaborate(a);
 
-  load_body.push_back(a);
+    load_body.push_back(a);
+  }
 
   return var;
 }
@@ -1526,18 +1529,26 @@ Lowerer::lower_rebind_decl(Rebind_decl* d)
                                               length);
   bind_field = elab.elaborate(bind_field);
 
-  // Mangle the name of the variable from the name of the
-  // extracted field. Declare it as a new variable.
-  Symbol const* field_name = get_identifier(mangle(d));
-  Variable_decl* load_var = new Variable_decl(field_name,
-                                              d->type(),
-                                              new Default_init(d->type()));
+  // Mangle the alias field name and produce a variable for it.
+  Symbol const* alias_name = get_identifier(mangle(d));
+  Variable_decl* load_var1 = new Variable_decl(alias_name,
+                                               d->type(),
+                                               new Default_init(d->type()));
+  // Mangle the original field name and also have it as a variable.
+  Extracts_decl* orig = new Extracts_decl(d->field());
+  orig->name_ = d->original();
+  Symbol const* orig_name = get_identifier(mangle(orig));
+  Variable_decl* load_var2 = new Variable_decl(orig_name,
+                                               d->type(),
+                                               new Default_init(d->type()));
 
-  declare(load_var);
+  declare(load_var1);
+  declare(load_var2);
 
   Stmt_seq stmts {
     statement(bind_field),
-    statement(load_var)
+    statement(load_var1),
+    statement(load_var2)
   };
 
   return stmts;
@@ -2036,7 +2047,25 @@ Lowerer::lower(Insert_flow* s)
   Flow_decl* flow = as<Flow_decl>(s->flow());
   assert(flow);
 
-  // Form a call.
+  // Construct the flow function and add it into the module.
+  Decl* flow_fn = construct_added_flow(table, flow);
+
+  // Handle the properties.
+  Flow_properties prop = lower_flow_properties(flow);
+
+  // If we're adding a miss case instead of a regular flow.
+  // Make a call to add_miss.
+  if (flow->miss_case()) {
+    Expr* add_miss =
+      builtin.call_add_miss(decl_id(tblptr), decl_id(flow_fn),
+                            prop.timeout, prop.egress);
+
+      return {
+        statement(add_miss),
+      };
+  }
+
+  // Form a call to key forming function.
   Expr_seq keys;
   // Lower all keys first.
   for (auto e : flow->keys()) {
@@ -2048,12 +2077,6 @@ Lowerer::lower(Insert_flow* s)
 
   // Void cast the result
   Expr* vcast = new Void_cast(decl_id(temp));
-
-  // Construct the flow function and add it into the module.
-  Decl* flow_fn = construct_added_flow(table, flow);
-
-  // Handle the properties.
-  Flow_properties prop = lower_flow_properties(flow);
 
   // Make a call to fp_add_flow
   Expr* add_flow =
@@ -2105,6 +2128,25 @@ Lowerer::lower(Remove_flow* s)
   return {
     statement(temp),
     statement(rmv_flow),
+  };
+}
+
+
+Stmt_seq
+Lowerer::lower(Remove_miss* s)
+{
+  Table_decl* table = as<Table_decl>(s->table());
+  assert(table);
+
+  Overload* ovl = unqualified_lookup(table->name());
+  assert(ovl);
+  Decl* tblptr = ovl->back();
+  assert(tblptr);
+
+  Expr* rmv_miss = builtin.call_remove_miss(decl_id(tblptr));
+
+  return {
+    statement(rmv_miss)
   };
 }
 

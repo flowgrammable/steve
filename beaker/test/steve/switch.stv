@@ -1,11 +1,11 @@
 foreign def puts(char[]) -> int;
 
-Port p1 = ":5000";
+Port p1 = 1;
 
 layout eth
 {
-	src : uint(48);
 	dst : uint(48);
+	src : uint(48);
 	type : uint(16);
 }
 
@@ -22,13 +22,13 @@ exact_table switch(eth.dst, eth.type)
 	[	timeout = 1000 ]
   { 0x12_34_56_78_90_ab, 0x0800 } ->
   {
-		// puts("hit1");
+		puts("hit1");
     output p1;
   }
 
-	{ 0xab_12_34_56_78_90, 0x0880 } ->
+	{ 0xab_12_34_56_78_90, 0x0800 } ->
   {
-		// puts("hit2");
+		puts("hit2");
     output p1;
   }
 

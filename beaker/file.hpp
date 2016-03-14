@@ -46,7 +46,8 @@ enum File_kind
 
   // Input languages
   beaker_file,     // Beaker source text
-  
+  steve_file,      // Steve source text
+
   // Intermediate languages
   ir_file,         // LLVM source text
   bitcode_file,    // LLVM bitcode
@@ -103,6 +104,22 @@ inline Path
 to_object_file(Path p)
 {
   return p.replace_extension(object_extension());
+}
+
+
+// To .so file.
+inline Path
+to_so_file(Path p)
+{
+  return p.replace_extension(".so");
+}
+
+
+// To .bc file.
+inline Path
+to_bitcode_file(Path p)
+{
+  return p.replace_extension(".bc");
 }
 
 

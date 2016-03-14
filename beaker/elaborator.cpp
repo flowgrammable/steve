@@ -667,6 +667,35 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
 }
 
 
+// Confirm that all flows within a table initializer have
+// unique match fields.
+bool
+check_unique_fields(Table_decl* d)
+{
+  for (auto f1 : d->body()) {
+    assert(is<Flow_decl>(f1));
+    Flow_decl* flow1 = as<Flow_decl>(f1);
+
+    for (auto f2 : d->body()) {
+      assert(is<Flow_decl>(f2));
+      Flow_decl* flow2 = as<Flow_decl>(f2);
+
+      if (f1 != f2)
+        if (flow1->keys() == flow2->keys()) {
+          std::stringstream ss;
+          ss << "Duplicate keys found in " << *d->name()
+             << " between " << *f1->name() << " and " << *f2->name();
+          throw Type_error({}, ss.str());
+
+          return false;
+        }
+    }
+  }
+
+  return true;
+}
+
+
 // Check all flows within a table initializer
 // to confirm that the keys given are of the
 // correct type.
@@ -685,6 +714,10 @@ check_table_initializer(Elaborator& elab, Table_decl* d)
     if (!check_table_flow(elab, d, flow))
       return false;
   }
+
+  // Confirm the uniqueness of initial flows entry match fields.
+  if (!check_unique_fields(d))
+    return false;
 
   return true;
 }
@@ -2350,7 +2383,12 @@ Elaborator::elaborate(Rebind_decl* d)
     throw Type_error(locate(d), ss.str());
   }
 
-  // the name of a rebind declaration is the name of its alias
+  // Bind the rebind decl FIRST with the original field name.
+  d->name_ = origin->name();
+  declare(d);
+
+  // NOTE: We bind it a SECOND time using the alias name.
+  // The name of a rebind declaration becomes the name of its alias
   d->name_ = alias->name();
   // save its original name as well
   d->original_ = origin->name();
@@ -2859,15 +2897,23 @@ Elaborator::elaborate_def(Port_decl* d)
 {
   if (d->address()) {
     d->first = elaborate(d->address());
+    if (!d->first) {
+      std::stringstream ss;
+      ss << "Invalid port address " << *d->address() << ".";
+      throw Type_error(locate(d), ss.str());
+    }
 
-    // check that the expression following '='
-    // is a string literal
-    if (Array_type const* t = as<Array_type>(d->address()->type()))
-      if (is<Character_type>(t->type()))
-        return d;
+    // // check that the expression following '='
+    // // is a string literal
+    // if (Array_type const* t = as<Array_type>(d->address()->type()))
+    //   if (is<Character_type>(t->type()))
+    //     return d;
+
+    if (is<Integer_type>(d->address()->type()))
+      return d;
 
     std::stringstream ss;
-    ss << "Invalid port address " << d->address() << ". Expected string literal.";
+    ss << "Invalid port address " << *d->address() << ".";
     throw Type_error(locate(d), ss.str());
   }
 
@@ -3054,6 +3100,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
+    Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
@@ -3636,8 +3683,15 @@ Stmt*
 Elaborator::elaborate(Insert_flow* s)
 {
   check_valid_action_context(s);
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
 
-  s->table_id_ = elaborate(s->table_identifier());
+  s->table_id_ = e;
 
   // We need to specially elaborate this flow because it doesn't follow the
   // exact same semantics as initializing flows.
@@ -3656,6 +3710,11 @@ Elaborator::elaborate(Insert_flow* s)
   // Save the flow declaration to be elaborated later.
   added_flows_.push_back(as<Flow_decl>(s->flow()));
 
+  // Avoid key checking on miss cases.
+  if (as<Flow_decl>(s->flow())->miss_case())
+    return s;
+
+  // Check keys if not miss case.
   if (check_table_flow(*this, as<Table_decl>(s->table()), as<Flow_decl>(s->flow()))) {
     return s;
   }
@@ -3674,7 +3733,15 @@ Elaborator::elaborate(Remove_flow* s)
 {
   check_valid_action_context(s);
 
-  s->table_id_ = elaborate(s->table_identifier());
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   Table_decl* table = as<Table_decl>(s->table());
 
   // Confirm that every key has a matching type in the table decl
@@ -3713,6 +3780,22 @@ Elaborator::elaborate(Remove_flow* s)
   }
 
   s->keys_ = new_key;
+  return s;
+}
+
+
+Stmt*
+Elaborator::elaborate(Remove_miss* s)
+{
+  // Confirm that the table identifier is valid.
+  Expr* e = elaborate(s->table_identifier());
+  if (!e || !e->type() || !is<Table_type>(e->type()->nonref())) {
+    std::stringstream ss;
+    ss << "Invalid table identifier: " << *s->table_identifier() << ".";
+    throw Type_error({}, ss.str());
+  }
+
+  s->table_id_ = e;
   return s;
 }
 
