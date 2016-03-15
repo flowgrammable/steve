@@ -87,7 +87,7 @@ Dataplane::process(Port* port, Packet* pkt)
   Context* c = new Context(*pkt, this, port->id(), port->id(), 0);
   assert(c->dataplane());
   // thread_pool.assign(new Task("pipeline", c));
-  app_->lib().exec("pipeline", c);
+  app_->lib().exec("process", c);
 
   // static App1 a(tables_.front());
   // a.pipeline(c, port);
@@ -121,7 +121,7 @@ Dataplane::configure()
   if (app_->state() == Application::State::NEW) {
     std::cout << "RUNNING CONFIG\n";
 
-    app_->lib().exec("config", this);
+    app_->lib().exec("load", this);
     app_->state_ = Application::State::READY;
   }
   else
