@@ -117,6 +117,7 @@ Library::Library(App_handle app)
   pipeline_ = (void (*)(Context*))get_sym_handle(app, "process");
   config_ = (void (*)(Dataplane*))get_sym_handle(app, "load");
   port_ = (int (*)())get_sym_handle(app, "ports");
+  changed_ = (Port_change_fn)get_sym_handle(app, "port_changed");
 }
 
 
@@ -133,6 +134,11 @@ Library::exec(std::string const& cmd, void* arg)
     pipeline_((Context*)arg);
   else if (cmd == "load")
     config_((Dataplane*)arg);
+  else if (cmd == "port_changed")
+  {
+    int val = *(int*)(arg);
+    changed_(val);
+  }
   // else if (cmd == "ports")
   //   arg = (void*)&port_();
   else

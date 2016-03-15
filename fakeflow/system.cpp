@@ -120,11 +120,13 @@ extern "C"
 void
 fp_drop(fp::Context* cxt)
 {
+  std::cout << "drop\n";
+
   fp::Port* drop = cxt->dataplane()->get_drop_port();
   assert(drop);
   fp_context_set_output_port(cxt, drop);
   // fp::Port* drop = fp::port_table.drop_port();
-  drop->send(cxt);
+  // drop->send(cxt);
 }
 
 
@@ -144,7 +146,7 @@ fp_flood(fp::Context* cxt)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  // std::cout << "ID: " << id << '\n';
+  std::cout << "ID: " << id << '\n';
   //
   // for (auto s : cxt->strings_)
   //   std::cout << s << " ";
@@ -219,26 +221,44 @@ fp_goto_table(fp::Context* cxt, fp::Table* tbl, int n, ...)
 // Port and table operations
 
 // Returns the port matching the given name.
-fp::Port::Id
-fp_get_port_by_name(char const* name)
-{
-  // std::cout << "GETTING PORT\n";
-  fp::Port* p = fp::port_table.find(name);
-  // std::cout << "FOUND PORT\n";
-  assert(p);
-  return p->id();
-}
+// fp::Port::Id
+// fp_get_port_by_name(char const* name)
+// {
+//   // std::cout << "GETTING PORT\n";
+//   fp::Port* p = fp::port_table.find(name);
+//   // std::cout << "FOUND PORT\n";
+//   assert(p);
+//   return p->id();
+// }
 
 
 // Returns the port matching the given id or error otherwise.
 fp::Port::Id
-fp_get_port_by_id(unsigned int id)
+fp_get_port_by_id(fp::Dataplane* dp, unsigned int id)
 {
   // std::cout << "GETTING PORT\n";
-  fp::Port* p = fp::port_table.find(id);
+  fp::Port* p = dp->get_port(id);
   // std::cout << "FOUND PORT\n";
   assert(p);
   return id;
+}
+
+// Returns whether or not the port is up or down
+bool
+fp_port_id_is_up(fp::Dataplane* dp, fp::Port::Id id)
+{
+  assert(dp);
+  fp::Port* p = dp->get_port(id);
+  return true;
+}
+
+// Returns whether or not the given id exists.
+bool
+fp_port_id_is_down(fp::Dataplane* dp, fp::Port::Id id)
+{
+  assert(dp);
+  fp::Port* p = dp->get_port(id);
+  return p->config_.down;
 }
 
 

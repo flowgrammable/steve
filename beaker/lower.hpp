@@ -158,8 +158,8 @@ private:
   // load function body
   Stmt_seq load_body;
 
-  // All uninitialized ports.
-  Decl_seq uninit_ports;
+  // All ports.
+  Decl_seq all_ports;
 };
 
 

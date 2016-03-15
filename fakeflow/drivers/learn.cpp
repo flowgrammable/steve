@@ -39,6 +39,13 @@ int main(int argc, char* argv[])
     dp->configure();
     std::cerr << "Data plane configured\n";
 
+    // Notify the application of ports.
+    Application* app = dp->app();
+    int p1id = p1->id();
+    int p2id = p2->id();
+    app->lib().exec("port_changed", &p1id);
+    app->lib().exec("port_changed", &p2id);
+
     dp->up();
     std::cerr << "Data plane is up\n";
 

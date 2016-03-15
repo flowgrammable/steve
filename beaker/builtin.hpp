@@ -60,7 +60,7 @@ constexpr char const* __start           = "start";
 constexpr char const* __stop            = "stop";
 constexpr char const* __port_num        = "ports";
 constexpr char const* __unload          = "unload";
-constexpr char const* __port_notice     = "port_changed";
+constexpr char const* __port_changed    = "port_changed";
 
 
 // -------------------------------------------------------------------------- //
@@ -359,16 +359,16 @@ struct Builtin
   Expr* call_add_miss(Expr*, Expr*, Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr*, Expr*);
-  Expr* call_get_port_by_id(Expr*);
+  Expr* call_get_port_by_id(Expr*, Expr*);
   Expr* call_get_in_port(Expr*);
   Expr* call_get_in_phys_port(Expr*);
   Expr* call_get_flow_egress(Expr*);
-  Expr* call_get_all_port();
-  Expr* call_get_controller_port();
-  Expr* call_get_reflow_port();
+  Expr* call_get_all_port(Expr*);
+  Expr* call_get_controller_port(Expr*);
+  Expr* call_get_reflow_port(Expr*);
   Expr* call_get_dataplane(Decl*, Decl*);
-  Expr* call_port_id_up(Expr*);
-  Expr* call_port_id_down(Expr*);
+  Expr* call_port_id_up(Expr*, Expr*);
+  Expr* call_port_id_down(Expr*, Expr*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_flood(Expr* cxt);

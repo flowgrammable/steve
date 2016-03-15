@@ -262,14 +262,135 @@ Lowerer::process_function()
 }
 
 
+namespace
+{
+
+// Recursively generate if-else statements for port_up given the port id
+// parameter.
+Stmt*
+port_up_condition(Decl* id_, Decl_seq ports)
+{
+  // Special base case: If there is only one port total.
+  if (ports.size() == 1)
+  {
+    Decl* port1 = ports.front();
+    // If the port is up...
+    // Check if its equal to zero. If it is equal to 0 then...
+    Eq_expr* eq0 = new Eq_expr(id(port1), zero());
+    // Assign the id param to the declared port.
+    Assign_stmt* assign = new Assign_stmt(id(port1), id(id_));
+    // Create exactly one if-then statement for both port_up
+    // and port_down bodies.
+    return new If_then_stmt(eq0, assign);
+  }
+
+  // Recursive case: More than 1 ports left.
+
+  // Generate code for the first if.
+  Decl* port1 = ports.front();
+  // Check if its equal to zero. If it is equal to 0 then...
+  Eq_expr* eq0 = new Eq_expr(id(port1), zero());
+  // Assign the id param to the declared port.
+  Assign_stmt* assign = new Assign_stmt(id(port1), id(id_));
+  // Dequeue the front.
+  ports.erase(ports.begin());
+  // Create an ifelse statement and recurse.
+  return new If_else_stmt(eq0, assign, port_up_condition(id_, ports));
+}
+
+
+// Recursively generate if-else statements for port_down
+Stmt*
+port_down_condition(Decl* id_, Decl_seq ports)
+{
+  // Special base case: If there is only one port total.
+  if (ports.size() == 1)
+  {
+    Decl* port1 = ports.front();
+    // If port down...
+    Eq_expr* eq_port = new Eq_expr(id(port1), id(id_));
+    // If the declared port is equal to the down port, set it to 0.
+    Assign_stmt* assign = new Assign_stmt(id(port1), invalid_port());
+    return new If_then_stmt(eq_port, assign);
+  }
+
+  // Recursive case: More than 1 port left.
+  Decl* port1 = ports.front();
+  // If port down...
+  Eq_expr* eq_port = new Eq_expr(id(port1), id(id_));
+  // If the declared port is equal to the down port, set it to 0.
+  Assign_stmt* assign = new Assign_stmt(id(port1), invalid_port());
+  // Dequeue the front.
+  ports.erase(ports.begin());
+  // Recurse for the rest of the if-else
+  return new If_else_stmt(eq_port, assign, port_down_condition(id_, ports));
+}
+
+} // namespace
+
+
 // Constructs a function needed to register port changes from the runtime.
 Function_decl*
 Lowerer::port_changed_function()
 {
-  // One if statement for port up
+  Symbol const* fn_name = get_identifier(__port_changed);
+  // Type (Port) -> int
+  Type const* fn_type
+    = get_function_type(Type_seq{get_port_type()}, get_integer_type());
 
+  // Id parameter
+  Parameter_decl* id_
+    = new Parameter_decl(get_identifier("id"), get_port_type());
 
-  // One if statement for port down
+  // Set the body later.
+  Function_decl* port_changed
+    = new Function_decl(fn_name, fn_type, {id_}, nullptr);
+
+  // If there are not ports return 0.
+  if (all_ports.size() < 1) {
+    Stmt_seq fn_body {
+      new Return_stmt(zero())
+    };
+
+    port_changed->spec_ |= extern_spec;
+    port_changed->body_ = block(fn_body);
+
+    elab.elaborate_decl(port_changed);
+    elab.elaborate_def(port_changed);
+    return port_changed;
+  }
+
+  // The body for if port_up is true.
+  Stmt_seq port_up_body {
+     port_up_condition(id_, all_ports)
+  };
+
+  // The body for if port_down is true.
+  Stmt_seq port_down_body {
+    port_down_condition(id_, all_ports)
+  };
+
+  // Port up and port down conditions
+  Expr* port_up   = builtin.call_port_id_up(id(dataplane_pointer()), id(id_));
+  Expr* port_down = builtin.call_port_id_down(id(dataplane_pointer()), id(id_));
+  // If port_up; else if port_down;
+  If_then_stmt* if_port_down
+    = new If_then_stmt(port_down, block(port_down_body));
+  If_else_stmt* if_port_up
+    = new If_else_stmt(port_up, block(port_up_body), if_port_down);
+
+  Stmt_seq fn_body {
+    if_port_up,
+    new Return_stmt(zero())
+  };
+
+  port_changed->spec_ |= extern_spec;
+  port_changed->body_ = block(fn_body);
+
+  elab.elaborate_decl(port_changed);
+  elab.elaborate_def(port_changed);
+
+  return port_changed;
 }
 
 
@@ -304,7 +425,6 @@ Lowerer::dataplane_pointer()
   static Variable_decl dp(get_identifier(__dataplane),
                           get_opaque_type()->ref(),
                           new Default_init(get_opaque_type()->ref()));
-  declare(&dp);
   return &dp;
 }
 
@@ -527,7 +647,7 @@ Expr*
 Lowerer::lower(All_port* e)
 {
   // make a call to get_all_port
-  Expr* port = builtin.call_get_all_port();
+  Expr* port = builtin.call_get_all_port(id(dataplane_pointer()));
   elab.elaborate(port);
 
   return port;
@@ -539,7 +659,7 @@ Expr*
 Lowerer::lower(Controller_port* e)
 {
   // make a call to get_all_port
-  Expr* port = builtin.call_get_controller_port();
+  Expr* port = builtin.call_get_controller_port(id(dataplane_pointer()));
   elab.elaborate(port);
 
   return port;
@@ -551,7 +671,7 @@ Expr*
 Lowerer::lower(Reflow_port* e)
 {
   // make a call to get_all_port
-  Expr* port = builtin.call_get_reflow_port();
+  Expr* port = builtin.call_get_reflow_port(id(dataplane_pointer()));
   elab.elaborate(port);
 
   return port;
@@ -1144,7 +1264,8 @@ Lowerer::lower_global_def(Port_decl* d)
   // Only if it has an initializer.
   if (d->address()) {
     // Construct a call to get port
-    Expr* get_port = builtin.call_get_port_by_id(d->address());
+    Expr* get_port
+      = builtin.call_get_port_by_id(id(dataplane_pointer()), d->address());
 
     // Construct the assigment.
     Assign_stmt* a = new Assign_stmt(id(var), get_port);
@@ -1152,10 +1273,9 @@ Lowerer::lower_global_def(Port_decl* d)
 
     load_body.push_back(a);
   }
-  // If it doesn't add it to the list of uninit_ports
-  else {
-    uninit_ports.push_back(var);
-  }
+
+  // Push back on sequence of ports.
+  all_ports.push_back(var);
 
   return var;
 }
@@ -1231,7 +1351,9 @@ Lowerer::add_builtin_functions()
 void
 Lowerer::add_builtin_variables()
 {
-  prelude.push_back(dataplane_pointer());
+  Decl* dp = dataplane_pointer();
+  declare(dp);
+  prelude.push_back(dp);
 }
 
 
@@ -1289,7 +1411,7 @@ Lowerer::lower(Module_decl* d)
   // Application interface functions
   module_decls.push_back(load_function());
   module_decls.push_back(process_function());
-  // module_decls.push_back(port_changed_function());
+  module_decls.push_back(port_changed_function());
   module_decls.push_back(port_number_function());
 
   return new Module_decl(d->name(), module_decls);

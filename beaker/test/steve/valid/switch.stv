@@ -13,7 +13,7 @@ layout eth
 decoder start eth_d(eth)
 {
   extract eth.dst;
-  extract eth.type;
+  extract eth.type;		
   goto switch;
 }
 
