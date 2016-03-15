@@ -618,6 +618,50 @@ Builtin::get_flow_egress()
 }
 
 
+// Calls to see if the port with the given ID is up.
+//
+//  bool port_id_up(int id)
+Function_decl*
+Builtin::port_id_up()
+{
+  Symbol const* fn_name = get_identifier(__port_up);
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("id"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, get_boolean_type());
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Calls to see if the port with the given ID is down.
+//
+//  bool port_id_down(int id)
+Function_decl*
+Builtin::port_id_down()
+{
+  Symbol const* fn_name = get_identifier(__port_down);
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("id"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, get_boolean_type());
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
 // This call to the runtime instructs it to immediately drop the packet.
 //
 //    void drop(Context*)
@@ -913,7 +957,7 @@ Builtin::init_builtins()
     {__rmv_miss, remove_miss()},
     {__add_miss, add_miss()},
     {__match, match()},
-    {__gather, gather()},
+    // {__gather, gather()},
     {__get_port, get_port()},
     {__get_port_id, get_port_by_id()},
     {__get_inport, get_in_port()},
@@ -922,6 +966,8 @@ Builtin::init_builtins()
     {__get_controller_port, get_controller_port()},
     {__get_reflow_port, get_reflow_port()},
     {__get_flow_egress, get_flow_egress()},
+    {__port_up, port_id_up()},
+    {__port_down, port_id_down()},
     {__drop, drop()},
     {__flood, flood()},
     {__output, output()},
@@ -1212,6 +1258,26 @@ Builtin::call_get_dataplane(Decl* dp, Decl* target)
   Get_dataplane* e = new Get_dataplane(dp, target);
 
   return e;
+}
+
+
+Expr*
+Builtin::call_port_id_up(Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__port_up)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {id});
+}
+
+
+Expr*
+Builtin::call_port_id_down(Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__port_down)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {id});
 }
 
 

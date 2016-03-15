@@ -114,7 +114,7 @@ struct Lowerer
   Function_decl* process_function();
   Function_decl* port_number_function();
   Function_decl* start_function();
-  Function_decl  port_changed_function();
+  Function_decl* port_changed_function();
 
   Variable_decl* dataplane_pointer();
 
@@ -139,15 +139,6 @@ struct Lowerer
   // The new program
   Decl_seq module_decls;
 
-  // Runtime declarations
-  Decl_seq prelude;
-
-  // Key forming functions
-  Decl_seq key_functions;
-
-  // load function body
-  Stmt_seq load_body;
-
 private:
 
   // Maintain the first function to call in the pipeline
@@ -157,6 +148,18 @@ private:
   int port_count;
 
   Type const* opaque_table = get_opaque_table();
+
+  // Runtime declarations
+  Decl_seq prelude;
+
+  // Key forming functions
+  Decl_seq key_functions;
+
+  // load function body
+  Stmt_seq load_body;
+
+  // All uninitialized ports.
+  Decl_seq uninit_ports;
 };
 
 

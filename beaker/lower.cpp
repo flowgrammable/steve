@@ -262,6 +262,17 @@ Lowerer::process_function()
 }
 
 
+// Constructs a function needed to register port changes from the runtime.
+Function_decl*
+Lowerer::port_changed_function()
+{
+  // One if statement for port up
+
+
+  // One if statement for port down
+}
+
+
 // Returns the amount of ports specifically asked for by the application.
 Function_decl*
 Lowerer::port_number_function()
@@ -1141,6 +1152,10 @@ Lowerer::lower_global_def(Port_decl* d)
 
     load_body.push_back(a);
   }
+  // If it doesn't add it to the list of uninit_ports
+  else {
+    uninit_ports.push_back(var);
+  }
 
   return var;
 }
@@ -1274,6 +1289,7 @@ Lowerer::lower(Module_decl* d)
   // Application interface functions
   module_decls.push_back(load_function());
   module_decls.push_back(process_function());
+  // module_decls.push_back(port_changed_function());
   module_decls.push_back(port_number_function());
 
   return new Module_decl(d->name(), module_decls);
@@ -1750,8 +1766,6 @@ Lowerer::goto_match(Goto_stmt* s)
 // A goto stmt actually translates into three statements.
 // It adds a call to advance() if the goto occurs within the context
 // of a decoder.
-//
-// It adds a call to gather_key() which has the runtime build the key pointer.
 //
 // It applys a call to match which takes a key and a table and attempts to find
 // a match. NOTE: The runtime should be responsible for handling the resources

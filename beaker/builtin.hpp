@@ -367,6 +367,8 @@ struct Builtin
   Expr* call_get_controller_port();
   Expr* call_get_reflow_port();
   Expr* call_get_dataplane(Decl*, Decl*);
+  Expr* call_port_id_up(Expr*);
+  Expr* call_port_id_down(Expr*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_flood(Expr* cxt);
@@ -414,6 +416,8 @@ private:
   Function_decl* get_all_port();
   Function_decl* get_controller_port();
   Function_decl* get_reflow_port();
+  Function_decl* port_id_up();
+  Function_decl* port_id_down();
   Function_decl* drop();
   Function_decl* flood();
   Function_decl* output();
