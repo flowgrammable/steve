@@ -70,9 +70,7 @@ Packet::Packet(Byte* data, int size)
   , timestamp_(0)
   , buf_handle_(nullptr)
   , buf_dev_(FP_BUF_ALLOC)
-{
-  std::copy(data, data + size, buf_);
-}
+{ }
 
 
 inline
@@ -82,9 +80,7 @@ Packet::Packet(Byte* data, int size, uint64_t time, void* buf_handle, Buff_t buf
   , timestamp_(time)
   , buf_handle_(buf_handle)
   , buf_dev_(buf_dev)
-{
-  std::copy(data, data + size, buf_);
-}
+{ }
 
 
 // Set the number of bytes to a smaller value.

@@ -52,12 +52,13 @@ constexpr char const* __pktinport       = "__pktinport";
 constexpr char const* __keyform         = "_KEYFORM_";
 
 // runtime interface functions
-constexpr char const* __load            = "config";
-constexpr char const* __process         = "pipeline";
+constexpr char const* __load            = "load";
+constexpr char const* __process         = "process";
 constexpr char const* __start           = "start";
 constexpr char const* __stop            = "stop";
 constexpr char const* __port_num        = "ports";
 constexpr char const* __unload          = "unload";
+constexpr char const* __port_notice     = "port_changed";
 
 
 // -------------------------------------------------------------------------- //
