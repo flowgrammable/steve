@@ -68,6 +68,10 @@ int main(int argc, char* argv[])
       Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
       dp->process(p1, &pkt1);
 
+      // // Suddenly down p1;
+      // p1->down();
+      // app->lib().exec("port_changed", &p1id);
+
       while(i < pkt_no) {
 
         Byte data2[1500] {

@@ -120,7 +120,7 @@ extern "C"
 void
 fp_drop(fp::Context* cxt)
 {
-  std::cout << "drop\n";
+  // std::cout << "drop\n";
 
   fp::Port* drop = cxt->dataplane()->get_drop_port();
   assert(drop);
@@ -146,7 +146,7 @@ fp_flood(fp::Context* cxt)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  std::cout << "ID: " << id << '\n';
+  // std::cout << "ID: " << id << '\n';
   //
   // for (auto s : cxt->strings_)
   //   std::cout << s << " ";
@@ -249,7 +249,7 @@ fp_port_id_is_up(fp::Dataplane* dp, fp::Port::Id id)
 {
   assert(dp);
   fp::Port* p = dp->get_port(id);
-  return true;
+  return !p->config_.down;
 }
 
 // Returns whether or not the given id exists.
