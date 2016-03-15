@@ -114,6 +114,7 @@ struct Lowerer
   Function_decl* process_function();
   Function_decl* port_number_function();
   Function_decl* start_function();
+  Function_decl  port_changed_function();
 
   Variable_decl* dataplane_pointer();
 

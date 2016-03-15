@@ -123,8 +123,9 @@ Parser::primary_expr()
     return on_all_port(tok);
 
   // controller port expr
-  if (Token tok = match_if(controller_kw))
-    return on_controller_port(tok);
+  // TODO: Disabling for now. May be needed later.
+  // if (Token tok = match_if(controller_kw))
+  //   return on_controller_port(tok);
 
   // reflow expr
   if (Token tok = match_if(reflow_kw))
