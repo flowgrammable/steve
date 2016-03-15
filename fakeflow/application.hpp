@@ -21,17 +21,19 @@ struct Dataplane;
 // functions such as the pipeline and configuration.
 struct Library
 {
-  using App_handle =  void*;
-  using Pipeline_fn = void (*)(Context*);
-  using Config_fn =   void (*)(Dataplane*);
-  using Port_fn =     int (*)();
+  using App_handle =      void*;
+  using Pipeline_fn =     void (*)(Context*);
+  using Config_fn =       void (*)(Dataplane*);
+  using Port_fn =         int (*)();
+  using Port_change_fn =  int (*)(int);
 
   // The user defined application functions.
-  const std::string handles_[3] =
+  const std::string handles_[4] =
   {
     "pipeline",
     "config",
-    "ports"
+    "ports",
+    "port_changed"
   };
 
   Library(App_handle);
@@ -40,10 +42,11 @@ struct Library
   // Executes the function matching the given string name.
   void exec(std::string const&, void* arg = nullptr);
 
-  App_handle  app_;
-  Pipeline_fn pipeline_;
-  Config_fn   config_;
-  Port_fn     port_;
+  App_handle      app_;
+  Pipeline_fn     pipeline_;
+  Config_fn       config_;
+  Port_fn         port_;
+  Port_change_fn  changed_;
 };
 
 

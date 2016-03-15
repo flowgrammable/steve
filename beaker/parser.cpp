@@ -123,8 +123,9 @@ Parser::primary_expr()
     return on_all_port(tok);
 
   // controller port expr
-  if (Token tok = match_if(controller_kw))
-    return on_controller_port(tok);
+  // TODO: Disabling for now. May be needed later.
+  // if (Token tok = match_if(controller_kw))
+  //   return on_controller_port(tok);
 
   // reflow expr
   if (Token tok = match_if(reflow_kw))
@@ -2466,6 +2467,10 @@ Parser::on_return(Expr* e)
 Stmt*
 Parser::on_if_then(Expr* e, Stmt* s)
 {
+  // If s is not a block, implicitly build a block over it.
+  if (!is<Block_stmt>(s))
+    s = new Block_stmt({s});
+
   return new If_then_stmt(e, s);
 }
 
@@ -2473,6 +2478,14 @@ Parser::on_if_then(Expr* e, Stmt* s)
 Stmt*
 Parser::on_if_else(Expr* e, Stmt* s1, Stmt* s2)
 {
+  // If s1 or s2 is not a block, implicitly build a block over it.
+  if (!is<Block_stmt>(s1))
+    s1 = new Block_stmt({s1});
+
+  // If s is not a block, implicitly build a block over it.
+  if (!is<Block_stmt>(s2))
+    s2 = new Block_stmt({s2});
+
   return new If_else_stmt(e, s1, s2);
 }
 
@@ -2480,6 +2493,10 @@ Parser::on_if_else(Expr* e, Stmt* s1, Stmt* s2)
 Stmt*
 Parser::on_while(Expr* c, Stmt* s)
 {
+  // If s is not a block, implicitly build a block over it.
+  if (!is<Block_stmt>(s))
+    s = new Block_stmt({s});
+
   return new While_stmt(c, s);
 }
 

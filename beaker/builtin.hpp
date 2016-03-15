@@ -37,6 +37,8 @@ constexpr char const* __raise_event     = "fp_raise_event";
 constexpr char const* __get_flow_egress = "fp_get_flow_egress";
 constexpr char const* __get_inport      = "fp_get_packet_in_port";
 constexpr char const* __get_inphysport  = "fp_get_packet_in_phys_port";
+constexpr char const* __port_up         = "fp_port_id_is_up";
+constexpr char const* __port_down       = "fp_port_id_is_down";
 constexpr char const* __get_all_port    = "fp_get_all_port";
 constexpr char const* __get_controller_port = "fp_get_controller_port";
 constexpr char const* __get_reflow_port = "fp_get_reflow_port";
@@ -52,12 +54,13 @@ constexpr char const* __pktinport       = "__pktinport";
 constexpr char const* __keyform         = "_KEYFORM_";
 
 // runtime interface functions
-constexpr char const* __load            = "config";
-constexpr char const* __process         = "pipeline";
+constexpr char const* __load            = "load";
+constexpr char const* __process         = "process";
 constexpr char const* __start           = "start";
 constexpr char const* __stop            = "stop";
 constexpr char const* __port_num        = "ports";
 constexpr char const* __unload          = "unload";
+constexpr char const* __port_changed    = "port_changed";
 
 
 // -------------------------------------------------------------------------- //
@@ -356,14 +359,16 @@ struct Builtin
   Expr* call_add_miss(Expr*, Expr*, Expr*, Expr*);
   Expr* call_match(Expr*, Expr*, Expr*, Expr_seq const& var_args);
   Expr* call_get_port(Decl*, Expr*, Expr*);
-  Expr* call_get_port_by_id(Expr*);
+  Expr* call_get_port_by_id(Expr*, Expr*);
   Expr* call_get_in_port(Expr*);
   Expr* call_get_in_phys_port(Expr*);
   Expr* call_get_flow_egress(Expr*);
-  Expr* call_get_all_port();
-  Expr* call_get_controller_port();
-  Expr* call_get_reflow_port();
+  Expr* call_get_all_port(Expr*);
+  Expr* call_get_controller_port(Expr*);
+  Expr* call_get_reflow_port(Expr*);
   Expr* call_get_dataplane(Decl*, Decl*);
+  Expr* call_port_id_up(Expr*, Expr*);
+  Expr* call_port_id_down(Expr*, Expr*);
   Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
   Expr* call_flood(Expr* cxt);
@@ -411,6 +416,8 @@ private:
   Function_decl* get_all_port();
   Function_decl* get_controller_port();
   Function_decl* get_reflow_port();
+  Function_decl* port_id_up();
+  Function_decl* port_id_down();
   Function_decl* drop();
   Function_decl* flood();
   Function_decl* output();

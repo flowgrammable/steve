@@ -21,7 +21,7 @@ event learn_mac
 	insert
 	{ eth.src } ->
 	{
-		puts("Using learned in learn.");
+		// puts("Using learned in learn.");
 		goto switch;
 	}
 	into learn;
@@ -31,7 +31,7 @@ event learn_mac
 	[timeout = 1000, egress = in_port]
 	{ eth.src } ->
 	{
-		puts("Using learned in switch.");
+		// puts("Using learned in switch.");
 		output egress;
 	}
 	into switch;
@@ -42,7 +42,7 @@ exact_table learn(eth.src)
 {
   miss ->
   {
-		puts("LEARN MISS");
+		// puts("LEARN MISS");
 		raise learn_mac;
     goto switch;
   }
@@ -53,7 +53,7 @@ exact_table switch(eth.dst)
 {
   miss ->
   {
-		puts("Flood, miss.");
+		// puts("Flood, miss.");
     flood;
   }
 }

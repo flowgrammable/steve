@@ -1,5 +1,6 @@
-Port p1 = 1;
-Port p2 = 2;
+Port p1;
+Port p2;
+Port p3;
 
 layout eth
 {
@@ -9,7 +10,6 @@ layout eth
 decoder start eth_d(eth)
 {
   p1;
-  // Should not be able to assign to ports.
   p1 = p2;
   output p1;
 }

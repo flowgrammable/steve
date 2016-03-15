@@ -346,6 +346,14 @@ Generator::gen(Literal_expr const* e)
     llvm::Value* v = build.getInt(integer);
     return v;
   }
+  if (t == get_port_type()) {
+    Integer_value val = v.get_integer();
+    llvm::APInt integer(32,
+                        val.decimal_str(),
+                        10);
+    llvm::Value* v = build.getInt(integer);
+    return v;
+  }
 
   // FIXME: How should we generate array literals? Are
   // these global constants or are they local alloca

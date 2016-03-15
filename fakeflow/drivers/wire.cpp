@@ -31,11 +31,20 @@ int main(int argc, char* argv[])
     // Add all ports
     dp->add_port(p1);
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
+    dp->add_port(p2);
+    std::cerr << "Added port 'p2' to data plane 'dp1'\n";
+    dp->add_drop_port();
 
     // Configure the data plane based on the applications needs.
     dp->configure();
     std::cerr << "Data plane configured\n";
 
+    // Notify the application of ports.
+    Application* app = dp->app();
+    int p1id = p1->id();
+    int p2id = p2->id();
+    app->lib().exec("port_changed", &p1id);
+    app->lib().exec("port_changed", &p2id);
 
     dp->up();
     std::cerr << "Data plane is up\n";
@@ -56,8 +65,12 @@ int main(int argc, char* argv[])
         0x08, 0x80
       };
 
-      Packet* pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
+
+      // // Suddenly down p1;
+      // p1->down();
+      // app->lib().exec("port_changed", &p1id);
 
       while(i < pkt_no) {
 
@@ -101,9 +114,9 @@ int main(int argc, char* argv[])
           0, 0
         };
 
-        Packet* pkt2 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+        Packet pkt2(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p2, pkt2);
+        dp->process(p2, &pkt2);
         ++i;
       }
       // timer dtor should print time here
@@ -147,9 +160,9 @@ int main(int argc, char* argv[])
         // checksum
         0, 0
       };
-      Packet* pkt3 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      Packet pkt3(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-      dp->process(p2, pkt3);
+      dp->process(p2, &pkt3);
 
     } // block
   }

@@ -84,8 +84,7 @@ Packet::limit(int n)
   size_ = n;
 }
 
-
-
+// Packet*   packet_copy()
 Packet*   packet_create(Byte*, int, uint64_t, void*, Buff_t);
 void      packet_destroy(Packet*);
 

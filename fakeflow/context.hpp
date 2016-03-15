@@ -114,7 +114,7 @@ public:
   { }
 
   Context(Packet p, Dataplane* dp, unsigned int in, unsigned int in_phy, int tunnelid)
-    : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p)
+    : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p), dp_(dp)
   { }
 
   // Returns the packet owned by the context.
@@ -267,6 +267,9 @@ Context::write_action(Action a)
 inline void
 Context::apply_actions()
 {
+  // for (Action const& a : actions_)
+  //   std::cout << a;
+
   for (Action const& a : actions_)
     apply_action(a);
 }
@@ -289,7 +292,8 @@ Context::clear_actions()
 extern "C"
 {
 
-void      fp_context_set_output_port(fp::Context*, unsigned int);
+void      fp_context_set_output_port_id(fp::Context*, unsigned int);
+void      fp_context_set_output_port(fp::Context*, fp::Port*);
 
 } // extern "C"
 

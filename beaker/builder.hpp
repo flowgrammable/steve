@@ -85,6 +85,14 @@ make_cstr(char const* str)
   return new Literal_expr(t, v);
 }
 
+
+inline Expr*
+invalid_port()
+{
+  static Literal_expr port0(get_port_type(), 0);
+  return &port0;
+}
+
 // ----------------------------------------------------- //
 //      Expression building
 

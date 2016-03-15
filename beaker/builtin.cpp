@@ -470,6 +470,7 @@ Builtin::get_port_by_id()
   Type const* port_type = get_port_type();
 
   Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
     new Parameter_decl(get_identifier("id"), get_integer_type())
   };
 
@@ -541,7 +542,9 @@ Builtin::get_all_port()
 
   Type const* port_type = get_port_type();
 
-  Decl_seq parms {};
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+  };
 
   Type const* fn_type = get_function_type(parms, port_type);
 
@@ -561,7 +564,9 @@ Builtin::get_controller_port()
 
   Type const* port_type = get_port_type();
 
-  Decl_seq parms {};
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+  };
 
   Type const* fn_type = get_function_type(parms, port_type);
 
@@ -581,7 +586,9 @@ Builtin::get_reflow_port()
 
   Type const* port_type = get_port_type();
 
-  Decl_seq parms {};
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+  };
 
   Type const* fn_type = get_function_type(parms, port_type);
 
@@ -609,6 +616,52 @@ Builtin::get_flow_egress()
   };
 
   Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Calls to see if the port with the given ID is up.
+//
+//  bool port_id_up(int id)
+Function_decl*
+Builtin::port_id_up()
+{
+  Symbol const* fn_name = get_identifier(__port_up);
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+    new Parameter_decl(get_identifier("id"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, get_boolean_type());
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Calls to see if the port with the given ID is down.
+//
+//  bool port_id_down(int id)
+Function_decl*
+Builtin::port_id_down()
+{
+  Symbol const* fn_name = get_identifier(__port_down);
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+    new Parameter_decl(get_identifier("id"), get_integer_type())
+  };
+
+  Type const* fn_type = get_function_type(parms, get_boolean_type());
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, {}, block({}));
@@ -913,8 +966,8 @@ Builtin::init_builtins()
     {__rmv_miss, remove_miss()},
     {__add_miss, add_miss()},
     {__match, match()},
-    {__gather, gather()},
-    {__get_port, get_port()},
+    // {__gather, gather()},
+    // {__get_port, get_port()},
     {__get_port_id, get_port_by_id()},
     {__get_inport, get_in_port()},
     {__get_inphysport, get_in_phys_port()},
@@ -922,6 +975,8 @@ Builtin::init_builtins()
     {__get_controller_port, get_controller_port()},
     {__get_reflow_port, get_reflow_port()},
     {__get_flow_egress, get_flow_egress()},
+    {__port_up, port_id_up()},
+    {__port_down, port_id_down()},
     {__drop, drop()},
     {__flood, flood()},
     {__output, output()},
@@ -1131,12 +1186,12 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 
 
 Expr*
-Builtin::call_get_port_by_id(Expr* id)
+Builtin::call_get_port_by_id(Expr* dp, Expr* id)
 {
   Function_decl* fn = builtin_fn.find(__get_port_id)->second;
   assert(fn);
 
-  Expr* e = new Call_expr(decl_id(fn), {id});
+  Expr* e = new Call_expr(decl_id(fn), {dp, id});
   return e;
 }
 
@@ -1162,32 +1217,32 @@ Builtin::call_get_in_phys_port(Expr* cxt)
 
 
 Expr*
-Builtin::call_get_all_port()
+Builtin::call_get_all_port(Expr* dp)
 {
   Function_decl* fn = builtin_fn.find(__get_all_port)->second;
   assert(fn);
 
-  return new Call_expr(decl_id(fn), {});
+  return new Call_expr(decl_id(fn), {dp});
 }
 
 
 Expr*
-Builtin::call_get_controller_port()
+Builtin::call_get_controller_port(Expr* dp)
 {
   Function_decl* fn = builtin_fn.find(__get_controller_port)->second;
   assert(fn);
 
-  return new Call_expr(decl_id(fn), {});
+  return new Call_expr(decl_id(fn), {dp});
 }
 
 
 Expr*
-Builtin::call_get_reflow_port()
+Builtin::call_get_reflow_port(Expr* dp)
 {
   Function_decl* fn = builtin_fn.find(__get_reflow_port)->second;
   assert(fn);
 
-  return new Call_expr(decl_id(fn), {});
+  return new Call_expr(decl_id(fn), {dp});
 }
 
 
@@ -1212,6 +1267,26 @@ Builtin::call_get_dataplane(Decl* dp, Decl* target)
   Get_dataplane* e = new Get_dataplane(dp, target);
 
   return e;
+}
+
+
+Expr*
+Builtin::call_port_id_up(Expr* dp, Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__port_up)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {dp, id});
+}
+
+
+Expr*
+Builtin::call_port_id_down(Expr* dp, Expr* id)
+{
+  Function_decl* fn = builtin_fn.find(__port_down)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {dp, id});
 }
 
 

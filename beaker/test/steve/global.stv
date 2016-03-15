@@ -1,7 +1,0 @@
-var x : int = 0;
-
-def main()->int
-{
-  x = 5;
-  return x;
-}

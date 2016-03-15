@@ -1,5 +1,8 @@
 #include "libsteve.hpp"
 
+// ---------------------------------------------------------------------------//
+//            Packet modification
+
 uint32_t
 fp_get_packet_in_port(fp::Context* c)
 {
@@ -97,4 +100,64 @@ fp_set_field(fp::Context* cxt, int fld, int len, fp::Byte* val)
   fp::native_to_network_order(p, len);
   // Update the length if it changed (which it shouldn't).
   b.length = len;
+}
+
+
+// Clear the context's action list.
+void
+fp_clear(fp::Context* cxt)
+{
+  cxt->clear_actions();
+}
+
+
+// ---------------------------------------------------------------------------//
+//            Writing actions
+
+void
+fp_write_drop(fp::Context* cxt)
+{
+  fp::Output_action out{0xfffffff0};
+  fp::Action action;
+  action.value.output = out;
+  action.type = fp::Action::Type::OUTPUT;
+  cxt->write_action(action);
+}
+
+
+// FIXME: Change that port action when there actually is a flood
+// port.
+void
+fp_write_flood(fp::Context* cxt)
+{
+  fp::Output_action out{0xfffffff0};
+  fp::Action action;
+  action.value.output = out;
+  action.type = fp::Action::Type::OUTPUT;
+  cxt->write_action(action);
+}
+
+
+void
+fp_write_output(fp::Context* cxt, unsigned int id)
+{
+  fp::Output_action out{id};
+  fp::Action action;
+  action.value.output = out;
+  action.type = fp::Action::Type::OUTPUT;
+  cxt->write_action(action);
+}
+
+
+// NOTE: We do not flip the bytes to the correct order here.
+// Trust that that gets done during application.
+void
+fp_write_set_field(fp::Context* cxt, int fld, int len, fp::Byte* buf)
+{
+  fp::Binding& b = cxt->get_field_binding(fld);
+  // Update the length if it changed (which it shouldn't).
+  b.length = len;
+  fp::Set_action set(fp::Packet_memory, b.offset, b.length, buf);
+
+  cxt->write_action(fp::Action(set));
 }

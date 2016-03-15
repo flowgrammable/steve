@@ -33,15 +33,24 @@ int main(int argc, char* argv[])
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
     dp->add_port(p2);
     std::cerr << "Added port 'p2' to data plane 'dp1'\n";
+    dp->add_drop_port();
 
     // Configure the data plane based on the applications needs.
     dp->configure();
     std::cerr << "Data plane configured\n";
 
+    // Notify the application of ports.
+    Application* app = dp->app();
+    int p1id = p1->id();
+    int p2id = p2->id();
+    app->lib().exec("port_changed", &p1id);
+    app->lib().exec("port_changed", &p2id);
+
     dp->up();
     std::cerr << "Data plane is up\n";
 
     std::cout << "Sending " << pkt_no << " packets.\n";
+
 
     { // block
 
@@ -58,8 +67,8 @@ int main(int argc, char* argv[])
         0x08, 0x80, 0, 0, 0
       };
 
-      Packet* pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
 
       while(i < pkt_no) {
 
@@ -73,16 +82,16 @@ int main(int argc, char* argv[])
           0x08, 0x00, 0, 0, 0
         };
 
-        Packet* pkt2 = packet_create(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+        Packet pkt2(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-        dp->process(p2, pkt2);
+        dp->process(p2, &pkt2);
         ++i;
       }
 
       // Send a second copy of the first packet to confirm the second packet
       // caused the first src to have been learned.
-      pkt1 = packet_create(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
-      dp->process(p1, pkt1);
+      pkt1 = Packet(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
+      dp->process(p1, &pkt1);
       // timer dtor should print time here
 
     } // block

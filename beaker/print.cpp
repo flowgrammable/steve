@@ -92,14 +92,14 @@ std::ostream& operator<<(std::ostream& os, Return_void_stmt const& s)
 
 std::ostream& operator<<(std::ostream& os, If_then_stmt const& s)
 {
-  return os << "if(" << *s.condition() << ")" << *s.body();
+  return os << "if(" << *s.condition() << ")" << '\n' << *s.body();
 }
 
 
 std::ostream& operator<<(std::ostream& os, If_else_stmt const& s)
 {
-  return os << "if(" << *s.condition() << ")" << *s.true_branch()
-            << "else" << *s.false_branch();
+  return os << "if(" << *s.condition() << ")" << '\n' << *s.true_branch()
+            << "\nelse" << '\n' << *s.false_branch();
 }
 
 
@@ -784,58 +784,58 @@ operator<<(std::ostream& os, Pos_expr const&)
 
 
 std::ostream&
-operator<<(std::ostream& os, Eq_expr const&)
+operator<<(std::ostream& os, Eq_expr const& e)
 {
-  return os;
+  return os << *e.left() << " == " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Ne_expr const&)
+operator<<(std::ostream& os, Ne_expr const& e)
 {
-  return os;
+  return os << *e.left() << " != " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Lt_expr const&)
+operator<<(std::ostream& os, Lt_expr const& e)
 {
-  return os;
+  return os << *e.left() << " < " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Gt_expr const&)
+operator<<(std::ostream& os, Gt_expr const& e)
 {
-  return os;
+  return os << *e.left() << " > " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Le_expr const&)
+operator<<(std::ostream& os, Le_expr const& e)
 {
-  return os;
+  return os << *e.left() << " <= " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Ge_expr const&)
+operator<<(std::ostream& os, Ge_expr const& e)
 {
-  return os;
+  return os << *e.left() << " >= " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, And_expr const&)
+operator<<(std::ostream& os, And_expr const& e)
 {
-  return os;
+  return os << *e.left() << " && " << *e.right();
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Or_expr const&)
+operator<<(std::ostream& os, Or_expr const& e)
 {
-  return os;
+  return os << *e.left() << " || " << *e.right();
 }
 
 

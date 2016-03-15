@@ -4,6 +4,7 @@
 #include "buffer.hpp"
 #include "types.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cassert>
 
@@ -36,6 +37,12 @@ struct Packet
   Packet(Byte (&buf)[N])
     : Packet(buf, N)
   { }
+
+  ~Packet()
+  {
+    if (buf_)
+      delete [] buf_;
+  }
 
   // Returns a pointer to the raw buffer.
   Byte const* data() const { return buf_; }
@@ -83,7 +90,6 @@ Packet::limit(int n)
   assert(n <= size_);
   size_ = n;
 }
-
 
 
 Packet*   packet_create(Byte*, int, uint64_t, void*, Buff_t);
