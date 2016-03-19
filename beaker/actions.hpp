@@ -337,9 +337,9 @@ is_terminator(Stmt* s)
 {
   return is<Decode_stmt>(s)
       || is<Goto_stmt>(s)
-      || is<Drop>(s)
-      || is<Flood>(s)
-      || is<Output>(s);
+      || is<Drop>(s);
+      // || is<Flood>(s)
+      // || is<Output>(s);
       // FIXME: Is raise a terminating action? I don't think it is.
       // Raise should cause a copy of the context to be passed to an
       // asynchronous event handler and allow the continuation of processing

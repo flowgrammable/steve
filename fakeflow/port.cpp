@@ -89,7 +89,6 @@ Port::send(Context* cxt)
 {
   // packet_destroy(cxt->packet_);
   cxt->apply_actions();
-  delete cxt;
 }
 
 

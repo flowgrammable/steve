@@ -21,6 +21,4 @@ decoder start eth_d(eth)
   }
 
   puts("Performing decode and routing.");
-
-  output p1;
 }

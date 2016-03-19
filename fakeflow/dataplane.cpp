@@ -88,6 +88,7 @@ Dataplane::process(Port* port, Packet* pkt)
   assert(c->dataplane());
   // thread_pool.assign(new Task("pipeline", c));
   app_->lib().exec("process", c);
+  delete c;
 
   // static App1 a(tables_.front());
   // a.pipeline(c, port);

@@ -1977,8 +1977,7 @@ Lowerer::lower(Output* s)
 
   return
   {
-    statement(output),
-    return_void()
+    statement(output)
   };
 }
 
@@ -2011,8 +2010,7 @@ Lowerer::lower(Output_egress* s)
   // No safety guarantees exist after a packet has been outputted.
   return
   {
-    statement(output),
-    return_void()
+    statement(output)
   };
 }
 

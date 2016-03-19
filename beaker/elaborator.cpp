@@ -2225,21 +2225,21 @@ Elaborator::elaborate(Flow_decl* d)
   d->table_ = table;
 
   if (Block_stmt* block = as<Block_stmt>(d->instructions_)) {
-    if (!has_terminator_action(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration missing guaranteed terminator.\n";
-      ss << *block;
-
-      throw Type_error(locate(block), ss.str());
-    }
-
-    if (has_multiple_terminators(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration has multiple terminators.\n";
-      ss << *block;
-
-      throw Type_error(locate(block), ss.str());
-    }
+    // if (!has_terminator_action(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration missing guaranteed terminator.\n";
+    //   ss << *block;
+    //
+    //   throw Type_error(locate(block), ss.str());
+    // }
+    //
+    // if (has_multiple_terminators(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration has multiple terminators.\n";
+    //   ss << *block;
+    //
+    //   throw Type_error(locate(block), ss.str());
+    // }
 
     for (auto s : block->statements()) {
       if (!is_action(s)) {
@@ -2949,23 +2949,23 @@ Elaborator::elaborate_def(Decode_decl* d)
   // basically a special function body
   if (d->body()) {
     d->body_ = elaborate(d->body());
-    if (Block_stmt* block = as<Block_stmt>(d->body_)) {
-      if (!has_terminator_action(block->statements())) {
-        std::stringstream ss;
-        ss << "Decode declaration missing guaranteed terminator.\n";
-        ss << *block;
-
-        throw Type_error(locate(block), ss.str());
-      }
-
-      if (has_multiple_terminators(block->statements())) {
-        std::stringstream ss;
-        ss << "Flow declaration has multiple terminators.\n";
-        ss << *block;
-
-        throw Type_error(locate(block), ss.str());
-      }
-    }
+    // if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+    //   if (!has_terminator_action(block->statements())) {
+    //     std::stringstream ss;
+    //     ss << "Decode declaration missing guaranteed terminator.\n";
+    //     ss << *block;
+    //
+    //     throw Type_error(locate(block), ss.str());
+    //   }
+    //
+    //   if (has_multiple_terminators(block->statements())) {
+    //     std::stringstream ss;
+    //     ss << "Flow declaration has multiple terminators.\n";
+    //     ss << *block;
+    //
+    //     throw Type_error(locate(block), ss.str());
+    //   }
+    // }
   }
 
   return d;
@@ -3630,13 +3630,13 @@ Elaborator::elaborate_added_flow_body(Flow_decl* f, Table_decl* t)
 
     // Confirmt that the flow body has a terminating action to ensure
     // progress is made through the pipeline.
-    if (!has_terminator_action(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration missing guaranteed terminator.\n";
-      ss << *f;
-
-      throw Type_error(locate(f), ss.str());
-    }
+    // if (!has_terminator_action(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration missing guaranteed terminator.\n";
+    //   ss << *f;
+    //
+    //   throw Type_error(locate(f), ss.str());
+    // }
   }
 
   return f;

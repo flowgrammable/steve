@@ -337,10 +337,8 @@ Parser::ordering_expr()
 
 // Parse an equality expression.
 //
-//    equality-expr -> equality-expr '<' ordering-expr
-//                   | equality-expr '>' ordering-expr
-//                   | equality-expr '<=' ordering-expr
-//                   | equality-expr '>=' ordering-expr
+//    equality-expr -> equality-expr '==' ordering-expr
+//                   | equality-expr '!-' ordering-expr
 //                   | ordering-expr
 Expr*
 Parser::equality_expr()
