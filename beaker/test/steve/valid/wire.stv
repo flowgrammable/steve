@@ -12,6 +12,9 @@ Port p2;
 
 decoder start eth_d(eth)
 {
+  output p1;
+  output p2;
+
   if (in_port == p1 && p2 != 0)
     output p2;
   if (in_port == p2 && p1 != 0)

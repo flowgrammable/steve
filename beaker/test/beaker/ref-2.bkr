@@ -3,5 +3,5 @@ def main() -> int
   var x : int = 10;
   var r : int& = x;
   r = 5;
-  return r;
+  return x;
 }

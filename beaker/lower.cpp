@@ -189,11 +189,10 @@ struct Lower_global_def
 Function_decl*
 Lowerer::load_function()
 {
+  // Begin constructing the type and parameters of the function.
   Type const* void_type = get_void_type();
   auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
-  Decl_seq parms {
-    p1
-  };
+  Decl_seq parms { p1 };
 
   Type const* fn_type = get_function_type(parms, void_type);
   Symbol const* fn_name = get_identifier(__load);
@@ -223,8 +222,7 @@ Lowerer::load_function()
 }
 
 
-// Process takes a context pointer
-// and passes it to the first decoder specified
+// Process takes a context pointer and passes it to the first decoder specified
 // in the pipeline.
 Function_decl*
 Lowerer::process_function()
@@ -418,7 +416,7 @@ Lowerer::port_number_function()
 
 
 // Maintain a pointer to the dataplane that this application has been loaded
-// by.
+// by. This is the global variable which stores this pointer.
 Variable_decl*
 Lowerer::dataplane_pointer()
 {
@@ -2034,8 +2032,7 @@ Lowerer::lower(Flood* s)
   // deleted by then.
   return
   {
-    statement(flood),
-    return_void()
+    statement(flood)
   };
 }
 

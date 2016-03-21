@@ -2012,6 +2012,8 @@ Elaborator::elaborate(Module_decl* m)
   for (Decl*& d : m->decls_)
     d = elaborate_def(d);
 
+  // We delay the elaboration of flow bodies because we do not
+  // want the bodies to capture names from the surrounding scope.
   for (Flow_decl*& flow : added_flows_) {
     elaborate_added_flow_body(flow, flow->table());
   }
