@@ -858,7 +858,7 @@ Lowerer::lower_global_decl(Table_decl* d)
   //
   // this should be a table pointer not a table object
   Variable_decl* table = new Variable_decl(d->name(),
-                                           get_reference_type(opaque_table),
+                                           get_opaque_type()->ref(),
                                            new Default_init(d->type()));
 
   // This variable should be initialized during the load function
@@ -1026,7 +1026,7 @@ Function_decl*
 Lowerer::lower_init_flow(Table_decl* t, Flow_decl* flow)
 {
   Type const* cxt_ref = get_context_type()->ref();
-  Type const* tbl_ref = opaque_table->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* flow_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
@@ -1077,7 +1077,7 @@ Lowerer::lower_miss_case(Table_decl* d)
   // Lower the miss case if there is one
   if (d->miss_case()) {
     Type const* cxt_ref = get_context_type()->ref();
-    Type const* tbl_ref = opaque_table->ref();
+    Type const* tbl_ref = get_opaque_type()->ref();
     Type const* flow_ref = get_opaque_type()->ref();
     Type const* void_type = get_void_type();
 
@@ -2088,7 +2088,7 @@ Decl*
 Lowerer::construct_added_flow(Table_decl* table, Flow_decl* flow)
 {
   Type const* cxt_ref = get_context_type()->ref();
-  Type const* tbl_ref = opaque_table->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 

@@ -144,8 +144,6 @@ private:
   // Maintain the number of ports
   int port_count;
 
-  Type const* opaque_table = get_opaque_table();
-
   // Runtime declarations
   Decl_seq prelude;
 

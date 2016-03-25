@@ -155,7 +155,7 @@ Builtin::get_table()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* ret_type = get_opaque_table()->ref();
+  Type const* ret_type = get_opaque_type()->ref();
   Symbol const* fn_name = get_identifier(__get_table);
 
   Decl_seq parms =
@@ -186,7 +186,7 @@ Builtin::add_init_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
@@ -228,7 +228,7 @@ Builtin::add_new_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
@@ -270,7 +270,7 @@ Builtin::remove_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
   Type const* buffer_type = get_block_type(get_character_type());
 
@@ -302,7 +302,7 @@ Builtin::add_miss()
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
   Type const* flow_ref = get_opaque_type()->ref();
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   // Flows actually become free functions so they have function
@@ -340,7 +340,7 @@ Builtin::remove_miss()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
   Symbol const* fn_name = get_identifier(__rmv_miss);
@@ -373,7 +373,7 @@ Builtin::match()
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
   Type const* ret_type = get_void_type();
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Symbol const* fn_name = get_identifier(__match);
 
