@@ -724,9 +724,10 @@ Generator::gen(Block_conv const* e)
 llvm::Value*
 Generator::gen(Promotion_conv const* e)
 {
+  Integer_type const* int_t = as<Integer_type>(e->target());
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
-  return build.CreateZExt(v, t);
+  return build.CreateIntCast(v, t, int_t->is_signed());
 }
 
 
@@ -735,9 +736,10 @@ Generator::gen(Promotion_conv const* e)
 llvm::Value*
 Generator::gen(Demotion_conv const* e)
 {
+  Integer_type const* int_t = as<Integer_type>(e->target());
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
-  return build.CreateTrunc(v, t);
+  return build.CreateIntCast(v, t, int_t->is_signed());
 }
 
 

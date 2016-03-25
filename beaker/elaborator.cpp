@@ -568,29 +568,25 @@ Expr*
 check_binary_arithmetic_expr(Elaborator& elab, T* e)
 {
   // Check for the larger of two values.
-  e->first = elab.elaborate(e->first);
-  e->second = elab.elaborate(e->second);
-  Type const* t1 = e->first->type();
-  Type const* t2 = e->second->type();
-  assert(t1);
-  assert(t2);
-  int p1 = precision(t1);
-  int p2 = precision(t2);
-
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
   // Convert to the larger of the two integers.
   // FIXME: Do not always convert to default signed int.
-  Type const* z = nullptr;
-  if (p1 > p2)
-    z = get_integer_type(p1, signed_int, native_order);
-  else
-    z = get_integer_type(p2, signed_int, native_order);
+  Type const* z = get_scalar_conversion_target(e1, e2);
+
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  }
 
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
-    throw Type_error({}, "left operand cannot be converted to 'int'");
+    throw Type_error({}, "left operand cannot be converted.");
   if (!c2)
-    throw Type_error({}, "right operand cannot be converted to 'int'");
+    throw Type_error({}, "right operand cannot be converted.");
 
   // Rebuild the expression with the
   // converted operands.
@@ -833,9 +829,20 @@ Expr*
 check_equality_expr(Elaborator& elab, Binary_expr* e)
 {
   // Apply conversions.
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = get_scalar_conversion_target(e1, e2);
   Type const* b = get_boolean_type();
 
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  };
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
@@ -884,8 +891,20 @@ Expr*
 check_ordering_expr(Elaborator& elab, Binary_expr* e)
 {
   // Apply conversions.
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = get_scalar_conversion_target(e1, e2);
   Type const* b = get_boolean_type();
+
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  };
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
