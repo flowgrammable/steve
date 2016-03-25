@@ -432,7 +432,6 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Field_name_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_access_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
-    Expr* operator()(Create_table* e) const { return elab.elaborate(e); }
     Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
     Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
@@ -1892,15 +1891,6 @@ Elaborator::elaborate(Egress_port* e)
 
 Expr*
 Elaborator::elaborate(Get_port* e)
-{
-  // elaborate it as a call expr
-  Call_expr* call = as<Call_expr>(e);
-  return elaborate(call);
-}
-
-
-Expr*
-Elaborator::elaborate(Create_table* e)
 {
   // elaborate it as a call expr
   Call_expr* call = as<Call_expr>(e);

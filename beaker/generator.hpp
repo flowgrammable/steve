@@ -118,7 +118,6 @@ struct Generator
 
   // builtin special generation
   llvm::Value* gen(Get_port const*);
-  llvm::Value* gen(Create_table const*);
   llvm::Value* gen(Get_dataplane const*);
 
   void gen(Stmt const*);

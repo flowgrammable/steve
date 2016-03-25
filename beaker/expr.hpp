@@ -88,7 +88,6 @@ struct Expr::Visitor
   virtual void visit(Field_name_expr const*) = 0;
   virtual void visit(Field_access_expr const*) = 0;
   virtual void visit(Get_port const*) = 0;
-  virtual void visit(Create_table const*) = 0;
   virtual void visit(Get_dataplane const*) = 0;
   virtual void visit(Port_expr const*) = 0;
   virtual void visit(Inport_expr const*) = 0;
@@ -150,7 +149,6 @@ struct Expr::Mutator
   virtual void visit(Field_name_expr*) = 0;
   virtual void visit(Field_access_expr*) = 0;
   virtual void visit(Get_port*) = 0;
-  virtual void visit(Create_table*) = 0;
   virtual void visit(Get_dataplane*) = 0;
   virtual void visit(Port_expr*) = 0;
   virtual void visit(Inport_expr*) = 0;
@@ -1071,7 +1069,6 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
   void visit(Field_name_expr const* e) { this->invoke(e); }
   void visit(Field_access_expr const* e) { this->invoke(e); }
   void visit(Get_port const* e) { this->invoke(e); }
-  void visit(Create_table const* e) { this->invoke(e); }
   void visit(Get_dataplane const* e) { this->invoke(e); }
   void visit(Port_expr const* e) { this->invoke(e); }
   void visit(Inport_expr const* e) { this->invoke(e); }
@@ -1149,7 +1146,6 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
   void visit(Field_name_expr* e) { this->invoke(e); }
   void visit(Field_access_expr* e) { this->invoke(e); }
   void visit(Get_port* e) { this->invoke(e); }
-  void visit(Create_table* e) { this->invoke(e); }
   void visit(Get_dataplane* e) { this->invoke(e); }
   void visit(Port_expr* e) { this->invoke(e); }
   void visit(Inport_expr* e) { this->invoke(e); }

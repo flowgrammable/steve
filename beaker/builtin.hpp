@@ -84,23 +84,6 @@ struct Get_port : Call_expr
 };
 
 
-// Tell the dataplane to create a table
-// The create_table function from the runtime has
-// the form:
-//
-// void get_table(int id, int key_size, int flow_max, ...)
-//
-struct Create_table : Call_expr
-{
-  using Call_expr::Call_expr;
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* table_;
-};
-
-
 // Retrieve a pointer to the dataplane and store it in a variable.
 struct Get_dataplane : Expr
 {

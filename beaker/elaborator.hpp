@@ -136,7 +136,6 @@ public:
   Expr* elaborate(Egress_port* e);
 
   Expr* elaborate(Get_port* e);
-  Expr* elaborate(Create_table* e);
   Expr* elaborate(Get_dataplane* e);
 
   Decl* elaborate(Decl*);

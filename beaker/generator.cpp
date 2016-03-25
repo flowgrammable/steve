@@ -311,7 +311,6 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
     llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
     llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
@@ -861,24 +860,6 @@ Generator::gen(Get_port const* e)
   llvm::Value* port = bind->second;
 
   return build.CreateStore(res, port);
-}
-
-
-llvm::Value*
-Generator::gen(Create_table const* e)
-{
-  // generate the call
-  llvm::Value* fn = gen(e->target());
-  std::vector<llvm::Value*> args;
-  for (Expr const* a : e->arguments())
-    args.push_back(gen(a));
-  llvm::Value* res = build.CreateCall(fn, args);
-
-  assert(e->table_);
-  auto const* bind = stack.lookup(e->table_);
-  llvm::Value* table = bind->second;
-
-  return build.CreateStore(res, table);
 }
 
 
