@@ -91,7 +91,6 @@ public:
   Stmt* decode_stmt();
   Stmt* goto_stmt();
   Stmt* drop_stmt();
-  Stmt* flood_stmt();
   Stmt* clear_stmt();
   Stmt* output_stmt();
   Stmt* set_stmt();
@@ -207,7 +206,6 @@ private:
   Stmt* on_decode(Expr*, Expr*);
   Stmt* on_goto(Expr*, Expr*);
   Stmt* on_drop();
-  Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
   Stmt* on_output_egress();

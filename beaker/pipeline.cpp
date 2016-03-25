@@ -31,14 +31,12 @@ struct Find_branches
   void operator()(Action const* s) { }
   void operator()(Drop const* s) { }
   void operator()(Output const* s) { }
-  void operator()(Flood const* s) { }
   void operator()(Clear const* s) { }
   void operator()(Set_field const* s) { }
   void operator()(Insert_flow const* s) { }
   void operator()(Remove_flow const* s) { }
   void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
-  void operator()(Write_flood const* s) { }
   void operator()(Write_set_field const* s) { }
 
 
@@ -129,7 +127,6 @@ struct Find_products
   void operator()(Action const* s) { }
   void operator()(Drop const* s) { }
   void operator()(Output const* s) { }
-  void operator()(Flood const* s) { }
   void operator()(Clear const* s) { }
   void operator()(Set_field const* s) { }
   void operator()(Insert_flow const* s) { }
@@ -137,7 +134,6 @@ struct Find_products
   void operator()(Raise const* s) { }
   void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
-  void operator()(Write_flood const* s) { }
   void operator()(Write_set_field const* s) { }
 
   // the only productions (for now) come out of decl statements

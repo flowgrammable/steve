@@ -42,7 +42,6 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Action const* s) { os << *s; }
     void operator()(Drop const* s) { os << *s; }
     void operator()(Output const* s) { os << *s; }
-    void operator()(Flood const* s) { os << *s; }
     void operator()(Insert_flow const* s) { os << *s; }
     void operator()(Remove_flow const* s) { os << *s; }
     void operator()(Write_drop const* s) { os << *s; }
@@ -173,12 +172,6 @@ std::ostream& operator<<(std::ostream& os, Action const& s)
 std::ostream& operator<<(std::ostream& os, Drop const& s)
 {
   return os << "drop;";
-}
-
-
-std::ostream& operator<<(std::ostream& os, Flood const& s)
-{
-  return os << "flood;";
 }
 
 

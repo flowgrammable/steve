@@ -1490,20 +1490,6 @@ Parser::drop_stmt()
   return on_drop();
 }
 
-
-// Parse a flood stmt.
-//
-//    flood-stmt -> 'flood;'
-Stmt*
-Parser::flood_stmt()
-{
-  match(flood_kw);
-  match(semicolon_tok);
-
-  return on_flood();
-}
-
-
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
@@ -1585,9 +1571,6 @@ Parser::write_stmt()
       break;
     case output_kw:
       s = output_stmt();
-      break;
-    case flood_kw:
-      s = flood_stmt();
       break;
     case set_kw:
       s = set_stmt();
@@ -1726,9 +1709,6 @@ Parser::stmt()
 
     case output_kw:
       return output_stmt();
-
-    case flood_kw:
-      return flood_stmt();
 
     case clear_kw:
       return clear_stmt();
@@ -2577,13 +2557,6 @@ Parser::on_drop()
 
 
 Stmt*
-Parser::on_flood()
-{
-  return new Flood();
-}
-
-
-Stmt*
 Parser::on_clear()
 {
   return new Clear();
@@ -2623,12 +2596,8 @@ Parser::on_write(Stmt* s)
 {
   if (is<Drop>(s))
     return new Write_drop(s);
-  else if (is<Output_egress>(s))
-    return new Write_output_egress(s);
   else if (is<Output>(s))
     return new Write_output(s);
-  else if (is<Flood>(s))
-    return new Write_flood(s);
   else if (is<Set_field>(s))
     return new Write_set_field(s);
 

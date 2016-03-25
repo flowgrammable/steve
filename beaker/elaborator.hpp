@@ -213,8 +213,6 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
-  Stmt* elaborate(Output_egress*);
-  Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);
@@ -223,8 +221,6 @@ public:
   Stmt* elaborate(Raise*);
   Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
-  Stmt* elaborate(Write_output_egress*);
-  Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
   // Helper functions.

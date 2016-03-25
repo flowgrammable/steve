@@ -167,7 +167,6 @@ struct Action;
 struct Drop;
 struct Output;
 struct Output_egress;
-struct Flood;
 struct Clear;
 struct Group;
 struct Set_field;
@@ -178,8 +177,6 @@ struct Remove_miss;
 struct Raise;
 struct Write_drop;
 struct Write_output;
-struct Write_output_egress;
-struct Write_flood;
 struct Write_set_field;
 struct Write_copy_field;
 

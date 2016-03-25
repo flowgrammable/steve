@@ -24,13 +24,6 @@ struct Drop : Action
 };
 
 
-struct Flood : Action
-{
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-};
-
-
 // Output the packet to a given
 // port.
 struct Output : Action
@@ -255,38 +248,6 @@ struct Write_output : Action
 };
 
 
-// Write output egress action to context.
-struct Write_output_egress : Action
-{
-  Write_output_egress(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Output_egress* output() const { return cast<Output_egress>(first); }
-
-  Stmt* first;
-};
-
-
-// Write a flood action to context.
-struct Write_flood : Action
-{
-  Write_flood(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Flood* flood() const { return cast<Flood>(first); }
-
-  Stmt* first;
-};
-
-
 // Write set field
 struct Write_set_field : Action
 {
@@ -300,18 +261,6 @@ struct Write_set_field : Action
   Set_field* set_field() const { return cast<Set_field>(first); }
 
   Stmt* first;
-};
-
-
-// Write add field
-struct Write_add_field : Action
-{
-};
-
-
-// Write rmv field
-struct Write_del_field : Action
-{
 };
 
 

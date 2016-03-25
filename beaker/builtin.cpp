@@ -718,31 +718,6 @@ Builtin::drop()
 }
 
 
-// This instructs the runtime to flood the packet.
-//
-//    void flood(Context*)
-Function_decl*
-Builtin::flood()
-{
-  Symbol const* fn_name = get_identifier(__flood);
-
-  Type const* void_type = get_void_type();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
 // This instructs the runtime to send the packet out of the given port.
 //
 //    void output(Context*, Port*)
@@ -835,32 +810,6 @@ Function_decl*
 Builtin::write_drop()
 {
   Symbol const* fn_name = get_identifier(__write_drop);
-
-  Type const* void_type = get_void_type();
-  Type const* cxt_ref = get_context_type()->ref();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
-// Writes a flood action to the context.
-//
-//    void write_flood(Context*)
-Function_decl*
-Builtin::write_flood()
-{
-  Symbol const* fn_name = get_identifier(__write_flood);
 
   Type const* void_type = get_void_type();
   Type const* cxt_ref = get_context_type()->ref();
@@ -1001,12 +950,10 @@ Builtin::init_builtins()
     {__port_up, port_id_up()},
     {__port_down, port_id_down()},
     {__drop, drop()},
-    {__flood, flood()},
     {__output, output()},
     {__clear, clear()},
     {__set_field, set_field()},
     {__write_drop, write_drop()},
-    {__write_flood, write_flood()},
     {__write_output, write_output()},
     {__write_set, write_set_field()},
     {__raise_event, raise_event()},
@@ -1374,16 +1321,6 @@ Builtin::call_output(Expr* cxt, Expr* port)
 
 
 Expr*
-Builtin::call_flood(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__flood)->second;
-  assert(fn);
-
-  return new Flood_packet(decl_id(fn), {cxt});
-}
-
-
-Expr*
 Builtin::call_clear(Expr* cxt)
 {
   Function_decl* fn = builtin_fn.find(__clear)->second;
@@ -1410,16 +1347,6 @@ Builtin::call_write_drop(Expr* cxt)
   assert(fn);
 
   return new Write_drop_action(decl_id(fn), {cxt});
-}
-
-
-Expr*
-Builtin::call_write_flood(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__write_flood)->second;
-  assert(fn);
-
-  return new Write_flood_action(decl_id(fn), {cxt});
 }
 
 

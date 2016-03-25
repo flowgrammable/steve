@@ -3123,8 +3123,6 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Output_egress* d) { return elab.elaborate(d); }
-    Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
@@ -3132,9 +3130,7 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_output_egress* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
@@ -3553,36 +3549,6 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
-Elaborator::elaborate(Output_egress* s)
-{
-  Flow_decl* flow = as<Flow_decl>(stack.context());
-  // This is special since it can only occur within the context of flows.
-  if (!flow) {
-    std::stringstream ss;
-    ss << "\'output egress\' occuring outside a flow declaration.";
-    throw Type_error(locate(s), ss.str());
-  }
-
-  // Now check that the flow's egress property is set.
-  if (!flow->properties().egress)
-    throw Type_error(locate(s), "\'output egress\' "
-                                "occuring without 'egress' flow property set.");
-
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Flood* s)
-{
-  check_valid_action_context(s);
-
-  // No further elaboration required
-  return s;
-}
-
-
-Stmt*
 Elaborator::elaborate(Clear* s)
 {
   check_valid_action_context(s);
@@ -3875,30 +3841,6 @@ Elaborator::elaborate(Write_output* s)
 
   assert(s->output());
   // Elaborate the output action.
-  s->first = elaborate(s->first);
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Write_output_egress* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->output());
-  // Elaborate the output action.
-  s->first = elaborate(s->first);
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Write_flood* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->flood());
-  // Elaborate the flood action.
   s->first = elaborate(s->first);
   return s;
 }

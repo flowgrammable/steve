@@ -934,8 +934,6 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { lingo_unreachable(); }
     void operator()(Drop const* s) { lingo_unreachable(); }
     void operator()(Output const* s) { lingo_unreachable(); }
-    void operator()(Output_egress const* s) { lingo_unreachable(); }
-    void operator()(Flood const* s) { lingo_unreachable(); }
     void operator()(Clear const* s) { lingo_unreachable(); }
     void operator()(Set_field const* s) { lingo_unreachable(); }
     void operator()(Insert_flow const* s) { lingo_unreachable(); }
@@ -944,8 +942,6 @@ Generator::gen(Stmt const* s)
     void operator()(Raise const* s) { lingo_unreachable(); }
     void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
-    void operator()(Write_output_egress const* s) { lingo_unreachable(); }
-    void operator()(Write_flood const* s) { lingo_unreachable(); }
     void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
   apply(s, Fn{*this});

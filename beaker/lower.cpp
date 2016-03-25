@@ -134,8 +134,6 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Action* s) const { return lower.lower(s); }
   Stmt_seq operator()(Drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Output* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Output_egress* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Clear* s) const { return lower.lower(s); }
   Stmt_seq operator()(Set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
@@ -143,8 +141,6 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Remove_miss* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Write_output_egress* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Write_flood* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
 };
@@ -2021,63 +2017,6 @@ Lowerer::lower(Output* s)
 
 
 Stmt_seq
-Lowerer::lower(Output_egress* s)
-{
-  // get the context variable which should Always
-  // be within the scope of a flow body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // Acquire the port.
-  // Make a call to the flow to get its inport field and resolve it into
-  // a Port*.
-  ovl = unqualified_lookup(get_identifier(__flow_self));
-  assert(ovl);
-  Decl* self = ovl->back();
-  assert(self);
-
-  Expr* egress = builtin.call_get_flow_egress(id(self));
-
-  // make a call to the output function
-  Expr* output = builtin.call_output(id(cxt), egress);
-  elab.elaborate(output);
-
-  // Outputs should cause an implicit return void for the same reason as drops.
-  // No safety guarantees exist after a packet has been outputted.
-  return
-  {
-    statement(output)
-  };
-}
-
-
-Stmt_seq
-Lowerer::lower(Flood* s)
-{
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // make a call to the drop function
-  Expr* flood = builtin.call_flood(decl_id(cxt));
-  elab.elaborate(flood);
-
-  // Drops should cause an implicit return void. After a drop, any statements
-  // after can not be guaranteed to be safe since the context has likely been
-  // deleted by then.
-  return
-  {
-    statement(flood)
-  };
-}
-
-
-Stmt_seq
 Lowerer::lower(Clear* s)
 {
   // get the context variable which should Always
@@ -2375,44 +2314,6 @@ Lowerer::lower(Write_output* w)
 }
 
 
-// FIXME: Writing an output for later has some questionable semantics.
-// Upon applying the output, all actions afterward should not be executed
-// (since the outputing of a packet causes its context to be deleted and no
-// longer valid). This is easier to enforce in immediate action rather than
-// written actions which is currently not enforced in.
-Stmt_seq
-Lowerer::lower(Write_output_egress* w)
-{
-  Output* s = w->output();
-  assert(s);
-
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // Acquire the port.
-  // Make a call to the flow to get its inport field and resolve it into
-  // a Port*.
-  ovl = unqualified_lookup(get_identifier(__flow_self));
-  assert(ovl);
-  Decl* self = ovl->back();
-  assert(self);
-
-  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
-
-  // make a call to the output function
-  Expr* output = builtin.call_write_output(decl_id(cxt), egress);
-  elab.elaborate(output);
-
-  return
-  {
-    statement(output),
-  };
-}
-
 // Raise passes a task to a hypothetical asynchronous thread in the runtime
 // system with a context.
 //
@@ -2445,27 +2346,6 @@ Lowerer::lower(Raise* s)
   return
   {
     statement(raise_event)
-  };
-}
-
-
-Stmt_seq
-Lowerer::lower(Write_flood* w)
-{
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // make a call to the drop function
-  Expr* write = builtin.call_write_flood(decl_id(cxt));
-  elab.elaborate(write);
-
-  return
-  {
-    statement(write)
   };
 }
 

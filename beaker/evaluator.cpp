@@ -785,8 +785,6 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Action const* s) { lingo_unreachable(); }
     Control operator()(Drop const* s) { lingo_unreachable(); }
     Control operator()(Output const* s) { lingo_unreachable(); }
-    Control operator()(Output_egress const* s) { lingo_unreachable(); }
-    Control operator()(Flood const* s) { lingo_unreachable(); }
     Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
     Control operator()(Insert_flow const* s) { lingo_unreachable(); }
@@ -795,8 +793,6 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Raise const* s) { lingo_unreachable(); }
     Control operator()(Write_drop const* s) { lingo_unreachable(); }
     Control operator()(Write_output const* s) { lingo_unreachable(); }
-    Control operator()(Write_output_egress const* s) { lingo_unreachable(); }
-    Control operator()(Write_flood const* s) { lingo_unreachable(); }
     Control operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
 
