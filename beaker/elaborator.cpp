@@ -630,7 +630,12 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
   if (field_types.size() != key.size()) {
     std::stringstream ss;
     ss << "Flow " << *flow << " does not have the same number of keys as "
-       << "table: " << *table->name();
+       << "table: " << *table->name() << "(" << key.size() << " instead of "
+       << field_types.size() << ").";
+
+    for (auto field : field_types)
+      std::cout << "FIELD: " << *field << '\n';
+
     throw Type_error({}, ss.str());
 
     return false;
@@ -2649,7 +2654,13 @@ Elaborator::elaborate_decl(Table_decl* d)
       // save the type of the field decl
       types.push_back(field->type());
     }
+    else {
+      std::stringstream ss;
+      ss << *subkey << " is not a valid key.";
+      throw Type_error(locate(subkey), ss.str());
+    }
   }
+  
   Type const* type = get_table_type(field_decls, types);
 
   // Elaborate requirements as field_name_expr.
@@ -3204,6 +3215,9 @@ Elaborator::elaborate(Assign_stmt* s)
 Stmt*
 Elaborator::elaborate(Return_stmt* s)
 {
+  if (!is<Function_decl>(stack.context()))
+    throw Type_error(locate(s), "return not in function.");
+
   Function_decl* fn = stack.function();
   Type const* t = fn->return_type();
 

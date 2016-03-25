@@ -129,15 +129,9 @@ is_less(Table_type const* a, Table_type const* b)
   // Compare the types.
   Type_seq const& a_types = a->field_types();
   Type_seq const& b_types = b->field_types();
-  Decl_seq const& a_names = a->field_names();
-  Decl_seq const& b_names = b->field_names();
   auto cmp_type = [](Type const* x, Type const* y) { return is_less(x, y); };
-  auto cmp_name = [](Decl const* x, Decl const* y) { return is_less(x->name(), y->name()); };
   return std::lexicographical_compare(a_types.begin(), a_types.end(),
-                                      b_types.begin(), b_types.end(), cmp_type)
-         &
-         std::lexicographical_compare(a_names.begin(), a_names.end(),
-                                      b_names.begin(), b_names.end(), cmp_name);
+                                      b_types.begin(), b_types.end(), cmp_type);
 }
 
 
