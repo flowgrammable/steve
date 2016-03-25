@@ -52,7 +52,6 @@ struct Stmt::Visitor
   virtual void visit(Remove_flow const*) = 0;
   virtual void visit(Remove_miss const*) = 0;
   virtual void visit(Raise const*) = 0;
-  virtual void visit(Write_drop const*) = 0;
   virtual void visit(Write_output const*) = 0;
   virtual void visit(Write_set_field const*) = 0;
 };
@@ -87,7 +86,6 @@ struct Stmt::Mutator
   virtual void visit(Remove_flow*) = 0;
   virtual void visit(Remove_miss*) = 0;
   virtual void visit(Raise*) = 0;
-  virtual void visit(Write_drop*) = 0;
   virtual void visit(Write_output*) = 0;
   virtual void visit(Write_set_field*) = 0;
 };
@@ -408,7 +406,6 @@ struct Generic_stmt_visitor : Stmt::Visitor, lingo::Generic_visitor<F, T>
   void visit(Remove_flow const* d) { this->invoke(d); };
   void visit(Remove_miss const* d) { this->invoke(d); };
   void visit(Raise const* d) { this->invoke(d); };
-  void visit(Write_drop const* d) { this->invoke(d); };
   void visit(Write_output const* d) { this->invoke(d); };
   void visit(Write_set_field const* d) { this->invoke(d); };
 };
@@ -459,7 +456,6 @@ struct Generic_stmt_mutator : Stmt::Mutator, lingo::Generic_mutator<F, T>
   void visit(Remove_flow* d) { this->invoke(d); };
   void visit(Remove_miss* d) { this->invoke(d); };
   void visit(Raise* d) { this->invoke(d); };
-  void visit(Write_drop* d) { this->invoke(d); };
   void visit(Write_output* d) { this->invoke(d); };
   void visit(Write_set_field* d) { this->invoke(d); };
 };

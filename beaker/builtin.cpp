@@ -360,36 +360,6 @@ Builtin::remove_miss()
 }
 
 
-// Gather keys from certain fields. This has the form:
-//
-//    Key gather(Context*, int fld_cnt, ...)
-//
-// The variadic arguments specify which fields are being gathered.
-Function_decl*
-Builtin::gather()
-{
-  Symbol const* fn_name = get_identifier(__gather);
-  Type const* cxt_ref = get_context_type()->ref();
-  Type const* int_type = get_integer_type();
-  Type const* key_type = get_key_type()->ref();
-
-  Decl_seq parms =
-  {
-    new Parameter_decl(get_identifier(__context), cxt_ref),
-    new Parameter_decl(get_identifier("n"), int_type),
-  };
-  // variable argument function
-  Type const* fn_type =
-    get_function_type(Type_seq {cxt_ref, int_type}, key_type, true);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, parms, block({}));
-
-  fn->spec_ |= foreign_spec;
-  return fn;
-}
-
-
 // Match is used to goto a table and tell it to match the packet fields
 // against flow entries and execute the flow. This has the form:
 //
@@ -803,32 +773,6 @@ Builtin::set_field()
 }
 
 
-// Writes a drop action to the context.
-//
-//    void write_drop(Context*)
-Function_decl*
-Builtin::write_drop()
-{
-  Symbol const* fn_name = get_identifier(__write_drop);
-
-  Type const* void_type = get_void_type();
-  Type const* cxt_ref = get_context_type()->ref();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
 // Write an output action to the context.
 //
 //      void write_output(Context*, Port*)
@@ -953,7 +897,6 @@ Builtin::init_builtins()
     {__output, output()},
     {__clear, clear()},
     {__set_field, set_field()},
-    {__write_drop, write_drop()},
     {__write_output, write_output()},
     {__write_set, write_set_field()},
     {__raise_event, raise_event()},
@@ -1019,12 +962,12 @@ Builtin::get_builtin_function(std::string name)
 
 
 Expr*
-Builtin::call_bind_field(Expr_seq const& args)
+Builtin::call_bind_field(Expr* cxt, Expr* id, Expr* offset, Expr* length)
 {
   Function_decl* fn = builtin_fn.find(__bind_field)->second;
   assert(fn);
 
-  return new Bind_field(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), {cxt, id, offset, length});
 }
 
 
@@ -1038,7 +981,7 @@ Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
   // does not handle header length and its unsure if the length of a header
   // matters.
 
-  return new Bind_header(decl_id(fn), cxt, id);
+  return new Call_expr(decl_id(fn), {cxt, id});
 }
 
 
@@ -1062,7 +1005,7 @@ Builtin::call_read_field(Expr* cxt, Expr* id, Expr* ret)
   Function_decl* fn = builtin_fn.find(__read_field)->second;
   assert(fn);
 
-  return new Read_field(decl_id(fn), {cxt, id, ret});
+  return new Call_expr(decl_id(fn), {cxt, id, ret});
 }
 
 
@@ -1080,12 +1023,12 @@ Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* en
 
 
 Expr*
-Builtin::call_advance(Expr_seq const& args)
+Builtin::call_advance(Expr* cxt, Expr* length)
 {
   Function_decl* fn = builtin_fn.find(__advance)->second;
   assert(fn);
 
-  return new Advance(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), {cxt, length});
 }
 
 
@@ -1095,7 +1038,7 @@ Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Exp
   Function_decl* fn = builtin_fn.find(__add_init_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
+  return new Call_expr(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
@@ -1105,7 +1048,7 @@ Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr
   Function_decl* fn = builtin_fn.find(__add_new_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
+  return new Call_expr(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
@@ -1115,7 +1058,7 @@ Builtin::call_remove_flow(Expr* table, Expr* key)
   Function_decl* fn = builtin_fn.find(__rmv_flow)->second;
   assert(fn);
 
-  return new Rmv_flow(decl_id(fn), {table, key});
+  return new Call_expr(decl_id(fn), {table, key});
 }
 
 
@@ -1125,7 +1068,7 @@ Builtin::call_add_miss(Expr* tbl, Expr* flow, Expr* t_out, Expr* egress)
   Function_decl* fn = builtin_fn.find(__add_miss)->second;
   assert(fn);
 
-  return new Add_miss(decl_id(fn), {tbl, flow, t_out, egress});
+  return new Call_expr(decl_id(fn), {tbl, flow, t_out, egress});
 }
 
 
@@ -1271,23 +1214,6 @@ Builtin::call_port_id_down(Expr* dp, Expr* id)
 
 
 Expr*
-Builtin::call_gather(Expr* cxt, Expr_seq const& var_args)
-{
-  Function_decl* fn = builtin_fn.find(__gather)->second;
-  assert(fn);
-
-  Expr* num_args = new Literal_expr(get_integer_type(), var_args.size());
-
-  Expr_seq args;
-  args.push_back(cxt);
-  args.push_back(num_args);
-  args.insert(args.end(), var_args.begin(), var_args.end());
-
-  return new Gather(decl_id(fn), args);
-}
-
-
-Expr*
 Builtin::call_match(Expr* cxt, Expr* tbl, Expr* n, Expr_seq const& var_args)
 {
   Function_decl* fn = builtin_fn.find(__match)->second;
@@ -1296,7 +1222,7 @@ Builtin::call_match(Expr* cxt, Expr* tbl, Expr* n, Expr_seq const& var_args)
   Expr_seq args { cxt, tbl, n };
   args.insert(args.end(), var_args.begin(), var_args.end());
 
-  return new Match(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), args);
 }
 
 
@@ -1306,7 +1232,7 @@ Builtin::call_drop(Expr* cxt)
   Function_decl* fn = builtin_fn.find(__drop)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Call_expr(decl_id(fn), {cxt});
 }
 
 
@@ -1316,7 +1242,7 @@ Builtin::call_output(Expr* cxt, Expr* port)
   Function_decl* fn = builtin_fn.find(__output)->second;
   assert(fn);
 
-  return new Output_packet(decl_id(fn), {cxt, port});
+  return new Call_expr(decl_id(fn), {cxt, port});
 }
 
 
@@ -1341,22 +1267,12 @@ Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 
 
 Expr*
-Builtin::call_write_drop(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__write_drop)->second;
-  assert(fn);
-
-  return new Write_drop_action(decl_id(fn), {cxt});
-}
-
-
-Expr*
 Builtin::call_write_output(Expr* cxt, Expr* port)
 {
   Function_decl* fn = builtin_fn.find(__write_output)->second;
   assert(fn);
 
-  return new Write_output_action(decl_id(fn), {cxt, port});
+  return new Call_expr(decl_id(fn), {cxt, port});
 }
 
 
@@ -1376,5 +1292,5 @@ Builtin::call_raise_event(Expr* cxt, Expr* event_fn)
   Function_decl* fn = builtin_fn.find(__raise_event)->second;
   assert(fn);
 
-  return new Raise_event(decl_id(fn), {cxt, event_fn});
+  return new Call_expr(decl_id(fn), {cxt, event_fn});
 }

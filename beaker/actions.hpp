@@ -215,22 +215,6 @@ struct Group : Action
 };
 
 
-// Write a drop for later.
-struct Write_drop : Action
-{
-  Write_drop(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Drop* drop() const { return cast<Drop>(first); }
-
-  Stmt* first;
-};
-
-
 // Write an output to port acttion
 // to the context
 struct Write_output : Action

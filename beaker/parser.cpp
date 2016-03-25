@@ -1558,17 +1558,15 @@ Parser::copy_stmt()
 
 // Write an action to be applied later.
 //
-//  write-stmt -> 'write' [drop-stmt | output-stmt | flood-stmt |
-//                         set-stmt | copy-stmt]
+//  write-stmt -> 'write' [ output-stmt
+//                        | set-stmt 
+//                        | copy-stmt]
 Stmt*
 Parser::write_stmt()
 {
   match(write_kw);
   Stmt* s = nullptr;
   switch (lookahead()) {
-    case drop_kw:
-      s = drop_stmt();
-      break;
     case output_kw:
       s = output_stmt();
       break;
@@ -2594,9 +2592,7 @@ Parser::on_copy(Expr* field, Expr* val)
 Stmt*
 Parser::on_write(Stmt* s)
 {
-  if (is<Drop>(s))
-    return new Write_drop(s);
-  else if (is<Output>(s))
+  if (is<Output>(s))
     return new Write_output(s);
   else if (is<Set_field>(s))
     return new Write_set_field(s);

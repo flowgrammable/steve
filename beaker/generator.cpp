@@ -940,7 +940,6 @@ Generator::gen(Stmt const* s)
     void operator()(Remove_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_miss const* s) { lingo_unreachable(); }
     void operator()(Raise const* s) { lingo_unreachable(); }
-    void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
     void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };

@@ -3129,7 +3129,6 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
@@ -3818,18 +3817,6 @@ Elaborator::elaborate(Raise* s)
   s->event_id_ = id;
   s->event_    = d;
 
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Write_drop* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->drop());
-  // Elaborate the drop action.
-  s->first = elaborate(s->first);
   return s;
 }
 

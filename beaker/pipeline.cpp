@@ -35,7 +35,6 @@ struct Find_branches
   void operator()(Set_field const* s) { }
   void operator()(Insert_flow const* s) { }
   void operator()(Remove_flow const* s) { }
-  void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
   void operator()(Write_set_field const* s) { }
 
@@ -132,7 +131,6 @@ struct Find_products
   void operator()(Insert_flow const* s) { }
   void operator()(Remove_flow const* s) { }
   void operator()(Raise const* s) { }
-  void operator()(Write_drop const* s) { }
   void operator()(Write_output const* s) { }
   void operator()(Write_set_field const* s) { }
 

@@ -44,7 +44,6 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Output const* s) { os << *s; }
     void operator()(Insert_flow const* s) { os << *s; }
     void operator()(Remove_flow const* s) { os << *s; }
-    void operator()(Write_drop const* s) { os << *s; }
     void operator()(Raise const* s) { os << *s; }
   };
 
@@ -200,12 +199,6 @@ std::ostream& operator<<(std::ostream& os, Remove_flow const& s)
   os << '}' << "from " << *s.table_identifier() << ';';
 
   return os;
-}
-
-
-std::ostream& operator<<(std::ostream& os, Write_drop const& s)
-{
-  return os << "write " << *s.drop();
 }
 
 
@@ -371,9 +364,13 @@ std::ostream&
 operator<<(std::ostream& os, Flow_decl const& d)
 {
   os << d.name()->spelling();
+  os << '{';
   for (auto k : d.keys()) {
-    os << *k << ' ';
+    os << *k;
+    if (k != d.keys().back())
+      os << ", ";
   }
+  os << '}';
   os << "->";
   os << *d.instructions();
 

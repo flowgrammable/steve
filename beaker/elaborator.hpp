@@ -219,7 +219,6 @@ public:
   Stmt* elaborate(Remove_flow*);
   Stmt* elaborate(Remove_miss*);
   Stmt* elaborate(Raise*);
-  Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
   Stmt* elaborate(Write_set_field*);
 

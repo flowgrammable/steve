@@ -139,7 +139,6 @@ struct Lower_stmt_fn
   Stmt_seq operator()(Insert_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_flow* s) const { return lower.lower(s); }
   Stmt_seq operator()(Remove_miss* s) const { return lower.lower(s); }
-  Stmt_seq operator()(Write_drop* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_output* s) const { return lower.lower(s); }
   Stmt_seq operator()(Write_set_field* s) const { return lower.lower(s); }
   Stmt_seq operator()(Raise* s) const { return lower.lower(s); }
@@ -1639,14 +1638,10 @@ Lowerer::lower_extracts_decl(Extracts_decl* d)
   Expr* length = get_length(field);
 
   // create the binding call
-  Expr_seq args
-  {
-    id(cxt),
-    make_int(mapping),
-    offset,
-    length
-  };
-  Expr* bind_field = builtin.call_bind_field(args);
+  Expr* bind_field = builtin.call_bind_field(id(cxt),
+                                             make_int(mapping),
+                                             offset,
+                                             length);
   bind_field = elab.elaborate(bind_field);
 
   // emit a local variable
@@ -1775,7 +1770,7 @@ Lowerer::lower_advance_clause(Expr* len)
   Decl* cxt = ovl->back();
   assert(cxt);
 
-  Expr* advance = builtin.call_advance({ id(cxt), lower(len) });
+  Expr* advance = builtin.call_advance(id(cxt), lower(len));
   elab.elaborate(advance);
 
   return advance;
@@ -1816,7 +1811,7 @@ Lowerer::lower(Decode_stmt* s)
     if (ovl) {
       Decl* header = ovl->back();
       Expr* length = get_length(header->type());
-      Expr* advance = builtin.call_advance({ id(cxt), length });
+      Expr* advance = builtin.call_advance(id(cxt), length);
       elab.elaborate(advance);
 
       stmts.push_back(statement(advance));
@@ -1862,7 +1857,7 @@ Lowerer::goto_advance(Decl const* decoder)
   if (ovl) {
     Decl* header = ovl->back();
     Expr* length = get_length(header->type());
-    Expr* advance = builtin.call_advance({ id(cxt), length });
+    Expr* advance = builtin.call_advance(id(cxt), length);
     elab.elaborate(advance);
     return statement(advance);
   }
@@ -2257,27 +2252,6 @@ Lowerer::lower(Remove_miss* s)
 
   return {
     statement(rmv_miss)
-  };
-}
-
-
-Stmt_seq
-Lowerer::lower(Write_drop* w)
-{
-  // get the context variable which should Always
-  // be within the scope of a decoder body
-  Overload* ovl = unqualified_lookup(get_identifier(__context));
-  assert(ovl);
-  Decl* cxt = ovl->back();
-  assert(cxt);
-
-  // make a call to the drop function
-  Expr* write = builtin.call_write_drop(decl_id(cxt));
-  elab.elaborate(write);
-
-  return
-  {
-    statement(write)
   };
 }
 
