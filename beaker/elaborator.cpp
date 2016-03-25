@@ -431,8 +431,6 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Void_cast* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_name_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_access_expr* e) const { return elab.elaborate(e); }
-    Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
-    Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
     Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(All_port* e) const { return elab.elaborate(e); }
@@ -1882,26 +1880,6 @@ Elaborator::elaborate(Egress_port* e)
     ss << "\'egress\' occuring outside a flow declaration.";
     throw Type_error(locate(e), ss.str());
   }
-  return e;
-}
-
-
-// -------------------------------------------------------------------------- //
-// Elaboration of builtins
-
-Expr*
-Elaborator::elaborate(Get_port* e)
-{
-  // elaborate it as a call expr
-  Call_expr* call = as<Call_expr>(e);
-  return elaborate(call);
-}
-
-
-// No further elaboration required.
-Expr*
-Elaborator::elaborate(Get_dataplane* e)
-{
   return e;
 }
 

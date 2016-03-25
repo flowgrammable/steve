@@ -135,9 +135,6 @@ public:
   Expr* elaborate(Flood_port* e);
   Expr* elaborate(Egress_port* e);
 
-  Expr* elaborate(Get_port* e);
-  Expr* elaborate(Get_dataplane* e);
-
   Decl* elaborate(Decl*);
   Decl* elaborate(Variable_decl*);
   Decl* elaborate(Function_decl*);

@@ -310,8 +310,6 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
-    llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
     llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
@@ -840,48 +838,6 @@ Generator::gen(Void_cast const* e)
   return build.CreateBitCast(val, t);
 }
 
-
-llvm::Value*
-Generator::gen(Get_port const* e)
-{
-  // generate the call
-  llvm::Value* fn = gen(e->target());
-  std::vector<llvm::Value*> args;
-  for (Expr const* a : e->arguments()) {
-    auto arg = gen(a);
-    args.push_back(arg);
-  }
-  llvm::Value* res = build.CreateCall(fn, args);
-
-  // generate the store of the result directly into
-  // the global variable
-  assert(e->port_);
-  auto const* bind = stack.lookup(e->port_);
-  llvm::Value* port = bind->second;
-
-  return build.CreateStore(res, port);
-}
-
-
-llvm::Value*
-Generator::gen(Get_dataplane const* e)
-{
-  assert(e->dataplane());
-  auto const* bind = stack.lookup(e->dataplane());
-  assert(bind);
-  // We have to load the pointer from the parameter variable.
-  // There's no way around this.
-  llvm::Value* dataplane = build.CreateLoad(bind->second);
-  assert(dataplane);
-
-  assert(e->target());
-  bind = stack.lookup(e->target());
-  assert(bind);
-  llvm::Value* target = bind->second;
-  assert(target);
-
-  return build.CreateStore(dataplane, target);
-}
 
 // -------------------------------------------------------------------------- //
 // Code generation for statements

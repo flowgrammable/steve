@@ -68,7 +68,6 @@ Evaluator::eval(Expr const* e)
     Value operator()(Reflow_port const* e) { lingo_unimplemented(); }
     Value operator()(Flood_port const* e) { lingo_unimplemented(); }
     Value operator()(Egress_port const* e) { lingo_unimplemented(); }
-    Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
 
   return apply(e, Fn {*this});

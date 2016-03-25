@@ -157,11 +157,6 @@ struct Delete_table;
 struct Lookup;
 struct Advance;
 
-// Builtin expressions that need special code gen
-struct Get_port;
-struct Create_table;
-struct Get_dataplane;
-
 // Actions
 struct Action;
 struct Drop;

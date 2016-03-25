@@ -2569,13 +2569,6 @@ Parser::on_output(Expr* e)
 
 
 Stmt*
-Parser::on_output_egress()
-{
-  return new Output_egress();
-}
-
-
-Stmt*
 Parser::on_set(Expr* field, Expr* val)
 {
   return new Set_field(field, val);

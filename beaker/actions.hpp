@@ -41,23 +41,6 @@ struct Output : Action
 };
 
 
-// Output inport is special because it can only occur within the context
-// of a flow. When we say output inport, we mean that inport of the Context
-// used when installing the flow.
-//
-// The inport is implicitly resolved at runtime when executing this action
-// by requesting that a flow provide the inport.
-struct Output_egress : Output
-{
-  Output_egress()
-    : Output(nullptr)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-};
-
-
 // Clear the set of actions stored within the packet.
 struct Clear : Action
 {

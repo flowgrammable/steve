@@ -188,7 +188,8 @@ Lowerer::load_function()
 {
   // Begin constructing the type and parameters of the function.
   Type const* void_type = get_void_type();
-  auto p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
+  Parameter_decl* p1 = new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref());
+  declare(p1);
   Decl_seq parms { p1 };
 
   Type const* fn_type = get_function_type(parms, void_type);
@@ -205,8 +206,9 @@ Lowerer::load_function()
   // passed in the parameter.
   //
   // The parameter should be directly stored into the global variable.
-  Expr* set_dp = builtin.call_get_dataplane(p1, dp);
-  load_body.insert(load_body.begin(), statement(set_dp));
+  Assign_stmt* set_dp = new Assign_stmt(id(dp), id(p1));
+  elab.elaborate(set_dp);
+  load_body.insert(load_body.begin(), set_dp);
 
   // Construct the load function with the accumulated load_body.
   Function_decl* load = new Function_decl(fn_name, fn_type,

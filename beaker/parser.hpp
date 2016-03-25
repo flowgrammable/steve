@@ -208,7 +208,6 @@ private:
   Stmt* on_drop();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
-  Stmt* on_output_egress();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);

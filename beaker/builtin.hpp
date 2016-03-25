@@ -69,40 +69,6 @@ constexpr char const* __port_changed    = "port_changed";
 
 // These functions will be linked externally from the C runtime
 
-
-struct Get_port : Call_expr
-{
-  Get_port(Expr* fn, Expr_seq const& args)
-    : Call_expr(fn, args)
-  { }
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  // maintain the variable
-  Decl* port_;
-};
-
-
-// Retrieve a pointer to the dataplane and store it in a variable.
-struct Get_dataplane : Expr
-{
-  Get_dataplane(Decl* dp_src, Decl* dp_dst)
-    : dp_(dp_src), target_(dp_dst)
-  { }
-
-  Decl* dataplane() const { return dp_; }
-  Decl* target()    const { return target_; }
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* dp_;
-  Decl* target_;
-};
-
-
-
 // Build all builtin functions
 struct Builtin
 {
@@ -141,7 +107,6 @@ struct Builtin
   Expr* call_get_controller_port(Expr*);
   Expr* call_get_reflow_port(Expr*);
   Expr* call_get_flood_port(Expr*);
-  Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_port_id_up(Expr*, Expr*);
   Expr* call_port_id_down(Expr*, Expr*);
   Expr* call_drop(Expr* cxt);
