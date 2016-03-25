@@ -121,12 +121,9 @@ void
 fp_drop(fp::Context* cxt)
 {
   // std::cout << "drop\n";
-
   fp::Port* drop = cxt->dataplane()->get_drop_port();
   assert(drop);
-  fp_context_set_output_port(cxt, drop);
-  // fp::Port* drop = fp::port_table.drop_port();
-  // drop->send(cxt);
+  cxt->set_output_port(drop->id());
 }
 
 
@@ -137,8 +134,6 @@ fp_flood(fp::Context* cxt)
   fp::Port* flood = cxt->dataplane()->get_drop_port();
   fp_context_set_output_port(cxt, flood);
   assert(flood);
-  // Cache the drop port so the lookup doesn't happen every time.
-  // fp::Port* flood = fp::port_table.flood_port();
   flood->send(cxt);
 }
 
@@ -146,15 +141,11 @@ fp_flood(fp::Context* cxt)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  // std::cout << "ID: " << id << '\n';
+  std::cout << "ID: " << id << '\n';
   //
   // for (auto s : cxt->strings_)
   //   std::cout << s << " ";
-  assert(cxt->dataplane());
-
-  fp::Port* p = cxt->dataplane()->get_port(id);
-  assert(p);
-  fp_context_set_output_port(cxt, p);
+  cxt->set_output_port(id);
 
   // fp::Port* p = fp::port_table.find(id);
   // p->send(cxt);
@@ -259,6 +250,33 @@ fp_port_id_is_down(fp::Dataplane* dp, fp::Port::Id id)
   assert(dp);
   fp::Port* p = dp->get_port(id);
   return p->config_.down;
+}
+
+// Returns the port id to the all port;
+fp::Port::Id
+fp_get_all_port(fp::Dataplane* dp)
+{
+  assert(dp);
+  fp::Port* p = dp->get_all_port();
+  return p->id();
+}
+
+
+fp::Port::Id
+fp_get_reflow_port(fp::Dataplane* dp)
+{
+  assert(dp);
+  fp::Port* p = dp->get_reflow_port();
+  return p->id();
+}
+
+
+fp::Port::Id
+fp_get_flood_port(fp::Dataplane* dp)
+{
+  assert(dp);
+  fp::Port* p = dp->get_flood_port();
+  return p->id();
 }
 
 

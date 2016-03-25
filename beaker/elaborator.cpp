@@ -439,6 +439,8 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(All_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Controller_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Reflow_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Flood_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Egress_port* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -1854,6 +1856,31 @@ Elaborator::elaborate(Reflow_port* e)
   Decl* context = stack.context();
   if (!is_valid_pipeline_context(context)) {
     throw Type_error(locate(e), "'reflow' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Flood_port* e)
+{
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'flood' occuring outside a decoder, flow, or event.");
+  }
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Egress_port* e)
+{
+  Flow_decl* flow = as<Flow_decl>(stack.context());
+  // This is special since it can only occur within the context of flows.
+  if (!flow) {
+    std::stringstream ss;
+    ss << "\'egress\' occuring outside a flow declaration.";
+    throw Type_error(locate(e), ss.str());
   }
   return e;
 }

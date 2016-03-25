@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
     dp->add_port(p2);
     std::cerr << "Added port 'p2' to data plane 'dp1'\n";
-    dp->add_drop_port();
+    dp->add_reserved_ports();
 
     // Configure the data plane based on the applications needs.
     dp->configure();
@@ -43,8 +43,8 @@ int main(int argc, char* argv[])
     Application* app = dp->app();
     int p1id = p1->id();
     int p2id = p2->id();
-    app->lib().exec("port_changed", &p1id);
-    app->lib().exec("port_changed", &p2id);
+    // app->lib().exec("port_changed", &p1id);
+    // app->lib().exec("port_changed", &p2id);
 
     dp->up();
     std::cerr << "Data plane is up\n";
@@ -62,9 +62,39 @@ int main(int argc, char* argv[])
         // dst bytes
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
         // src bytes
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
         // type bytes
-        0x08, 0x80, 0, 0, 0
+        0x08, 0x00,
+        // version IHL bytes
+        // version: 4
+        // ihl: 5
+        0x45,
+        // dscp ecn
+        0,
+        // len
+        0, 0x40,
+        // id
+        0, 0,
+        // frag
+        0, 0,
+        // ttl,
+        0x0a,
+        // protocol
+        0,
+        // checksum
+        0, 0,
+        // src
+        0b11111111, 0b11111111, 0b11111111, 0b11111011,
+        // dst
+        0b11111111, 0b11111111, 0b11111111, 0b11111111,
+        // udp src
+        0, 0,
+        // udp dst
+        0, 0,
+        // udp len
+        0x00, 0x0b,
+        // checksum
+        0, 0
       };
 
       Packet pkt1(&data1[0], 1500, 0, nullptr, FP_BUF_ALLOC);
@@ -75,11 +105,41 @@ int main(int argc, char* argv[])
         // The dst address for this packet should be learned by now.
         Byte data2[1500]{
           // dst bytes
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0xab, 0x12, 0x34, 0x56, 0x78, 0x90,
           // src bytes
           0x12, 0x34, 0x56, 0x78, 0x90, 0xab,
           // type bytes
-          0x08, 0x00, 0, 0, 0
+          0x08, 0x00,
+          // version IHL bytes
+          // version: 4
+          // ihl: 5
+          0x45,
+          // dscp ecn
+          0,
+          // len
+          0, 0x40,
+          // id
+          0, 0,
+          // frag
+          0, 0,
+          // ttl,
+          0x0a,
+          // protocol
+          0,
+          // checksum
+          0, 0,
+          // src
+          0b11111111, 0b11111111, 0b11111111, 0b11111111,
+          // dst
+          0b11111111, 0b11111111, 0b11111111, 0b11111011,
+          // udp src
+          0, 0,
+          // udp dst
+          0, 0,
+          // udp len
+          0x00, 0x0b,
+          // checksum
+          0, 0
         };
 
         Packet pkt2(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);

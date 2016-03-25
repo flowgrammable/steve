@@ -42,6 +42,8 @@ decoder ipv4_d(ipv4)
   extract ipv4.src;
   extract ipv4.dst;
 
+	if (ipv4.ttl == 0) drop;
+
 	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
 }
 
@@ -62,13 +64,15 @@ event learn_ip
 	{ ipv4.src } ->
 	{
 		// puts("Using learned in route.");
-		output egress;
+		write set ipv4.ttl = ipv4.ttl - 1;
+		write output egress;
 	}
 	into route;
 }
 
 
 exact_table learn(ipv4.src)
+	requires(ipv4.ttl)
 {
   miss ->
   {
@@ -80,10 +84,12 @@ exact_table learn(ipv4.src)
 
 
 exact_table route(ipv4.dst)
+	requires(ipv4.ttl)
 {
   miss ->
   {
 		// puts("flood");
+		write set ipv4.ttl = ipv4.ttl - 1;
     flood;
   }
 }

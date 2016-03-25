@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
 
-layout eth
+layout ethernet
 {
   dst : uint(48);
   src : uint(48);
@@ -10,15 +10,25 @@ layout eth
 Port p1;
 Port p2;
 
-decoder start eth_d(eth)
+decoder start eth_d(ethernet)
 {
-  output p1;
-  output p2;
+	// We use the port variables, p1 and p2, to "remember" ports.
 
-  if (in_port == p1 && p2 != 0)
-    output p2;
-  if (in_port == p2 && p1 != 0)
-    output p1;
+	// Whenever a packet is handled, check if p1 and p2 are set.
+	// If neither are, set p1 equal to the ingress port.
+	if (p1 == 0 && p2 == 0)
+		p1 = in_port;
+	// If p1 is set, and p2 isn't, set p2 to the ingress port.
+	else if (p1 != 0 && p2 == 0)
+		p2 = in_port;
 
-  drop;
+	// Now we decide which packet to forward to.
+	// If the ingress port is p1, and p2 is set, forward to p2.
+	if (in_port == p1 && p2 != 0)
+		output p2;
+	// If the ingress port is p2, and p1 is set, forward to p1.
+	if (in_port == p2 && p1 != 0)
+		output p1;
+
+	// If both are not set yet, do nothing and implicitly drop.
 }

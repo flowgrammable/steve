@@ -48,7 +48,7 @@ apply(Context& cxt, Copy_action a)
 inline void
 apply(Context& cxt, Output_action a)
 {
-  fp_output_port(&cxt, a.port);
+  cxt.set_output_port(a.port);
 }
 
 

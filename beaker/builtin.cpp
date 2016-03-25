@@ -578,11 +578,33 @@ Builtin::get_controller_port()
 }
 
 
-// Get the reserved CONTROLLER port.
+// Get the reserved reflow port.
 Function_decl*
 Builtin::get_reflow_port()
 {
   Symbol const* fn_name = get_identifier(__get_reflow_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved flood port.
+Function_decl*
+Builtin::get_flood_port()
+{
+  Symbol const* fn_name = get_identifier(__get_flood_port);
 
   Type const* port_type = get_port_type();
 
@@ -975,6 +997,7 @@ Builtin::init_builtins()
     {__get_controller_port, get_controller_port()},
     {__get_reflow_port, get_reflow_port()},
     {__get_flow_egress, get_flow_egress()},
+    {__get_flood_port, get_flood_port()},
     {__port_up, port_id_up()},
     {__port_down, port_id_down()},
     {__drop, drop()},
@@ -1240,6 +1263,16 @@ Expr*
 Builtin::call_get_reflow_port(Expr* dp)
 {
   Function_decl* fn = builtin_fn.find(__get_reflow_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {dp});
+}
+
+
+Expr*
+Builtin::call_get_flood_port(Expr* dp)
+{
+  Function_decl* fn = builtin_fn.find(__get_flood_port)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp});

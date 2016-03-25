@@ -54,6 +54,6 @@ exact_table switch(eth.dst)
   miss ->
   {
 		// puts("Flood, miss.");
-    flood;
+    output flood;
   }
 }

@@ -122,6 +122,14 @@ Parser::primary_expr()
   if (Token tok = match_if(all_kw))
     return on_all_port(tok);
 
+  // flood port expr
+  if (Token tok = match_if(flood_kw))
+    return on_flood_port(tok);
+
+  // egress port expr
+  if (Token tok = match_if(egress_kw))
+    return on_egress_port(tok);
+
   // controller port expr
   // TODO: Disabling for now. May be needed later.
   // if (Token tok = match_if(controller_kw))
@@ -1499,25 +1507,18 @@ Parser::flood_stmt()
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
-//                 | 'output' 'egress'
+//                 | 'output' reserved-port
 //                 | 'output' 'in_port'
 //                 | 'output' 'in_phys_port'
+//                 | 'output' 'egress'
+//
+//    reserved-port -> all | flood | reflow
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
-
-  // If its a special output statement.
-  if (match_if(egress_kw)) {
-    match(semicolon_tok);
-    // FIXME: Change the name to output egress.
-    return on_output_egress();
-  }
-
-  // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
   match(semicolon_tok);
-
   return on_output(e);
 }
 
@@ -2232,6 +2233,20 @@ Expr*
 Parser::on_reflow_port(Token tok)
 {
   return init<Reflow_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_flood_port(Token tok)
+{
+  return init<Flood_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_egress_port(Token tok)
+{
+  return init<Egress_port>(tok.location(), get_port_type());
 }
 
 

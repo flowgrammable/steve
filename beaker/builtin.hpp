@@ -42,6 +42,7 @@ constexpr char const* __port_down       = "fp_port_id_is_down";
 constexpr char const* __get_all_port    = "fp_get_all_port";
 constexpr char const* __get_controller_port = "fp_get_controller_port";
 constexpr char const* __get_reflow_port = "fp_get_reflow_port";
+constexpr char const* __get_flood_port  = "fp_get_flood_port";
 constexpr char const* __context         = "_cxt_";
 constexpr char const* __header          = "_header_";
 constexpr char const* __table           = "_table_";
@@ -366,6 +367,7 @@ struct Builtin
   Expr* call_get_all_port(Expr*);
   Expr* call_get_controller_port(Expr*);
   Expr* call_get_reflow_port(Expr*);
+  Expr* call_get_flood_port(Expr*);
   Expr* call_get_dataplane(Decl*, Decl*);
   Expr* call_port_id_up(Expr*, Expr*);
   Expr* call_port_id_down(Expr*, Expr*);
@@ -416,6 +418,7 @@ private:
   Function_decl* get_all_port();
   Function_decl* get_controller_port();
   Function_decl* get_reflow_port();
+  Function_decl* get_flood_port();
   Function_decl* port_id_up();
   Function_decl* port_id_down();
   Function_decl* drop();

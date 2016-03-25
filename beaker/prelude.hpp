@@ -82,6 +82,8 @@ struct Inphysport_expr;
 struct All_port;
 struct Controller_port;
 struct Reflow_port;
+struct Flood_port;
+struct Egress_port;
 
 struct Type;
 struct Id_type;

@@ -66,6 +66,8 @@ Evaluator::eval(Expr const* e)
     Value operator()(All_port const* e) { lingo_unimplemented(); }
     Value operator()(Controller_port const* e) { lingo_unimplemented(); }
     Value operator()(Reflow_port const* e) { lingo_unimplemented(); }
+    Value operator()(Flood_port const* e) { lingo_unimplemented(); }
+    Value operator()(Egress_port const* e) { lingo_unimplemented(); }
     Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
   };
 

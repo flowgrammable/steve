@@ -132,6 +132,8 @@ public:
   Expr* elaborate(All_port* e);
   Expr* elaborate(Controller_port* e);
   Expr* elaborate(Reflow_port* e);
+  Expr* elaborate(Flood_port* e);
+  Expr* elaborate(Egress_port* e);
 
   Expr* elaborate(Get_port* e);
   Expr* elaborate(Create_table* e);

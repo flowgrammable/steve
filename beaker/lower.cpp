@@ -86,6 +86,8 @@ struct Lower_expr_fn
   Expr* operator()(All_port* e) const { return lower.lower(e); }
   Expr* operator()(Controller_port* e) const { return lower.lower(e); }
   Expr* operator()(Reflow_port* e) const { return lower.lower(e); }
+  Expr* operator()(Flood_port* e) const { return lower.lower(e); }
+  Expr* operator()(Egress_port* e) const { return lower.lower(e); }
 };
 
 
@@ -674,6 +676,44 @@ Lowerer::lower(Reflow_port* e)
 
   return port;
 }
+
+
+// Lowering a flood port requests the flood port from the runtime.
+Expr*
+Lowerer::lower(Flood_port* e)
+{
+  // make a call to get_all_port
+  Expr* port = builtin.call_get_flood_port(id(dataplane_pointer()));
+  elab.elaborate(port);
+
+  return port;
+}
+
+
+// Lowering an egress port requests the egress port of a flow from the runtime.
+Expr*
+Lowerer::lower(Egress_port* e)
+{
+  // get the context variable which should Always
+  // be within the scope of a flow body
+  Overload* ovl = unqualified_lookup(get_identifier(__context));
+  assert(ovl);
+  Decl* cxt = ovl->back();
+  assert(cxt);
+
+  // Acquire the port.
+  // Make a call to the flow to get its inport field and resolve it into
+  // a Port*.
+  ovl = unqualified_lookup(get_identifier(__flow_self));
+  assert(ovl);
+  Decl* self = ovl->back();
+  assert(self);
+
+  Expr* egress = builtin.call_get_flow_egress(id(self));
+  elab.elaborate(egress);
+  return egress;
+}
+
 
 
 // ------------------------------------------------------------------------- //
@@ -1984,7 +2024,7 @@ Stmt_seq
 Lowerer::lower(Output_egress* s)
 {
   // get the context variable which should Always
-  // be within the scope of a decoder body
+  // be within the scope of a flow body
   Overload* ovl = unqualified_lookup(get_identifier(__context));
   assert(ovl);
   Decl* cxt = ovl->back();
@@ -1998,10 +2038,10 @@ Lowerer::lower(Output_egress* s)
   Decl* self = ovl->back();
   assert(self);
 
-  Expr* egress = builtin.call_get_flow_egress(decl_id(self));
+  Expr* egress = builtin.call_get_flow_egress(id(self));
 
   // make a call to the output function
-  Expr* output = builtin.call_output(decl_id(cxt), egress);
+  Expr* output = builtin.call_output(id(cxt), egress);
   elab.elaborate(output);
 
   // Outputs should cause an implicit return void for the same reason as drops.

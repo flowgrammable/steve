@@ -311,6 +311,8 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(All_port const* a) { lingo_unreachable(); }
     bool operator()(Controller_port const* a) { lingo_unreachable(); }
     bool operator()(Reflow_port const* a) { lingo_unreachable(); }
+    bool operator()(Flood_port const* a) { lingo_unreachable(); }
+    bool operator()(Egress_port const* a) { lingo_unreachable(); }
   };
 
   std::type_index t1 = typeid(*a);

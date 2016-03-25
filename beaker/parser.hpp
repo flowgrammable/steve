@@ -161,6 +161,8 @@ private:
   Expr* on_all_port(Token);
   Expr* on_controller_port(Token);
   Expr* on_reflow_port(Token);
+  Expr* on_flood_port(Token);
+  Expr* on_egress_port(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);

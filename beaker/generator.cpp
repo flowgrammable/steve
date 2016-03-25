@@ -318,6 +318,8 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Controller_port const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Reflow_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Flood_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Egress_port const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});

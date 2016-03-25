@@ -662,6 +662,8 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(All_port const* e) { os << *e; }
     void operator()(Controller_port const* e) { os << *e; }
     void operator()(Reflow_port const* e) { os << *e; }
+    void operator()(Flood_port const* e) { os << *e; }
+    void operator()(Egress_port const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -1066,4 +1068,15 @@ std::ostream& operator<<(std::ostream& os, Controller_port const&)
 std::ostream& operator<<(std::ostream& os, Reflow_port const&)
 {
   return os << "reflow";
+}
+
+std::ostream& operator<<(std::ostream& os, Flood_port const&)
+{
+  return os << "flood";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Egress_port const&)
+{
+  return os << "egress";
 }

@@ -39,10 +39,17 @@ struct Dataplane
   // Resource alloc/dealloc.
   void add_port(Port*);
   void add_drop_port();
+  void add_flood_port();
+  void add_all_port();
+  void add_reflow_port();
+  void add_reserved_ports();
   void remove_port(Port*);
 
   Port* get_port(uint32_t) const;
-  Port* get_drop_port() const { return drop_; }
+  Port* get_drop_port()   const { return drop_; }
+  Port* get_all_port()    const { return all_; }
+  Port* get_flood_port()  const { return flood_; }
+  Port* get_reflow_port() const { return reflow_; }
 
   // Mutators.
   void up();
@@ -59,6 +66,9 @@ struct Dataplane
   Port_list ports_;
   Port_map  portmap_;
   Port*     drop_;
+  Port*     all_;
+  Port*     flood_;
+  Port*     reflow_;
 };
 
 

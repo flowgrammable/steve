@@ -12,22 +12,6 @@
 namespace fp
 {
 
-// This is a special port used to flood a packet to all ports
-// except for the one that received it.
-class Port_flood : public Port_udp
-{
-public:
-  using Port_udp::Port_udp;
-  // Constructor/Destructor.
-  Port_flood(std::string const& addr)
-    : Port_udp(0xffff, addr, "")
-  { }
-
-  ~Port_flood() { }
-
-  int   send();
-};
-
 // Global port table type.
 class Port_table
 {
@@ -56,18 +40,8 @@ public:
   value_type find(std::string const&);
   store_type list();
 
-  value_type flood_port() const { return flood_port_; }
-  value_type broad_port() const { return broad_port_; }
-  value_type drop_port()  const { return drop_port_; }
-
-
 private:
   store_type data_;
-
-  // Reserved ports.
-  value_type flood_port_;
-  value_type broad_port_;
-  value_type drop_port_;
 };
 
 extern Port_table port_table;

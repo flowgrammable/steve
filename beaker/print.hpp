@@ -131,6 +131,8 @@ std::ostream& operator<<(std::ostream&, Inphysport_expr const&);
 std::ostream& operator<<(std::ostream&, All_port const&);
 std::ostream& operator<<(std::ostream&, Controller_port const&);
 std::ostream& operator<<(std::ostream&, Reflow_port const&);
+std::ostream& operator<<(std::ostream&, Flood_port const&);
+std::ostream& operator<<(std::ostream&, Egress_port const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);

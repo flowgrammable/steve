@@ -30,6 +30,8 @@ struct Lowerer
   Expr* lower(All_port* e);
   Expr* lower(Controller_port* e);
   Expr* lower(Reflow_port* e);
+  Expr* lower(Flood_port* e);
+  Expr* lower(Egress_port* e);
 
   template <typename T>
   Expr* lower_unary_expr(T*);
