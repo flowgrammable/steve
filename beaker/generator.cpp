@@ -974,11 +974,35 @@ Generator::gen(Block_stmt const* s)
 
 
 void
-Generator::gen(Assign_stmt const* s)
+Generator::gen_opaque_assign(Assign_stmt const* s)
 {
-  llvm::Value* lhs = gen(s->object());
+  Decl_expr* e = as<Decl_expr>(s->object());
+  assert(e);
+  auto const* bind = stack.lookup(e->declaration());
+  // Sanity check...
+  if (!bind) {
+    std::stringstream ss;
+    ss << *e << " does not refer to a valid declaration.\n";
+    throw std::runtime_error(ss.str());
+  }
+  llvm::Value* lhs = bind->second;
   llvm::Value* rhs = gen(s->value());
   build.CreateStore(rhs, lhs);
+}
+
+
+void
+Generator::gen(Assign_stmt const* s)
+{
+  if (is_opaque_translated_type(s->object()->type()->nonref()))
+  {
+    gen_opaque_assign(s);
+  }
+  else {
+    llvm::Value* lhs = gen(s->object());
+    llvm::Value* rhs = gen(s->value());
+    build.CreateStore(rhs, lhs);
+  }
 }
 
 

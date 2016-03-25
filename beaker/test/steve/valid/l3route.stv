@@ -65,7 +65,7 @@ event learn_ip
 	{
 		// puts("Using learned in route.");
 		write set ipv4.ttl = ipv4.ttl - 1;
-		write output egress;
+		output egress;
 	}
 	into route;
 }
@@ -90,6 +90,6 @@ exact_table route(ipv4.dst)
   {
 		// puts("flood");
 		write set ipv4.ttl = ipv4.ttl - 1;
-    flood;
+		output flood;
   }
 }

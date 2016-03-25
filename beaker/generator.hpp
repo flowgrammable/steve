@@ -139,6 +139,8 @@ struct Generator
   void gen(Decode_stmt const*);
   void gen(Goto_stmt const*);
 
+  void gen_opaque_assign(Assign_stmt const*);
+
   void gen(Decl const*);
   void gen(Variable_decl const*);
   void gen(Function_decl const*);

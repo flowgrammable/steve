@@ -146,10 +146,10 @@ Parser::primary_expr()
     return e;
   }
 
-  throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
-  error("expected primary expression");
+  // error("expected primary expression");
+  throw std::runtime_error("Failed to parse primary expression.");
 }
 
 
@@ -1559,7 +1559,7 @@ Parser::copy_stmt()
 // Write an action to be applied later.
 //
 //  write-stmt -> 'write' [ output-stmt
-//                        | set-stmt 
+//                        | set-stmt
 //                        | copy-stmt]
 Stmt*
 Parser::write_stmt()

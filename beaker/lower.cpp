@@ -1252,7 +1252,7 @@ Lowerer::lower_global_def(Table_decl* d)
 
   ovl = unqualified_lookup(get_identifier(__dataplane));
   assert(ovl);
-  Expr* dp = decl_id(ovl->back());
+  Expr* dp = id(ovl->back());
   assert(ovl->back());
 
   // We need the global variable storing the dataplane pointer which is
@@ -1276,7 +1276,9 @@ Lowerer::lower_global_def(Table_decl* d)
   // of course you can't have an object of that type because
   // it is opaque and you have no type info about it.
   elab.elaborate(get_table);
-  load_body.push_back(statement(get_table));
+  Assign_stmt* store = new Assign_stmt(id(tblptr), get_table);
+  elab.elaborate(store);
+  load_body.push_back(store);
 
   // Add the rest of init flows to the table.
   add_init_flows(d);

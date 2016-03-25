@@ -838,6 +838,7 @@ check_equality_expr(Elaborator& elab, Binary_expr* e)
   // Apply conversions.
   Type const* z = get_integer_type();
   Type const* b = get_boolean_type();
+
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
@@ -3185,12 +3186,22 @@ Elaborator::elaborate(Assign_stmt* s)
   Expr* rhs = require_value(*this, s->second);
 
   // The types shall match after conversion. Compare t1 using the non-reference
-  // type of the object.
-  Type const* t1 = lhs->type()->nonref();
+  // type of the object. (Only if not an opaque translated type.)
+  Type const* t1 = nullptr;
+  if (is_opaque_translated_type(lhs->type()->nonref()))
+    t1 = lhs->type();
+  else
+    t1 = lhs->type()->nonref();
+
+  // Type const* t1 = lhs->type()->nonref();
+
   rhs = convert(rhs, t1);
   // perform conversion
   if (!rhs) {
-    throw Type_error({}, "assignment to an object of a different type");
+    std::stringstream ss;
+    ss << "assignment to an object of a different type ("
+       << *t1 << " to " << *s->second->type() << ").";
+    throw Type_error(locate(s), ss.str());
   }
 
   s->first = lhs;

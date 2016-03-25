@@ -1015,10 +1015,10 @@ Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* en
   Function_decl* fn = builtin_fn.find(__get_table)->second;
   assert(fn);
 
-  Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
-  e->table_ = d;
+  // Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
+  // e->table_ = d;
 
-  return e;
+  return new Call_expr(decl_id(fn), { dp, id, key_size, entry_size, kind});
 }
 
 

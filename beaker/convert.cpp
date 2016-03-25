@@ -15,8 +15,14 @@
 Expr*
 convert_to_value(Expr* e)
 {
-  if (Reference_type const* t = as<Reference_type>(e->type()))
-    return new Value_conv(t->nonref(), e);
+  if (Reference_type const* t = as<Reference_type>(e->type())) {
+    // Do not perform value conversion on types that get translated to opaque type.
+    if (is_opaque_translated_type(t->nonref()))
+      return e;
+    // Otherwise, perform regular value conversion.
+    else
+      return new Value_conv(t->nonref(), e);
+  }
   else
     return e;
 }
