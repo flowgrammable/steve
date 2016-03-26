@@ -1,0 +1,68 @@
+layout ethernet
+{
+  dst : uint(48);
+  src : uint(48);
+  type : uint(16);
+}
+
+def sum(a : int, b : int) -> int
+{
+  return a + b;
+}
+
+
+decoder start eth_d(ethernet)
+{
+	var x : int = 10;
+  x = 1;
+  var y : int = 2;
+  var z : int = 3;
+  y = x + y; // Adding
+  z = y + z + 1;
+  z = z << 4; // Left shift.
+  var and_ : int = y & z; // bitwise and
+  var sum_ : int = sum(x, y); // fn call
+
+  var a : bool = true;
+  var b : bool = false;
+
+  // If statement
+  if (a || b) { }
+
+  // If else statement
+  if (a && b) { }
+  else if (a) { }
+  else { }
+
+  // Assuming there are integer variables named x and y.
+  match (x) {
+    case 0: x = x + 1;
+    // Multiple statements following the label must be
+    // enclosed in a block.
+    case 1: {
+      x = x + 2;
+      y = y * x;
+    }
+    // The default case statement.
+    miss: x = 0;
+  }
+
+  x = 0;
+  z = 0;
+  // Loop while x is less than 5.
+  while (x < 5) {
+    x = x + 1;
+    // If x equals 3, control goes back to the
+    // first statement in the loop body.
+    if (x == 3)
+      continue;
+
+    // This part is never reached if x == 2.
+    // If z equals 2, then we exit the loop
+    // altogether.
+    if (z == 2)
+      break;
+    // This will never execute when z == 2.
+    z = z + 1;
+  }
+}

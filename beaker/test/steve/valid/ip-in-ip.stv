@@ -1,0 +1,61 @@
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+layout ipv4
+{
+  version_ihl : uint(8);
+  dscp_ecn    : uint(8);
+  len         : uint(16);
+	id					: uint(16);
+	fragment    : uint(16);
+  ttl         : uint(8);
+  protocol    : uint(8);
+  checksum    : uint(16);
+  src         : uint(32);
+  dst         : uint(32);
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.type;
+  match(eth.type)
+  {
+    case 0x800: decode ipv4_d;
+  }
+
+	drop;
+}
+
+
+decoder ipv4_d(ipv4)
+{
+  extract ipv4.version_ihl;
+  extract ipv4.src;
+  extract ipv4.dst;
+  extract ipv4.protocol;
+
+  var hdr_len : uint(8) = (ipv4.version_ihl & 0x0f) * 4;
+
+  if (ipv4.protocol == 0x04)
+    decode ip_in_ip;
+
+	goto t1 advance hdr_len;
+}
+
+
+// IP encapsulated in IP decoder
+decoder ip_in_ip(ipv4)
+{
+  // And so on...
+}
+
+
+exact_table t1(ipv4.dst)
+{
+  // ...
+}

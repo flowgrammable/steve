@@ -633,8 +633,8 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
        << "table: " << *table->name() << "(" << key.size() << " instead of "
        << field_types.size() << ").";
 
-    for (auto field : field_types)
-      std::cout << "FIELD: " << *field << '\n';
+    // for (auto field : field_types)
+    //   std::cout << "FIELD: " << *field << '\n';
 
     throw Type_error({}, ss.str());
 
@@ -2660,7 +2660,7 @@ Elaborator::elaborate_decl(Table_decl* d)
       throw Type_error(locate(subkey), ss.str());
     }
   }
-  
+
   Type const* type = get_table_type(field_decls, types);
 
   // Elaborate requirements as field_name_expr.

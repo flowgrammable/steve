@@ -22,29 +22,32 @@ layout ipv4
 }
 
 
-decoder start eth_d(eth)
+decoder start eth_d(ethernet)
 {
-  extract eth.type;
-  match(eth.type)
-  {
-    case 0x800: decode ipv4_d;
-  }
-
-	drop;
+	extract ethernet.dst;
+	extract ethernet.src;
+	extract ethernet.type;
+	if (ethernet.type >= 0x600)
+	  	// The next header is IPv4 if the type field is 0x800.
+	    match (ethernet.type) {
+	      case 0x800: decode ipv4_d;
+	    }
+	// If its not IPv4, processing ends and the packet is
+	// implicitly dropped.
 }
 
 
 decoder ipv4_d(ipv4)
 {
-  extract ipv4.version_ihl;
-	extract ipv4.ttl;
-	extract ipv4.len;
-  extract ipv4.src;
-  extract ipv4.dst;
+	extract ipv4.version_ihl; // Needed for ihl.
+	extract ipv4.src; // Extract the IP addresses.
+	extract ipv4.dst;
+	extract ipv4.ttl; // We need ttl to decrement.
 
+	// Drop on expired packets.
 	if (ipv4.ttl == 0) drop;
-
-	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
+	// Proceed to the learn table after advancing by ihl
+	goto learn advance (version_ihl & 0x0f) * 4;
 }
 
 event learn_ip
@@ -60,11 +63,11 @@ event learn_ip
 
 
 	insert
-	[timeout = 1000, egress = in_port]
+	[egress = in_port]
 	{ ipv4.src } ->
 	{
 		// puts("Using learned in route.");
-		write set ipv4.ttl = ipv4.ttl - 1;
+		set ipv4.ttl = ipv4.ttl - 1;
 		output egress;
 	}
 	into route;
@@ -72,7 +75,6 @@ event learn_ip
 
 
 exact_table learn(ipv4.src)
-	requires(ipv4.ttl)
 {
   miss ->
   {
@@ -83,13 +85,14 @@ exact_table learn(ipv4.src)
 }
 
 
-exact_table route(ipv4.dst)
+// This ultimately decides where to forward packets based on
+// their destination IP.
+exact_table routing(ipv4.dst)
 	requires(ipv4.ttl)
 {
-  miss ->
-  {
+	miss -> {
 		// puts("flood");
-		write set ipv4.ttl = ipv4.ttl - 1;
-		output flood;
-  }
+		set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl
+		output flood; // Flood on all unlearned addresses.
+	}
 }

@@ -10,8 +10,8 @@ layout eth
 
 decoder start eth_d(eth)
 {
+	extract eth.dst;
 	extract eth.src;
-  extract eth.dst;
   goto learn;
 }
 
@@ -28,7 +28,7 @@ event learn_mac
 
 
 	insert
-	[timeout = 1000, egress = in_port]
+	[egress = in_port]
 	{ eth.src } ->
 	{
 		// puts("Using learned in switch.");

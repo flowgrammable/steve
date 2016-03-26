@@ -1,0 +1,220 @@
+// This layout describes the ethernet header.
+layout ethernet
+{
+	// Each field is a pair of names and types.
+	// Each type specifies that field's length.
+	dst  : uint(48); // This is 48 bits long.
+	src  : uint(48); // This is 48 bits long.
+	type : uint(16); // This is 16 bits long.
+}
+
+
+layout ipv4
+{
+  version_ihl : uint(8); // Non-byte aligned fields are merged.
+  dscp_ecn    : uint(8);  // This is merged, too.
+  len         : uint(16);
+  id          : uint(16);
+  fragment    : uint(16); // Fragment usually has flags.
+  ttl         : uint(8);
+  protocol    : uint(8);
+  checksum    : uint(16);
+  src         : uint(32);
+  dst         : uint(32);
+  // Note, the missing, unsupported options field.
+}
+
+
+// The ethernet decoder extracts all fields.
+decoder start eth_d(ethernet)
+{
+	extract ethernet.dst;
+	extract ethernet.src;
+	extract ethernet.type;
+}
+
+
+decoder eth_d2(ethernet)
+{
+  extract ethernet.dst;
+  extract ethernet.src;
+  extract ethernet.type;
+  // Using a field access expression with logical operator >=
+  if (ethernet.type >= 0x600) {
+    // Then this field determines what header comes next.
+  }
+  // Using a field access expression with logical operator <=
+  else if (ethernet.type <= 0x05dc) {
+    // Then this field is the length of the entire packet.
+  }
+  // ...
+}
+
+
+decoder eth_d3(ethernet)
+{
+	extract ethernet.dst;
+	extract ethernet.src;
+	extract ethernet.type;
+	if (ethernet.type >= 0x600)
+	  	// The next header is IPv4 if the type field is 0x800.
+	    match (ethernet.type) {
+	      case 0x800: decode ipv4_d;
+	    }
+}
+
+
+decoder ipv4_d(ipv4)
+{
+  extract ipv4.len; // Note that we do not have to extract
+  extract ipv4.version_ihl; // fields in order.
+  extract ipv4.ttl;
+  extract ipv4.src;
+  extract ipv4.dst;
+
+  // Drop dead packets.
+  if (ipv4.ttl == 0) drop;
+
+  // We can assign to field values to variables
+  var pktlen : uint = ipv4.len;
+  // We can perform bitwise operations.
+  var ihl : uint(8) = ipv4.version_ihl & 0x0f;
+  // We can also perform shifts.
+  var version : uint(8) = ipv4.version_ihl >> 4;
+
+  // Determine what the Time-to-Live is after this
+  // device finishes with the packet.
+  var next_ttl : uint = ipv4.ttl - 1;
+  // ...
+}
+
+decoder ipv4_d2(ipv4)
+{
+  extract ipv4.version_ihl;
+  extract ipv4.protocol;
+  extract ipv4.src;
+  extract ipv4.dst;
+  extract ipv4.ttl;
+  extract ipv4.fragment;
+  // Calculate internet header length (ihl).
+  var ihl : uint(8) = (ipv4.version_ihl & 0x0f) * 4;
+
+  insert
+  {0 , 0}-> { }
+  into ip_proto;
+
+  insert
+  miss -> { output flood; }
+  into ip_proto;
+
+  // Removal with constant values.
+  remove { 0x0, 0x01 } from ip_proto;
+
+  // Or dynamic values.
+  remove {ipv4.fragment, ipv4.protocol} from ip_proto;
+
+  // Removing a miss case.
+  remove miss from t1;
+
+  // Writing a set action
+  write set ipv4.ttl = ipv4.ttl - 1;
+  // Writing an output action.
+  write output reflow;
+
+  // We apply the advance clause to shift our view by a given
+  // number of bytes.
+  goto t1 advance ihl;
+}
+
+Port p1;
+Port p2;
+
+decoder stuff(ethernet)
+{
+  all; // The all port
+  reflow; // The reflow port
+  flood; // The flood port
+
+  // Output action with these ports.
+  output all;
+  output reflow;
+  output flood;
+
+  in_port; // The logical ingress port.
+  in_phys_port; // The physical ingress port.
+
+  // Output action with these ports.
+  output in_port; // Send the packet back where it came from.
+  output in_phys_port;
+
+  p1 = in_port; // "Remember" a logical ingress port of a packet
+  p2 = in_phys_port; // and a physical ingress port.
+
+  output p1; // Forward to these ports.
+  output p2;
+}
+
+exact_table t1(in_port, in_phys_port, ethernet.dst, ipv4.dst)
+{
+	// ...
+}
+
+// The ethtype exact match table.
+// This has a single key field: ethernet.type.
+exact_table ethtype(ethernet.type)
+{
+	// This flow entry matches all packets whose
+	// ethernet.type field equals 0x800.
+	{ 0x800 } ->
+	{
+		// If it matches, send it to ipv4_d.
+		decode ipv4_d;
+	}
+	// This is the miss case. It matches all packets
+	// which do not match any other entry.
+	miss ->
+	{
+		drop; // The drop action drops a packet.
+	}
+}
+
+
+// The key fields are ipv4.fragment and ipv4.protocol.
+exact_table ip_proto(ipv4.fragment, ipv4.protocol)
+	requires (ipv4.ttl)
+{
+  // We have 0x0 for the fragment field
+  // and 0x01 (ICMP) for the protocol field.
+  // The fragment field is 0 when a packet isn't fragmented.
+  { 0x0, 0x01 } ->
+  {
+  	set ipv4.ttl = ipv4.ttl - 1; // Decrement time-to-live.
+  	// Dispatch to the ICMP Decoder.
+  }
+
+  // The protocol field is 0x06 for TCP data.
+  // The flow property-timeout-sets a timeout in secs.
+  // A flow entry with a timeout is removed after X secs.
+  [timeout = 1000]
+  { 0x0, 0x06 } ->
+  {
+    set ipv4.ttl = ipv4.ttl - 1; // Decrement time-to-live.
+    // Dispatch to the TCP Decoder.
+
+  }
+  // And so on...
+}
+
+// A dummy event.
+event e1
+	requires(ethernet.src, ethernet.type)
+{
+	if (ethernet.type == 0x800) {
+		// Do something...
+	}
+	else if (ethernet.src > 0x00_12_34_56_78_9a) { }
+	var x : uint(48) = 0;
+	set ethernet.src = x;
+	output reflow;
+	// Perform some other actions...
+}
