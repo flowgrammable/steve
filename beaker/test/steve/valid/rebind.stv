@@ -27,6 +27,7 @@ decoder vlan_d(vlan)
 {
 	extract vlan.tci;
 	extract vlan.ethertype as eth.type;
+	set vlan.ethertype = 0;
 	goto t1;
 }
 

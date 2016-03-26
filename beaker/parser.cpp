@@ -1589,13 +1589,47 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'insert' flow-decl 'into' table-id
+//    add-flow-stmt -> 'insert' { ... } -> { ... } 'into' table-id
 //
 Stmt*
 Parser::add_flow_stmt()
 {
   match(insert_kw);
-  Decl* flow = flow_decl();
+
+  // The actual flow.
+  // Store the information about the flow in a flow decl because its
+  // convenient to do so.
+  Decl* flow = nullptr;
+  Stmt_seq properties = flow_properties(); // Optional properties.
+
+  // Miss case.
+  if (match_if(miss_kw)) {
+    match(arrow_tok);
+    Stmt* body = block_stmt();
+    flow = on_flow_miss(body, properties);
+  }
+  else {
+    // Regular case.
+    match(lbrace_tok);
+    Expr_seq keys;
+    // Parse brace-enclosed, comma seperated key sequence.
+    while (lookahead() != rbrace_tok) {
+      Expr* k = expr();
+      if (k)
+        keys.push_back(k);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rbrace_tok);
+    match(arrow_tok);
+    Stmt* body = block_stmt(); // Flow body.
+    flow = on_flow(keys, body, properties);
+  }
+  assert(flow);
+  // Flow done, parse into table.
   match(into_kw);
   Expr* table = expr();
   match(semicolon_tok);
