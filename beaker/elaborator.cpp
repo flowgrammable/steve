@@ -635,9 +635,7 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
 
     // for (auto field : field_types)
     //   std::cout << "FIELD: " << *field << '\n';
-
     throw Type_error({}, ss.str());
-
     return false;
   }
 
@@ -672,6 +670,27 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
 bool
 check_unique_fields(Table_decl* d)
 {
+  // Evaluate compare two expressions for equals.
+  auto eq_cmp = [](Expr* x, Expr* y)
+  {
+    // Try to evaluate the expressions.
+    try
+    {
+      Evaluator ev;
+      auto a = ev.eval(x);
+      auto b = ev.eval(y);
+      if (!a.is_integer() && !b.is_integer())
+        return false;
+
+      return a.get_integer() == b.get_integer();
+    }
+    // If we cannot then just return false and say they're not equal.
+    catch(Eval_error)
+    {
+      return false;
+    }
+  };
+
   for (auto f1 : d->body()) {
     assert(is<Flow_decl>(f1));
     Flow_decl* flow1 = as<Flow_decl>(f1);
@@ -680,8 +699,22 @@ check_unique_fields(Table_decl* d)
       assert(is<Flow_decl>(f2));
       Flow_decl* flow2 = as<Flow_decl>(f2);
 
-      if (f1 != f2)
-        if (flow1->keys() == flow2->keys()) {
+      if (f1 != f2) {
+        bool dup = true; // flag duplicates
+        auto k1 = flow1->keys().begin();
+        auto k2 = flow2->keys().begin();
+        while (k1 != flow1->keys().end() && k2 != flow2->keys().end()) {
+          // Set the dup flag to false when we find a not equal fields.
+          if (!eq_cmp(*k1, *k2)) {
+            dup = false;
+            break;
+          }
+          ++k1;
+          ++k2;
+        }
+
+        if (dup)
+        {
           std::stringstream ss;
           ss << "Duplicate keys found in " << *d->name()
              << " between " << *f1->name() << " and " << *f2->name();
@@ -689,6 +722,7 @@ check_unique_fields(Table_decl* d)
 
           return false;
         }
+      }
     }
   }
 

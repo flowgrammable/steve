@@ -30,6 +30,15 @@ private:
   Location loc_;
 };
 
+// Error for when things cannot be evaluated.
+class Eval_error : public std::runtime_error
+{
+public:
+  Eval_error()
+    : std::runtime_error("cannot evaluate.")
+  { }
+};
+
 
 // Represents a lexical error.
 struct Lexical_error : Translation_error

@@ -56,18 +56,18 @@ Evaluator::eval(Expr const* e)
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
-    Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
-    Value operator()(Void_cast const* e) { lingo_unimplemented(); }
+    Value operator()(Reinterpret_cast const* e) { throw Eval_error(); }
+    Value operator()(Void_cast const* e) { throw Eval_error(); }
 
-    Value operator()(Field_name_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Inport_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Inphysport_expr const* e) { lingo_unimplemented(); }
-    Value operator()(All_port const* e) { lingo_unimplemented(); }
-    Value operator()(Controller_port const* e) { lingo_unimplemented(); }
-    Value operator()(Reflow_port const* e) { lingo_unimplemented(); }
-    Value operator()(Flood_port const* e) { lingo_unimplemented(); }
-    Value operator()(Egress_port const* e) { lingo_unimplemented(); }
+    Value operator()(Field_name_expr const* e) { throw Eval_error(); }
+    Value operator()(Field_access_expr const* e) { throw Eval_error(); }
+    Value operator()(Inport_expr const* e) { throw Eval_error(); }
+    Value operator()(Inphysport_expr const* e) { throw Eval_error(); }
+    Value operator()(All_port const* e) { throw Eval_error(); }
+    Value operator()(Controller_port const* e) { throw Eval_error(); }
+    Value operator()(Reflow_port const* e) { throw Eval_error(); }
+    Value operator()(Flood_port const* e) { throw Eval_error(); }
+    Value operator()(Egress_port const* e) { throw Eval_error(); }
   };
 
   return apply(e, Fn {*this});
@@ -91,7 +91,8 @@ Evaluator::eval(Id_expr const* e)
 Value
 Evaluator::eval(Decl_expr const* e)
 {
-  return &stack.lookup(e->name())->second;
+  throw Eval_error();
+  // return &stack.lookup(e->name())->second;
 }
 
 

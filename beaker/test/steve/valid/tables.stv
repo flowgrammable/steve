@@ -31,17 +31,26 @@ exact_table t1(eth.src)
 {
   { 0 }->
   { }
+
+  { 1 }->
+  { }
 }
 
 exact_table t2(eth.src, eth.dst)
 {
   { 0, 0 }->
   { }
+
+  { 0, 1 }->
+  { }
 }
 
 exact_table t3(eth.src, eth.dst, eth.type)
 {
   { 0, 0, 0 }->
+  { }
+
+  { 1, 2, 3 }->
   { }
 }
 
@@ -67,6 +76,19 @@ exact_table t6(udp.src, udp.dst)
 exact_table t7(ipv4.id, ipv4.fragment, ipv4.len, ipv4.src, ipv4.dst)
 {
   { 0, 0, 0, 0, 0 }->
+  { }
+}
+
+// INVALID
+Port p1;
+Port p2;
+var x : int = 10;
+exact_table t8(ipv4.fragment, ipv4.len, ipv4.src, ipv4.dst)
+{
+  { x, 0, 0, 0 }->
+  { }
+
+  { x, 0, 0, 0 }->
   { }
 }
 

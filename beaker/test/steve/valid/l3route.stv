@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
 
-layout eth
+layout ethernet
 {
 	src : uint(48);
 	dst : uint(48);
@@ -47,7 +47,7 @@ decoder ipv4_d(ipv4)
 	// Drop on expired packets.
 	if (ipv4.ttl == 0) drop;
 	// Proceed to the learn table after advancing by ihl
-	goto learn advance (version_ihl & 0x0f) * 4;
+	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
 }
 
 event learn_ip
@@ -87,7 +87,7 @@ exact_table learn(ipv4.src)
 
 // This ultimately decides where to forward packets based on
 // their destination IP.
-exact_table routing(ipv4.dst)
+exact_table route(ipv4.dst)
 	requires(ipv4.ttl)
 {
 	miss -> {
