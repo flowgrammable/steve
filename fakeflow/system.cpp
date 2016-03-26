@@ -141,7 +141,7 @@ fp_flood(fp::Context* cxt)
 void
 fp_output_port(fp::Context* cxt, fp::Port::Id id)
 {
-  std::cout << "ID: " << id << '\n';
+  // std::cout << "ID: " << id << '\n';
   //
   // for (auto s : cxt->strings_)
   //   std::cout << s << " ";
@@ -427,7 +427,7 @@ fp::Port::Id
 fp_get_flow_egress(fp::Flow* f)
 {
   assert(f);
-  assert(f->egress_ > 0);
+  assert(f->egress_ != 0);
   return f->egress_;
 }
 
