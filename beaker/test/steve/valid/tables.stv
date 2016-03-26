@@ -83,12 +83,12 @@ exact_table t7(ipv4.id, ipv4.fragment, ipv4.len, ipv4.src, ipv4.dst)
 Port p1;
 Port p2;
 var x : int = 10;
-exact_table t8(ipv4.fragment, ipv4.len, ipv4.src, ipv4.dst)
+exact_table t8(in_port, ipv4.fragment, ipv4.len, ipv4.src, ipv4.dst)
 {
-  { x, 0, 0, 0 }->
+  { p1, 0, 0, 0, 0}->
   { }
 
-  { x, 0, 0, 0 }->
+  { p2, x, 0, 0, 0 }->
   { }
 }
 

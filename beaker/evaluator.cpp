@@ -84,7 +84,7 @@ Evaluator::eval(Literal_expr const* e)
 Value
 Evaluator::eval(Id_expr const* e)
 {
-  lingo_unreachable();
+  throw Eval_error();
 }
 
 

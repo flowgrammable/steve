@@ -14,7 +14,7 @@ decoder start eth_d(eth)
   extract eth.type;
 	set eth.type = eth.type + 80;
   set eth.dst = 880;
-	// clear;
+	clear;
 	write output p1;
 	write output all;
 	write output reflow;
