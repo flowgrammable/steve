@@ -431,14 +431,13 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Void_cast* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_name_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Field_access_expr* e) const { return elab.elaborate(e); }
-    Expr* operator()(Get_port* e) const { return elab.elaborate(e); }
-    Expr* operator()(Create_table* e) const { return elab.elaborate(e); }
-    Expr* operator()(Get_dataplane* e) const { return elab.elaborate(e); }
     Expr* operator()(Inport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(Inphysport_expr* e) const { return elab.elaborate(e); }
     Expr* operator()(All_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Controller_port* e) const { return elab.elaborate(e); }
     Expr* operator()(Reflow_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Flood_port* e) const { return elab.elaborate(e); }
+    Expr* operator()(Egress_port* e) const { return elab.elaborate(e); }
   };
 
   return apply(e, Fn{*this});
@@ -569,29 +568,25 @@ Expr*
 check_binary_arithmetic_expr(Elaborator& elab, T* e)
 {
   // Check for the larger of two values.
-  e->first = elab.elaborate(e->first);
-  e->second = elab.elaborate(e->second);
-  Type const* t1 = e->first->type();
-  Type const* t2 = e->second->type();
-  assert(t1);
-  assert(t2);
-  int p1 = precision(t1);
-  int p2 = precision(t2);
-
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
   // Convert to the larger of the two integers.
   // FIXME: Do not always convert to default signed int.
-  Type const* z = nullptr;
-  if (p1 > p2)
-    z = get_integer_type(p1, signed_int, native_order);
-  else
-    z = get_integer_type(p2, signed_int, native_order);
+  Type const* z = get_scalar_conversion_target(e1, e2);
+
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  }
 
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
-    throw Type_error({}, "left operand cannot be converted to 'int'");
+    throw Type_error({}, "left operand cannot be converted.");
   if (!c2)
-    throw Type_error({}, "right operand cannot be converted to 'int'");
+    throw Type_error({}, "right operand cannot be converted.");
 
   // Rebuild the expression with the
   // converted operands.
@@ -635,9 +630,12 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
   if (field_types.size() != key.size()) {
     std::stringstream ss;
     ss << "Flow " << *flow << " does not have the same number of keys as "
-       << "table: " << *table->name();
-    throw Type_error({}, ss.str());
+       << "table: " << *table->name() << "(" << key.size() << " instead of "
+       << field_types.size() << ").";
 
+    // for (auto field : field_types)
+    //   std::cout << "FIELD: " << *field << '\n';
+    throw Type_error({}, ss.str());
     return false;
   }
 
@@ -672,6 +670,27 @@ check_table_flow(Elaborator& elab, Table_decl* table, Flow_decl* flow)
 bool
 check_unique_fields(Table_decl* d)
 {
+  // Evaluate compare two expressions for equals.
+  auto eq_cmp = [](Expr* x, Expr* y)
+  {
+    // Try to evaluate the expressions.
+    try
+    {
+      Evaluator ev;
+      auto a = ev.eval(x);
+      auto b = ev.eval(y);
+      if (!a.is_integer() && !b.is_integer())
+        return false;
+
+      return a.get_integer() == b.get_integer();
+    }
+    // If we cannot then just return false and say they're not equal.
+    catch(Eval_error)
+    {
+      return false;
+    }
+  };
+
   for (auto f1 : d->body()) {
     assert(is<Flow_decl>(f1));
     Flow_decl* flow1 = as<Flow_decl>(f1);
@@ -680,8 +699,22 @@ check_unique_fields(Table_decl* d)
       assert(is<Flow_decl>(f2));
       Flow_decl* flow2 = as<Flow_decl>(f2);
 
-      if (f1 != f2)
-        if (flow1->keys() == flow2->keys()) {
+      if (f1 != f2) {
+        bool dup = true; // flag duplicates
+        auto k1 = flow1->keys().begin();
+        auto k2 = flow2->keys().begin();
+        while (k1 != flow1->keys().end() && k2 != flow2->keys().end()) {
+          // Set the dup flag to false when we find a not equal fields.
+          if (!eq_cmp(*k1, *k2)) {
+            dup = false;
+            break;
+          }
+          ++k1;
+          ++k2;
+        }
+
+        if (dup)
+        {
           std::stringstream ss;
           ss << "Duplicate keys found in " << *d->name()
              << " between " << *f1->name() << " and " << *f2->name();
@@ -689,6 +722,7 @@ check_unique_fields(Table_decl* d)
 
           return false;
         }
+      }
     }
   }
 
@@ -834,8 +868,20 @@ Expr*
 check_equality_expr(Elaborator& elab, Binary_expr* e)
 {
   // Apply conversions.
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = get_scalar_conversion_target(e1, e2);
   Type const* b = get_boolean_type();
+
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  };
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
@@ -884,8 +930,20 @@ Expr*
 check_ordering_expr(Elaborator& elab, Binary_expr* e)
 {
   // Apply conversions.
-  Type const* z = get_integer_type();
+  // Check for the larger of two values.
+  Expr* e1 = elab.elaborate(e->first);
+  Expr* e2 = elab.elaborate(e->second);
+  // Convert to the larger of the two integers.
+  // FIXME: Do not always convert to default signed int.
+  Type const* z = get_scalar_conversion_target(e1, e2);
   Type const* b = get_boolean_type();
+
+  if (!z) {
+    std::stringstream ss;
+    ss << "no valid conversion between two operands ("
+       << *e1 << " and " << *e2 << ").";
+    throw Type_error({}, ss.str());
+  };
   Expr* c1 = require_converted(elab, e->first, z);
   Expr* c2 = require_converted(elab, e->second, z);
   if (!c1)
@@ -1859,31 +1917,27 @@ Elaborator::elaborate(Reflow_port* e)
 }
 
 
-// -------------------------------------------------------------------------- //
-// Elaboration of builtins
-
 Expr*
-Elaborator::elaborate(Get_port* e)
+Elaborator::elaborate(Flood_port* e)
 {
-  // elaborate it as a call expr
-  Call_expr* call = as<Call_expr>(e);
-  return elaborate(call);
+  Decl* context = stack.context();
+  if (!is_valid_pipeline_context(context)) {
+    throw Type_error(locate(e), "'flood' occuring outside a decoder, flow, or event.");
+  }
+  return e;
 }
 
 
 Expr*
-Elaborator::elaborate(Create_table* e)
+Elaborator::elaborate(Egress_port* e)
 {
-  // elaborate it as a call expr
-  Call_expr* call = as<Call_expr>(e);
-  return elaborate(call);
-}
-
-
-// No further elaboration required.
-Expr*
-Elaborator::elaborate(Get_dataplane* e)
-{
+  Flow_decl* flow = as<Flow_decl>(stack.context());
+  // This is special since it can only occur within the context of flows.
+  if (!flow) {
+    std::stringstream ss;
+    ss << "\'egress\' occuring outside a flow declaration.";
+    throw Type_error(locate(e), ss.str());
+  }
   return e;
 }
 
@@ -2012,6 +2066,8 @@ Elaborator::elaborate(Module_decl* m)
   for (Decl*& d : m->decls_)
     d = elaborate_def(d);
 
+  // We delay the elaboration of flow bodies because we do not
+  // want the bodies to capture names from the surrounding scope.
   for (Flow_decl*& flow : added_flows_) {
     elaborate_added_flow_body(flow, flow->table());
   }
@@ -2225,21 +2281,21 @@ Elaborator::elaborate(Flow_decl* d)
   d->table_ = table;
 
   if (Block_stmt* block = as<Block_stmt>(d->instructions_)) {
-    if (!has_terminator_action(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration missing guaranteed terminator.\n";
-      ss << *block;
-
-      throw Type_error(locate(block), ss.str());
-    }
-
-    if (has_multiple_terminators(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration has multiple terminators.\n";
-      ss << *block;
-
-      throw Type_error(locate(block), ss.str());
-    }
+    // if (!has_terminator_action(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration missing guaranteed terminator.\n";
+    //   ss << *block;
+    //
+    //   throw Type_error(locate(block), ss.str());
+    // }
+    //
+    // if (has_multiple_terminators(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration has multiple terminators.\n";
+    //   ss << *block;
+    //
+    //   throw Type_error(locate(block), ss.str());
+    // }
 
     for (auto s : block->statements()) {
       if (!is_action(s)) {
@@ -2632,7 +2688,13 @@ Elaborator::elaborate_decl(Table_decl* d)
       // save the type of the field decl
       types.push_back(field->type());
     }
+    else {
+      std::stringstream ss;
+      ss << *subkey << " is not a valid key.";
+      throw Type_error(locate(subkey), ss.str());
+    }
   }
+
   Type const* type = get_table_type(field_decls, types);
 
   // Elaborate requirements as field_name_expr.
@@ -2949,23 +3011,23 @@ Elaborator::elaborate_def(Decode_decl* d)
   // basically a special function body
   if (d->body()) {
     d->body_ = elaborate(d->body());
-    if (Block_stmt* block = as<Block_stmt>(d->body_)) {
-      if (!has_terminator_action(block->statements())) {
-        std::stringstream ss;
-        ss << "Decode declaration missing guaranteed terminator.\n";
-        ss << *block;
-
-        throw Type_error(locate(block), ss.str());
-      }
-
-      if (has_multiple_terminators(block->statements())) {
-        std::stringstream ss;
-        ss << "Flow declaration has multiple terminators.\n";
-        ss << *block;
-
-        throw Type_error(locate(block), ss.str());
-      }
-    }
+    // if (Block_stmt* block = as<Block_stmt>(d->body_)) {
+    //   if (!has_terminator_action(block->statements())) {
+    //     std::stringstream ss;
+    //     ss << "Decode declaration missing guaranteed terminator.\n";
+    //     ss << *block;
+    //
+    //     throw Type_error(locate(block), ss.str());
+    //   }
+    //
+    //   if (has_multiple_terminators(block->statements())) {
+    //     std::stringstream ss;
+    //     ss << "Flow declaration has multiple terminators.\n";
+    //     ss << *block;
+    //
+    //     throw Type_error(locate(block), ss.str());
+    //   }
+    // }
   }
 
   return d;
@@ -3094,18 +3156,13 @@ Elaborator::elaborate(Stmt* s)
     Stmt* operator()(Action* d) const { return elab.elaborate(d); }
     Stmt* operator()(Drop* d) const { return elab.elaborate(d); }
     Stmt* operator()(Output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Output_egress* d) { return elab.elaborate(d); }
-    Stmt* operator()(Flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Clear* d) const { return elab.elaborate(d); }
     Stmt* operator()(Set_field* d) const { return elab.elaborate(d); }
     Stmt* operator()(Insert_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_flow* d) const { return elab.elaborate(d); }
     Stmt* operator()(Remove_miss* d) const { return elab.elaborate(d); }
     Stmt* operator()(Raise* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_drop* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_flood* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_output* d) const { return elab.elaborate(d); }
-    Stmt* operator()(Write_output_egress* d) const { return elab.elaborate(d); }
     Stmt* operator()(Write_set_field* d) const { return elab.elaborate(d); }
   };
 
@@ -3161,12 +3218,22 @@ Elaborator::elaborate(Assign_stmt* s)
   Expr* rhs = require_value(*this, s->second);
 
   // The types shall match after conversion. Compare t1 using the non-reference
-  // type of the object.
-  Type const* t1 = lhs->type()->nonref();
+  // type of the object. (Only if not an opaque translated type.)
+  Type const* t1 = nullptr;
+  if (is_opaque_translated_type(lhs->type()->nonref()))
+    t1 = lhs->type();
+  else
+    t1 = lhs->type()->nonref();
+
+  // Type const* t1 = lhs->type()->nonref();
+
   rhs = convert(rhs, t1);
   // perform conversion
   if (!rhs) {
-    throw Type_error({}, "assignment to an object of a different type");
+    std::stringstream ss;
+    ss << "assignment to an object of a different type ("
+       << *t1 << " to " << *s->second->type() << ").";
+    throw Type_error(locate(s), ss.str());
   }
 
   s->first = lhs;
@@ -3182,6 +3249,9 @@ Elaborator::elaborate(Assign_stmt* s)
 Stmt*
 Elaborator::elaborate(Return_stmt* s)
 {
+  if (!is<Function_decl>(stack.context()))
+    throw Type_error(locate(s), "return not in function.");
+
   Function_decl* fn = stack.function();
   Type const* t = fn->return_type();
 
@@ -3524,36 +3594,6 @@ Elaborator::elaborate(Output* s)
 
 
 Stmt*
-Elaborator::elaborate(Output_egress* s)
-{
-  Flow_decl* flow = as<Flow_decl>(stack.context());
-  // This is special since it can only occur within the context of flows.
-  if (!flow) {
-    std::stringstream ss;
-    ss << "\'output egress\' occuring outside a flow declaration.";
-    throw Type_error(locate(s), ss.str());
-  }
-
-  // Now check that the flow's egress property is set.
-  if (!flow->properties().egress)
-    throw Type_error(locate(s), "\'output egress\' "
-                                "occuring without 'egress' flow property set.");
-
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Flood* s)
-{
-  check_valid_action_context(s);
-
-  // No further elaboration required
-  return s;
-}
-
-
-Stmt*
 Elaborator::elaborate(Clear* s)
 {
   check_valid_action_context(s);
@@ -3630,13 +3670,13 @@ Elaborator::elaborate_added_flow_body(Flow_decl* f, Table_decl* t)
 
     // Confirmt that the flow body has a terminating action to ensure
     // progress is made through the pipeline.
-    if (!has_terminator_action(block->statements())) {
-      std::stringstream ss;
-      ss << "Flow declaration missing guaranteed terminator.\n";
-      ss << *f;
-
-      throw Type_error(locate(f), ss.str());
-    }
+    // if (!has_terminator_action(block->statements())) {
+    //   std::stringstream ss;
+    //   ss << "Flow declaration missing guaranteed terminator.\n";
+    //   ss << *f;
+    //
+    //   throw Type_error(locate(f), ss.str());
+    // }
   }
 
   return f;
@@ -3828,48 +3868,12 @@ Elaborator::elaborate(Raise* s)
 
 
 Stmt*
-Elaborator::elaborate(Write_drop* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->drop());
-  // Elaborate the drop action.
-  s->first = elaborate(s->first);
-  return s;
-}
-
-
-Stmt*
 Elaborator::elaborate(Write_output* s)
 {
   check_valid_action_context(s);
 
   assert(s->output());
   // Elaborate the output action.
-  s->first = elaborate(s->first);
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Write_output_egress* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->output());
-  // Elaborate the output action.
-  s->first = elaborate(s->first);
-  return s;
-}
-
-
-Stmt*
-Elaborator::elaborate(Write_flood* s)
-{
-  check_valid_action_context(s);
-
-  assert(s->flood());
-  // Elaborate the flood action.
   s->first = elaborate(s->first);
   return s;
 }

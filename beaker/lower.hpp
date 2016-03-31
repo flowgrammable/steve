@@ -30,6 +30,8 @@ struct Lowerer
   Expr* lower(All_port* e);
   Expr* lower(Controller_port* e);
   Expr* lower(Reflow_port* e);
+  Expr* lower(Flood_port* e);
+  Expr* lower(Egress_port* e);
 
   template <typename T>
   Expr* lower_unary_expr(T*);
@@ -95,18 +97,13 @@ struct Lowerer
   Stmt_seq lower(Action*);
   Stmt_seq lower(Drop*);
   Stmt_seq lower(Output*);
-  Stmt_seq lower(Output_egress*);
-  Stmt_seq lower(Flood*);
   Stmt_seq lower(Clear*);
   Stmt_seq lower(Set_field*);
   Stmt_seq lower(Insert_flow*);
   Stmt_seq lower(Remove_flow*);
   Stmt_seq lower(Remove_miss*);
   Stmt_seq lower(Raise*);
-  Stmt_seq lower(Write_drop*);
   Stmt_seq lower(Write_output*);
-  Stmt_seq lower(Write_output_egress*);
-  Stmt_seq lower(Write_flood*);
   Stmt_seq lower(Write_set_field*);
 
   // application interface
@@ -146,8 +143,6 @@ private:
 
   // Maintain the number of ports
   int port_count;
-
-  Type const* opaque_table = get_opaque_table();
 
   // Runtime declarations
   Decl_seq prelude;

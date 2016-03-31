@@ -1,0 +1,21 @@
+Port p1 = 1;
+
+layout eth
+{
+	src : uint(48);
+	dst : uint(48);
+	type : uint(16);
+}
+
+decoder start eth_d(eth)
+{
+	var s : char[] = "Hello world";
+	var c : char = 'c';
+
+  extract eth.type;
+
+  write output p1;
+  write set eth.type = 0x800;
+
+  output p1;
+}

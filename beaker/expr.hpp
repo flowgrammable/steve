@@ -87,15 +87,14 @@ struct Expr::Visitor
 
   virtual void visit(Field_name_expr const*) = 0;
   virtual void visit(Field_access_expr const*) = 0;
-  virtual void visit(Get_port const*) = 0;
-  virtual void visit(Create_table const*) = 0;
-  virtual void visit(Get_dataplane const*) = 0;
   virtual void visit(Port_expr const*) = 0;
   virtual void visit(Inport_expr const*) = 0;
   virtual void visit(Inphysport_expr const*) = 0;
   virtual void visit(All_port const*) = 0;
   virtual void visit(Controller_port const*) = 0;
   virtual void visit(Reflow_port const*) = 0;
+  virtual void visit(Flood_port const*) = 0;
+  virtual void visit(Egress_port const*) = 0;
 };
 
 
@@ -147,15 +146,14 @@ struct Expr::Mutator
 
   virtual void visit(Field_name_expr*) = 0;
   virtual void visit(Field_access_expr*) = 0;
-  virtual void visit(Get_port*) = 0;
-  virtual void visit(Create_table*) = 0;
-  virtual void visit(Get_dataplane*) = 0;
   virtual void visit(Port_expr*) = 0;
   virtual void visit(Inport_expr*) = 0;
   virtual void visit(Inphysport_expr*) = 0;
   virtual void visit(All_port*) = 0;
   virtual void visit(Controller_port*) = 0;
   virtual void visit(Reflow_port*) = 0;
+  virtual void visit(Flood_port*) = 0;
+  virtual void visit(Egress_port*) = 0;
 };
 
 
@@ -688,6 +686,32 @@ struct Reflow_port : Expr
 };
 
 
+// This expression refers to the "Flood" port. This port is used to flood a
+// packet to all ports other than the ingress port.
+struct Flood_port : Expr
+{
+  Flood_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
+// This expression refers to the "Egress" port property of a flow entry. This
+// expression can only be used inside a flow entry.
+struct Egress_port : Expr
+{
+  Egress_port(Type const* t)
+    : Expr(t)
+  { }
+
+  void accept(Visitor& v) const { v.visit(this); }
+  void accept(Mutator& v)       { v.visit(this); }
+};
+
+
 // The expression e1.e2. This is an unresolved
 // expression.
 //
@@ -1040,15 +1064,14 @@ struct Generic_expr_visitor : Expr::Visitor, lingo::Generic_visitor<F, T>
 
   void visit(Field_name_expr const* e) { this->invoke(e); }
   void visit(Field_access_expr const* e) { this->invoke(e); }
-  void visit(Get_port const* e) { this->invoke(e); }
-  void visit(Create_table const* e) { this->invoke(e); }
-  void visit(Get_dataplane const* e) { this->invoke(e); }
   void visit(Port_expr const* e) { this->invoke(e); }
   void visit(Inport_expr const* e) { this->invoke(e); }
   void visit(Inphysport_expr const* e) { this->invoke(e); }
   void visit(All_port const* e) { this->invoke(e); }
   void visit(Controller_port const* e) { this->invoke(e); }
   void visit(Reflow_port const* e) { this->invoke(e); }
+  void visit(Flood_port const* e) { this->invoke(e); }
+  void visit(Egress_port const* e) { this->invoke(e); }
 };
 
 
@@ -1116,15 +1139,14 @@ struct Generic_expr_mutator : Expr::Mutator, lingo::Generic_mutator<F, T>
 
   void visit(Field_name_expr* e) { this->invoke(e); }
   void visit(Field_access_expr* e) { this->invoke(e); }
-  void visit(Get_port* e) { this->invoke(e); }
-  void visit(Create_table* e) { this->invoke(e); }
-  void visit(Get_dataplane* e) { this->invoke(e); }
   void visit(Port_expr* e) { this->invoke(e); }
   void visit(Inport_expr* e) { this->invoke(e); }
   void visit(Inphysport_expr* e) { this->invoke(e); }
   void visit(All_port* e) { this->invoke(e); }
   void visit(Controller_port* e) { this->invoke(e); }
   void visit(Reflow_port* e) { this->invoke(e); }
+  void visit(Flood_port* e) { this->invoke(e); }
+  void visit(Egress_port* e) { this->invoke(e); }
 };
 
 

@@ -527,6 +527,15 @@ is_object_type(Type const* t)
 }
 
 
+// These types translate to opaque types.
+inline bool
+is_opaque_translated_type(Type const* t)
+{
+  return is<Table_type>(t)
+      || is<Opaque_type>(t);
+}
+
+
 // Evalutes to true iff T1 and T2 have the same
 // dynamic type
 template<typename T1, typename T2>

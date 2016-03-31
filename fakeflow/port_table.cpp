@@ -10,22 +10,6 @@
 namespace fp
 {
 
-
-// Send the packet to all ports but the receiver.
-int
-Port_flood::send()
-{
-  // Check that this port is usable.
-  if (config_.down)
-    throw("port down");
-
-  std::cout << "Flooding\n";
-
-  // Return number of bytes sent.
-  return 0;
-}
-
-
 // Port table definitions.
 //
 // Default port table constructor.
@@ -38,10 +22,6 @@ Port_table::Port_table()
 Port_table::Port_table(int size)
   : data_(size, nullptr)
 {
-  flood_port_ = new Port_flood(":8675");
-  //flood_port_->thread_->assign(flood_port_->id_, flood);
-  broad_port_ = new Port_udp(0xfffe, ":8674", "broadcast");
-  drop_port_ = new Port_udp(0xfffffff0, ":8673", "drop");
 }
 
 
@@ -49,7 +29,6 @@ Port_table::Port_table(int size)
 Port_table::~Port_table()
 {
   data_.clear();
-
 }
 
 
@@ -97,12 +76,6 @@ Port_table::find(Port::Id id) -> value_type
 {
   if (data_[id-1])
     return data_[id-1];
-  else if (id == flood_port_->id())
-    return flood_port();
-  else if (id == broad_port_->id())
-    return broad_port();
-  else if (id == drop_port_->id())
-    return drop_port();
   else
     return nullptr;
 }
@@ -126,12 +99,6 @@ Port_table::find(std::string const& name) -> value_type
 
   if (res == data_.end())
     return nullptr;
-  else if (name == "flood")
-    return flood_port();
-  else if (name == "broadcast")
-    return broad_port();
-  else if (name == "drop")
-    return drop_port();
   else
     return *res;
 }

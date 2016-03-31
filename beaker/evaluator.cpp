@@ -56,17 +56,18 @@ Evaluator::eval(Expr const* e)
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
-    Value operator()(Reinterpret_cast const* e) { lingo_unimplemented(); }
-    Value operator()(Void_cast const* e) { lingo_unimplemented(); }
+    Value operator()(Reinterpret_cast const* e) { throw Eval_error(); }
+    Value operator()(Void_cast const* e) { throw Eval_error(); }
 
-    Value operator()(Field_name_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Field_access_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Inport_expr const* e) { lingo_unimplemented(); }
-    Value operator()(Inphysport_expr const* e) { lingo_unimplemented(); }
-    Value operator()(All_port const* e) { lingo_unimplemented(); }
-    Value operator()(Controller_port const* e) { lingo_unimplemented(); }
-    Value operator()(Reflow_port const* e) { lingo_unimplemented(); }
-    Value operator()(Get_dataplane const* e) { lingo_unreachable(); }
+    Value operator()(Field_name_expr const* e) { throw Eval_error(); }
+    Value operator()(Field_access_expr const* e) { throw Eval_error(); }
+    Value operator()(Inport_expr const* e) { throw Eval_error(); }
+    Value operator()(Inphysport_expr const* e) { throw Eval_error(); }
+    Value operator()(All_port const* e) { throw Eval_error(); }
+    Value operator()(Controller_port const* e) { throw Eval_error(); }
+    Value operator()(Reflow_port const* e) { throw Eval_error(); }
+    Value operator()(Flood_port const* e) { throw Eval_error(); }
+    Value operator()(Egress_port const* e) { throw Eval_error(); }
   };
 
   return apply(e, Fn {*this});
@@ -83,14 +84,15 @@ Evaluator::eval(Literal_expr const* e)
 Value
 Evaluator::eval(Id_expr const* e)
 {
-  lingo_unreachable();
+  throw Eval_error();
 }
 
 
 Value
 Evaluator::eval(Decl_expr const* e)
 {
-  return &stack.lookup(e->name())->second;
+  throw Eval_error();
+  // return &stack.lookup(e->name())->second;
 }
 
 
@@ -783,18 +785,13 @@ Evaluator::eval(Stmt const* s, Value& r)
     Control operator()(Action const* s) { lingo_unreachable(); }
     Control operator()(Drop const* s) { lingo_unreachable(); }
     Control operator()(Output const* s) { lingo_unreachable(); }
-    Control operator()(Output_egress const* s) { lingo_unreachable(); }
-    Control operator()(Flood const* s) { lingo_unreachable(); }
     Control operator()(Clear const* s) { lingo_unreachable(); }
     Control operator()(Set_field const* s) { lingo_unreachable(); }
     Control operator()(Insert_flow const* s) { lingo_unreachable(); }
     Control operator()(Remove_flow const* s) { lingo_unreachable(); }
     Control operator()(Remove_miss const* s) { lingo_unreachable(); }
     Control operator()(Raise const* s) { lingo_unreachable(); }
-    Control operator()(Write_drop const* s) { lingo_unreachable(); }
     Control operator()(Write_output const* s) { lingo_unreachable(); }
-    Control operator()(Write_output_egress const* s) { lingo_unreachable(); }
-    Control operator()(Write_flood const* s) { lingo_unreachable(); }
     Control operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
 

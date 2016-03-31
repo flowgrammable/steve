@@ -91,7 +91,6 @@ public:
   Stmt* decode_stmt();
   Stmt* goto_stmt();
   Stmt* drop_stmt();
-  Stmt* flood_stmt();
   Stmt* clear_stmt();
   Stmt* output_stmt();
   Stmt* set_stmt();
@@ -161,6 +160,8 @@ private:
   Expr* on_all_port(Token);
   Expr* on_controller_port(Token);
   Expr* on_reflow_port(Token);
+  Expr* on_flood_port(Token);
+  Expr* on_egress_port(Token);
 
   Decl* on_variable(Specifier, Token, Type const*);
   Decl* on_variable(Specifier, Token, Type const*, Expr*);
@@ -205,10 +206,8 @@ private:
   Stmt* on_decode(Expr*, Expr*);
   Stmt* on_goto(Expr*, Expr*);
   Stmt* on_drop();
-  Stmt* on_flood();
   Stmt* on_clear();
   Stmt* on_output(Expr*);
-  Stmt* on_output_egress();
   Stmt* on_set(Expr*, Expr*);
   Stmt* on_copy(Expr*, Expr*);
   Stmt* on_write(Stmt*);

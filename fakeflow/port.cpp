@@ -88,18 +88,7 @@ void
 Port::send(Context* cxt)
 {
   // packet_destroy(cxt->packet_);
-  cxt->apply_actions();
-  delete cxt;
 }
-
-
-// Sends the packet to the drop port.
-void
-Port::drop(Context* cxt)
-{
-  port_table.drop_port()->send(cxt);
-}
-
 
 // Gets the port id.
 Port::Id

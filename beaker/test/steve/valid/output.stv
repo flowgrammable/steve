@@ -1,0 +1,17 @@
+// Testing all the output actions
+
+layout eth { }
+
+// Port variables
+Port p1;
+
+decoder start eth_d(eth)
+{
+  output all;
+  output reflow;
+  output flood;
+  output in_port;
+  output in_phys_port;
+  p1 = in_port;
+  output p1;
+}

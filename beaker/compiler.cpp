@@ -236,8 +236,6 @@ parse(Path_seq const& in, Path const& out, Config const& conf)
   for (Path const& p : in) {
     if (get_file_kind(p) == beaker_file)
       ok &= parse(p, conf);
-    if (get_file_kind(p) == steve_file)
-      ok &= parse(p, conf);
     else {
       // FIXME: LLVM IR/BC or assembly could (should?) be
       // lowered and passed through to the link phase. That

@@ -24,13 +24,6 @@ struct Drop : Action
 };
 
 
-struct Flood : Action
-{
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-};
-
-
 // Output the packet to a given
 // port.
 struct Output : Action
@@ -45,23 +38,6 @@ struct Output : Action
   Expr* port() const { return port_; }
 
   Expr* port_;
-};
-
-
-// Output inport is special because it can only occur within the context
-// of a flow. When we say output inport, we mean that inport of the Context
-// used when installing the flow.
-//
-// The inport is implicitly resolved at runtime when executing this action
-// by requesting that a flow provide the inport.
-struct Output_egress : Output
-{
-  Output_egress()
-    : Output(nullptr)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
 };
 
 
@@ -222,22 +198,6 @@ struct Group : Action
 };
 
 
-// Write a drop for later.
-struct Write_drop : Action
-{
-  Write_drop(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Drop* drop() const { return cast<Drop>(first); }
-
-  Stmt* first;
-};
-
-
 // Write an output to port acttion
 // to the context
 struct Write_output : Action
@@ -250,38 +210,6 @@ struct Write_output : Action
   void accept(Mutator& v)       { return v.visit(this); }
 
   Output* output() const { return cast<Output>(first); }
-
-  Stmt* first;
-};
-
-
-// Write output egress action to context.
-struct Write_output_egress : Action
-{
-  Write_output_egress(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Output_egress* output() const { return cast<Output_egress>(first); }
-
-  Stmt* first;
-};
-
-
-// Write a flood action to context.
-struct Write_flood : Action
-{
-  Write_flood(Stmt* a)
-    : first(a)
-  { }
-
-  void accept(Visitor& v) const { return v.visit(this); }
-  void accept(Mutator& v)       { return v.visit(this); }
-
-  Flood* flood() const { return cast<Flood>(first); }
 
   Stmt* first;
 };
@@ -300,18 +228,6 @@ struct Write_set_field : Action
   Set_field* set_field() const { return cast<Set_field>(first); }
 
   Stmt* first;
-};
-
-
-// Write add field
-struct Write_add_field : Action
-{
-};
-
-
-// Write rmv field
-struct Write_del_field : Action
-{
 };
 
 
@@ -337,9 +253,9 @@ is_terminator(Stmt* s)
 {
   return is<Decode_stmt>(s)
       || is<Goto_stmt>(s)
-      || is<Drop>(s)
-      || is<Flood>(s)
-      || is<Output>(s);
+      || is<Drop>(s);
+      // || is<Flood>(s)
+      // || is<Output>(s);
       // FIXME: Is raise a terminating action? I don't think it is.
       // Raise should cause a copy of the context to be passed to an
       // asynchronous event handler and allow the continuation of processing

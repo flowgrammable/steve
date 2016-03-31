@@ -29,10 +29,8 @@ std::ostream& operator<<(std::ostream&, Goto_stmt const&);
 std::ostream& operator<<(std::ostream& os, Action const&);
 std::ostream& operator<<(std::ostream& os, Drop const&);
 std::ostream& operator<<(std::ostream& os, Output const&);
-std::ostream& operator<<(std::ostream& os, Flood const&);
 std::ostream& operator<<(std::ostream& os, Insert_flow const&);
 std::ostream& operator<<(std::ostream& os, Remove_flow const&);
-std::ostream& operator<<(std::ostream& os, Write_drop const&);
 std::ostream& operator<<(std::ostream& os, Raise const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
@@ -123,14 +121,13 @@ std::ostream& operator<<(std::ostream&, Field_access_expr const&);
 std::ostream& operator<<(std::ostream&, Reinterpret_cast const&);
 std::ostream& operator<<(std::ostream&, Void_cast const&);
 
-std::ostream& operator<<(std::ostream&, Get_port const&);
-std::ostream& operator<<(std::ostream&, Create_table const&);
-std::ostream& operator<<(std::ostream&, Get_dataplane const&);
 std::ostream& operator<<(std::ostream&, Inport_expr const&);
 std::ostream& operator<<(std::ostream&, Inphysport_expr const&);
 std::ostream& operator<<(std::ostream&, All_port const&);
 std::ostream& operator<<(std::ostream&, Controller_port const&);
 std::ostream& operator<<(std::ostream&, Reflow_port const&);
+std::ostream& operator<<(std::ostream&, Flood_port const&);
+std::ostream& operator<<(std::ostream&, Egress_port const&);
 
 std::ostream& operator<<(std::ostream&, Decl const&);
 std::ostream& operator<<(std::ostream&, Variable_decl const&);

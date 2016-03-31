@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     std::cerr << "Added port 'p1' to data plane 'dp1'\n";
     dp->add_port(p2);
     std::cerr << "Added port 'p2' to data plane 'dp1'\n";
-    dp->add_drop_port();
+    dp->add_reserved_ports();
 
     // Configure the data plane based on the applications needs.
     dp->configure();
@@ -43,8 +43,8 @@ int main(int argc, char* argv[])
     Application* app = dp->app();
     int p1id = p1->id();
     int p2id = p2->id();
-    app->lib().exec("port_changed", &p1id);
-    app->lib().exec("port_changed", &p2id);
+    // app->lib().exec("port_changed", &p1id);
+    // app->lib().exec("port_changed", &p2id);
 
     dp->up();
     std::cerr << "Data plane is up\n";
@@ -103,7 +103,6 @@ int main(int argc, char* argv[])
           0b11111111, 0b11111111, 0b11111111, 0b11111111,
           // dst
           0b11111111, 0b11111111, 0b11111111, 0b11111011,
-
           // udp src
           0, 0,
           // udp dst
@@ -150,7 +149,6 @@ int main(int argc, char* argv[])
         0b11111111, 0b11111111, 0b11111111, 0b11111011,
         // dst
         0b11111111, 0b11111111, 0b11111111, 0b11111111,
-
         // udp src
         0, 0,
         // udp dst
@@ -162,7 +160,7 @@ int main(int argc, char* argv[])
       };
       Packet pkt3(&data2[0], 1500, 0, nullptr, FP_BUF_ALLOC);
 
-      dp->process(p2, &pkt3);
+      dp->process(p1, &pkt3);
 
     } // block
   }

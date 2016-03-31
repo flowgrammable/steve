@@ -160,5 +160,4 @@ evaluate(Expr const* e)
 
 Expr* reduce(Expr const* e);
 
-
 #endif

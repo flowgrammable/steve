@@ -53,7 +53,6 @@ public:
   virtual Context*  recv() = 0;
   virtual int       send() = 0;
   virtual void      send(Context*);
-  virtual void      drop(Context*);
   virtual void      close() = 0;
   virtual Function  work_fn() = 0;
 

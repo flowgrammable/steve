@@ -343,10 +343,18 @@ parse(Path const& in, Config const& conf)
     diagnose(err);
     return false;
   }
-  catch (...)
-  {
+  catch (std::runtime_error& err) {
+    std::cerr << err.what() << '\n';
     return false;
   }
+  catch (...)
+  {
+    // TODO: Make this less vague.
+    std::cerr << "Failed parsing.\n";
+    return false;
+  }
+
+  return false;
 }
 
 

@@ -1,6 +1,6 @@
 foreign def puts(char[]) -> int;
 
-layout eth
+layout ethernet
 {
 	src : uint(48);
 	dst : uint(48);
@@ -22,46 +22,54 @@ layout ipv4
 }
 
 
-decoder start eth_d(eth)
+decoder start eth_d(ethernet)
 {
-  extract eth.type;
-  match(eth.type)
-  {
-    case 0x800: decode ipv4_d;
-  }
-
-	drop;
+	extract ethernet.dst;
+	extract ethernet.src;
+	extract ethernet.type;
+	if (ethernet.type >= 0x600)
+	  	// The next header is IPv4 if the type field is 0x800.
+	    match (ethernet.type) {
+	      case 0x800: decode ipv4_d;
+	    }
+	// If its not IPv4, processing ends and the packet is
+	// implicitly dropped.
 }
 
 
 decoder ipv4_d(ipv4)
 {
-  extract ipv4.version_ihl;
-	extract ipv4.ttl;
-	extract ipv4.len;
-  extract ipv4.src;
-  extract ipv4.dst;
+	extract ipv4.version_ihl; // Needed for ihl.
+	extract ipv4.src; // Extract the IP addresses.
+	extract ipv4.dst;
+	extract ipv4.ttl; // We need ttl to decrement.
 
+	// Drop on expired packets.
+	if (ipv4.ttl == 0) drop;
+	// Proceed to the learn table after advancing by ihl
 	goto learn advance (ipv4.version_ihl & 0x0f) * 4;
 }
 
+// This event handles the actual "learning."
 event learn_ip
-	requires(ipv4.src)
+	requires(ipv4.src) // It will learn src IP addresses.
 {
+	// This first entry prevents the same address from causing
+	// this event twice. It sends the packet straight to routing.
 	insert
-	{ ipv4.src } ->
-	{
-		// puts("Using learned in learn.");
-		goto route;
-	}
+	[timeout = 30]
+	{ ipv4.src } -> { goto route; }
 	into learn;
 
-
+	// This establishes the IP address to port mapping.
+	// Any packet whose dst address matches the current packet's
+	// src address will be forwarded to the current packet's
+	// ingress port.
 	insert
-	[timeout = 1000, egress = in_port]
+	[timeout = 30, egress = in_port]
 	{ ipv4.src } ->
 	{
-		// puts("Using learned in route.");
+		set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
 		output egress;
 	}
 	into route;
@@ -79,11 +87,14 @@ exact_table learn(ipv4.src)
 }
 
 
+// This ultimately decides where to forward packets based on
+// their destination IP.
 exact_table route(ipv4.dst)
+	requires(ipv4.ttl)
 {
-  miss ->
-  {
+	miss -> {
 		// puts("flood");
-    flood;
-  }
+		set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl
+		output flood; // Flood on all unlearned addresses.
+	}
 }

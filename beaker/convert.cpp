@@ -9,14 +9,67 @@
 #include <iostream>
 
 
+// Determines how to convert a scalar type to another scalar type.
+// TODO: Does not currently convert with bools or chars.
+Type const*
+get_scalar_conversion_target(Expr* e1, Expr* e2)
+{
+  assert(e1->type());
+  assert(e2->type());
+  Type const* t1 = e1->type()->nonref();
+  Type const* t2 = e2->type()->nonref();
+
+  // If they're already equal.
+  if (t1 == t2)
+    return t1;
+
+  // If they're both integers.
+  if (is<Integer_type>(t1) && is<Integer_type>(t2))
+  {
+    Integer_type const* int1 = as<Integer_type>(t1);
+    Integer_type const* int2 = as<Integer_type>(t2);
+
+    // Check precision.
+    int prec1 = int1->precision();
+    int prec2 = int2->precision();
+    int largest_prec = prec1;
+    if (prec1 < prec2)
+      largest_prec = prec2;
+
+    // Check sign.
+    Integer_sign sign = unsigned_int;
+    if (int1->is_signed() || int2->is_signed())
+      sign = signed_int;
+
+    // Return the integer type with the correct sign and precision.
+    return get_integer_type(largest_prec, sign, native_order);
+  }
+
+  // If e1 has integer type, try to return that and convert e2 to it later.
+  if (!is<Integer_type>(t1) && is<Integer_type>(t2))
+    return t2;
+  if (is<Integer_type>(t1) && !is<Integer_type>(t2))
+    return t1;
+
+  // Default return nullptr.
+  return nullptr;
+}
+
+
 // If e has reference type T&, return a conversion
 // to the value type T. Otherwise, no conversions
 // are required and e is returned.
 Expr*
 convert_to_value(Expr* e)
 {
-  if (Reference_type const* t = as<Reference_type>(e->type()))
-    return new Value_conv(t->nonref(), e);
+  if (Reference_type const* t = as<Reference_type>(e->type())) {
+    // Do not perform value conversion on types that get translated to opaque type.
+    if (is_opaque_translated_type(t->nonref()))
+      return e;
+    // Otherwise, perform regular value conversion.
+    else
+      return new Value_conv(t->nonref(), e);
+  }
   else
     return e;
 }

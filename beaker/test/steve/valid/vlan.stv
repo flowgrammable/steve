@@ -2,19 +2,39 @@ layout eth
 {
   dst  : uint(48);
   src  : uint(48);
-  vlan_tag : vlan;
   type : uint(16);
 }
 
 layout vlan
 {
-  type : uint(16);
   tci  : uint(16);
+  ethtype : uint(16);
 }
 
 decoder start eth_d(eth)
 {
-  extract eth.vlan_tag.type;
-  
-  drop;
+  extract eth.type;
+
+  if (eth.type == 0x8100)
+    decode vlan_d1;
+
+  // Else ...
+}
+
+
+decoder vlan_d1(vlan)
+{
+  extract vlan.tci;
+  extract vlan.ethtype as eth.type;
+
+  if (vlan.ethtype == 0x8100)
+    decode vlan_d2;
+
+  // Else...
+}
+
+
+decoder vlan_d2(vlan)
+{
+  // And so on...
 }

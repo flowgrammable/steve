@@ -132,10 +132,8 @@ public:
   Expr* elaborate(All_port* e);
   Expr* elaborate(Controller_port* e);
   Expr* elaborate(Reflow_port* e);
-
-  Expr* elaborate(Get_port* e);
-  Expr* elaborate(Create_table* e);
-  Expr* elaborate(Get_dataplane* e);
+  Expr* elaborate(Flood_port* e);
+  Expr* elaborate(Egress_port* e);
 
   Decl* elaborate(Decl*);
   Decl* elaborate(Variable_decl*);
@@ -211,18 +209,13 @@ public:
   Stmt* elaborate(Action*);
   Stmt* elaborate(Drop*);
   Stmt* elaborate(Output*);
-  Stmt* elaborate(Output_egress*);
-  Stmt* elaborate(Flood*);
   Stmt* elaborate(Clear*);
   Stmt* elaborate(Set_field*);
   Stmt* elaborate(Insert_flow*);
   Stmt* elaborate(Remove_flow*);
   Stmt* elaborate(Remove_miss*);
   Stmt* elaborate(Raise*);
-  Stmt* elaborate(Write_drop*);
   Stmt* elaborate(Write_output*);
-  Stmt* elaborate(Write_output_egress*);
-  Stmt* elaborate(Write_flood*);
   Stmt* elaborate(Write_set_field*);
 
   // Helper functions.

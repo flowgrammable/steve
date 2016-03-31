@@ -116,11 +116,6 @@ struct Generator
   llvm::Value* gen(Void_cast const*);
   llvm::Value* gen(Field_name_expr const*);
 
-  // builtin special generation
-  llvm::Value* gen(Get_port const*);
-  llvm::Value* gen(Create_table const*);
-  llvm::Value* gen(Get_dataplane const*);
-
   void gen(Stmt const*);
   void gen(Empty_stmt const*);
   void gen(Block_stmt const*);
@@ -138,6 +133,8 @@ struct Generator
   void gen(Case_stmt const*);
   void gen(Decode_stmt const*);
   void gen(Goto_stmt const*);
+
+  void gen_opaque_assign(Assign_stmt const*);
 
   void gen(Decl const*);
   void gen(Variable_decl const*);

@@ -129,15 +129,9 @@ is_less(Table_type const* a, Table_type const* b)
   // Compare the types.
   Type_seq const& a_types = a->field_types();
   Type_seq const& b_types = b->field_types();
-  Decl_seq const& a_names = a->field_names();
-  Decl_seq const& b_names = b->field_names();
   auto cmp_type = [](Type const* x, Type const* y) { return is_less(x, y); };
-  auto cmp_name = [](Decl const* x, Decl const* y) { return is_less(x->name(), y->name()); };
   return std::lexicographical_compare(a_types.begin(), a_types.end(),
-                                      b_types.begin(), b_types.end(), cmp_type)
-         &
-         std::lexicographical_compare(a_names.begin(), a_names.end(),
-                                      b_names.begin(), b_names.end(), cmp_name);
+                                      b_types.begin(), b_types.end(), cmp_type);
 }
 
 
@@ -305,12 +299,13 @@ is_less(Expr const* a, Expr const* b)
 
     bool operator()(Field_name_expr const* a) { lingo_unreachable(); }
     bool operator()(Field_access_expr const* a) { lingo_unreachable(); }
-    bool operator()(Get_dataplane const* a) { lingo_unreachable(); }
     bool operator()(Inport_expr const* a) { lingo_unreachable(); }
     bool operator()(Inphysport_expr const* a) { lingo_unreachable(); }
     bool operator()(All_port const* a) { lingo_unreachable(); }
     bool operator()(Controller_port const* a) { lingo_unreachable(); }
     bool operator()(Reflow_port const* a) { lingo_unreachable(); }
+    bool operator()(Flood_port const* a) { lingo_unreachable(); }
+    bool operator()(Egress_port const* a) { lingo_unreachable(); }
   };
 
   std::type_index t1 = typeid(*a);

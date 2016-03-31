@@ -14,13 +14,18 @@ decoder start eth_d(eth)
   extract eth.type;
   extract eth.dst;
 
-  match(eth.type) {
-    case 0x0800: puts("Got ipv4");
-    case 0x0880: puts("Got ipv6");
-		miss: puts("No match");
-  }
+  var x : int(48) = -1500;
+  var y : int(16) = -1500;
+
+  if (x == y)
+    puts("true");
+
+  if (eth.type > 1500)
+    match(eth.type) {
+      case 0x0800: puts("Got ipv4");
+      case 0x0880: puts("Got ipv6");
+  		miss: puts("No match");
+    }
 
   puts("Performing decode and routing.");
-
-  output p1;
 }

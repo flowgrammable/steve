@@ -82,6 +82,8 @@ struct Inphysport_expr;
 struct All_port;
 struct Controller_port;
 struct Reflow_port;
+struct Flood_port;
+struct Egress_port;
 
 struct Type;
 struct Id_type;
@@ -155,17 +157,11 @@ struct Delete_table;
 struct Lookup;
 struct Advance;
 
-// Builtin expressions that need special code gen
-struct Get_port;
-struct Create_table;
-struct Get_dataplane;
-
 // Actions
 struct Action;
 struct Drop;
 struct Output;
 struct Output_egress;
-struct Flood;
 struct Clear;
 struct Group;
 struct Set_field;
@@ -174,10 +170,7 @@ struct Insert_flow;
 struct Remove_flow;
 struct Remove_miss;
 struct Raise;
-struct Write_drop;
 struct Write_output;
-struct Write_output_egress;
-struct Write_flood;
 struct Write_set_field;
 struct Write_copy_field;
 

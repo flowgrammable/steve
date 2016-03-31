@@ -310,14 +310,13 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Void_cast const* e) const { return g.gen(e); }
     llvm::Value* operator()(Field_name_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Field_access_expr const* e) const { lingo_unreachable(); }
-    llvm::Value* operator()(Get_port const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Create_table const* e) const { return g.gen(e); }
-    llvm::Value* operator()(Get_dataplane const* e) const { return g.gen(e); }
     llvm::Value* operator()(Inport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Inphysport_expr const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(All_port const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Controller_port const* e) const { lingo_unreachable(); }
     llvm::Value* operator()(Reflow_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Flood_port const* e) const { lingo_unreachable(); }
+    llvm::Value* operator()(Egress_port const* e) const { lingo_unreachable(); }
   };
 
   return apply(e, Fn{*this});
@@ -725,9 +724,10 @@ Generator::gen(Block_conv const* e)
 llvm::Value*
 Generator::gen(Promotion_conv const* e)
 {
+  Integer_type const* int_t = as<Integer_type>(e->target());
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
-  return build.CreateZExt(v, t);
+  return build.CreateIntCast(v, t, int_t->is_signed());
 }
 
 
@@ -736,9 +736,10 @@ Generator::gen(Promotion_conv const* e)
 llvm::Value*
 Generator::gen(Demotion_conv const* e)
 {
+  Integer_type const* int_t = as<Integer_type>(e->target());
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
-  return build.CreateTrunc(v, t);
+  return build.CreateIntCast(v, t, int_t->is_signed());
 }
 
 
@@ -840,66 +841,6 @@ Generator::gen(Void_cast const* e)
 }
 
 
-llvm::Value*
-Generator::gen(Get_port const* e)
-{
-  // generate the call
-  llvm::Value* fn = gen(e->target());
-  std::vector<llvm::Value*> args;
-  for (Expr const* a : e->arguments()) {
-    auto arg = gen(a);
-    args.push_back(arg);
-  }
-  llvm::Value* res = build.CreateCall(fn, args);
-
-  // generate the store of the result directly into
-  // the global variable
-  assert(e->port_);
-  auto const* bind = stack.lookup(e->port_);
-  llvm::Value* port = bind->second;
-
-  return build.CreateStore(res, port);
-}
-
-
-llvm::Value*
-Generator::gen(Create_table const* e)
-{
-  // generate the call
-  llvm::Value* fn = gen(e->target());
-  std::vector<llvm::Value*> args;
-  for (Expr const* a : e->arguments())
-    args.push_back(gen(a));
-  llvm::Value* res = build.CreateCall(fn, args);
-
-  assert(e->table_);
-  auto const* bind = stack.lookup(e->table_);
-  llvm::Value* table = bind->second;
-
-  return build.CreateStore(res, table);
-}
-
-
-llvm::Value*
-Generator::gen(Get_dataplane const* e)
-{
-  assert(e->dataplane());
-  auto const* bind = stack.lookup(e->dataplane());
-  assert(bind);
-  // We have to load the pointer from the parameter variable.
-  // There's no way around this.
-  llvm::Value* dataplane = build.CreateLoad(bind->second);
-  assert(dataplane);
-
-  assert(e->target());
-  bind = stack.lookup(e->target());
-  assert(bind);
-  llvm::Value* target = bind->second;
-  assert(target);
-
-  return build.CreateStore(dataplane, target);
-}
-
 // -------------------------------------------------------------------------- //
 // Code generation for statements
 //
@@ -932,18 +873,13 @@ Generator::gen(Stmt const* s)
     void operator()(Action const* s) { lingo_unreachable(); }
     void operator()(Drop const* s) { lingo_unreachable(); }
     void operator()(Output const* s) { lingo_unreachable(); }
-    void operator()(Output_egress const* s) { lingo_unreachable(); }
-    void operator()(Flood const* s) { lingo_unreachable(); }
     void operator()(Clear const* s) { lingo_unreachable(); }
     void operator()(Set_field const* s) { lingo_unreachable(); }
     void operator()(Insert_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_flow const* s) { lingo_unreachable(); }
     void operator()(Remove_miss const* s) { lingo_unreachable(); }
     void operator()(Raise const* s) { lingo_unreachable(); }
-    void operator()(Write_drop const* s) { lingo_unreachable(); }
     void operator()(Write_output const* s) { lingo_unreachable(); }
-    void operator()(Write_output_egress const* s) { lingo_unreachable(); }
-    void operator()(Write_flood const* s) { lingo_unreachable(); }
     void operator()(Write_set_field const* s) { lingo_unreachable(); }
   };
   apply(s, Fn{*this});
@@ -977,11 +913,35 @@ Generator::gen(Block_stmt const* s)
 
 
 void
-Generator::gen(Assign_stmt const* s)
+Generator::gen_opaque_assign(Assign_stmt const* s)
 {
-  llvm::Value* lhs = gen(s->object());
+  Decl_expr* e = as<Decl_expr>(s->object());
+  assert(e);
+  auto const* bind = stack.lookup(e->declaration());
+  // Sanity check...
+  if (!bind) {
+    std::stringstream ss;
+    ss << *e << " does not refer to a valid declaration.\n";
+    throw std::runtime_error(ss.str());
+  }
+  llvm::Value* lhs = bind->second;
   llvm::Value* rhs = gen(s->value());
   build.CreateStore(rhs, lhs);
+}
+
+
+void
+Generator::gen(Assign_stmt const* s)
+{
+  if (is_opaque_translated_type(s->object()->type()->nonref()))
+  {
+    gen_opaque_assign(s);
+  }
+  else {
+    llvm::Value* lhs = gen(s->object());
+    llvm::Value* rhs = gen(s->value());
+    build.CreateStore(rhs, lhs);
+  }
 }
 
 

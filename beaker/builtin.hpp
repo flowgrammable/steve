@@ -8,59 +8,56 @@
 
 // Define a set of global names for each builtin functions
 // of flowpath functions
-constexpr char const* __bind_header     = "fp_bind_header";
-constexpr char const* __bind_field      = "fp_bind_field";
-constexpr char const* __alias_bind      = "fp_alias_bind";
-constexpr char const* __read_field      = "fp_read_field";
-constexpr char const* __advance         = "fp_advance_header";
-constexpr char const* __get_table       = "fp_create_table";
-constexpr char const* __add_init_flow   = "fp_add_init_flow";
-constexpr char const* __add_new_flow    = "fp_add_new_flow";
-constexpr char const* __rmv_flow        = "fp_del_flow";
-constexpr char const* __add_miss        = "fp_add_miss";
-constexpr char const* __rmv_miss        = "fp_del_miss";
-constexpr char const* __match           = "fp_goto_table";
-constexpr char const* __set_field       = "fp_set_field";
-constexpr char const* __get_port        = "fp_get_port_by_name";
-constexpr char const* __get_port_id     = "fp_get_port_by_id";
-constexpr char const* __gather          = "fp_gather";
-constexpr char const* __output          = "fp_output_port";
-constexpr char const* __dataplane       = "fp_dataplane";
-constexpr char const* __drop            = "fp_drop";
-constexpr char const* __flood           = "fp_flood";
-constexpr char const* __clear           = "fp_clear";
-constexpr char const* __write_drop      = "fp_write_drop";
-constexpr char const* __write_output    = "fp_write_output";
-constexpr char const* __write_flood     = "fp_write_flood";
-constexpr char const* __write_set       = "fp_write_set_field";
-constexpr char const* __raise_event     = "fp_raise_event";
-constexpr char const* __get_flow_egress = "fp_get_flow_egress";
-constexpr char const* __get_inport      = "fp_get_packet_in_port";
-constexpr char const* __get_inphysport  = "fp_get_packet_in_phys_port";
-constexpr char const* __port_up         = "fp_port_id_is_up";
-constexpr char const* __port_down       = "fp_port_id_is_down";
-constexpr char const* __get_all_port    = "fp_get_all_port";
-constexpr char const* __get_controller_port = "fp_get_controller_port";
-constexpr char const* __get_reflow_port = "fp_get_reflow_port";
-constexpr char const* __context         = "_cxt_";
-constexpr char const* __header          = "_header_";
-constexpr char const* __table           = "_table_";
-constexpr char const* __key             = "_key_";
-constexpr char const* __drop_port       = "_drop_";
-constexpr char const* __flood_port      = "_flood_";
-constexpr char const* __flow_self       = "__flow_self";
-constexpr char const* __inport          = "__inport";
-constexpr char const* __pktinport       = "__pktinport";
-constexpr char const* __keyform         = "_KEYFORM_";
+constexpr char const* RT_bind_header     = "fp_bind_header";
+constexpr char const* RT_bind_field      = "fp_bind_field";
+constexpr char const* RT_alias_bind      = "fp_alias_bind";
+constexpr char const* RT_read_field      = "fp_read_field";
+constexpr char const* RT_advance         = "fp_advance_header";
+constexpr char const* RT_get_table       = "fp_create_table";
+constexpr char const* RT_add_init_flow   = "fp_add_init_flow";
+constexpr char const* RT_add_new_flow    = "fp_add_new_flow";
+constexpr char const* RT_rmv_flow        = "fp_del_flow";
+constexpr char const* RT_add_miss        = "fp_add_miss";
+constexpr char const* RT_rmv_miss        = "fp_del_miss";
+constexpr char const* RT_match           = "fp_goto_table";
+constexpr char const* RT_set_field       = "fp_set_field";
+constexpr char const* RT_get_port        = "fp_get_port_by_name";
+constexpr char const* RT_get_port_id     = "fp_get_port_by_id";
+constexpr char const* RT_output          = "fp_output_port";
+constexpr char const* RT_dataplane       = "fp_dataplane";
+constexpr char const* RT_drop            = "fp_drop";
+constexpr char const* RT_clear           = "fp_clear";
+constexpr char const* RT_write_output    = "fp_write_output";
+constexpr char const* RT_write_set       = "fp_write_set_field";
+constexpr char const* RT_raise_event     = "fp_raise_event";
+constexpr char const* RT_get_flow_egress = "fp_get_flow_egress";
+constexpr char const* RT_get_inport      = "fp_get_packet_in_port";
+constexpr char const* RT_get_inphysport  = "fp_get_packet_in_phys_port";
+constexpr char const* RT_port_up         = "fp_port_id_is_up";
+constexpr char const* RT_port_down       = "fp_port_id_is_down";
+constexpr char const* RT_get_all_port    = "fp_get_all_port";
+constexpr char const* RT_get_controller_port = "fp_get_controller_port";
+constexpr char const* RT_get_reflow_port = "fp_get_reflow_port";
+constexpr char const* RT_get_flood_port  = "fp_get_flood_port";
+constexpr char const* RT_context         = "__cxt";
+constexpr char const* RT_header          = "__header";
+constexpr char const* RT_table           = "__table";
+constexpr char const* RT_key             = "__key";
+constexpr char const* RT_drop_port       = "__drop";
+constexpr char const* RT_flood_port      = "__flood";
+constexpr char const* RT_flow_self       = "__flow_self";
+constexpr char const* RT_inport          = "__inport";
+constexpr char const* RT_pktinport       = "__pktinport";
+constexpr char const* RT_keyform         = "__KEYFORM_";
 
 // runtime interface functions
-constexpr char const* __load            = "load";
-constexpr char const* __process         = "process";
-constexpr char const* __start           = "start";
-constexpr char const* __stop            = "stop";
-constexpr char const* __port_num        = "ports";
-constexpr char const* __unload          = "unload";
-constexpr char const* __port_changed    = "port_changed";
+constexpr char const* RT_load            = "load";
+constexpr char const* RT_process         = "process";
+constexpr char const* RT_start           = "start";
+constexpr char const* RT_stop            = "stop";
+constexpr char const* RT_port_num        = "ports";
+constexpr char const* RT_unload          = "unload";
+constexpr char const* RT_port_changed    = "port_changed";
 
 
 // -------------------------------------------------------------------------- //
@@ -71,263 +68,6 @@ constexpr char const* __port_changed    = "port_changed";
 // i.e. functions which the runtime define and we can link against
 
 // These functions will be linked externally from the C runtime
-
-// Bind the location of an offset
-// The runtime function for bind offset has the form
-//
-// void __bind_offset(Context*, id, offset, length);
-//
-// Extract declarations become a calls to
-//  1 - bind_offset
-//  2 - load
-// The binding is established, and then the value
-// is stored into a variable with the same name and type
-// as the field within the extract declaration.
-//
-// This expression becomes a call to that function.
-struct Bind_field : Call_expr
-{
-  Bind_field(Expr* fn, Expr_seq const& args)
-    : Call_expr(fn, args)
-  { }
-
-  Bind_field(Expr* context, Expr* id, Expr* offset, Expr* length)
-    : Call_expr(nullptr, {context, id, offset, length})
-  { }
-};
-
-
-// Alias bind of a field
-// i.e. extract f1 as f2
-//
-// This function is called when we want
-// to extract a field and give it a name
-// which is not its original name.
-//
-// This causes two binds to occur which
-// point to the same byte offset within the
-// packet.
-//
-// void __alias_bind(Context*, id1, id2, offset, length);
-//
-// This gets generated when rebind extractions are found.
-struct Alias_bind : Call_expr
-{
-  Alias_bind(Expr* context, Expr* id1, Expr* id2, Expr* offset, Expr* length)
-    : Call_expr(nullptr, {context, id1, id2, offset, length})
-  { }
-};
-
-
-// Bind the location of a header
-// The runtime function for this has the form
-// The offset of the header is implicitly maintained
-// by the current byte within the offset.
-//
-// void __bind_header(Context*, int id, int length);
-//
-// The values of entire headers are never immediately
-// loaded into memory. This is just so we can keep
-// track of the locations header which had been operated
-// on.
-//
-// This becomes a call to that function.
-struct Bind_header : Call_expr
-{
-  using Call_expr::Call_expr;
-
-  Bind_header(Expr* fn, Expr* cxt, Expr* id, Expr* length)
-    : Call_expr(fn, {cxt, id, length})
-  { }
-
-  // NOTE: Excluding length
-  Bind_header(Expr* fn, Expr* cxt, Expr* id)
-    : Call_expr(fn, {cxt, id})
-  { }
-
-  Expr* first;
-};
-
-
-struct Read_field : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-// Remove a table
-// Why do we need this per se?
-struct Delete_table : Call_expr
-{
-
-};
-
-
-struct Add_flow : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Rmv_flow : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Add_miss : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-// Perform a gather operation on a list of
-// fields.
-//
-// void gather(context*, int num_keys, ...)
-struct Gather : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-// Perform a lookup and execution within a table
-//
-// Make the assumption that the runtime does the
-// gathering operation before dispatching to
-// the table.
-//
-// void __match(Context*, Table*);
-struct Match : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-// Advance the current byte in the table
-// Causes the current byte offset within the
-// context to be incremented by n.
-//
-// void __advance(Context*, int n)
-struct Advance : Call_expr
-{
-  Advance(Expr* fn, Expr_seq const& args)
-    : Call_expr(fn, args)
-  { }
-
-  Advance(Expr* fn, Expr* context, Expr* n)
-    : Call_expr(fn, {n})
-  { }
-};
-
-
-struct Drop_packet : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Output_packet : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Flood_packet : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Clear_actions : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Write_drop_action : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Write_output_action : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Write_flood_action : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Write_set_field_action : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-// NOTE: The semantics of calling raise with the runtime should be
-// that the implicit context being passed to the event handler is
-// COPIED. This allows us to continue processing the packet, after having
-// asynchronously passed it off to some event handler.
-struct Raise_event : Call_expr
-{
-  using Call_expr::Call_expr;
-};
-
-
-struct Get_port : Call_expr
-{
-  Get_port(Expr* fn, Expr_seq const& args)
-    : Call_expr(fn, args)
-  { }
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  // maintain the variable
-  Decl* port_;
-};
-
-
-// Tell the dataplane to create a table
-// The create_table function from the runtime has
-// the form:
-//
-// void get_table(int id, int key_size, int flow_max, ...)
-//
-struct Create_table : Call_expr
-{
-  using Call_expr::Call_expr;
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* table_;
-};
-
-
-// Retrieve a pointer to the dataplane and store it in a variable.
-struct Get_dataplane : Expr
-{
-  Get_dataplane(Decl* dp_src, Decl* dp_dst)
-    : dp_(dp_src), target_(dp_dst)
-  { }
-
-  Decl* dataplane() const { return dp_; }
-  Decl* target()    const { return target_; }
-
-  void accept(Visitor& v) const { v.visit(this); }
-  void accept(Mutator& v)       { v.visit(this); }
-
-  Decl* dp_;
-  Decl* target_;
-};
-
-
 
 // Build all builtin functions
 struct Builtin
@@ -346,11 +86,11 @@ struct Builtin
   Function_map get_builtin_functions() const { return builtin_fn; }
   Port_map     get_builtin_ports() const { return builtin_ports; }
 
-  Expr* call_bind_field(Expr_seq const& args);
+  Expr* call_bind_field(Expr* cxt, Expr* id, Expr* offset, Expr* length);
   Expr* call_bind_header(Expr*, Expr*, Expr*);
   Expr* call_alias_bind(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_read_field(Expr*, Expr*, Expr*);
-  Expr* call_advance(Expr_seq const& args);
+  Expr* call_advance(Expr*, Expr*);
   Expr* call_create_table(Decl*, Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_init_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
   Expr* call_add_new_flow(Expr*, Expr*, Expr*, Expr*, Expr*);
@@ -366,17 +106,14 @@ struct Builtin
   Expr* call_get_all_port(Expr*);
   Expr* call_get_controller_port(Expr*);
   Expr* call_get_reflow_port(Expr*);
-  Expr* call_get_dataplane(Decl*, Decl*);
+  Expr* call_get_flood_port(Expr*);
   Expr* call_port_id_up(Expr*, Expr*);
   Expr* call_port_id_down(Expr*, Expr*);
-  Expr* call_gather(Expr* cxt, Expr_seq const& var_args);
   Expr* call_drop(Expr* cxt);
-  Expr* call_flood(Expr* cxt);
   Expr* call_output(Expr* cxt, Expr* port);
   Expr* call_clear(Expr*);
   Expr* call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
   Expr* call_write_drop(Expr*);
-  Expr* call_write_flood(Expr*);
   Expr* call_write_output(Expr* cxt, Expr* port);
   Expr* call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val);
   Expr* call_raise_event(Expr*, Expr*);
@@ -406,7 +143,6 @@ private:
   Function_decl* remove_flow();
   Function_decl* remove_miss();
   Function_decl* add_miss();
-  Function_decl* gather();
   Function_decl* match();
   Function_decl* get_port();
   Function_decl* get_port_by_id();
@@ -416,15 +152,14 @@ private:
   Function_decl* get_all_port();
   Function_decl* get_controller_port();
   Function_decl* get_reflow_port();
+  Function_decl* get_flood_port();
   Function_decl* port_id_up();
   Function_decl* port_id_down();
   Function_decl* drop();
-  Function_decl* flood();
   Function_decl* output();
   Function_decl* clear();
   Function_decl* set_field();
   Function_decl* write_drop();
-  Function_decl* write_flood();
   Function_decl* write_output();
   Function_decl* write_set_field();
   Function_decl* raise_event();

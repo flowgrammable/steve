@@ -42,10 +42,8 @@ operator<<(std::ostream& os, Stmt const& s)
     void operator()(Action const* s) { os << *s; }
     void operator()(Drop const* s) { os << *s; }
     void operator()(Output const* s) { os << *s; }
-    void operator()(Flood const* s) { os << *s; }
     void operator()(Insert_flow const* s) { os << *s; }
     void operator()(Remove_flow const* s) { os << *s; }
-    void operator()(Write_drop const* s) { os << *s; }
     void operator()(Raise const* s) { os << *s; }
   };
 
@@ -176,12 +174,6 @@ std::ostream& operator<<(std::ostream& os, Drop const& s)
 }
 
 
-std::ostream& operator<<(std::ostream& os, Flood const& s)
-{
-  return os << "flood;";
-}
-
-
 std::ostream& operator<<(std::ostream& os, Output const& s)
 {
   return os << "output " << *s.port() << ';';
@@ -207,12 +199,6 @@ std::ostream& operator<<(std::ostream& os, Remove_flow const& s)
   os << '}' << "from " << *s.table_identifier() << ';';
 
   return os;
-}
-
-
-std::ostream& operator<<(std::ostream& os, Write_drop const& s)
-{
-  return os << "write " << *s.drop();
 }
 
 
@@ -378,9 +364,13 @@ std::ostream&
 operator<<(std::ostream& os, Flow_decl const& d)
 {
   os << d.name()->spelling();
+  os << '{';
   for (auto k : d.keys()) {
-    os << *k << ' ';
+    os << *k;
+    if (k != d.keys().back())
+      os << ", ";
   }
+  os << '}';
   os << "->";
   os << *d.instructions();
 
@@ -654,14 +644,13 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Reinterpret_cast const* e) { os << *e; }
     void operator()(Void_cast const* e) { os << *e; }
 
-    void operator()(Get_port const* e) { os << *e; }
-    void operator()(Create_table const* e) { os << *e; }
-    void operator()(Get_dataplane const* e) { os << *e; }
     void operator()(Inport_expr const* e) { os << *e; }
     void operator()(Inphysport_expr const* e) { os << *e; }
     void operator()(All_port const* e) { os << *e; }
     void operator()(Controller_port const* e) { os << *e; }
     void operator()(Reflow_port const* e) { os << *e; }
+    void operator()(Flood_port const* e) { os << *e; }
+    void operator()(Egress_port const* e) { os << *e; }
   };
   apply(&e, Fn{os});
   return os;
@@ -892,7 +881,7 @@ operator<<(std::ostream& os, Index_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Value_conv const& e)
 {
-  return os << "__to_value("
+  return os << "_to_value("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -901,7 +890,7 @@ operator<<(std::ostream& os, Value_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Block_conv const& e)
 {
-  return os << "__to_block("
+  return os << "_to_block("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -910,7 +899,7 @@ operator<<(std::ostream& os, Block_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Promotion_conv const& e)
 {
-  return os << "__extend("
+  return os << "_extend("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -919,7 +908,7 @@ operator<<(std::ostream& os, Promotion_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Demotion_conv const& e)
 {
-  return os << "__trunc("
+  return os << "_trunc("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -928,7 +917,7 @@ operator<<(std::ostream& os, Demotion_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Sign_conv const& e)
 {
-  return os << "__sign("
+  return os << "_sign("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -937,7 +926,7 @@ operator<<(std::ostream& os, Sign_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Integer_conv const& e)
 {
-  return os << "__to_int("
+  return os << "_to_int("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -946,21 +935,21 @@ operator<<(std::ostream& os, Integer_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Default_init const& e)
 {
-  return os << "__default_init(" << *e.type() << ")";
+  return os << "_default_init(" << *e.type() << ")";
 }
 
 
 std::ostream&
 operator<<(std::ostream& os, Copy_init const& e)
 {
-  return os << "__copy_init(" << *e.type() << ',' << *e.value() << ")";
+  return os << "_copy_init(" << *e.type() << ',' << *e.value() << ")";
 }
 
 
 std::ostream&
 operator<<(std::ostream& os, Reference_init const& e)
 {
-  return os << "__ref_init(" << *e.type() << ',' << *e.object() << ")";
+  return os << "_ref_init(" << *e.type() << ',' << *e.object() << ")";
 }
 
 
@@ -1016,29 +1005,6 @@ operator<<(std::ostream& os, Void_cast const& e)
 }
 
 
-
-std::ostream&
-operator<<(std::ostream& os, Get_port const& e)
-{
-  os << "get_port";
-  return os;
-}
-
-
-std::ostream& operator<<(std::ostream& os, Create_table const&)
-{
-  os << "create_table";
-  return os;
-}
-
-
-std::ostream& operator<<(std::ostream& os, Get_dataplane const&)
-{
-  os << "get_dp";
-  return os;
-}
-
-
 std::ostream& operator<<(std::ostream& os, Inport_expr const&)
 {
   return os << "in_port";
@@ -1066,4 +1032,15 @@ std::ostream& operator<<(std::ostream& os, Controller_port const&)
 std::ostream& operator<<(std::ostream& os, Reflow_port const&)
 {
   return os << "reflow";
+}
+
+std::ostream& operator<<(std::ostream& os, Flood_port const&)
+{
+  return os << "flood";
+}
+
+
+std::ostream& operator<<(std::ostream& os, Egress_port const&)
+{
+  return os << "egress";
 }

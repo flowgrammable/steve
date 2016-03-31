@@ -13,13 +13,13 @@ Builtin::get_identifier(std::string s)
 
 
 //
-// void __bind_header(int id, int length);
+// void RT_bind_header(int id, int length);
 //
 Function_decl*
 Builtin::bind_header()
 {
   Type const* void_type = get_void_type();
-  Symbol const* fn_name = get_identifier(__bind_header);
+  Symbol const* fn_name = get_identifier(RT_bind_header);
 
   Decl_seq parms =
   {
@@ -40,13 +40,13 @@ Builtin::bind_header()
 
 
 //
-// void __bind_offset(Context*, id, offset, length);
+// void RT_bind_offset(Context*, id, offset, length);
 //
 Function_decl*
 Builtin::bind_field()
 {
   Type const* void_type = get_void_type();
-  Symbol const* fn_name = get_identifier(__bind_field);
+  Symbol const* fn_name = get_identifier(RT_bind_field);
 
   Decl_seq parms =
   {
@@ -67,12 +67,12 @@ Builtin::bind_field()
 
 
 //
-// Byte* __alias_bind(Context*, int org, int alias, int offset, int length);
+// Byte* RT_alias_bind(Context*, int org, int alias, int offset, int length);
 //
 Function_decl*
 Builtin::alias_bind()
 {
-  Symbol const* fn_name = get_identifier(__alias_bind);
+  Symbol const* fn_name = get_identifier(RT_alias_bind);
 
   Decl_seq parms
   {
@@ -100,7 +100,7 @@ Builtin::alias_bind()
 Function_decl*
 Builtin::read_field()
 {
-  Symbol const* fn_name = get_identifier(__read_field);
+  Symbol const* fn_name = get_identifier(RT_read_field);
 
   Type const* ret_type = get_block_type(get_character_type());
 
@@ -122,13 +122,13 @@ Builtin::read_field()
 
 
 //
-// void __advance(Context*, int n)
+// void RT_advance(Context*, int n)
 //
 Function_decl*
 Builtin::advance()
 {
   Type const* void_type = get_void_type();
-  Symbol const* fn_name = get_identifier(__advance);
+  Symbol const* fn_name = get_identifier(RT_advance);
 
   Decl_seq parms =
   {
@@ -155,8 +155,8 @@ Builtin::get_table()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* ret_type = get_opaque_table()->ref();
-  Symbol const* fn_name = get_identifier(__get_table);
+  Type const* ret_type = get_opaque_type()->ref();
+  Symbol const* fn_name = get_identifier(RT_get_table);
 
   Decl_seq parms =
   {
@@ -186,7 +186,7 @@ Builtin::add_init_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
@@ -198,7 +198,7 @@ Builtin::add_init_flow()
   Type const* flow_fn_type = get_function_type(types, void_type);
   Type const* flow_ref = get_reference_type(flow_fn_type);
 
-  Symbol const* fn_name = get_identifier(__add_init_flow);
+  Symbol const* fn_name = get_identifier(RT_add_init_flow);
 
   Decl_seq parms =
   {
@@ -228,7 +228,7 @@ Builtin::add_new_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* flw_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
@@ -240,7 +240,7 @@ Builtin::add_new_flow()
   Type const* flow_fn_type = get_function_type(types, void_type);
   Type const* flow_ref = get_reference_type(flow_fn_type);
 
-  Symbol const* fn_name = get_identifier(__add_new_flow);
+  Symbol const* fn_name = get_identifier(RT_add_new_flow);
 
   Decl_seq parms =
   {
@@ -270,11 +270,11 @@ Builtin::remove_flow()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
   Type const* buffer_type = get_block_type(get_character_type());
 
-  Symbol const* fn_name = get_identifier(__rmv_flow);
+  Symbol const* fn_name = get_identifier(RT_rmv_flow);
 
   Decl_seq parms =
   {
@@ -302,7 +302,7 @@ Builtin::add_miss()
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
   Type const* flow_ref = get_opaque_type()->ref();
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
   Type const* void_type = get_void_type();
   // Flows actually become free functions so they have function
@@ -311,7 +311,7 @@ Builtin::add_miss()
   Type const* flow_fn_type = get_function_type(types, void_type);
   Type const* flow_fn_ref = get_reference_type(flow_fn_type);
 
-  Symbol const* fn_name = get_identifier(__add_miss);
+  Symbol const* fn_name = get_identifier(RT_add_miss);
 
   Decl_seq parms =
   {
@@ -340,10 +340,10 @@ Builtin::remove_miss()
   // Table types are entirely opaque during code generation
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* void_type = get_void_type();
 
-  Symbol const* fn_name = get_identifier(__rmv_miss);
+  Symbol const* fn_name = get_identifier(RT_rmv_miss);
 
   Decl_seq parms =
   {
@@ -351,36 +351,6 @@ Builtin::remove_miss()
   };
 
   Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, parms, block({}));
-
-  fn->spec_ |= foreign_spec;
-  return fn;
-}
-
-
-// Gather keys from certain fields. This has the form:
-//
-//    Key gather(Context*, int fld_cnt, ...)
-//
-// The variadic arguments specify which fields are being gathered.
-Function_decl*
-Builtin::gather()
-{
-  Symbol const* fn_name = get_identifier(__gather);
-  Type const* cxt_ref = get_context_type()->ref();
-  Type const* int_type = get_integer_type();
-  Type const* key_type = get_key_type()->ref();
-
-  Decl_seq parms =
-  {
-    new Parameter_decl(get_identifier(__context), cxt_ref),
-    new Parameter_decl(get_identifier("n"), int_type),
-  };
-  // variable argument function
-  Type const* fn_type =
-    get_function_type(Type_seq {cxt_ref, int_type}, key_type, true);
 
   Function_decl* fn =
     new Function_decl(fn_name, fn_type, parms, block({}));
@@ -403,14 +373,14 @@ Builtin::match()
   // so what the actual table type is doesnt matter as long
   // as it is a table type.
   Type const* ret_type = get_void_type();
-  Type const* tbl_ref = get_table_type({}, {})->ref();
+  Type const* tbl_ref = get_opaque_type()->ref();
   Type const* cxt_ref = get_context_type()->ref();
-  Symbol const* fn_name = get_identifier(__match);
+  Symbol const* fn_name = get_identifier(RT_match);
 
   Decl_seq parms =
   {
-    new Parameter_decl(get_identifier(__context), cxt_ref),
-    new Parameter_decl(get_identifier(__table), tbl_ref),
+    new Parameter_decl(get_identifier(RT_context), cxt_ref),
+    new Parameter_decl(get_identifier(RT_table), tbl_ref),
     new Parameter_decl(get_identifier("n"), get_integer_type()) // number of fields
   };
 
@@ -438,7 +408,7 @@ Builtin::match()
 Function_decl*
 Builtin::get_port()
 {
-  Symbol const* fn_name = get_identifier(__get_port);
+  Symbol const* fn_name = get_identifier(RT_get_port);
 
   Type const* port_type = get_port_type();
 
@@ -465,7 +435,7 @@ Builtin::get_port()
 Function_decl*
 Builtin::get_port_by_id()
 {
-  Symbol const* fn_name = get_identifier(__get_port_id);
+  Symbol const* fn_name = get_identifier(RT_get_port_id);
 
   Type const* port_type = get_port_type();
 
@@ -490,13 +460,13 @@ Builtin::get_port_by_id()
 Function_decl*
 Builtin::get_in_port()
 {
-  Symbol const* fn_name = get_identifier(__get_inport);
+  Symbol const* fn_name = get_identifier(RT_get_inport);
 
   Type const* port_type = get_port_type();
   Type const* cxt_ref = get_context_type()->ref();
 
   Decl_seq parms {
-    new Parameter_decl(get_identifier(__context), cxt_ref)
+    new Parameter_decl(get_identifier(RT_context), cxt_ref)
   };
 
   Type const* fn_type = get_function_type(parms, port_type);
@@ -515,13 +485,13 @@ Builtin::get_in_port()
 Function_decl*
 Builtin::get_in_phys_port()
 {
-  Symbol const* fn_name = get_identifier(__get_inphysport);
+  Symbol const* fn_name = get_identifier(RT_get_inphysport);
 
   Type const* port_type = get_port_type();
   Type const* cxt_ref = get_context_type()->ref();
 
   Decl_seq parms {
-    new Parameter_decl(get_identifier(__context), cxt_ref)
+    new Parameter_decl(get_identifier(RT_context), cxt_ref)
   };
 
   Type const* fn_type = get_function_type(parms, port_type);
@@ -538,7 +508,7 @@ Builtin::get_in_phys_port()
 Function_decl*
 Builtin::get_all_port()
 {
-  Symbol const* fn_name = get_identifier(__get_all_port);
+  Symbol const* fn_name = get_identifier(RT_get_all_port);
 
   Type const* port_type = get_port_type();
 
@@ -560,7 +530,7 @@ Builtin::get_all_port()
 Function_decl*
 Builtin::get_controller_port()
 {
-  Symbol const* fn_name = get_identifier(__get_controller_port);
+  Symbol const* fn_name = get_identifier(RT_get_controller_port);
 
   Type const* port_type = get_port_type();
 
@@ -578,11 +548,33 @@ Builtin::get_controller_port()
 }
 
 
-// Get the reserved CONTROLLER port.
+// Get the reserved reflow port.
 Function_decl*
 Builtin::get_reflow_port()
 {
-  Symbol const* fn_name = get_identifier(__get_reflow_port);
+  Symbol const* fn_name = get_identifier(RT_get_reflow_port);
+
+  Type const* port_type = get_port_type();
+
+  Decl_seq parms {
+    new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
+  };
+
+  Type const* fn_type = get_function_type(parms, port_type);
+
+  Function_decl* fn =
+    new Function_decl(fn_name, fn_type, {}, block({}));
+
+  fn->spec_ |= foreign_spec;
+  return fn;
+}
+
+
+// Get the reserved flood port.
+Function_decl*
+Builtin::get_flood_port()
+{
+  Symbol const* fn_name = get_identifier(RT_get_flood_port);
 
   Type const* port_type = get_port_type();
 
@@ -606,13 +598,13 @@ Builtin::get_reflow_port()
 Function_decl*
 Builtin::get_flow_egress()
 {
-  Symbol const* fn_name = get_identifier(__get_flow_egress);
+  Symbol const* fn_name = get_identifier(RT_get_flow_egress);
 
   Type const* flow_ref = get_opaque_type()->ref();
   Type const* port_type = get_port_type();
 
   Decl_seq parms {
-    new Parameter_decl(get_identifier(__flow_self), flow_ref)
+    new Parameter_decl(get_identifier(RT_flow_self), flow_ref)
   };
 
   Type const* fn_type = get_function_type(parms, port_type);
@@ -631,7 +623,7 @@ Builtin::get_flow_egress()
 Function_decl*
 Builtin::port_id_up()
 {
-  Symbol const* fn_name = get_identifier(__port_up);
+  Symbol const* fn_name = get_identifier(RT_port_up);
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
@@ -654,7 +646,7 @@ Builtin::port_id_up()
 Function_decl*
 Builtin::port_id_down()
 {
-  Symbol const* fn_name = get_identifier(__port_down);
+  Symbol const* fn_name = get_identifier(RT_port_down);
 
   Decl_seq parms {
     new Parameter_decl(get_identifier("dp"), get_opaque_type()->ref()),
@@ -677,32 +669,7 @@ Builtin::port_id_down()
 Function_decl*
 Builtin::drop()
 {
-  Symbol const* fn_name = get_identifier(__drop);
-
-  Type const* void_type = get_void_type();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), get_context_type()->ref())
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
-// This instructs the runtime to flood the packet.
-//
-//    void flood(Context*)
-Function_decl*
-Builtin::flood()
-{
-  Symbol const* fn_name = get_identifier(__flood);
+  Symbol const* fn_name = get_identifier(RT_drop);
 
   Type const* void_type = get_void_type();
 
@@ -727,7 +694,7 @@ Builtin::flood()
 Function_decl*
 Builtin::output()
 {
-  Symbol const* fn_name = get_identifier(__output);
+  Symbol const* fn_name = get_identifier(RT_output);
 
   Type const* void_type = get_void_type();
   Type const* port_type = get_port_type();
@@ -755,7 +722,7 @@ Builtin::output()
 Function_decl*
 Builtin::clear()
 {
-  Symbol const* fn_name = get_identifier(__clear);
+  Symbol const* fn_name = get_identifier(RT_clear);
 
   Type const* void_type = get_void_type();
 
@@ -781,7 +748,7 @@ Builtin::clear()
 Function_decl*
 Builtin::set_field()
 {
-  Symbol const* fn_name = get_identifier(__set_field);
+  Symbol const* fn_name = get_identifier(RT_set_field);
 
   Type const* void_type = get_void_type();
   Type const* int_type = get_integer_type();
@@ -806,65 +773,13 @@ Builtin::set_field()
 }
 
 
-// Writes a drop action to the context.
-//
-//    void write_drop(Context*)
-Function_decl*
-Builtin::write_drop()
-{
-  Symbol const* fn_name = get_identifier(__write_drop);
-
-  Type const* void_type = get_void_type();
-  Type const* cxt_ref = get_context_type()->ref();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
-// Writes a flood action to the context.
-//
-//    void write_flood(Context*)
-Function_decl*
-Builtin::write_flood()
-{
-  Symbol const* fn_name = get_identifier(__write_flood);
-
-  Type const* void_type = get_void_type();
-  Type const* cxt_ref = get_context_type()->ref();
-
-  Decl_seq parms {
-    new Parameter_decl(get_identifier("cxt"), cxt_ref)
-  };
-
-  Type const* fn_type = get_function_type(parms, void_type);
-
-  Function_decl* fn =
-    new Function_decl(fn_name, fn_type, {}, block({}));
-
-  fn->spec_ |= foreign_spec;
-
-  return fn;
-}
-
-
 // Write an output action to the context.
 //
 //      void write_output(Context*, Port*)
 Function_decl*
 Builtin::write_output()
 {
-  Symbol const* fn_name = get_identifier(__write_output);
+  Symbol const* fn_name = get_identifier(RT_write_output);
 
   Type const* void_type = get_void_type();
   Type const* port_type = get_port_type();
@@ -891,7 +806,7 @@ Builtin::write_output()
 Function_decl*
 Builtin::write_set_field()
 {
-  Symbol const* fn_name = get_identifier(__write_set);
+  Symbol const* fn_name = get_identifier(RT_write_set);
 
   Type const* void_type = get_void_type();
   Type const* int_type = get_integer_type();
@@ -925,7 +840,7 @@ Builtin::write_set_field()
 Function_decl*
 Builtin::raise_event()
 {
-  Symbol const* fn_name = get_identifier(__raise_event);
+  Symbol const* fn_name = get_identifier(RT_raise_event);
 
   Type const* void_type = get_void_type();
   Type const* event_type =
@@ -954,39 +869,37 @@ Builtin::init_builtins()
 {
   builtin_fn =
   {
-    {__bind_header, bind_header()},
-    {__bind_field, bind_field()},
-    {__alias_bind, alias_bind()},
-    {__read_field, read_field()},
-    {__advance, advance()},
-    {__get_table, get_table()},
-    {__add_init_flow, add_init_flow()},
-    {__add_new_flow, add_new_flow()},
-    {__rmv_flow, remove_flow()},
-    {__rmv_miss, remove_miss()},
-    {__add_miss, add_miss()},
-    {__match, match()},
-    // {__gather, gather()},
-    // {__get_port, get_port()},
-    {__get_port_id, get_port_by_id()},
-    {__get_inport, get_in_port()},
-    {__get_inphysport, get_in_phys_port()},
-    {__get_all_port, get_all_port()},
-    {__get_controller_port, get_controller_port()},
-    {__get_reflow_port, get_reflow_port()},
-    {__get_flow_egress, get_flow_egress()},
-    {__port_up, port_id_up()},
-    {__port_down, port_id_down()},
-    {__drop, drop()},
-    {__flood, flood()},
-    {__output, output()},
-    {__clear, clear()},
-    {__set_field, set_field()},
-    {__write_drop, write_drop()},
-    {__write_flood, write_flood()},
-    {__write_output, write_output()},
-    {__write_set, write_set_field()},
-    {__raise_event, raise_event()},
+    {RT_bind_header, bind_header()},
+    {RT_bind_field, bind_field()},
+    {RT_alias_bind, alias_bind()},
+    {RT_read_field, read_field()},
+    {RT_advance, advance()},
+    {RT_get_table, get_table()},
+    {RT_add_init_flow, add_init_flow()},
+    {RT_add_new_flow, add_new_flow()},
+    {RT_rmv_flow, remove_flow()},
+    {RT_rmv_miss, remove_miss()},
+    {RT_add_miss, add_miss()},
+    {RT_match, match()},
+    // {RT_gather, gather()},
+    // {RT_get_port, get_port()},
+    {RT_get_port_id, get_port_by_id()},
+    {RT_get_inport, get_in_port()},
+    {RT_get_inphysport, get_in_phys_port()},
+    {RT_get_all_port, get_all_port()},
+    {RT_get_controller_port, get_controller_port()},
+    {RT_get_reflow_port, get_reflow_port()},
+    {RT_get_flow_egress, get_flow_egress()},
+    {RT_get_flood_port, get_flood_port()},
+    {RT_port_up, port_id_up()},
+    {RT_port_down, port_id_down()},
+    {RT_drop, drop()},
+    {RT_output, output()},
+    {RT_clear, clear()},
+    {RT_set_field, set_field()},
+    {RT_write_output, write_output()},
+    {RT_write_set, write_set_field()},
+    {RT_raise_event, raise_event()},
   };
 }
 
@@ -996,7 +909,7 @@ Function_decl*
 Builtin::load(Stmt_seq const& s)
 {
   Type const* void_type = get_void_type();
-  Symbol const* name = get_identifier(__load);
+  Symbol const* name = get_identifier(RT_load);
 
   Decl_seq parms;
   Type const* fn_type = get_function_type(parms, void_type);
@@ -1049,33 +962,33 @@ Builtin::get_builtin_function(std::string name)
 
 
 Expr*
-Builtin::call_bind_field(Expr_seq const& args)
+Builtin::call_bind_field(Expr* cxt, Expr* id, Expr* offset, Expr* length)
 {
-  Function_decl* fn = builtin_fn.find(__bind_field)->second;
+  Function_decl* fn = builtin_fn.find(RT_bind_field)->second;
   assert(fn);
 
-  return new Bind_field(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), {cxt, id, offset, length});
 }
 
 
 Expr*
 Builtin::call_bind_header(Expr* cxt, Expr* id, Expr* len)
 {
-  Function_decl* fn = builtin_fn.find(__bind_header)->second;
+  Function_decl* fn = builtin_fn.find(RT_bind_header)->second;
   assert(fn);
 
   // NOTE: we are current excluding len because the runtime
   // does not handle header length and its unsure if the length of a header
   // matters.
 
-  return new Bind_header(decl_id(fn), cxt, id);
+  return new Call_expr(decl_id(fn), {cxt, id});
 }
 
 
 Expr*
 Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 {
-  Function_decl* fn = builtin_fn.find(__alias_bind)->second;
+  Function_decl* fn = builtin_fn.find(RT_alias_bind)->second;
   assert(fn);
 
   // NOTE: we are current excluding len because the runtime
@@ -1089,80 +1002,80 @@ Builtin::call_alias_bind(Expr* cxt, Expr* id1, Expr* id2, Expr* off, Expr* len)
 Expr*
 Builtin::call_read_field(Expr* cxt, Expr* id, Expr* ret)
 {
-  Function_decl* fn = builtin_fn.find(__read_field)->second;
+  Function_decl* fn = builtin_fn.find(RT_read_field)->second;
   assert(fn);
 
-  return new Read_field(decl_id(fn), {cxt, id, ret});
+  return new Call_expr(decl_id(fn), {cxt, id, ret});
 }
 
 
 Expr*
 Builtin::call_create_table(Decl* d, Expr* dp, Expr* id, Expr* key_size, Expr* entry_size, Expr* kind)
 {
-  Function_decl* fn = builtin_fn.find(__get_table)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_table)->second;
   assert(fn);
 
-  Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
-  e->table_ = d;
+  // Create_table* e = new Create_table(decl_id(fn), { dp, id, key_size, entry_size, kind});
+  // e->table_ = d;
 
-  return e;
+  return new Call_expr(decl_id(fn), { dp, id, key_size, entry_size, kind});
 }
 
 
 Expr*
-Builtin::call_advance(Expr_seq const& args)
+Builtin::call_advance(Expr* cxt, Expr* length)
 {
-  Function_decl* fn = builtin_fn.find(__advance)->second;
+  Function_decl* fn = builtin_fn.find(RT_advance)->second;
   assert(fn);
 
-  return new Advance(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), {cxt, length});
 }
 
 
 Expr*
 Builtin::call_add_init_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
-  Function_decl* fn = builtin_fn.find(__add_init_flow)->second;
+  Function_decl* fn = builtin_fn.find(RT_add_init_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
+  return new Call_expr(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
 Expr*
 Builtin::call_add_new_flow(Expr* table, Expr* flow, Expr* key, Expr* t_out, Expr* egress)
 {
-  Function_decl* fn = builtin_fn.find(__add_new_flow)->second;
+  Function_decl* fn = builtin_fn.find(RT_add_new_flow)->second;
   assert(fn);
 
-  return new Add_flow(decl_id(fn), {table, flow, key, t_out, egress});
+  return new Call_expr(decl_id(fn), {table, flow, key, t_out, egress});
 }
 
 
 Expr*
 Builtin::call_remove_flow(Expr* table, Expr* key)
 {
-  Function_decl* fn = builtin_fn.find(__rmv_flow)->second;
+  Function_decl* fn = builtin_fn.find(RT_rmv_flow)->second;
   assert(fn);
 
-  return new Rmv_flow(decl_id(fn), {table, key});
+  return new Call_expr(decl_id(fn), {table, key});
 }
 
 
 Expr*
 Builtin::call_add_miss(Expr* tbl, Expr* flow, Expr* t_out, Expr* egress)
 {
-  Function_decl* fn = builtin_fn.find(__add_miss)->second;
+  Function_decl* fn = builtin_fn.find(RT_add_miss)->second;
   assert(fn);
 
-  return new Add_miss(decl_id(fn), {tbl, flow, t_out, egress});
+  return new Call_expr(decl_id(fn), {tbl, flow, t_out, egress});
 }
 
 
 Expr*
 Builtin::call_remove_miss(Expr* table)
 {
-  Function_decl* fn = builtin_fn.find(__rmv_miss)->second;
+  Function_decl* fn = builtin_fn.find(RT_rmv_miss)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {table});
@@ -1174,7 +1087,7 @@ Builtin::call_remove_miss(Expr* table)
 Expr*
 Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 {
-  Function_decl* fn = builtin_fn.find(__get_port)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_port)->second;
   assert(fn);
 
   // Get_port* e = new Get_port(decl_id(fn), {name});
@@ -1188,7 +1101,7 @@ Builtin::call_get_port(Decl* d, Expr* name, Expr* args)
 Expr*
 Builtin::call_get_port_by_id(Expr* dp, Expr* id)
 {
-  Function_decl* fn = builtin_fn.find(__get_port_id)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_port_id)->second;
   assert(fn);
 
   Expr* e = new Call_expr(decl_id(fn), {dp, id});
@@ -1199,7 +1112,7 @@ Builtin::call_get_port_by_id(Expr* dp, Expr* id)
 Expr*
 Builtin::call_get_in_port(Expr* cxt)
 {
-  Function_decl* fn = builtin_fn.find(__get_inport)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_inport)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt});
@@ -1209,7 +1122,7 @@ Builtin::call_get_in_port(Expr* cxt)
 Expr*
 Builtin::call_get_in_phys_port(Expr* cxt)
 {
-  Function_decl* fn = builtin_fn.find(__get_inphysport)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_inphysport)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt});
@@ -1219,7 +1132,7 @@ Builtin::call_get_in_phys_port(Expr* cxt)
 Expr*
 Builtin::call_get_all_port(Expr* dp)
 {
-  Function_decl* fn = builtin_fn.find(__get_all_port)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_all_port)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp});
@@ -1229,7 +1142,7 @@ Builtin::call_get_all_port(Expr* dp)
 Expr*
 Builtin::call_get_controller_port(Expr* dp)
 {
-  Function_decl* fn = builtin_fn.find(__get_controller_port)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_controller_port)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp});
@@ -1239,7 +1152,17 @@ Builtin::call_get_controller_port(Expr* dp)
 Expr*
 Builtin::call_get_reflow_port(Expr* dp)
 {
-  Function_decl* fn = builtin_fn.find(__get_reflow_port)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_reflow_port)->second;
+  assert(fn);
+
+  return new Call_expr(decl_id(fn), {dp});
+}
+
+
+Expr*
+Builtin::call_get_flood_port(Expr* dp)
+{
+  Function_decl* fn = builtin_fn.find(RT_get_flood_port)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp});
@@ -1249,31 +1172,17 @@ Builtin::call_get_reflow_port(Expr* dp)
 Expr*
 Builtin::call_get_flow_egress(Expr* flow)
 {
-  Function_decl* fn = builtin_fn.find(__get_flow_egress)->second;
+  Function_decl* fn = builtin_fn.find(RT_get_flow_egress)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {flow});
 }
 
 
-// NOTE: This is a little special since we don't explicitly need a
-// function to get the dataplane right now.
-//
-// This is only a placeholder for special code generation since steve
-// currently does not have correct code generation for opaque types.
-Expr*
-Builtin::call_get_dataplane(Decl* dp, Decl* target)
-{
-  Get_dataplane* e = new Get_dataplane(dp, target);
-
-  return e;
-}
-
-
 Expr*
 Builtin::call_port_id_up(Expr* dp, Expr* id)
 {
-  Function_decl* fn = builtin_fn.find(__port_up)->second;
+  Function_decl* fn = builtin_fn.find(RT_port_up)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp, id});
@@ -1283,7 +1192,7 @@ Builtin::call_port_id_up(Expr* dp, Expr* id)
 Expr*
 Builtin::call_port_id_down(Expr* dp, Expr* id)
 {
-  Function_decl* fn = builtin_fn.find(__port_down)->second;
+  Function_decl* fn = builtin_fn.find(RT_port_down)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {dp, id});
@@ -1291,69 +1200,42 @@ Builtin::call_port_id_down(Expr* dp, Expr* id)
 
 
 Expr*
-Builtin::call_gather(Expr* cxt, Expr_seq const& var_args)
-{
-  Function_decl* fn = builtin_fn.find(__gather)->second;
-  assert(fn);
-
-  Expr* num_args = new Literal_expr(get_integer_type(), var_args.size());
-
-  Expr_seq args;
-  args.push_back(cxt);
-  args.push_back(num_args);
-  args.insert(args.end(), var_args.begin(), var_args.end());
-
-  return new Gather(decl_id(fn), args);
-}
-
-
-Expr*
 Builtin::call_match(Expr* cxt, Expr* tbl, Expr* n, Expr_seq const& var_args)
 {
-  Function_decl* fn = builtin_fn.find(__match)->second;
+  Function_decl* fn = builtin_fn.find(RT_match)->second;
   assert(fn);
 
   Expr_seq args { cxt, tbl, n };
   args.insert(args.end(), var_args.begin(), var_args.end());
 
-  return new Match(decl_id(fn), args);
+  return new Call_expr(decl_id(fn), args);
 }
 
 
 Expr*
 Builtin::call_drop(Expr* cxt)
 {
-  Function_decl* fn = builtin_fn.find(__drop)->second;
+  Function_decl* fn = builtin_fn.find(RT_drop)->second;
   assert(fn);
 
-  return new Drop_packet(decl_id(fn), {cxt});
+  return new Call_expr(decl_id(fn), {cxt});
 }
 
 
 Expr*
 Builtin::call_output(Expr* cxt, Expr* port)
 {
-  Function_decl* fn = builtin_fn.find(__output)->second;
+  Function_decl* fn = builtin_fn.find(RT_output)->second;
   assert(fn);
 
-  return new Output_packet(decl_id(fn), {cxt, port});
-}
-
-
-Expr*
-Builtin::call_flood(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__flood)->second;
-  assert(fn);
-
-  return new Flood_packet(decl_id(fn), {cxt});
+  return new Call_expr(decl_id(fn), {cxt, port});
 }
 
 
 Expr*
 Builtin::call_clear(Expr* cxt)
 {
-  Function_decl* fn = builtin_fn.find(__clear)->second;
+  Function_decl* fn = builtin_fn.find(RT_clear)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt});
@@ -1363,7 +1245,7 @@ Builtin::call_clear(Expr* cxt)
 Expr*
 Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 {
-  Function_decl* fn = builtin_fn.find(__set_field)->second;
+  Function_decl* fn = builtin_fn.find(RT_set_field)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt, id, len, val});
@@ -1371,39 +1253,19 @@ Builtin::call_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 
 
 Expr*
-Builtin::call_write_drop(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__write_drop)->second;
-  assert(fn);
-
-  return new Write_drop_action(decl_id(fn), {cxt});
-}
-
-
-Expr*
-Builtin::call_write_flood(Expr* cxt)
-{
-  Function_decl* fn = builtin_fn.find(__write_flood)->second;
-  assert(fn);
-
-  return new Write_flood_action(decl_id(fn), {cxt});
-}
-
-
-Expr*
 Builtin::call_write_output(Expr* cxt, Expr* port)
 {
-  Function_decl* fn = builtin_fn.find(__write_output)->second;
+  Function_decl* fn = builtin_fn.find(RT_write_output)->second;
   assert(fn);
 
-  return new Write_output_action(decl_id(fn), {cxt, port});
+  return new Call_expr(decl_id(fn), {cxt, port});
 }
 
 
 Expr*
 Builtin::call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 {
-  Function_decl* fn = builtin_fn.find(__write_set)->second;
+  Function_decl* fn = builtin_fn.find(RT_write_set)->second;
   assert(fn);
 
   return new Call_expr(decl_id(fn), {cxt, id, len, val});
@@ -1413,8 +1275,8 @@ Builtin::call_write_set_field(Expr* cxt, Expr* id, Expr* len, Expr* val)
 Expr*
 Builtin::call_raise_event(Expr* cxt, Expr* event_fn)
 {
-  Function_decl* fn = builtin_fn.find(__raise_event)->second;
+  Function_decl* fn = builtin_fn.find(RT_raise_event)->second;
   assert(fn);
 
-  return new Raise_event(decl_id(fn), {cxt, event_fn});
+  return new Call_expr(decl_id(fn), {cxt, event_fn});
 }

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2)
 
 project(flowpath-rt CXX)
 
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+
 # C++ build flags.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -pthread -O3")
 
@@ -13,6 +15,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 find_library(libfarmhash REQUIRED)
 set(farmhash_LIBRARIES "/usr/local/lib/libfarmhash.so")
 set(farmhash_INCLUDE_DIRS "/usr/include/")
+
+# PCAP
+find_package(PCAP REQUIRED)
 
 # Allow includes to find from headers from this dir.
 include_directories(.)
@@ -36,11 +41,11 @@ add_library(flowpath-rt SHARED
     table.cpp
     types.cpp
     endian.cpp
+    capture.cpp
     # thread.cpp
     # queue.cpp
     )
 
 target_link_libraries(flowpath-rt ${farmhash_LIBRARIES})
-
 
 add_subdirectory(drivers)

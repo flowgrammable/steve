@@ -122,6 +122,14 @@ Parser::primary_expr()
   if (Token tok = match_if(all_kw))
     return on_all_port(tok);
 
+  // flood port expr
+  if (Token tok = match_if(flood_kw))
+    return on_flood_port(tok);
+
+  // egress port expr
+  if (Token tok = match_if(egress_kw))
+    return on_egress_port(tok);
+
   // controller port expr
   // TODO: Disabling for now. May be needed later.
   // if (Token tok = match_if(controller_kw))
@@ -138,10 +146,10 @@ Parser::primary_expr()
     return e;
   }
 
-  throw std::runtime_error("Failed to parse primary expression.");
   // FIXME: Is this definitely an error? Or can we
   // actually return nullptr and continue?
-  error("expected primary expression");
+  // error("expected primary expression");
+  throw std::runtime_error("Failed to parse primary expression.");
 }
 
 
@@ -337,10 +345,8 @@ Parser::ordering_expr()
 
 // Parse an equality expression.
 //
-//    equality-expr -> equality-expr '<' ordering-expr
-//                   | equality-expr '>' ordering-expr
-//                   | equality-expr '<=' ordering-expr
-//                   | equality-expr '>=' ordering-expr
+//    equality-expr -> equality-expr '==' ordering-expr
+//                   | equality-expr '!-' ordering-expr
 //                   | ordering-expr
 Expr*
 Parser::equality_expr()
@@ -1484,42 +1490,21 @@ Parser::drop_stmt()
   return on_drop();
 }
 
-
-// Parse a flood stmt.
-//
-//    flood-stmt -> 'flood;'
-Stmt*
-Parser::flood_stmt()
-{
-  match(flood_kw);
-  match(semicolon_tok);
-
-  return on_flood();
-}
-
-
 // Parse an output stmt
 //
 //    output stmt -> 'output' port-id ';'
-//                 | 'output' 'egress'
+//                 | 'output' reserved-port
 //                 | 'output' 'in_port'
 //                 | 'output' 'in_phys_port'
+//                 | 'output' 'egress'
+//
+//    reserved-port -> all | flood | reflow
 Stmt*
 Parser::output_stmt()
 {
   match(output_kw);
-
-  // If its a special output statement.
-  if (match_if(egress_kw)) {
-    match(semicolon_tok);
-    // FIXME: Change the name to output egress.
-    return on_output_egress();
-  }
-
-  // Otherwise its a regular output followed by a declared port id.
   Expr* e = expr();
   match(semicolon_tok);
-
   return on_output(e);
 }
 
@@ -1573,22 +1558,17 @@ Parser::copy_stmt()
 
 // Write an action to be applied later.
 //
-//  write-stmt -> 'write' [drop-stmt | output-stmt | flood-stmt |
-//                         set-stmt | copy-stmt]
+//  write-stmt -> 'write' [ output-stmt
+//                        | set-stmt
+//                        | copy-stmt]
 Stmt*
 Parser::write_stmt()
 {
   match(write_kw);
   Stmt* s = nullptr;
   switch (lookahead()) {
-    case drop_kw:
-      s = drop_stmt();
-      break;
     case output_kw:
       s = output_stmt();
-      break;
-    case flood_kw:
-      s = flood_stmt();
       break;
     case set_kw:
       s = set_stmt();
@@ -1609,13 +1589,47 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'insert' flow-decl 'into' table-id
+//    add-flow-stmt -> 'insert' { ... } -> { ... } 'into' table-id
 //
 Stmt*
 Parser::add_flow_stmt()
 {
   match(insert_kw);
-  Decl* flow = flow_decl();
+
+  // The actual flow.
+  // Store the information about the flow in a flow decl because its
+  // convenient to do so.
+  Decl* flow = nullptr;
+  Stmt_seq properties = flow_properties(); // Optional properties.
+
+  // Miss case.
+  if (match_if(miss_kw)) {
+    match(arrow_tok);
+    Stmt* body = block_stmt();
+    flow = on_flow_miss(body, properties);
+  }
+  else {
+    // Regular case.
+    match(lbrace_tok);
+    Expr_seq keys;
+    // Parse brace-enclosed, comma seperated key sequence.
+    while (lookahead() != rbrace_tok) {
+      Expr* k = expr();
+      if (k)
+        keys.push_back(k);
+
+      if (match_if(comma_tok))
+        continue;
+      else
+        break;
+    }
+    match(rbrace_tok);
+    match(arrow_tok);
+    Stmt* body = block_stmt(); // Flow body.
+    flow = on_flow(keys, body, properties);
+  }
+  assert(flow);
+  // Flow done, parse into table.
   match(into_kw);
   Expr* table = expr();
   match(semicolon_tok);
@@ -1727,9 +1741,6 @@ Parser::stmt()
 
     case output_kw:
       return output_stmt();
-
-    case flood_kw:
-      return flood_stmt();
 
     case clear_kw:
       return clear_stmt();
@@ -2237,6 +2248,20 @@ Parser::on_reflow_port(Token tok)
 }
 
 
+Expr*
+Parser::on_flood_port(Token tok)
+{
+  return init<Flood_port>(tok.location(), get_port_type());
+}
+
+
+Expr*
+Parser::on_egress_port(Token tok)
+{
+  return init<Egress_port>(tok.location(), get_port_type());
+}
+
+
 Decl*
 Parser::on_key(Expr* e)
 {
@@ -2564,13 +2589,6 @@ Parser::on_drop()
 
 
 Stmt*
-Parser::on_flood()
-{
-  return new Flood();
-}
-
-
-Stmt*
 Parser::on_clear()
 {
   return new Clear();
@@ -2581,13 +2599,6 @@ Stmt*
 Parser::on_output(Expr* e)
 {
   return new Output(e);
-}
-
-
-Stmt*
-Parser::on_output_egress()
-{
-  return new Output_egress();
 }
 
 
@@ -2608,14 +2619,8 @@ Parser::on_copy(Expr* field, Expr* val)
 Stmt*
 Parser::on_write(Stmt* s)
 {
-  if (is<Drop>(s))
-    return new Write_drop(s);
-  else if (is<Output_egress>(s))
-    return new Write_output_egress(s);
-  else if (is<Output>(s))
+  if (is<Output>(s))
     return new Write_output(s);
-  else if (is<Flood>(s))
-    return new Write_flood(s);
   else if (is<Set_field>(s))
     return new Write_set_field(s);
 

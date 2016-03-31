@@ -1,4 +1,4 @@
-Port p1 = 1;
+Port p1;
 
 layout eth
 {
@@ -15,27 +15,20 @@ decoder start eth_d(eth)
 	set eth.type = eth.type + 80;
   set eth.dst = 880;
 	clear;
-  // copy eth.type = eth.src;
-  write drop;
-	write flood;
 	write output p1;
 	write output all;
-	write output controller;
 	write output reflow;
   write set eth.type = 0x800;
-  // write copy eth.type = eth.src;
-
-	// flood;
-	// drop;
-	// output all;
-	// output controller;
 	output reflow;
+	output p1;
+	output all;
+	output flood;
 }
 
-exact_table t1(in_port)
+exact_table t1(in_port, eth.dst, eth.src)
 {
 	[egress = p1]
-	{ p1 } ->
+	{ p1, 0, 0 } ->
 	{
 		output egress;
 	}

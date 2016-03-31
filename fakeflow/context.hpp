@@ -109,11 +109,11 @@ class Context
 {
 public:
   // Iniitalize the context with a packet.
-  Context(Packet p, Dataplane* dp)
+  Context(Packet const& p, Dataplane* dp)
     : input_(), ctrl_(), decode_(), packet_(p), dp_(dp)
   { }
 
-  Context(Packet p, Dataplane* dp, unsigned int in, unsigned int in_phy, int tunnelid)
+  Context(Packet const& p, Dataplane* dp, unsigned int in, unsigned int in_phy, int tunnelid)
     : input_{in, in_phy, tunnelid}, ctrl_(), decode_(), packet_(p), dp_(dp)
   { }
 
