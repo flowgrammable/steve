@@ -1,0 +1,11 @@
+for file in $(ls ../beaker/test/codegen/$1*.bkr)
+do
+	echo ";"$file
+	../build/beaker/beaker-compile -s $file
+done
+
+for file in $(ls ../beaker/test/beaker/$1*.bkr)
+do
+	echo ";"$file
+	../build/beaker/beaker-compile -s $file
+done

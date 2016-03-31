@@ -1,0 +1,8 @@
+for file in $(ls ../beaker/test/steve/valid/$1*.stv)
+do
+	echo ";"$file
+	../build/beaker/steve-compiler/steve-compile $file
+	../build/fakeflow/drivers/wire-driver $PWD/a.so 5
+done
+
+rm a.* 2> /dev/null
