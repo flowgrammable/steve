@@ -1,0 +1,7 @@
+mkdir apps 2> /dev/null
+
+for file in $(ls ../beaker/test/steve/valid/$1*.stv)
+do
+	echo $file
+	../build/beaker/steve-compiler/steve-compile $file -o apps/$1.app
+done

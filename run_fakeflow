@@ -1,1 +1,0 @@
-./build/fakeflow/drivers/$1 apps/$2.app $3
