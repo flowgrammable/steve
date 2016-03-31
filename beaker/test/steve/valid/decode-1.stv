@@ -1,5 +1,5 @@
 Port p1;
-Port p2 = p1;
+Port p2;
 
 layout eth
 {

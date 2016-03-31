@@ -881,7 +881,7 @@ operator<<(std::ostream& os, Index_expr const& e)
 std::ostream&
 operator<<(std::ostream& os, Value_conv const& e)
 {
-  return os << "__to_value("
+  return os << "_to_value("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -890,7 +890,7 @@ operator<<(std::ostream& os, Value_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Block_conv const& e)
 {
-  return os << "__to_block("
+  return os << "_to_block("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -899,7 +899,7 @@ operator<<(std::ostream& os, Block_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Promotion_conv const& e)
 {
-  return os << "__extend("
+  return os << "_extend("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -908,7 +908,7 @@ operator<<(std::ostream& os, Promotion_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Demotion_conv const& e)
 {
-  return os << "__trunc("
+  return os << "_trunc("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -917,7 +917,7 @@ operator<<(std::ostream& os, Demotion_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Sign_conv const& e)
 {
-  return os << "__sign("
+  return os << "_sign("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -926,7 +926,7 @@ operator<<(std::ostream& os, Sign_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Integer_conv const& e)
 {
-  return os << "__to_int("
+  return os << "_to_int("
             << *e.source() << ','
             << *e.target() << ')';
 }
@@ -935,21 +935,21 @@ operator<<(std::ostream& os, Integer_conv const& e)
 std::ostream&
 operator<<(std::ostream& os, Default_init const& e)
 {
-  return os << "__default_init(" << *e.type() << ")";
+  return os << "_default_init(" << *e.type() << ")";
 }
 
 
 std::ostream&
 operator<<(std::ostream& os, Copy_init const& e)
 {
-  return os << "__copy_init(" << *e.type() << ',' << *e.value() << ")";
+  return os << "_copy_init(" << *e.type() << ',' << *e.value() << ")";
 }
 
 
 std::ostream&
 operator<<(std::ostream& os, Reference_init const& e)
 {
-  return os << "__ref_init(" << *e.type() << ',' << *e.object() << ")";
+  return os << "_ref_init(" << *e.type() << ',' << *e.object() << ")";
 }
 
 
