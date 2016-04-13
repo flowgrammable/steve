@@ -26,6 +26,7 @@ exact_table switch(eth.dst, eth.type)
     insert
     { eth.dst, eth.type } ->
     {
+			puts("works");
       output p1;
     }
     into switch;

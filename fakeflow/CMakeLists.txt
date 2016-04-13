@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -pthread -O3")
 
 # Require Boost C++ Libraries.
-find_package(Boost 1.55.0 REQUIRED)
+find_package(Boost 1.55.0 REQUIRED system timer)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Farm hash
@@ -46,6 +46,6 @@ add_library(flowpath-rt SHARED
     # queue.cpp
     )
 
-target_link_libraries(flowpath-rt ${farmhash_LIBRARIES})
+target_link_libraries(flowpath-rt ${farmhash_LIBRARIES} ${Boost_LIBRARIES})
 
 add_subdirectory(drivers)

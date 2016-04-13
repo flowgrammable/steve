@@ -21,8 +21,8 @@ namespace fp
 // the packet (usually the header offset).
 //
 // A partial binding is one that specifies an offset but
-// not a length. This is useful for header bindings where 
-// the length is not calculated (e.g., the last header 
+// not a length. This is useful for header bindings where
+// the length is not calculated (e.g., the last header
 // analyzed).
 struct Binding
 {
@@ -45,8 +45,8 @@ struct Binding
 
 // A binding list stores the innermost field binding
 // for a particular field name. We allow multiple bindings
-// of the same field to accommodate the decoding of packets 
-// with nested structures. Currently, we limit the total 
+// of the same field to accommodate the decoding of packets
+// with nested structures. Currently, we limit the total
 // number of bindings to 4.
 //
 // FIXME: Support arbitrarily deep or shallow binding lists.
@@ -112,7 +112,7 @@ Binding_list::bottom()
 // Push a new field binding onto the binding list. Behavior
 // is undefined if the pushing the entry would exceed the
 // maximum length of the binding list.
-inline void 
+inline void
 Binding_list::push(Binding b)
 {
   assert(!is_full());
@@ -120,8 +120,8 @@ Binding_list::push(Binding b)
 }
 
 
-// Push a partial binding into the binding list. 
-inline void 
+// Push a partial binding into the binding list.
+inline void
 Binding_list::push(std::uint16_t n)
 {
   assert(!is_full());
@@ -131,7 +131,7 @@ Binding_list::push(std::uint16_t n)
 
 // Pop the innermost binding from the binding list.
 // Behavior is undefined if the list.
-inline void 
+inline void
 Binding_list::pop()
 {
   assert(!is_empty());
@@ -141,7 +141,7 @@ Binding_list::pop()
 
 // A binding environment associates protocol field names
 // with the their location and length within a region
-// of memory. 
+// of memory.
 //
 // Each protocol field is assigned, by the programmer, a
 // unique integer value in the range [0, n] where n is
@@ -153,7 +153,7 @@ Binding_list::pop()
 // FIXME: What's the right query mechanism here?
 struct Environment
 {
-  static constexpr int max_fields = 16;
+  static constexpr int max_fields = 32;
 
   Binding_list const& operator[](int n) const { return fields[n]; }
   Binding_list&       operator[](int n)       { return fields[n]; }

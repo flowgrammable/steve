@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
           // ttl,
           0x0a,
           // protocol
-          0,
+          0x11,
           // checksum
           0, 0,
           // src

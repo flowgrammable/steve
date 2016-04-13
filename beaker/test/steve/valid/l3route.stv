@@ -24,8 +24,6 @@ layout ipv4
 
 decoder start eth_d(ethernet)
 {
-	extract ethernet.dst;
-	extract ethernet.src;
 	extract ethernet.type;
 	if (ethernet.type >= 0x600)
 	  	// The next header is IPv4 if the type field is 0x800.
