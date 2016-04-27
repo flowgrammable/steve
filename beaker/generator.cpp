@@ -817,6 +817,12 @@ Generator::gen(Reference_init const* e)
 
 
 // Reinterpret cast
+// FIXME: This isn't completely correct. That load should not be there,
+// and the bitcast to a reference type seems weird. I think its because
+// we don't deal with casting pointer types correctly. That and you
+// can't get memory addresses of objects because we only have reference types.
+//
+//
 llvm::Value*
 Generator::gen(Reinterpret_cast const* e)
 {

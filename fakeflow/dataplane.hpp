@@ -69,6 +69,9 @@ struct Dataplane
   Port*     all_;
   Port*     flood_;
   Port*     reflow_;
+
+  std::uint64_t throughput = 0;
+  std::uint64_t throughput_bytes = 0;
 };
 
 

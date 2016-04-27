@@ -800,7 +800,41 @@ Elaborator::elaborate(Lshift_expr* e)
 {
   // FIXME: Using arithemetic check instead of bitwise check
   // since shifting bools is not currently supported.
-  return check_binary_arithmetic_expr(*this, e);
+  Expr* e1 = check_binary_arithmetic_expr(*this, e);
+  Type const* t = e->right()->type();
+
+  // Confirm that the right operator is an unsigned integer or a literal
+  // signed integer whose value is positive.
+  if (Integer_type const* int_t = as<Integer_type>(t)) {
+    // If this is unsigned then it is allowed through.
+    if (int_t->is_unsigned())
+      return e1;
+
+    // If this is signed, then check that it is a literal and its value is positive.
+    else if (int_t->is_signed()) {
+      // Check that it is a literal expression.
+      if (Literal_expr* lit = as<Literal_expr>(e->right())) {
+        Value const& v = lit->value();
+        if (v.get_integer().is_nonnegative())
+          return e1;
+      }
+
+      // It might also be a conversion of a literal expression.
+      else if (Conv* conv = as<Conv>(e->right())) {
+        // Check that it is a literal expression.
+        if (Literal_expr* lit = as<Literal_expr>(conv->source())) {
+          Value const& v = lit->value();
+          if (v.get_integer().is_nonnegative())
+            return e1;
+        }
+      }
+    }
+  }
+
+  std::stringstream ss;
+  ss << "The right operand " << *e->right()
+     << " does not have a valid integer type. Must be unsigned or positive.";
+  throw Type_error(locate(e), ss.str());
 }
 
 
@@ -809,7 +843,41 @@ Elaborator::elaborate(Rshift_expr* e)
 {
   // FIXME: Using arithemetic check instead of bitwise check
   // since shifting bools is not currently supported.
-  return check_binary_arithmetic_expr(*this, e);
+  Expr* e1 = check_binary_arithmetic_expr(*this, e);
+  Type const* t = e->right()->type();
+
+  // Confirm that the right operator is an unsigned integer or a literal
+  // signed integer whose value is positive.
+  if (Integer_type const* int_t = as<Integer_type>(t)) {
+    // If this is unsigned then it is allowed through.
+    if (int_t->is_unsigned())
+      return e1;
+
+    // If this is signed, then check that it is a literal and its value is positive.
+    else if (int_t->is_signed()) {
+      // Check that it is a literal expression.
+      if (Literal_expr* lit = as<Literal_expr>(e->right())) {
+        Value const& v = lit->value();
+        if (v.get_integer().is_nonnegative())
+          return e1;
+      }
+
+      // It might also be a conversion of a literal expression.
+      else if (Conv* conv = as<Conv>(e->right())) {
+        // Check that it is a literal expression.
+        if (Literal_expr* lit = as<Literal_expr>(conv->source())) {
+          Value const& v = lit->value();
+          if (v.get_integer().is_nonnegative())
+            return e1;
+        }
+      }
+    }
+  }
+
+  std::stringstream ss;
+  ss << "The right operand " << *e->right()
+     << " does not have a valid integer type. Must be unsigned or positive.";
+  throw Type_error(locate(e), ss.str());
 }
 
 
@@ -3224,8 +3292,6 @@ Elaborator::elaborate(Assign_stmt* s)
     t1 = lhs->type();
   else
     t1 = lhs->type()->nonref();
-
-  // Type const* t1 = lhs->type()->nonref();
 
   rhs = convert(rhs, t1);
   // perform conversion

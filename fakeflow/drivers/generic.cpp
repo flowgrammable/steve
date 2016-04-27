@@ -82,7 +82,6 @@ int main(int argc, char* argv[])
     std::uint64_t n = 0;
     std::uint64_t b = 0;
     cap::Packet p;
-    int sent = 0;
     double elapsed = 0;
     std::srand(std::time(0));
     { // anon block
@@ -100,18 +99,23 @@ int main(int argc, char* argv[])
 
           dp->process(rand_port, &pkt);
           // std::cout << "sent: " << p.captured_size() << " bytes\n";
-          ++n, ++sent;
+          ++n;
           b += p.captured_size();
         }
       }
       elapsed = t.elapsed();
     }; // end block
 
-    std::cout << "Sent: " << sent << " packets." << '\n';
+
+    std::cout << "Sent: " << n << " packets." << '\n';
     std::cout << "Byte sent:" << b << " bytes." << '\n';
     std::cout << "Gigabytes sent: " << b * 1e-9 << "" << '\n';
     std::cout << "Gbits sent:" << b * 8e-9 << "" << '\n';
-    std::cout << "Rate sent:" << (b * 8e-9) / elapsed << "Gbps" << '\n';
+
+    std::cout << "\n Gbps / Pps / Throughput Gbps / Throughput Pps\n";
+    std::cout << (b * 8e-9) / elapsed << "\t" << n / elapsed << "\t"
+              << (dp->throughput_bytes * 8e-9) /elapsed << "\t"
+              << dp->throughput / elapsed << '\n';
   }
   catch(std::string s)
   {

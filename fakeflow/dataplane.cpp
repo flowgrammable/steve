@@ -134,9 +134,12 @@ Dataplane::process(Port* port, Packet* pkt)
   cxt.apply_actions();
 
   // Forward
-  if (cxt.output_port() != 0) {
+  if (cxt.output_port() != 0 && cxt.output_port() != get_drop_port()->id()) {
     Port* p = get_port(cxt.output_port());
     p->send(&cxt);
+
+    ++throughput;
+    throughput_bytes += pkt->size();
   }
 
   // static App1 a(tables_.front());

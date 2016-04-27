@@ -10,19 +10,19 @@ def main() -> int
 	var e : int = a * b;
 	var f : int = a / b;
 	var g : int = a % b;
-	var h : int = a << b;
-	var i : int = a >> b;
+	var h : int = a << 10;
+	var i : int = a >> 10;
 	var j : int = a & b;
 	var k : int = a ^ b;
 	var l : int = a | b;
 
 	var m : int = a & b ^ a | b;
 
-	var x : int = a << b + 1;
+	var x : int = a << 10;
 	if (x == 8)
 		puts("Correct");
 
-	if ( a << b == a << b)
+	if ( a << 10 == a << 10)
 		puts("true");
 
 	return i;
