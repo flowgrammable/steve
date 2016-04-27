@@ -23,8 +23,6 @@ decoder start eth_d(eth)
 	output p1;
 	output all;
 	output flood;
-	var x : int = -32;
-	insert { p1, x, x } -> { } into t1;
 }
 
 exact_table t1(in_port, eth.dst, eth.src)
