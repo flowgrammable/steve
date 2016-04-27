@@ -1,0 +1,194 @@
+foreign def puts(c : char[]) -> int;
+foreign def printf(fmt : char[] , i : uint) -> int;
+foreign def fprintf(fp : uint(8)&, fmt : char[], i : uint) -> int;
+foreign def fopen(filename : char[], mode : char[]) -> uint(8)&;
+foreign def fclose(uint(8)&) -> int;
+
+// A stateless firewall / packet filtering application.
+// Forwards packets like any router, except it will filter out all packets
+// that do not go to certain ports. In this case, filter out all non-HTTP ports.
+// Only TCP/UDP port 80 and 443 will be allowed through.
+
+layout eth
+{
+  dst : uint(48);
+  src : uint(48);
+  type : uint(16);
+}
+
+
+layout ipv4
+{
+  version_ihl : uint(8);
+  dscp_ecn    : uint(8);
+  len         : uint(16);
+  id          : uint(16);
+  fragment    : uint(16);
+  ttl         : uint(8);
+  protocol    : uint(8);
+  checksum    : uint(16);
+  src         : uint(32);
+  dst         : uint(32);
+  // Ignore options.
+}
+
+
+layout udp
+{
+  src      : uint(16);
+  dst      : uint(16);
+  len      : uint(16);
+  checksum : uint(16);
+}
+
+
+layout tcp
+{
+  src : uint(16);
+  dst : uint(16);
+  ack : uint(32);
+  seq : uint(32);
+  control : uint(16); // TCP len: 0-3, Reserved: 4-9, Flags: 10-15
+  window : uint(16);
+  checksum : uint(16);
+  urgent_ptr : uint(16);
+  // Ignore options.
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.type;
+
+  // Check for IPv4. Ignore IPv6 for now.
+  match(eth.type)
+  {
+    case 0x800: decode ipv4_d;
+  }
+  // Don't worry about other kinds of packets.
+}
+
+
+decoder ipv4_d(ipv4)
+{
+  extract ipv4.version_ihl;
+  extract ipv4.protocol;
+  extract ipv4.ttl; // We need ttl to decrement.
+  extract ipv4.src;
+  extract ipv4.dst;
+
+  if (ipv4.ttl == 0) drop;
+
+  var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
+
+  // Only care about udp and tcp requests,
+  match (ipv4.protocol) {
+    case 0x06: decode tcp_d advance hdr_len;
+    case 0x11: decode udp_d advance hdr_len;
+  }
+}
+
+decoder udp_d(udp)
+{
+  extract udp.dst;
+  goto udp_filter;
+}
+
+
+decoder tcp_d(tcp)
+{
+  extract tcp.dst;
+  goto tcp_filter;
+}
+
+
+// Only route if the port# is 80 or 443
+// Log the ip src address of all blocked and all allowed.
+exact_table udp_filter(udp.dst)
+  requires(ipv4.src)
+{
+  { 80 } ->
+  {
+    goto learn;
+  }
+
+  { 443 } ->
+  {
+    goto learn;
+  }
+
+  miss ->
+  {
+    drop;
+  }
+}
+
+
+// Only route if the port# is 80 or 443
+// Log the IP address of all blocked and all allowed.
+exact_table tcp_filter(tcp.dst)
+  requires(ipv4.src)
+{
+  { 80 } ->
+  {
+    goto learn;
+  }
+
+  { 443 } ->
+  {
+    goto learn;
+  }
+
+  miss ->
+  {
+    drop;
+  }
+}
+
+
+// This event handles the actual "learning."
+event learn_ip
+  requires(ipv4.src) // It will learn src IP addresses.
+{
+  // This first entry prevents the same address from causing
+  // this event twice. It sends the packet straight to routing.
+  insert
+  { ipv4.src } -> { goto route; }
+  into learn;
+
+  // This establishes the IP address to port mapping.
+  // Any packet whose dst address matches the current packet's
+  // src address will be forwarded to the current packet's
+  // ingress port.
+  insert
+  [egress = in_port]
+  { ipv4.src } ->
+  {
+    set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
+    output egress;
+  }
+  into route;
+}
+
+
+// Learning table.
+exact_table learn(ipv4.src)
+{
+  miss ->
+  {
+    raise learn_ip;
+    goto route;
+  }
+}
+
+
+// This ultimately decides where to forward packets based on
+// their destination IP.
+exact_table route(ipv4.dst)
+  requires(ipv4.ttl)
+{
+  miss -> {
+    set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl
+    output flood; // Flood on all unlearned addresses.
+  }
+}

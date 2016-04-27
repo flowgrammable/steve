@@ -1,0 +1,43 @@
+layout eth
+{
+	dst : uint(48);
+	src : uint(48);
+	type : uint(16);
+}
+
+
+decoder start eth_d(eth)
+{
+  // Time this.
+	extract eth.dst;
+  goto t1;
+}
+
+exact_table t1(eth.dst)
+{
+  { 0xab_12_34_56_78_90 } ->
+  {
+
+  }
+
+  { 0xab_12_34_56_78_91 } ->
+  {
+
+  }
+
+
+  { 0xab_12_34_56_78_92 } ->
+  {
+
+  }
+
+  { 0xab_12_34_56_78_93 } ->
+  {
+
+  }
+
+  { 0xab_12_34_56_78_94 } ->
+  {
+
+  }
+}
