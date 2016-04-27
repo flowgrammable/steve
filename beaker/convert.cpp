@@ -145,35 +145,16 @@ convert_to_block(Expr* e)
 //
 // TODO: support signed and unsigned conversions
 //
-// - Unsigned conversion if e is a signed positive value which can fit within
-//   the range possible by t's type.
+// - Signed conversion if e is unsigned but it needs to be signed.
 //
-// - Signed conversion if e is unsigned.
+// Allow LLVM to do the conversions for us.
 Expr*
 convert_integer_type(Expr* e, Integer_type const* dst)
 {
   Integer_type const* src = as<Integer_type>(e->type());
   assert(src);
 
-  // Perform narrowing conversion.
-  // This truncates the expression to the dst type.
-  if (src->precision() > dst->precision()) {
-    return new Demotion_conv(dst, e);
-  }
-
-  // If the precision is less, we can widen to a value of
-  // of an integer type to the dst precision.
-  if (src->precision() < dst->precision()) {
-    return new Promotion_conv(dst, e);
-  }
-
-  // Sign conversions
-  // FIXME: Should there be a seperate signed and unsigned conversion?
-  if (src->sign() != dst->sign()) {
-    return new Sign_conv(dst, e);
-  }
-
-  return e;
+  return new Promotion_conv(dst, e);
 }
 
 
