@@ -35,45 +35,6 @@ decoder start eth_d(ethernet)
   // implicitly dropped.
 }
 
-
-def ipv4_checksum(vihl : uint(8), dscp_ecn : uint(8), len : uint(16),
-                  id : uint(16), frag : uint(16), ttl : uint(8), proto : uint(8),
-                  src : uint(32), dst : uint(32) ) -> uint(16)
-{
-  // Merge fields into 16-bit values.
-  var merge1 : uint(16) = vihl << 8;
-  merge1 = merge1 | dscp_ecn;
-
-  var merge2 : uint(16) = ttl << 8;
-  merge2 = merge2 | proto;
-
-  // Split fields int 16-bit values.
-  var split_src1 : uint(16) = src >> 16; // Get the upper 16 bits.
-  // Get the lower 16 bits.
-  var split_src2 : uint(16) = src & 0x0000_ffff;
-
-  // Get the upper 16 bits.
-  var split_dst1 : uint(16) = dst >> 16;
-  // Get the lower 16 bits.
-  var split_dst2 : uint(16) = dst & 0x0000_ffff;
-
-  // Calculate the checksum, ignoring the actual checksum field which is treated
-  // as 0.
-  // Accumulated sum.
-  var acc : uint(32) = 0;
-  acc = acc + merge1 + len + id + frag + merge2 +
-        split_src1 + split_src2 + split_dst1 + split_dst2;
-
-  // Perform the 1's complement sum wraparound.
-  var acc1 : uint(16) = acc >> 16; // Get the upper 16 bits.
-  var acc2 : uint(16) = acc & 0x0000_ffff; // Lower 16 bits of acc
-
-  acc2 = acc1 + acc2;
-  acc2 = acc2 ^ 0xffff_ffff;
-  return acc2;
-}
-
-
 decoder ipv4_d(ipv4)
 {
   // We actually need all fields to confirm the checksum.
@@ -158,4 +119,42 @@ exact_table route(ipv4.dst)
   {
     output flood; // Flood on all unlearned addresses.
   }
+}
+
+
+def ipv4_checksum(vihl : uint(8), dscp_ecn : uint(8), len : uint(16),
+                  id : uint(16), frag : uint(16), ttl : uint(8), proto : uint(8),
+                  src : uint(32), dst : uint(32) ) -> uint(16)
+{
+  // Merge fields into 16-bit values.
+  var merge1 : uint(16) = vihl << 8;
+  merge1 = merge1 | dscp_ecn;
+
+  var merge2 : uint(16) = ttl << 8;
+  merge2 = merge2 | proto;
+
+  // Split fields int 16-bit values.
+  var split_src1 : uint(16) = src >> 16; // Get the upper 16 bits.
+  // Get the lower 16 bits.
+  var split_src2 : uint(16) = src & 0x0000_ffff;
+
+  // Get the upper 16 bits.
+  var split_dst1 : uint(16) = dst >> 16;
+  // Get the lower 16 bits.
+  var split_dst2 : uint(16) = dst & 0x0000_ffff;
+
+  // Calculate the checksum, ignoring the actual checksum field which is treated
+  // as 0.
+  // Accumulated sum.
+  var acc : uint(32) = 0;
+  acc = acc + merge1 + len + id + frag + merge2 +
+        split_src1 + split_src2 + split_dst1 + split_dst2;
+
+  // Perform the 1's complement sum wraparound.
+  var acc1 : uint(16) = acc >> 16; // Get the upper 16 bits.
+  var acc2 : uint(16) = acc & 0x0000_ffff; // Lower 16 bits of acc
+
+  acc2 = acc1 + acc2;
+  acc2 = acc2 ^ 0xffff_ffff;
+  return acc2;
 }

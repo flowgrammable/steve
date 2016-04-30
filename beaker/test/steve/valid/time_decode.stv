@@ -22,5 +22,5 @@ layout ipv4
 decoder start eth_d(ethernet)
 {
   // Time this.
-	extract eth.dst;
+	extract ethernet.dst;
 }

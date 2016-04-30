@@ -71,13 +71,37 @@ decoder start eth_d(eth)
 
 decoder ipv4_d(ipv4)
 {
-  extract ipv4.version_ihl;
+  // We actually need all fields to confirm the checksum.
+  extract ipv4.version_ihl; // Use this to get header length.
+  extract ipv4.dscp_ecn;
+  extract ipv4.len;
+  extract ipv4.id;
+  extract ipv4.fragment;
+  extract ipv4.ttl;       // Use time-to-live to decrement
   extract ipv4.protocol;
-  extract ipv4.ttl; // We need ttl to decrement.
+  extract ipv4.checksum;
   extract ipv4.src;
   extract ipv4.dst;
 
-  if (ipv4.ttl == 0) drop;
+  // Calculate a checksum.
+  var checksum : uint(16) =
+     ipv4_checksum(ipv4.version_ihl, ipv4.dscp_ecn, ipv4.len, ipv4.id,
+                   ipv4.fragment, ipv4.ttl, ipv4.protocol, ipv4.src, ipv4.dst);
+
+  // Check the checksum against the header's checksum.
+  if (checksum != ipv4.checksum)
+    drop;
+
+  // Drop time-to-live expired packets.
+  if (ipv4.ttl == 0)
+    drop;
+
+  set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
+
+  // We've changed the ttl, we must set a new checksum.
+  set ipv4.checksum =
+    ipv4_checksum(ipv4.version_ihl, ipv4.dscp_ecn, ipv4.len, ipv4.id,
+                  ipv4.fragment, ipv4.ttl, ipv4.protocol, ipv4.src, ipv4.dst);
 
   var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
 
@@ -164,7 +188,6 @@ event learn_ip
   [egress = in_port]
   { ipv4.src } ->
   {
-    set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
     output egress;
   }
   into route;
@@ -188,7 +211,44 @@ exact_table route(ipv4.dst)
   requires(ipv4.ttl)
 {
   miss -> {
-    set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl
     output flood; // Flood on all unlearned addresses.
   }
+}
+
+
+def ipv4_checksum(vihl : uint(8), dscp_ecn : uint(8), len : uint(16),
+                  id : uint(16), frag : uint(16), ttl : uint(8), proto : uint(8),
+                  src : uint(32), dst : uint(32) ) -> uint(16)
+{
+  // Merge fields into 16-bit values.
+  var merge1 : uint(16) = vihl << 8;
+  merge1 = merge1 | dscp_ecn;
+
+  var merge2 : uint(16) = ttl << 8;
+  merge2 = merge2 | proto;
+
+  // Split fields int 16-bit values.
+  var split_src1 : uint(16) = src >> 16; // Get the upper 16 bits.
+  // Get the lower 16 bits.
+  var split_src2 : uint(16) = src & 0x0000_ffff;
+
+  // Get the upper 16 bits.
+  var split_dst1 : uint(16) = dst >> 16;
+  // Get the lower 16 bits.
+  var split_dst2 : uint(16) = dst & 0x0000_ffff;
+
+  // Calculate the checksum, ignoring the actual checksum field which is treated
+  // as 0.
+  // Accumulated sum.
+  var acc : uint(32) = 0;
+  acc = acc + merge1 + len + id + frag + merge2 +
+        split_src1 + split_src2 + split_dst1 + split_dst2;
+
+  // Perform the 1's complement sum wraparound.
+  var acc1 : uint(16) = acc >> 16; // Get the upper 16 bits.
+  var acc2 : uint(16) = acc & 0x0000_ffff; // Lower 16 bits of acc
+
+  acc2 = acc1 + acc2;
+  acc2 = acc2 ^ 0xffff_ffff;
+  return acc2;
 }
