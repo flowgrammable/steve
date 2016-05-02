@@ -128,7 +128,17 @@ Dataplane::process(Port* port, Packet* pkt)
   Context cxt(*pkt, this, port->id(), port->id(), 0);
   assert(cxt.dataplane());
   // thread_pool.assign(new Task("pipeline", c));
-  app_->lib().exec("process", &cxt);
+
+  try
+  {
+    app_->lib().exec("process", &cxt);
+  }
+  catch (std::exception& e)
+  {
+    // Drop the packet.
+    Port* p = get_drop_port();
+    p->send(&cxt);
+  }
 
   // Apply actions
   cxt.apply_actions();
@@ -141,14 +151,6 @@ Dataplane::process(Port* port, Packet* pkt)
     ++throughput;
     throughput_bytes += pkt->size();
   }
-
-  // static App1 a(tables_.front());
-  // a.pipeline(c, port);
-  //
-  // static App2 b(tables_.front());
-  // b.pipeline(c, port);
-
-  // std::cout << "DONE PROCESSING\n";
 }
 
 

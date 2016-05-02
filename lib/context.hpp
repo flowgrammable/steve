@@ -132,6 +132,7 @@ public:
   std::uint16_t offset() const;
   Byte const*   position() const;
   Byte*         position();
+  int           size() const { return packet_.size(); }
 
   // Returns the input and output ports associated with
   // the context.
@@ -188,6 +189,9 @@ inline void
 Context::advance(std::uint16_t n)
 {
   decode_.pos += n;
+
+  if (decode_.pos > size())
+    throw std::exception();
 }
 
 
