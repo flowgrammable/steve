@@ -37,9 +37,9 @@ get_scalar_conversion_target(Expr* e1, Expr* e2)
       largest_prec = prec2;
 
     // Check sign.
-    Integer_sign sign = unsigned_int;
-    if (int1->is_signed() || int2->is_signed())
-      sign = signed_int;
+    Integer_sign sign = signed_int;
+    if (int1->is_unsigned() || int2->is_unsigned())
+      sign = unsigned_int;
 
     // Return the integer type with the correct sign and precision.
     return get_integer_type(largest_prec, sign, native_order);

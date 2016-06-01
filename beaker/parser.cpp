@@ -1687,7 +1687,11 @@ Parser::raise_stmt()
   match(raise_kw);
   Expr* id = expr();
   match(semicolon_tok);
-  return on_raise(id);
+  Expr* adv = nullptr;
+  if (match_if(advance_kw))
+    adv = expr();
+
+  return on_raise(id, adv);
 }
 
 
@@ -2651,7 +2655,7 @@ Parser::on_rmv_miss(Expr* table)
 
 
 Stmt*
-Parser::on_raise(Expr* e)
+Parser::on_raise(Expr* e, Expr* a)
 {
-  return new Raise(e);
+  return new Raise(e, a);
 }
