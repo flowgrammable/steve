@@ -166,7 +166,7 @@ Action::clear()
     value.set.~Set_action();
 }
 
-
+inline
 Action::Action(Action const& a)
 {
   type = a.type;

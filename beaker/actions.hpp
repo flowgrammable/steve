@@ -178,7 +178,11 @@ Remove_miss::table() const
 struct Raise : Action
 {
   Raise(Expr* e)
-    : event_id_(e)
+    : event_id_(e), advance_(nullptr)
+  { }
+
+  Raise(Expr* e, Expr* a)
+    : event_id_(e), advance_(a)
   { }
 
   void accept(Visitor& v) const { return v.visit(this); }
@@ -189,6 +193,7 @@ struct Raise : Action
 
   Expr* event_id_;
   Decl* event_;
+  Expr* advance_;
 };
 
 

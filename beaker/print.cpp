@@ -759,15 +759,17 @@ operator<<(std::ostream& os, Xor_expr const& e)
 
 
 std::ostream&
-operator<<(std::ostream& os, Neg_expr const&)
+operator<<(std::ostream& os, Neg_expr const& e)
 {
+  os << "-" << *e.operand();
   return os;
 }
 
 
 std::ostream&
-operator<<(std::ostream& os, Pos_expr const&)
+operator<<(std::ostream& os, Pos_expr const& e)
 {
+  os << "+" << *e.operand();
   return os;
 }
 
@@ -829,8 +831,9 @@ operator<<(std::ostream& os, Or_expr const& e)
 
 
 std::ostream&
-operator<<(std::ostream& os, Not_expr const&)
+operator<<(std::ostream& os, Not_expr const& e)
 {
+  os << "!" << *e.operand();
   return os;
 }
 

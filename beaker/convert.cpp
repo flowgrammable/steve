@@ -37,6 +37,48 @@ get_scalar_conversion_target(Expr* e1, Expr* e2)
       largest_prec = prec2;
 
     // Check sign.
+    Integer_sign sign = signed_int;
+    if (int1->is_unsigned() || int2->is_unsigned())
+      sign = unsigned_int;
+
+    // Return the integer type with the correct sign and precision.
+    return get_integer_type(largest_prec, sign, native_order);
+  }
+
+  // If e1 has integer type, try to return that and convert e2 to it later.
+  if (!is<Integer_type>(t1) && is<Integer_type>(t2))
+    return t2;
+  if (is<Integer_type>(t1) && !is<Integer_type>(t2))
+    return t1;
+
+  // Default return nullptr.
+  return nullptr;
+}
+
+
+// Determines how to convert a scalar type to another scalar type.
+// TODO: Does not currently convert with bools or chars.
+Type const*
+get_scalar_conversion_target(Type const* t1, Type const* t2)
+{
+  // If they're already equal.
+  if (t1 == t2)
+    return t1;
+
+  // If they're both integers.
+  if (is<Integer_type>(t1) && is<Integer_type>(t2))
+  {
+    Integer_type const* int1 = as<Integer_type>(t1);
+    Integer_type const* int2 = as<Integer_type>(t2);
+
+    // Check precision.
+    int prec1 = int1->precision();
+    int prec2 = int2->precision();
+    int largest_prec = prec1;
+    if (prec1 < prec2)
+      largest_prec = prec2;
+
+    // Check sign.
     Integer_sign sign = unsigned_int;
     if (int1->is_signed() || int2->is_signed())
       sign = signed_int;
@@ -103,35 +145,16 @@ convert_to_block(Expr* e)
 //
 // TODO: support signed and unsigned conversions
 //
-// - Unsigned conversion if e is a signed positive value which can fit within
-//   the range possible by t's type.
+// - Signed conversion if e is unsigned but it needs to be signed.
 //
-// - Signed conversion if e is unsigned.
+// Allow LLVM to do the conversions for us.
 Expr*
 convert_integer_type(Expr* e, Integer_type const* dst)
 {
   Integer_type const* src = as<Integer_type>(e->type());
   assert(src);
 
-  // Perform narrowing conversion.
-  // This truncates the expression to the dst type.
-  if (src->precision() > dst->precision()) {
-    return new Demotion_conv(dst, e);
-  }
-
-  // If the precision is less, we can widen to a value of
-  // of an integer type to the dst precision.
-  if (src->precision() < dst->precision()) {
-    return new Promotion_conv(dst, e);
-  }
-
-  // Sign conversions
-  // FIXME: Should there be a seperate signed and unsigned conversion?
-  if (src->sign() != dst->sign()) {
-    return new Sign_conv(dst, e);
-  }
-
-  return e;
+  return new Promotion_conv(dst, e);
 }
 
 

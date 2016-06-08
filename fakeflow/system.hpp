@@ -84,7 +84,8 @@ void			             delete_dataplane(std::string const&);
 void load_application(std::string const&);
 void unload_application(std::string const&);
 
-
+// Returns number of bytes passing through output action.
+int throughput();
 
 } // end namespace fp
 

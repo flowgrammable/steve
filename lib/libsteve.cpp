@@ -1,4 +1,5 @@
 #include "libsteve.hpp"
+#include <exception>
 
 // ---------------------------------------------------------------------------//
 //            Packet modification
@@ -44,6 +45,12 @@ fp_bind_field(fp::Context* cxt, int id, std::uint16_t off, std::uint16_t len)
   // Get field requires an absolute offset which is the context's current offset
   // plus the relative offset passed to this function.
   int abs_off = cxt->offset() + off;
+
+  if (abs_off > cxt->size())
+  {
+    throw std::exception();
+  }
+
   // We bind fields using their absolute offset since this is the only way we
   // can recover the absolute offset when we need to look up the binding later.
   //

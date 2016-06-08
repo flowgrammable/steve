@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     fp::Port* p4 = fp::create_port(fp::Port::Type::tcp, ":5003", "p4");
     std::cerr << "Created port 'p4' with id '" << p4->id() << "'\n";
     fp::Port* p5 = fp::create_port(fp::Port::Type::tcp, ":5004", "p5");
-    std::cerr << "Created port 'p4' with id '" << p5->id() << "'\n";
+    std::cerr << "Created port 'p5' with id '" << p5->id() << "'\n";
 
     // Port array.
     fp::Port* ports[5]{p1, p2, p3, p4, p5};
@@ -70,14 +70,19 @@ int main(int argc, char* argv[])
 
     // Iterate over each packet and and send each packet to the
     // connected host.
-    int iterations = 1; // number of packets.
+    int iterations = 1; // number of repeats
     if (argc > 3)
       iterations = std::stoi(argv[3]);
+
+    // Allow for number of ports as args.
+    int num_ports = 5;
+    if (argc > 4)
+      num_ports = std::stoi(argv[4]);
 
     std::uint64_t n = 0;
     std::uint64_t b = 0;
     cap::Packet p;
-    int sent = 0;
+    double elapsed = 0;
     std::srand(std::time(0));
     { // anon block
       Timer t;
@@ -87,22 +92,30 @@ int main(int argc, char* argv[])
           std::unique_ptr<uint8_t> ptr(buf);
           std::memcpy(&buf[0], p.data(), p.captured_size());
 
-          int r = std::rand() % 5;
+          int r = std::rand() % num_ports;
           Port* rand_port = ports[r];
 
           fp::Packet pkt(&buf[0], p.captured_size(), 0, nullptr, FP_BUF_ALLOC);
 
           dp->process(rand_port, &pkt);
           // std::cout << "sent: " << p.captured_size() << " bytes\n";
-          ++n, ++sent;
+          ++n;
           b += p.captured_size();
         }
       }
-
+      elapsed = t.elapsed();
     }; // end block
 
-    std::cout << "Sent: " << sent << " packets." << '\n';
+
+    std::cout << "Sent: " << n << " packets." << '\n';
     std::cout << "Byte sent:" << b << " bytes." << '\n';
+    std::cout << "Gigabytes sent: " << b * 1e-9 << "" << '\n';
+    std::cout << "Gbits sent:" << b * 8e-9 << "" << '\n';
+
+    std::cout << "\n Gbps / Pps / Throughput Gbps / Throughput Pps\n";
+    std::cout << (b * 8e-9) / elapsed << "\t" << n / elapsed << "\t"
+              << (dp->throughput_bytes * 8e-9) /elapsed << "\t"
+              << dp->throughput / elapsed << '\n';
   }
   catch(std::string s)
   {

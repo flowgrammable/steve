@@ -1,12 +1,21 @@
-foreign def puts(char[]) -> int;
-foreign def printf(fmt : char[], i : uint(64)) -> int;
+foreign def puts(c : char[]) -> int;
+foreign def printf(fmt : char[] , i : uint) -> int;
+foreign def fprintf(fp : uint(8)&, fmt : char[], i : uint) -> int;
+foreign def fopen(filename : char[], mode : char[]) -> uint(8)&;
+foreign def fclose(uint(8)&) -> int;
 
-layout ethernet
+// A stateless firewall / packet filtering application.
+// Forwards packets like any router, except it will filter out all packets
+// that do not go to certain ports. In this case, filter out all non-HTTP ports.
+// Only TCP/UDP port 80 and 443 will be allowed through.
+
+layout eth
 {
-  src : uint(48);
   dst : uint(48);
+  src : uint(48);
   type : uint(16);
 }
+
 
 layout ipv4
 {
@@ -20,20 +29,47 @@ layout ipv4
   checksum    : uint(16);
   src         : uint(32);
   dst         : uint(32);
+  // Ignore options.
 }
 
 
-decoder start eth_d(ethernet)
+layout udp
 {
-  extract ethernet.type;
-  if (ethernet.type >= 0x600)
-      // The next header is IPv4 if the type field is 0x800.
-      match (ethernet.type) {
-        case 0x800: decode ipv4_d;
-      }
-  // If its not IPv4, processing ends and the packet is
-  // implicitly dropped.
+  src      : uint(16);
+  dst      : uint(16);
+  len      : uint(16);
+  checksum : uint(16);
 }
+
+
+layout tcp
+{
+  src : uint(16);
+  dst : uint(16);
+  ack : uint(32);
+  seq : uint(32);
+  control : uint(16); // TCP len: 0-3, Reserved: 4-9, Flags: 10-15
+  window : uint(16);
+  checksum : uint(16);
+  urgent_ptr : uint(16);
+  // Ignore options.
+}
+
+
+decoder start eth_d(eth)
+{
+  extract eth.dst;
+  extract eth.src;
+  extract eth.type;
+
+  // Check for IPv4. Ignore IPv6 for now.
+  match(eth.type)
+  {
+    case 0x800: decode ipv4_d;
+  }
+  // Don't worry about other kinds of packets.
+}
+
 
 decoder ipv4_d(ipv4)
 {
@@ -69,8 +105,82 @@ decoder ipv4_d(ipv4)
     ipv4_checksum(ipv4.version_ihl, ipv4.dscp_ecn, ipv4.len, ipv4.id,
                   ipv4.fragment, ipv4.ttl, ipv4.protocol, ipv4.src, ipv4.dst);
 
-  // Proceed to the learn table after advancing by ihl
-  goto learn advance (ipv4.version_ihl & 0x0f) * 4;
+  var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
+
+  // Only care about udp and tcp requests,
+  match (ipv4.protocol) {
+    case 0x06: decode tcp_d advance hdr_len;
+    case 0x11: decode udp_d advance hdr_len;
+  }
+}
+
+decoder udp_d(udp)
+{
+  extract udp.src;
+  extract udp.dst;
+  extract udp.len;
+  extract udp.checksum;
+
+  goto udp_filter;
+}
+
+
+decoder tcp_d(tcp)
+{
+  extract tcp.src;
+  extract tcp.dst;
+  extract tcp.ack;
+  extract tcp.seq;
+  extract tcp.control;
+  extract tcp.window;
+  extract tcp.checksum;
+  extract tcp.urgent_ptr;
+
+  goto tcp_filter;
+}
+
+
+// Only route if the port# is 80 or 443
+// Log the ip src address of all blocked and all allowed.
+exact_table udp_filter(udp.dst)
+  requires(ipv4.src)
+{
+  { 80 } ->
+  {
+    goto learn;
+  }
+
+  { 443 } ->
+  {
+    goto learn;
+  }
+
+  miss ->
+  {
+    drop;
+  }
+}
+
+
+// Only route if the port# is 80 or 443
+// Log the IP address of all blocked and all allowed.
+exact_table tcp_filter(tcp.dst)
+  requires(ipv4.src)
+{
+  { 80 } ->
+  {
+    goto learn;
+  }
+
+  { 443 } ->
+  {
+    goto learn;
+  }
+
+  miss ->
+  {
+    drop;
+  }
 }
 
 
@@ -81,7 +191,6 @@ event learn_ip
   // This first entry prevents the same address from causing
   // this event twice. It sends the packet straight to routing.
   insert
-  [timeout = 30]
   { ipv4.src } -> { goto route; }
   into learn;
 
@@ -90,7 +199,7 @@ event learn_ip
   // src address will be forwarded to the current packet's
   // ingress port.
   insert
-  [timeout = 30, egress = in_port]
+  [egress = in_port]
   { ipv4.src } ->
   {
     output egress;
@@ -99,6 +208,7 @@ event learn_ip
 }
 
 
+// Learning table.
 exact_table learn(ipv4.src)
 {
   miss ->
@@ -112,11 +222,9 @@ exact_table learn(ipv4.src)
 // This ultimately decides where to forward packets based on
 // their destination IP.
 exact_table route(ipv4.dst)
-  requires(ipv4.version_ihl, ipv4.dscp_ecn, ipv4.len, ipv4.id,
-           ipv4.fragment, ipv4.ttl, ipv4.protocol, ipv4.src)
+  requires(ipv4.ttl)
 {
-  miss ->
-  {
+  miss -> {
     output flood; // Flood on all unlearned addresses.
   }
 }

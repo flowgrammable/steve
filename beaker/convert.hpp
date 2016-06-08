@@ -18,5 +18,6 @@ Expr_seq convert(Expr_seq const&, Type_seq const&);
 Expr* convert_to_value(Expr*);
 
 Type const* get_scalar_conversion_target(Expr*, Expr*);
+Type const* get_scalar_conversion_target(Type const*, Type const*);
 
 #endif

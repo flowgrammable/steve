@@ -1,4 +1,5 @@
-foreign def puts(char[]) -> int;
+foreign def puts(c : char[]) -> int;
+foreign def printf(c : char[] , i : uint) -> int;
 
 Port p1 = 1;
 
@@ -23,6 +24,15 @@ layout ipv4
   dst         : uint(32);
 }
 
+layout ipv6
+{
+	flow_info : uint(32);
+	payload_len : uint(16);
+	next_hdr : uint(8);
+	hop_limit : uint(8);
+	src : uint(128);
+	dst : uint(128);
+}
 
 layout udp
 {
@@ -41,6 +51,7 @@ decoder start eth_d(eth)
   match(eth.type)
   {
     case 0x800: decode ipv4_d;
+		case 0x86dd: decode ipv6_d;
   }
 
 	drop;
@@ -60,9 +71,23 @@ decoder ipv4_d(ipv4)
 
 	var hdr_len : uint(8) =  (ipv4.version_ihl & 0x0f) * 4;
 
-	puts("ipv4d");
+	// printf("0x%x\n", ipv4.protocol);
 
-	decode udp_d advance hdr_len;
+	// decode udp_d advance hdr_len;
+}
+
+decoder ipv6_d(ipv6)
+{
+	extract ipv6.next_hdr;
+	extract ipv6.src;
+	extract ipv6.dst;
+
+	match (ipv6.next_hdr) {
+		case 0x11: decode udp_d;
+		case 0x3a: puts("icmpv6");
+	}
+
+	// printf("0x%x\n", ipv6.next_hdr);
 }
 
 
@@ -73,9 +98,9 @@ decoder udp_d(udp)
   extract udp.len;
 	extract udp.checksum;
 
-	puts("udpd");
+	printf("%d\n", udp.dst);
 
-  goto route;
+  // goto route;
 }
 
 
