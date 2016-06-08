@@ -1122,8 +1122,8 @@ Generator::gen(Match_stmt const* s)
       build.CreateBr(done);
 
     llvm::Value* label = gen(c->label());
-    assert(is<llvm::ConstantInt>(label));
-    switch_->addCase(as<llvm::ConstantInt>(label), c1);
+    // assert(is<llvm::ConstantInt>(label));
+    switch_->addCase(static_cast<llvm::ConstantInt*>(label), c1);
   }
 
   if (s->has_miss()) {
