@@ -1069,10 +1069,9 @@ Parser::flow_properties()
 Decl*
 Parser::flow_decl()
 {
-  Stmt_seq properties = flow_properties();
-
   if (match_if(miss_kw)) {
     match(arrow_tok);
+    Stmt_seq properties = flow_properties();
     Stmt* body = block_stmt();
     return on_flow_miss(body, properties);
   }
@@ -1091,8 +1090,8 @@ Parser::flow_decl()
   }
   match(rbrace_tok);
   match(arrow_tok);
+  Stmt_seq properties = flow_properties();
   Stmt* body = block_stmt();
-
   return on_flow(keys, body, properties);
 }
 
@@ -1600,11 +1599,11 @@ Parser::add_flow_stmt()
   // Store the information about the flow in a flow decl because its
   // convenient to do so.
   Decl* flow = nullptr;
-  Stmt_seq properties = flow_properties(); // Optional properties.
 
   // Miss case.
   if (match_if(miss_kw)) {
     match(arrow_tok);
+    Stmt_seq properties = flow_properties(); // Optional properties.
     Stmt* body = block_stmt();
     flow = on_flow_miss(body, properties);
   }
@@ -1625,6 +1624,7 @@ Parser::add_flow_stmt()
     }
     match(rbrace_tok);
     match(arrow_tok);
+    Stmt_seq properties = flow_properties(); // Optional properties.
     Stmt* body = block_stmt(); // Flow body.
     flow = on_flow(keys, body, properties);
   }

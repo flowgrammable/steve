@@ -23,8 +23,7 @@ event learn_mac
 	// into the learn table so we don't keep
 	// trying to learn something we already have.
 	insert
-	[timeout = 60]
-	{ ethernet.src } -> { goto forward; }
+	{ ethernet.src } -> [timeout = 60] { goto forward; }
 	into learn;
 
 	// Next we insert the src of the current packet
@@ -35,8 +34,8 @@ event learn_mac
 	// to this packet's src is forwarded to this packet's
 	// ingress port.
 	insert
-	[timeout = 60, egress = in_port]
 	{ ethernet.src } ->
+  [timeout = 60, egress = in_port]
 	{
 		// We set the egress property to the current
 		// packet's in_port. Future packets will be forwarded to

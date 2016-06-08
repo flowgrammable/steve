@@ -180,8 +180,8 @@ event learn_ip
   // src address will be forwarded to the current packet's
   // ingress port.
   insert
-  [egress = in_port]
   { ipv4.src } ->
+  [egress = in_port]
   {
     set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
     output egress;

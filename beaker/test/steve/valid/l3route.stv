@@ -81,8 +81,7 @@ event learn_ip
   // This first entry prevents the same address from causing
   // this event twice. It sends the packet straight to routing.
   insert
-  [timeout = 30]
-  { ipv4.src } -> { goto route; }
+  { ipv4.src } -> [timeout = 30] { goto route; }
   into learn;
 
   // This establishes the IP address to port mapping.
@@ -90,8 +89,8 @@ event learn_ip
   // src address will be forwarded to the current packet's
   // ingress port.
   insert
-  [timeout = 30, egress = in_port]
   { ipv4.src } ->
+  [timeout = 30, egress = in_port]
   {
     output egress;
   }

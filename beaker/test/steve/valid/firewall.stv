@@ -185,8 +185,8 @@ event learn_ip
   // src address will be forwarded to the current packet's
   // ingress port.
   insert
-  [egress = in_port]
   { ipv4.src } ->
+  [egress = in_port]
   {
     output egress;
   }

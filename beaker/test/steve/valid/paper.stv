@@ -195,8 +195,8 @@ exact_table ip_proto(ipv4.fragment, ipv4.protocol)
   // The protocol field is 0x06 for TCP data.
   // The flow property-timeout-sets a timeout in secs.
   // A flow entry with a timeout is removed after X secs.
-  [timeout = 1000]
-  { 0x0, 0x06 } ->
+
+  { 0x0, 0x06 } -> [timeout = 1000]
   {
     set ipv4.ttl = ipv4.ttl - 1; // Decrement time-to-live.
     // Dispatch to the TCP Decoder.
