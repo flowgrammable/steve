@@ -1588,12 +1588,14 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'insert' { ... } -> { ... } 'into' table-id
+//    add-flow-stmt -> 'insert' 'into' table-id { ... } -> { ... } ;
 //
 Stmt*
 Parser::add_flow_stmt()
 {
   match(insert_kw);
+  match(into_kw);
+  Expr* table = expr();
 
   // The actual flow.
   // Store the information about the flow in a flow decl because its
@@ -1630,8 +1632,6 @@ Parser::add_flow_stmt()
   }
   assert(flow);
   // Flow done, parse into table.
-  match(into_kw);
-  Expr* table = expr();
   match(semicolon_tok);
 
   return on_add_flow(flow, table);
@@ -1640,18 +1640,18 @@ Parser::add_flow_stmt()
 
 // Remove flow statement.
 //
-//    rmv-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
+//    rmv-flow-stmt -> 'rmv' 'from' table-id { expr-seq }
 //
 Stmt*
 Parser::rmv_flow_stmt()
 {
   match(rmv_kw);
+  match(from_kw);
+  Expr* table = expr();
 
   // If we're removing the miss case.
   if (lookahead() == miss_kw) {
     match(miss_kw);
-    match(from_kw);
-    Expr* table = expr();
     match(semicolon_tok);
     return on_rmv_miss(table);
   }
@@ -1670,8 +1670,6 @@ Parser::rmv_flow_stmt()
       break;
   }
   match(rbrace_tok);
-  match(from_kw);
-  Expr* table = expr();
   match(semicolon_tok);
   return on_rmv_flow(keys, table);
 }

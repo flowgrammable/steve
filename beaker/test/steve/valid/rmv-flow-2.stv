@@ -22,7 +22,7 @@ exact_table t1(eth.type)
   {0x0800} ->
   {
     puts("Hit 0x800...removing 880 from t2.");
-    remove { 0x880 } from t2;
+    remove from t2 { 0x880 };
     goto t2;
   }
 

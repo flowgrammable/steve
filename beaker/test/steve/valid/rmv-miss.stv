@@ -14,7 +14,7 @@ decoder start eth_d(eth)
 {
   extract eth.dst;
   extract eth.type;
-  remove miss from t1;
+  remove from t1 miss;
   goto t1;
 }
 

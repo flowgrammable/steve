@@ -24,14 +24,13 @@ exact_table switch(eth.dst, eth.type)
   {
 		puts("Miss...adding flow now.");
 
-    insert
+    insert into switch
     { eth.dst, eth.type } ->
     {
 			puts("Using adding flow now.");
-			remove { eth.dst, eth.type } from switch;
+			remove from switch { eth.dst, eth.type };
       output p1;
-    }
-    into switch;
+    };
 
     output p1;
   }
