@@ -61,7 +61,7 @@ target_link_libraries(
 # The compiler is the main driver for compilation.
 # It takes a set of input files and produces linked
 # outputs (programs, libraries, archives).
-add_executable(beaker-compile driver.cpp compiler.cpp)
+add_executable(beaker-compile driver.cpp beaker-compiler.cpp)
 target_link_libraries(beaker-compile beaker)
 
 # The runtime interpreter executes a parsed beaker
