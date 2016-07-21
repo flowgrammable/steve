@@ -591,6 +591,8 @@ get_value(Type const* t)
 
     Value operator()(Void_type const* t) { return 0; }
     Value operator()(Opaque_type const* t) { return 0; }
+    Value operator()(Varargs_type const* t) { return 0; }
+
     Value operator()(Layout_type const* t) { return 0; }
     Value operator()(Context_type const* t) { return 0; }
     Value operator()(Port_type const* t) { return 0; }

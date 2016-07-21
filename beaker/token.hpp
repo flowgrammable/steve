@@ -56,6 +56,7 @@ enum Token_kind
   amp_tok,
   arrow_tok,
   scope_tok,
+  ellipses_tok,
 
   // Keywords
   abstract_kw,

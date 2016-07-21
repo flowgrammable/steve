@@ -189,6 +189,7 @@ mangle(std::ostream& os, Type const* t)
     void operator()(Record_type const* t) { return mangle(os, t); }
     void operator()(Void_type const* t) { return mangle(os, t); }
     void operator()(Opaque_type const* t) { return mangle(os, t); }
+    void operator()(Varargs_type const* t) { lingo_unreachable(); }
 
     // network specific types
     void operator()(Layout_type const* t) { return mangle(os, t); }

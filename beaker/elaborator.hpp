@@ -74,6 +74,7 @@ public:
   Type const* elaborate(Record_type const*);
   Type const* elaborate(Void_type const*);
   Type const* elaborate(Opaque_type const*);
+  Type const* elaborate(Varargs_type const*);
 
   // network specific types
   Type const* elaborate(Layout_type const*);

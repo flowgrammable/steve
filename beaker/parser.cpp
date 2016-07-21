@@ -730,6 +730,7 @@ Parser::function_decl(Specifier spec)
 // Parse a parameter declaration.
 //
 //    parameter-decl ::= identifier ':' type
+//                     | '...'
 //                     | type
 Decl*
 Parser::parameter_decl()
@@ -743,6 +744,13 @@ Parser::parameter_decl()
     Token n = match(identifier_tok);
     match(colon_tok);
     Type const* t = type();
+    return on_parameter(spec, n, t);
+  }
+
+  // If we have a '.' then this is a var args parameter.
+  if (lookahead() == ellipses_tok) {
+    Token n = match(ellipses_tok);
+    Type const* t = get_varargs_type();
     return on_parameter(spec, n, t);
   }
 
