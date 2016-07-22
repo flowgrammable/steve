@@ -292,6 +292,7 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Demotion_conv const* a) { lingo_unreachable(); }
     bool operator()(Sign_conv const* a) { lingo_unreachable(); }
     bool operator()(Integer_conv const* a) { lingo_unreachable(); }
+    bool operator()(Variadic_conv const* a) { lingo_unreachable(); }
     bool operator()(Default_init const* a) { lingo_unreachable(); }
     bool operator()(Copy_init const* a) { lingo_unreachable(); }
     bool operator()(Reference_init const* a) { lingo_unreachable(); }

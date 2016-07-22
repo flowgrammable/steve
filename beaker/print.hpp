@@ -65,6 +65,7 @@ std::ostream& operator<<(std::ostream&, Reference_type const&);
 std::ostream& operator<<(std::ostream&, Record_type const&);
 std::ostream& operator<<(std::ostream&, Void_type const&);
 std::ostream& operator<<(std::ostream&, Opaque_type const&);
+std::ostream& operator<<(std::ostream&, Varargs_type const&);
 
 
 // network specific types
@@ -112,6 +113,7 @@ std::ostream& operator<<(std::ostream&, Promotion_conv const&);
 std::ostream& operator<<(std::ostream&, Demotion_conv const&);
 std::ostream& operator<<(std::ostream&, Sign_conv const&);
 std::ostream& operator<<(std::ostream&, Integer_conv const&);
+std::ostream& operator<<(std::ostream&, Variadic_conv const&);
 std::ostream& operator<<(std::ostream&, Default_init const&);
 std::ostream& operator<<(std::ostream&, Copy_init const&);
 std::ostream& operator<<(std::ostream&, Dot_expr const&);

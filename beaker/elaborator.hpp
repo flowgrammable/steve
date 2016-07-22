@@ -121,6 +121,7 @@ public:
   Expr* elaborate(Demotion_conv* e);
   Expr* elaborate(Sign_conv* e);
   Expr* elaborate(Integer_conv* e);
+  Expr* elaborate(Variadic_conv* e);
   Expr* elaborate(Default_init* e);
   Expr* elaborate(Copy_init* e);
   Expr* elaborate(Reference_init* e);

@@ -139,9 +139,17 @@ expr_to_void_block(Expr* v)
 
 // Value conversion
 inline Value_conv*
-value_conv(Type* t, Expr* e)
+value_conv(Type const* t, Expr* e)
 {
   return new Value_conv(t, e);
+}
+
+
+// Variadic conv.
+inline Variadic_conv*
+variadic_conv(Type const* t, Expr* e)
+{
+  return new Variadic_conv(t, e);
 }
 
 // ----------------------------------------------------- //

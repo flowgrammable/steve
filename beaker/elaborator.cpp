@@ -446,6 +446,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Integer_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Variadic_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -1636,6 +1637,13 @@ Elaborator::elaborate(Sign_conv* e)
 
 Expr*
 Elaborator::elaborate(Integer_conv* e)
+{
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Variadic_conv* e)
 {
   return e;
 }
