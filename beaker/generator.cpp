@@ -72,6 +72,7 @@ Generator::get_type(Type const* t)
     llvm::Type* operator()(Void_type const* t) { return g.get_type(t); }
     llvm::Type* operator()(Context_type const* t) { return g.get_type(t); }
     llvm::Type* operator()(Opaque_type const* t) { return g.get_type(t); }
+    llvm::Type* operator()(Varargs_type const* t) { lingo_unreachable(); }
 
     // network specific types
     llvm::Type* operator()(Layout_type const* t) const { return g.get_type(t); }
@@ -126,8 +127,12 @@ Generator::get_type(Function_type const* t)
 {
   std::vector<llvm::Type*> ts;
   ts.reserve(t->parameter_types().size());
-  for (Type const* t1 : t->parameter_types())
+  for (Type const* t1 : t->parameter_types()) {
+    // Ignore pushing varargs parameter.
+    if (is<Varargs_type>(t1))
+      continue;
     ts.push_back(get_type(t1));
+  }
   llvm::Type* r = get_type(t->return_type());
   return llvm::FunctionType::get(r, ts, t->var_args());
 }
@@ -303,6 +308,7 @@ Generator::gen(Expr const* e)
     llvm::Value* operator()(Demotion_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Sign_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Integer_conv const* e) const { return g.gen(e); }
+    llvm::Value* operator()(Variadic_conv const* e) const { return g.gen(e); }
     llvm::Value* operator()(Default_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Copy_init const* e) const { return g.gen(e); }
     llvm::Value* operator()(Reference_init const* e) const { return g.gen(e); }
@@ -765,6 +771,14 @@ Generator::gen(Integer_conv const* e)
   llvm::Type* t = get_type(e->target());
   llvm::Value* v = gen(e->source());
   return build.CreateIntCast(v, t, int_t->is_signed());
+}
+
+
+// NOTE: Currently doesn't do anything other than gent he original expr.
+llvm::Value*
+Generator::gen(Variadic_conv const* e)
+{
+  return gen(e->source());
 }
 
 

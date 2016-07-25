@@ -5,6 +5,7 @@
 #include "beaker/type.hpp"
 #include "beaker/expr.hpp"
 #include "beaker/decl.hpp"
+#include "beaker/builder.hpp"
 
 #include <iostream>
 
@@ -167,6 +168,40 @@ convert_to_integer_type(Expr* e, Integer_type const* dst)
 }
 
 
+// Perform conversions on argument list passed to variadic function.
+Expr_seq
+convert_variadic_args(Expr_seq const& args, Type_seq const& parms)
+{
+  // Converted arguments.
+  Expr_seq conv(args.size(), nullptr);
+
+  auto a = args.begin();
+  auto p = parms.begin();
+  int i = 0;
+
+  while (true) {
+    // Stop one-to-one conversions at varargs parameter.
+    if (is<Varargs_type>(*p))
+      break;
+
+    Expr* c = convert(*a, *p);
+    conv[i] = c;
+    ++a, ++p, ++i; // Update iterators.
+  }
+
+  // Add the rest of the arguments that bind to the variadic parameter.
+  // Apply variadic conversions to them.
+  while (a != args.end()) {
+    // All variadic arguments should be value types.
+    Expr* v = convert_to_value(*a);
+    conv[i] = variadic_conv(v->type(), v);
+    ++a, ++i;
+  }
+
+  return conv;
+}
+
+
 // Find a conversion from e to t. If no such
 // conversion exists, return nullptr. Diagnostics
 // a better handled in the calling context.
@@ -240,6 +275,8 @@ convert(Expr_seq const& args, Type_seq const& parms)
   //
   // TODO: Handle variadic funcitons and default
   // arguments.
+  if (is<Varargs_type>(parms.back()))
+    return convert_variadic_args(args, parms);
   if (args.size() < parms.size())
     return conv;
   if (parms.size() < args.size())

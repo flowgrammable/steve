@@ -44,6 +44,7 @@ spelling(Token_kind k)
     case rshift_tok: return ">>";
     case arrow_tok: return "->";
     case scope_tok: return "::";
+    case ellipses_tok: return "...";
 
     case abstract_kw: return "abstract";
     case bool_kw: return "bool";
@@ -147,6 +148,7 @@ init_symbols(Symbol_table& syms)
   syms.put<Symbol>(">>", rshift_tok);
   syms.put<Symbol>("->", arrow_tok);
   syms.put<Symbol>("::", scope_tok);
+  syms.put<Symbol>("...", ellipses_tok);
 
   // Keywords
   syms.put<Symbol>("abstract", abstract_kw);

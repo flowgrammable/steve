@@ -53,6 +53,7 @@ Evaluator::eval(Expr const* e)
     Value operator()(Demotion_conv const* e) { return ev.eval(e); }
     Value operator()(Sign_conv const* e) { return ev.eval(e); }
     Value operator()(Integer_conv const* e) { return ev.eval(e); }
+    Value operator()(Variadic_conv const* e) { return ev.eval(e); }
     Value operator()(Default_init const* e) { return ev.eval(e); }
     Value operator()(Copy_init const* e) { return ev.eval(e); }
     Value operator()(Reference_init const* e) { return ev.eval(e); }
@@ -465,6 +466,14 @@ Evaluator::eval(Integer_conv const* e)
 }
 
 
+Value
+Evaluator::eval(Variadic_conv const* e)
+{
+  Value v = eval(e->source());
+  return v.get_integer();
+}
+
+
 // FIXME: This is wrong. We should be calling a function
 // that default initializes the created object.
 Value
@@ -591,6 +600,8 @@ get_value(Type const* t)
 
     Value operator()(Void_type const* t) { return 0; }
     Value operator()(Opaque_type const* t) { return 0; }
+    Value operator()(Varargs_type const* t) { return 0; }
+
     Value operator()(Layout_type const* t) { return 0; }
     Value operator()(Context_type const* t) { return 0; }
     Value operator()(Port_type const* t) { return 0; }

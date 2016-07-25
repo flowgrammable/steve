@@ -71,6 +71,7 @@ struct Promotion_conv;
 struct Demotion_conv;
 struct Sign_conv;
 struct Integer_conv;
+struct Variadic_conv;
 struct Init;
 struct Default_init;
 struct Copy_init;
@@ -104,6 +105,7 @@ struct Void_type;
 struct Context_type;
 struct Key_type;
 struct Opaque_type;
+struct Varargs_type;
 
 struct Decl;
 struct Record_decl;

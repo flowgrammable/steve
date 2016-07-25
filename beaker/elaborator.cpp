@@ -196,6 +196,7 @@ Elaborator::elaborate(Type const* t)
     Type const* operator()(Record_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Void_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Opaque_type const* t) { return elab.elaborate(t); }
+    Type const* operator()(Varargs_type const* t) { return elab.elaborate(t); }
 
     Type const* operator()(Layout_type const* t) { return elab.elaborate(t); }
     Type const* operator()(Context_type const* t) { return elab.elaborate(t); }
@@ -270,11 +271,25 @@ Type const*
 Elaborator::elaborate(Function_type const* t)
 {
   Type_seq ts;
+
+  // Used for checking if ... is last in parameters.
+  bool is_varargs = false;
+
   ts.reserve(t->parameter_types().size());
-  for (Type const* t1 : t->parameter_types())
-    ts.push_back(elaborate(t1));
+  for (Type const* t1 : t->parameter_types()) {
+    t1 = elaborate(t1);
+    if (is<Varargs_type>(t1)) {
+      if (t1 == t->parameter_types().back() && t->parameter_types().size() > 1)
+        is_varargs = true;
+      else
+        throw Type_error({}, "Variadic argument ... is not final parameter.");
+    }
+
+    ts.push_back(t1);
+  }
+
   Type const* r = elaborate(t->return_type());
-  return get_function_type(ts, r);
+  return get_function_type(ts, r, is_varargs);
 }
 
 
@@ -324,6 +339,13 @@ Elaborator::elaborate(Void_type const* t)
 // be references of opaque type.
 Type const*
 Elaborator::elaborate(Opaque_type const* t)
+{
+  return t;
+}
+
+
+Type const*
+Elaborator::elaborate(Varargs_type const* t)
 {
   return t;
 }
@@ -424,6 +446,7 @@ Elaborator::elaborate(Expr* e)
     Expr* operator()(Demotion_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Sign_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Integer_conv* e) const { return elab.elaborate(e); }
+    Expr* operator()(Variadic_conv* e) const { return elab.elaborate(e); }
     Expr* operator()(Default_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Copy_init* e) const { return elab.elaborate(e); }
     Expr* operator()(Reference_init* e) const { return elab.elaborate(e); }
@@ -1614,6 +1637,13 @@ Elaborator::elaborate(Sign_conv* e)
 
 Expr*
 Elaborator::elaborate(Integer_conv* e)
+{
+  return e;
+}
+
+
+Expr*
+Elaborator::elaborate(Variadic_conv* e)
 {
   return e;
 }

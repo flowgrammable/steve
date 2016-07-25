@@ -13,13 +13,12 @@ decoder start eth_d(eth)
   extract eth.dst;
   extract eth.type;
 
-  insert
+  insert into switch
   miss ->
   {
     puts("MISS");
     drop;
-  }
-  into switch;
+  };
 
   goto switch;
 }

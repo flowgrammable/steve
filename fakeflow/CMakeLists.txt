@@ -12,9 +12,7 @@ find_package(Boost 1.55.0 REQUIRED system timer)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Farm hash
-find_library(libfarmhash REQUIRED)
-set(farmhash_LIBRARIES "/usr/local/lib/libfarmhash.so")
-set(farmhash_INCLUDE_DIRS "/usr/include/")
+find_package(farmhash REQUIRED)
 
 # PCAP
 find_package(PCAP REQUIRED)

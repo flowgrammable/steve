@@ -169,6 +169,7 @@ is_less(Type const* a, Type const* b)
     bool operator()(Record_type const* a) { return is_less(a, cast<Record_type>(b)); }
     bool operator()(Void_type const* a) { return false; }
     bool operator()(Opaque_type const* a) { return false; }
+    bool operator()(Varargs_type const* a) { return false; }
 
     // network specific types
     bool operator()(Layout_type const* a) { return is_less(a, cast<Layout_type>(b)); }
@@ -291,6 +292,7 @@ is_less(Expr const* a, Expr const* b)
     bool operator()(Demotion_conv const* a) { lingo_unreachable(); }
     bool operator()(Sign_conv const* a) { lingo_unreachable(); }
     bool operator()(Integer_conv const* a) { lingo_unreachable(); }
+    bool operator()(Variadic_conv const* a) { lingo_unreachable(); }
     bool operator()(Default_init const* a) { lingo_unreachable(); }
     bool operator()(Copy_init const* a) { lingo_unreachable(); }
     bool operator()(Reference_init const* a) { lingo_unreachable(); }

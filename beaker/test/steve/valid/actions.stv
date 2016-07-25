@@ -27,9 +27,4 @@ decoder start eth_d(eth)
 
 exact_table t1(in_port, eth.dst, eth.src)
 {
-	[egress = p1]
-	{ p1, 0, 0 } ->
-	{
-		output egress;
-	}
 }

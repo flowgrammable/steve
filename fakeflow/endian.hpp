@@ -1,16 +1,17 @@
 // Module for detecting native order endianess and converting to the
 // appropriate order.
 
-#include <endian.h>
 #include <algorithm>
 #include <iostream>
+#include <boost/endian/conversion.hpp>
+
 #include "types.hpp"
 
 
 namespace fp
 {
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if BOOST_BIG_ENDIAN
 
 // Big endian is network byte order so no reverse is necessary
 inline void
@@ -23,10 +24,7 @@ native_to_network_order(fp::Byte* buf, int len)
 {
 }
 
-#endif
-
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#else
 
 // Big endian is network byte order so no reverse is necessary
 inline void

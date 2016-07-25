@@ -171,22 +171,20 @@ event learn_ip
 {
   // This first entry prevents the same address from causing
   // this event twice. It sends the packet straight to routing.
-  insert
-  { ipv4.src } -> { goto route; }
-  into learn;
+  insert into learn
+  { ipv4.src } -> { goto route; };
 
   // This establishes the IP address to port mapping.
   // Any packet whose dst address matches the current packet's
   // src address will be forwarded to the current packet's
   // ingress port.
-  insert
-  [egress = in_port]
+  insert into route
   { ipv4.src } ->
+  [egress = in_port]
   {
     set ipv4.ttl = ipv4.ttl - 1; // Decrement ttl.
     output egress;
-  }
-  into route;
+  };
 }
 
 

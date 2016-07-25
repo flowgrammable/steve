@@ -50,6 +50,7 @@ bool has_constant_length(Type const* t)
 
 
     // these should never be called
+    bool operator()(Varargs_type const* t) { throw std::runtime_error("non-const length"); }
     bool operator()(Context_type const* t) { throw std::runtime_error("non-const length"); }
     bool operator()(Table_type const* t) { throw std::runtime_error("non-const length"); }
     bool operator()(Flow_type const* t) { throw std::runtime_error("non-const length"); }
@@ -85,6 +86,7 @@ int precision(Type const* t)
     int operator()(Flow_type const* t) { return 0; }
     int operator()(Key_type const* t) { return 0; }
     int operator()(Opaque_type const* t) { return 0; }
+    int operator()(Varargs_type const* t) { return 0; }
 
     // Port types just end up being integer identifiers.
     int operator()(Port_type const* t) { return 32; }
@@ -142,6 +144,7 @@ Expr* length(Type const* t)
     Expr* operator()(Table_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Flow_type const* t) { throw std::runtime_error("no length type"); }
     Expr* operator()(Key_type const* t) { throw std::runtime_error("no length type"); }
+    Expr* operator()(Varargs_type const* t) { throw std::runtime_error("no length type"); }
 
     // Ports just end up resolving into integer identifiers.
     Expr* operator()(Port_type const* t) { return make_int(4); }

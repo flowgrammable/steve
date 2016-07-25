@@ -99,22 +99,14 @@ decoder ipv4_d2(ipv4)
   // Calculate internet header length (ihl).
   var ihl : uint(8) = (ipv4.version_ihl & 0x0f) * 4;
 
-  insert
-  {0 , 0}-> { }
-  into ip_proto;
-
-  insert
-  miss -> { output flood; }
-  into ip_proto;
-
   // Removal with constant values.
-  remove { 0x0, 0x01 } from ip_proto;
+  remove from ip_proto { 0x0, 0x01 };
 
   // Or dynamic values.
-  remove {ipv4.fragment, ipv4.protocol} from ip_proto;
+  remove from ip_proto {ipv4.fragment, ipv4.protocol};
 
   // Removing a miss case.
-  remove miss from t1;
+  remove from t1 miss;
 
   // Writing a set action
   write set ipv4.ttl = ipv4.ttl - 1;
@@ -195,8 +187,8 @@ exact_table ip_proto(ipv4.fragment, ipv4.protocol)
   // The protocol field is 0x06 for TCP data.
   // The flow property-timeout-sets a timeout in secs.
   // A flow entry with a timeout is removed after X secs.
-  [timeout = 1000]
-  { 0x0, 0x06 } ->
+
+  { 0x0, 0x06 } -> [timeout = 1000]
   {
     set ipv4.ttl = ipv4.ttl - 1; // Decrement time-to-live.
     // Dispatch to the TCP Decoder.

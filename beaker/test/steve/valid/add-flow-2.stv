@@ -24,12 +24,11 @@ exact_table learn(eth.src)
   {
 		puts("Learning eth src.");
 
-    insert
+    insert into switch
     { eth.src } ->
     {
       output p1;
-    }
-    into switch;
+    };
 
     goto switch;
   }

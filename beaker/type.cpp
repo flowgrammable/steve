@@ -205,6 +205,13 @@ get_opaque_type()
 }
 
 
+Type const*
+get_varargs_type()
+{
+  static Varargs_type t;
+  return &t;
+}
+
 // ------------------------------------------------------------ //
 //        Network specific types
 

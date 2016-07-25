@@ -730,6 +730,7 @@ Parser::function_decl(Specifier spec)
 // Parse a parameter declaration.
 //
 //    parameter-decl ::= identifier ':' type
+//                     | '...'
 //                     | type
 Decl*
 Parser::parameter_decl()
@@ -743,6 +744,13 @@ Parser::parameter_decl()
     Token n = match(identifier_tok);
     match(colon_tok);
     Type const* t = type();
+    return on_parameter(spec, n, t);
+  }
+
+  // If we have a '.' then this is a var args parameter.
+  if (lookahead() == ellipses_tok) {
+    Token n = match(ellipses_tok);
+    Type const* t = get_varargs_type();
     return on_parameter(spec, n, t);
   }
 
@@ -1069,10 +1077,9 @@ Parser::flow_properties()
 Decl*
 Parser::flow_decl()
 {
-  Stmt_seq properties = flow_properties();
-
   if (match_if(miss_kw)) {
     match(arrow_tok);
+    Stmt_seq properties = flow_properties();
     Stmt* body = block_stmt();
     return on_flow_miss(body, properties);
   }
@@ -1091,8 +1098,8 @@ Parser::flow_decl()
   }
   match(rbrace_tok);
   match(arrow_tok);
+  Stmt_seq properties = flow_properties();
   Stmt* body = block_stmt();
-
   return on_flow(keys, body, properties);
 }
 
@@ -1589,22 +1596,24 @@ Parser::write_stmt()
 
 // Add flow statement.
 //
-//    add-flow-stmt -> 'insert' { ... } -> { ... } 'into' table-id
+//    add-flow-stmt -> 'insert' 'into' table-id { ... } -> { ... } ;
 //
 Stmt*
 Parser::add_flow_stmt()
 {
   match(insert_kw);
+  match(into_kw);
+  Expr* table = expr();
 
   // The actual flow.
   // Store the information about the flow in a flow decl because its
   // convenient to do so.
   Decl* flow = nullptr;
-  Stmt_seq properties = flow_properties(); // Optional properties.
 
   // Miss case.
   if (match_if(miss_kw)) {
     match(arrow_tok);
+    Stmt_seq properties = flow_properties(); // Optional properties.
     Stmt* body = block_stmt();
     flow = on_flow_miss(body, properties);
   }
@@ -1625,13 +1634,12 @@ Parser::add_flow_stmt()
     }
     match(rbrace_tok);
     match(arrow_tok);
+    Stmt_seq properties = flow_properties(); // Optional properties.
     Stmt* body = block_stmt(); // Flow body.
     flow = on_flow(keys, body, properties);
   }
   assert(flow);
   // Flow done, parse into table.
-  match(into_kw);
-  Expr* table = expr();
   match(semicolon_tok);
 
   return on_add_flow(flow, table);
@@ -1640,18 +1648,18 @@ Parser::add_flow_stmt()
 
 // Remove flow statement.
 //
-//    rmv-flow-stmt -> 'rmv' { expr-seq } 'from' table-id
+//    rmv-flow-stmt -> 'rmv' 'from' table-id { expr-seq }
 //
 Stmt*
 Parser::rmv_flow_stmt()
 {
   match(rmv_kw);
+  match(from_kw);
+  Expr* table = expr();
 
   // If we're removing the miss case.
   if (lookahead() == miss_kw) {
     match(miss_kw);
-    match(from_kw);
-    Expr* table = expr();
     match(semicolon_tok);
     return on_rmv_miss(table);
   }
@@ -1670,8 +1678,6 @@ Parser::rmv_flow_stmt()
       break;
   }
   match(rbrace_tok);
-  match(from_kw);
-  Expr* table = expr();
   match(semicolon_tok);
   return on_rmv_flow(keys, table);
 }

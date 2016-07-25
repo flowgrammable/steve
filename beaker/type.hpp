@@ -57,6 +57,7 @@ struct Type::Visitor
   virtual void visit(Record_type const*) = 0;
   virtual void visit(Void_type const*) = 0;
   virtual void visit(Opaque_type const*) = 0;
+  virtual void visit(Varargs_type const*) = 0;
 
   // network specific types
   virtual void visit(Layout_type const*) = 0;
@@ -110,6 +111,13 @@ struct Character_type : Type
 // NOTE: There is currently no surface level syntax for this type. This is a
 // purely compiler generated type to handle certain situations.
 struct Opaque_type : Type
+{
+  void accept(Visitor& v) const { v.visit(this); };
+};
+
+
+// The varargs type is used for the variadic parameter (...) in functions.
+struct Varargs_type : Type
 {
   void accept(Visitor& v) const { v.visit(this); };
 };
@@ -354,6 +362,7 @@ Type const* get_reference_type(Type const*);
 Type const* get_record_type(Record_decl*);
 Type const* get_void_type();
 Type const* get_opaque_type();
+Type const* get_varargs_type();
 
 // network specific types
 Type const* get_layout_type(Layout_decl*);
@@ -426,6 +435,7 @@ struct Generic_type_visitor : Type::Visitor, lingo::Generic_visitor<F, T>
   void visit(Record_type const* t) { this->invoke(t); }
   void visit(Void_type const* t) { this->invoke(t); }
   void visit(Opaque_type const* t) { this->invoke(t); }
+  void visit(Varargs_type const* t) { this->invoke(t); }
 
   // network specific types
   void visit(Context_type const* t) { this->invoke(t); }

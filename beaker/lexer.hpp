@@ -203,6 +203,7 @@ public:
   Token bar();
   Token hat();
   Token scope();
+  Token ellipses();
 
   Token binary_integer();
   Token hexadecimal_integer();
@@ -234,6 +235,7 @@ private:
   // Token constructors
   Token symbol0();
   Token symbol1();
+  Token symbolN(int n);
 
   // Lexers
   void comment();
@@ -319,6 +321,14 @@ Lexer::symbol1()
 
 
 inline Token
+Lexer::symbolN(int n)
+{
+  get(n);
+  return on_token();
+}
+
+
+inline Token
 Lexer::lbrace()
 {
   return symbol1();
@@ -390,6 +400,17 @@ Lexer::semicolon()
 inline Token
 Lexer::dot()
 {
+  get();
+
+  // Handle ellipses (...)
+  if (peek() == '.') {
+    get();
+    if (peek() == '.')
+      return symbol1();
+    else
+      throw std::runtime_error("Expected third '.' in ellipses.");
+  }
+
   return symbol1();
 }
 

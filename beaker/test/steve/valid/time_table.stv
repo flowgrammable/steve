@@ -12,18 +12,18 @@ decoder start eth_d(eth)
 
   // Time insert by inserting an entry 1000 times.
   var i : int = 0;
-  while (i < 10000000)
+  while (i < 100)
   {
     i = i + 1;
-    insert { i } -> { } into t1;
+    insert into t1 { i } -> { };
   }
 
   // Time remove by removing the entries 1000 times.
   var r : int = 0;
-  while (r < 10000000)
+  while (r < 100)
   {
     r = r + 1;
-    remove { r } from t1;
+    remove from t1 { r };
   }
 }
 

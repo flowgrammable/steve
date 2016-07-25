@@ -435,6 +435,7 @@ operator<<(std::ostream& os, Type const& t)
     void operator()(Record_type const* t) { os << *t; }
     void operator()(Void_type const* t) { os << *t; }
     void operator()(Opaque_type const* t) { os << *t; }
+    void operator()(Varargs_type const* t) { os << *t; }
 
     // network specific types
     void operator()(Layout_type const* t) { os << *t; }
@@ -539,6 +540,12 @@ operator<<(std::ostream& os, Opaque_type const&)
   return os << "opaque";
 }
 
+std::ostream&
+operator<<(std::ostream& os, Varargs_type const&)
+{
+  return os << "...";
+}
+
 
 std::ostream& operator<<(std::ostream& os, Layout_type const& t)
 {
@@ -636,6 +643,7 @@ operator<<(std::ostream& os, Expr const& e)
     void operator()(Demotion_conv const* e) { os << *e; }
     void operator()(Sign_conv const* e) { os << *e; }
     void operator()(Integer_conv const* e) { os << *e; }
+    void operator()(Variadic_conv const* e) { os << *e; }
     void operator()(Default_init const* e) { os << *e; }
     void operator()(Copy_init const* e) { os << *e; }
     void operator()(Reference_init const* e) { os << *e; }
@@ -930,6 +938,15 @@ std::ostream&
 operator<<(std::ostream& os, Integer_conv const& e)
 {
   return os << "_to_int("
+            << *e.source() << ','
+            << *e.target() << ')';
+}
+
+
+std::ostream&
+operator<<(std::ostream& os, Variadic_conv const& e)
+{
+  return os << "_varargs("
             << *e.source() << ','
             << *e.target() << ')';
 }

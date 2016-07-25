@@ -280,6 +280,7 @@ link_libsteve(Path const& lib, Path const& ir, Path const& out)
   std::cout << llvm_linker() << " ";
   for (auto a : args)
     std::cout << a << " ";
+  std::cout << std::endl;
 
   return job.run();
 }
@@ -303,6 +304,7 @@ clang_compile(Path_seq const& in, Path const& out, Config const& conf)
   std::cout << clang_compiler() << " ";
   for (auto a : args)
     std::cout << a << " ";
+  std::cout << std::endl;
 
   // Build and run the job.
   Job job(clang_compiler(), args);
