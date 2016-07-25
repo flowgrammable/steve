@@ -192,8 +192,10 @@ convert_variadic_args(Expr_seq const& args, Type_seq const& parms)
   // Add the rest of the arguments that bind to the variadic parameter.
   // Apply variadic conversions to them.
   while (a != args.end()) {
-    conv[i] = variadic_conv((*a)->type(), *a);
-    ++a;
+    // All variadic arguments should be value types.
+    Expr* v = convert_to_value(*a);
+    conv[i] = variadic_conv(v->type(), v);
+    ++a, ++i;
   }
 
   return conv;
