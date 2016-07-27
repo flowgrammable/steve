@@ -74,6 +74,7 @@ struct Lower_expr_fn
   Expr* operator()(Demotion_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Sign_conv* e) const { return lower.lower_unary_expr(e); }
   Expr* operator()(Integer_conv* e) const { return lower.lower_unary_expr(e); }
+  Expr* operator()(Variadic_conv* e) const { return lower.lower_unary_expr(e); }
 
   // Field access expr becomes an id_expr whose declaration is
   // resolved against a variable created by lowering the extracts decl.

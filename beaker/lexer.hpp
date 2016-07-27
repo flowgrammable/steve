@@ -411,7 +411,7 @@ Lexer::dot()
       throw std::runtime_error("Expected third '.' in ellipses.");
   }
 
-  return symbol1();
+  return symbol0();
 }
 
 
